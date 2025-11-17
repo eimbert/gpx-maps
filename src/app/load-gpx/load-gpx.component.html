@@ -1,0 +1,44 @@
+<div class="container">
+  <audio id="background-music" src="assets/musica/inicio.mp3" loop></audio>
+  <div class="row">
+    <div class="column" *ngIf="!trackLoaded[0]">
+      <img src="assets/player1.png" alt="Player 1" class="player-image">
+      <button (click)="cargarFichero(0)" class="btn">Load GPX</button>
+      <br>
+      <label for="colorPicker1">Choose color</label>
+      <input id="colorPicker1" type="color" [(ngModel)]="colors[0]" (change)="updateColor(0)" />
+    </div>
+    <div class="column" *ngIf="trackLoaded[0]">
+      <div class="card">
+        <p><strong>Nombre corredor:</strong><input [(ngModel)]="fileNames[0]" /></p>
+        <p><strong>Fecha:</strong> {{ trackDetails[0]?.date || '' }}</p>
+        <p><strong>Kms:</strong> {{ trackDetails[0]?.distance ? trackDetails[0].distance.toFixed(2) : '0.00' }}</p>
+        <p><strong>Ascenso:</strong> {{ trackDetails[0]?.ascent ? trackDetails[0].ascent.toFixed(2) : '0.00' }}</p>
+        <div class="profile-chart">
+          <canvas id="chart-0"></canvas>
+        </div>
+      </div>
+      <button (click)="borrarFichero(0)" class="btn">Borrar</button>
+    </div>
+    <div class="column" *ngIf="!trackLoaded[1]">
+      <img src="assets/player2.png" alt="Player 2" class="player-image">
+      <button (click)="cargarFichero(1)" class="btn">Load GPX</button>
+      <br>
+      <label for="colorPicker2">Choose color</label>
+      <input id="colorPicker2" type="color" [(ngModel)]="colors[1]" (change)="updateColor(1)" />
+    </div>
+    <div class="column" *ngIf="trackLoaded[1]">
+      <div class="card">
+        <p><strong>Nombre corredor:</strong><input [(ngModel)]="fileNames[1]" /></p>
+        <p><strong>Fecha:</strong> {{ trackDetails[1]?.date || '' }}</p>
+        <p><strong>Kms:</strong> {{ trackDetails[1]?.distance ? trackDetails[1].distance.toFixed(2) : '0.00' }}</p>
+        <p><strong>Ascenso:</strong> {{ trackDetails[1]?.ascent ? trackDetails[1].ascent.toFixed(2) : '0.00' }}</p>
+        <div class="profile-chart">
+          <canvas id="chart-1"></canvas>
+        </div>
+      </div>
+      <button (click)="borrarFichero(1)" class="btn">Borrar</button>
+    </div>
+  </div>
+  <button (click)="iniciarVisualizacion()" [disabled]="!tracksCargados()" class="btn-start">Iniciar</button>
+</div>

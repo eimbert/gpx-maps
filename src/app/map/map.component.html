@@ -1,0 +1,31 @@
+<div class="map-wrap">
+  <div id="map"></div>
+
+  <!-- UI superpuesta -->
+  <div class="map-ui" aria-label="Cabecera de comparación">
+    <!-- LOGO arriba, centrado (solo si hay logo) -->
+    <div class="map-logo" *ngIf="logoDataUrl">
+      <img [src]="logoDataUrl" alt="logo carrera">
+    </div>
+
+    <!-- TÍTULO grande -->
+    <div class="map-title">
+      <span class="title-chip" [style.borderColor]="colors[0]" [style.color]="colors[0]" [title]="names[0]">{{ names[0]
+        }}</span>
+
+      <ng-container *ngIf="names.length > 1">
+        <span class="vs">VS</span>
+        <span class="title-chip" [style.borderColor]="colors[1]" [style.color]="colors[1]" [title]="names[1]">{{
+          names[1] }}</span>
+      </ng-container>
+    </div>
+
+    <!-- Botón Inicio -->
+    <a class="start-btn" routerLink="/load">Inicio</a>
+  </div>
+</div>
+
+
+
+
+<!-- <audio id="background-music-carrera" src="assets/musica/carrera.mp3" loop></audio> -->

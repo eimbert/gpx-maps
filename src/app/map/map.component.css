@@ -144,18 +144,25 @@
   pointer-events: none;
 }
 .title-chip{
+  display: inline-flex;          /* para centrar verticalmente */
+  align-items: center;
   max-width: 42vw;
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
   font-weight: 800;
-  font-size: clamp(16px, 3.6vw, 42px); 
+  font-size: clamp(16px, 3.6vw, 42px);
   letter-spacing: 0.3px;
-  padding: 2px 8px;
+
+  /* ↑ más alto el recuadro: */
+  padding: 6px 12px;             /* antes: 2px 8px */
+  line-height: 1.15;             /* un pelín más de altura de línea */
+
   border: 2px solid currentColor;
-  border-radius: 8px;
+  border-radius: 10px;
   background: rgba(255,255,255,0.92);
 }
+
 .vs{
   font-weight: 900;
   font-size: clamp(14px, 3vw, 36px);
@@ -223,3 +230,27 @@
   transform: translateY(120px);
 }
 
+.start-overlay{
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  z-index: 1005;            /* por encima del mapa y de .map-ui */
+  background: rgba(0,0,0,.25);
+  pointer-events: auto;
+}
+
+.big-start{
+  cursor: pointer;
+  padding: 18px 28px;
+  font: 800 clamp(18px, 3.2vw, 28px)/1.1 system-ui,-apple-system,Segoe UI,Roboto,Arial;
+  color: #fff;
+  border: 0;
+  border-radius: 16px;
+  background: linear-gradient(180deg,#22c55e,#16a34a);
+  box-shadow: 0 14px 32px rgba(22,163,74,.45), inset 0 1px 0 rgba(255,255,255,.25);
+  text-shadow: 0 2px 6px rgba(0,0,0,.35);
+  transition: transform .08s ease, box-shadow .12s ease, filter .12s ease;
+}
+.big-start:hover{ transform: translateY(-1px); filter: brightness(1.05); }
+.big-start:active{ transform: translateY(0); filter: brightness(.95); }

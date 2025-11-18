@@ -1,6 +1,7 @@
 
 ::ng-deep .mat-dialog-container {
     overflow: hidden ;
+    min-height: 100px;
 }
 
 .dialog-header {
@@ -18,4 +19,8 @@
 
 .dialog-actions {
   margin-top: 16px;
+}
+
+.mat-dialog-content {
+    min-height: 9vh; 
 }

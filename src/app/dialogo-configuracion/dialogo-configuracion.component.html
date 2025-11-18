@@ -12,15 +12,13 @@
     ¿Quieres añadir un logo a los títulos (ej. logo de la carrera)?
   </mat-checkbox>
 
+  <mat-checkbox [(ngModel)]="activarMusica">
+    ¿Quieres activar la musica?
+  </mat-checkbox>
+
 </mat-dialog-content>
 
-<mat-dialog-actions align="end" class="dialog-actions">
-  <button mat-button mat-dialog-close>Cancel·lar</button>
-  <button
-    mat-raised-button
-    color="primary"
-    [mat-dialog-close]="{ eliminarPausasLargas, anadirLogoTitulos }"
-  >
-    Guardar
-  </button>
+<mat-dialog-actions align="end">
+  <button mat-button (click)="cancelar()">Cancelar</button>
+  <button mat-flat-button color="primary" (click)="guardar()">Continuar</button>
 </mat-dialog-actions>

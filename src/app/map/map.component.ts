@@ -18,6 +18,10 @@ export class MapComponent implements OnInit, AfterViewInit {
   logoDataUrl: string | null = null;
   removeStops = false;  // quitar paradas largas
 
+  showStartOverlay = true;
+  private startArmed = false;
+  private audio!: HTMLAudioElement;
+  private  inicioMapa: any;
 
   // Capas: ghost + progreso + marcador actual
   private full1!: L.Polyline; private prog1!: L.Polyline; private mark1!: L.Marker;
@@ -209,7 +213,6 @@ export class MapComponent implements OnInit, AfterViewInit {
     console.log('[init] rmstops?', this.removeStops, 't1 len:', this.t1.length, 't2 len:', this.t2.length);
 
     if (this.removeStops) {
-      // Usa la variante robusta por pasos cortos + radio
       this.t1 = this.removeStopsAdaptive(this.t1, 20_000, 4, 10, 25, 12, 1_500);
       this.t2 = this.removeStopsAdaptive(this.t2, 20_000, 4, 10, 25, 12, 1_500);
       console.log('[init] after removeStopsByStep t1 len:', this.t1.length, 't2 len:', this.t2.length);
@@ -218,8 +221,40 @@ export class MapComponent implements OnInit, AfterViewInit {
 
 
   ngAfterViewInit(): void {
+    
     this.initMap();
-    setTimeout(() => { this.map.invalidateSize(); this.startIfReady(); }, 0);
+    setTimeout(() => { 
+      this.map.invalidateSize(); 
+      this.inicioMapa = this.startIfReady(); 
+    }, 0);
+
+     this.audio = document.getElementById('background-music-carrera') as HTMLAudioElement;
+
+    // Desbloquear audio en el primer gesto del usuario (click/tap/tecla)
+    // const unlock = () => {
+    //   this.audio.play()
+    //     .then(() => { this.isMusicOn = true; })
+    //     .catch(err => console.warn('No se pudo iniciar audio:', err));
+    //   window.removeEventListener('pointerdown', unlock);
+    //   window.removeEventListener('keydown', unlock);
+    // };
+    // window.addEventListener('pointerdown', unlock, { once: true });
+    // window.addEventListener('keydown', unlock, { once: true });
+  }
+
+  onStartClick(): void {
+    this.showStartOverlay = false;   // ocultar overlay
+    this.startArmed = true;          // autoriza el arranque
+
+    // intentar reproducir música (ya hay interacción del usuario)
+    if (this.audio) {
+      this.audio.play().catch(err => console.warn('Audio no pudo empezar:', err));
+    }
+
+    // arrancar animación si ya están los datos
+    if(this.inicioMapa != null){
+      this.afterInicio(this.inicioMapa.has1, this.inicioMapa.has2)
+    }
   }
 
   // ---------- mapa ----------
@@ -254,7 +289,7 @@ export class MapComponent implements OnInit, AfterViewInit {
     this.ticks2 = L.layerGroup().addTo(this.map);
   }
 
-  private startIfReady(): void {
+  private startIfReady(): any {
     if (this.started) return;
 
     const has1 = this.t1.length >= 2;
@@ -292,6 +327,7 @@ export class MapComponent implements OnInit, AfterViewInit {
     this.finalAdded1 = false;
     this.finalAdded2 = false;
 
+    
     if (has1) {
       this.prog1.setLatLngs([[this.t1[0].lat, this.t1[0].lon]]);
       this.mark1.setLatLng([this.t1[0].lat, this.t1[0].lon]).addTo(this.map);
@@ -303,6 +339,7 @@ export class MapComponent implements OnInit, AfterViewInit {
       this.i2 = 0;
     }
 
+
     // velocidad: que el más largo termine aprox. en desiredDurationSec
     const d1 = has1 ? (this.t1[this.t1.length - 1].t - this.t1[0].t) : 0;
     const d2 = has2 ? (this.t2[this.t2.length - 1].t - this.t2[0].t) : 0;
@@ -313,73 +350,77 @@ export class MapComponent implements OnInit, AfterViewInit {
     this.relMs = 0;
     this.started = true;
 
-    let last = performance.now();
-    const step = (now: number) => {
-      const rawDt = now - last; last = now;
-      const dt = Math.min(rawDt, 50);
-      this.relMs += dt * this.replaySpeed;
+    return {has1, has2}
+  }
+  
+  afterInicio (has1: any, has2: any){
+      let last = performance.now();
+      const step = (now: number) => {
+        const rawDt = now - last; last = now;
+        const dt = Math.min(rawDt, 50);
+        this.relMs += dt * this.replaySpeed;
 
-      let allDone = true;
+        let allDone = true;
 
-      if (has1) {
-        const start1 = this.t1[0].t, end1 = this.t1[this.t1.length - 1].t;
-        const tAbs1 = start1 + this.relMs;
+        if (has1) {
+          const start1 = this.t1[0].t, end1 = this.t1[this.t1.length - 1].t;
+          const tAbs1 = start1 + this.relMs;
 
-        while (this.i1 + 1 < this.t1.length && this.t1[this.i1 + 1].t <= tAbs1) this.i1++;
+          while (this.i1 + 1 < this.t1.length && this.t1[this.i1 + 1].t <= tAbs1) this.i1++;
 
-        // ticks dinámicos 30 min (reservando el final)
-        const rel1 = tAbs1 - start1;
-        const endRel1 = end1 - start1;
-        while (this.nextTickRel1 <= rel1 && this.nextTickRel1 < endRel1) {
-          const absTick1 = start1 + this.nextTickRel1;
-          this.addTickAtAbs(this.t1, absTick1, this.colors[0], this.ticks1, start1);
-          this.nextTickRel1 += this.TICK_STEP_MS;
+          // ticks dinámicos 30 min (reservando el final)
+          const rel1 = tAbs1 - start1;
+          const endRel1 = end1 - start1;
+          while (this.nextTickRel1 <= rel1 && this.nextTickRel1 < endRel1) {
+            const absTick1 = start1 + this.nextTickRel1;
+            this.addTickAtAbs(this.t1, absTick1, this.colors[0], this.ticks1, start1);
+            this.nextTickRel1 += this.TICK_STEP_MS;
+          }
+
+          const pos1 = this.positionAt(this.t1, tAbs1, { i: this.i1 });
+          const path1: [number, number][] = this.t1.slice(0, this.i1 + 1).map(p => [p.lat, p.lon]);
+          path1.push([pos1[0], pos1[1]]);
+          this.prog1.setLatLngs(path1);
+          this.mark1.setLatLng(pos1);
+
+          const done1 = this.i1 >= this.t1.length - 1 && tAbs1 >= end1;
+          if (done1 && !this.finalAdded1) { this.addFinalTick(this.t1, this.colors[0], this.ticks1, start1); this.finalAdded1 = true; }
+          if (!done1) allDone = false;
         }
 
-        const pos1 = this.positionAt(this.t1, tAbs1, { i: this.i1 });
-        const path1: [number, number][] = this.t1.slice(0, this.i1 + 1).map(p => [p.lat, p.lon]);
-        path1.push([pos1[0], pos1[1]]);
-        this.prog1.setLatLngs(path1);
-        this.mark1.setLatLng(pos1);
+        if (has2) {
+          const start2 = this.t2[0].t, end2 = this.t2[this.t2.length - 1].t;
+          const tAbs2 = start2 + this.relMs;
 
-        const done1 = this.i1 >= this.t1.length - 1 && tAbs1 >= end1;
-        if (done1 && !this.finalAdded1) { this.addFinalTick(this.t1, this.colors[0], this.ticks1, start1); this.finalAdded1 = true; }
-        if (!done1) allDone = false;
-      }
+          while (this.i2 + 1 < this.t2.length && this.t2[this.i2 + 1].t <= tAbs2) this.i2++;
 
-      if (has2) {
-        const start2 = this.t2[0].t, end2 = this.t2[this.t2.length - 1].t;
-        const tAbs2 = start2 + this.relMs;
+          const rel2 = tAbs2 - start2;
+          const endRel2 = end2 - start2;
+          while (this.nextTickRel2 <= rel2 && this.nextTickRel2 < endRel2) {
+            const absTick2 = start2 + this.nextTickRel2;
+            this.addTickAtAbs(this.t2, absTick2, this.colors[1], this.ticks2, start2);
+            this.nextTickRel2 += this.TICK_STEP_MS;
+          }
 
-        while (this.i2 + 1 < this.t2.length && this.t2[this.i2 + 1].t <= tAbs2) this.i2++;
+          const pos2 = this.positionAt(this.t2, tAbs2, { i: this.i2 });
+          const path2: [number, number][] = this.t2.slice(0, this.i2 + 1).map(p => [p.lat, p.lon]);
+          path2.push([pos2[0], pos2[1]]);
+          this.prog2.setLatLngs(path2);
+          this.mark2.setLatLng(pos2);
 
-        const rel2 = tAbs2 - start2;
-        const endRel2 = end2 - start2;
-        while (this.nextTickRel2 <= rel2 && this.nextTickRel2 < endRel2) {
-          const absTick2 = start2 + this.nextTickRel2;
-          this.addTickAtAbs(this.t2, absTick2, this.colors[1], this.ticks2, start2);
-          this.nextTickRel2 += this.TICK_STEP_MS;
+          const done2 = this.i2 >= this.t2.length - 1 && tAbs2 >= end2;
+          if (done2 && !this.finalAdded2) { this.addFinalTick(this.t2, this.colors[1], this.ticks2, start2); this.finalAdded2 = true; }
+          if (!done2) allDone = false;
         }
 
-        const pos2 = this.positionAt(this.t2, tAbs2, { i: this.i2 });
-        const path2: [number, number][] = this.t2.slice(0, this.i2 + 1).map(p => [p.lat, p.lon]);
-        path2.push([pos2[0], pos2[1]]);
-        this.prog2.setLatLngs(path2);
-        this.mark2.setLatLng(pos2);
+        if (!allDone) {
+          this.rafId = requestAnimationFrame(step);
+        } else {
+          cancelAnimationFrame(this.rafId);
+        }
+      };
 
-        const done2 = this.i2 >= this.t2.length - 1 && tAbs2 >= end2;
-        if (done2 && !this.finalAdded2) { this.addFinalTick(this.t2, this.colors[1], this.ticks2, start2); this.finalAdded2 = true; }
-        if (!done2) allDone = false;
-      }
-
-      if (!allDone) {
-        this.rafId = requestAnimationFrame(step);
-      } else {
-        cancelAnimationFrame(this.rafId);
-      }
-    };
-
-    this.rafId = requestAnimationFrame(step);
+      this.rafId = requestAnimationFrame(step);
   }
 
   // Detecta paradas de forma adaptativa: (A) pasos cortos acumulados y (B) intervalos únicos largos.
@@ -485,7 +526,5 @@ export class MapComponent implements OnInit, AfterViewInit {
       { minStopMs, stepRadius, stayRadius, pathSumMax, sparseStayRadius, mergeGapMs });
     return out;
   }
-
-
 
 }

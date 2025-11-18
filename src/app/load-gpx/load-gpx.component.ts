@@ -3,6 +3,7 @@ import { Router } from '@angular/router';
 import { MatDialog } from '@angular/material/dialog';
 import Chart from 'chart.js/auto';
 import { DialogoConfiguracionComponent } from '../dialogo-configuracion/dialogo-configuracion.component';
+import { DialogoConfiguracionData } from '../interfaces/estructuras';
 
 interface TrackPoint {
   lat: number;
@@ -258,49 +259,53 @@ export class LoadGpxComponent implements OnInit, AfterViewInit, AfterContentInit
     const namesPayload = loadedIdx.map(i => this.fileNames[i] ?? `Track ${i + 1}`);
     const colorsPayload = loadedIdx.map(i => this.colors[i] ?? '#0000ff');
 
-    this.cuadroConfiguracion()
+    this.cuadroConfiguracion(namesPayload, colorsPayload, tracksPayload)
 
-    return
-
-    const removeStops = window.confirm('¿Quitar paradas de más de 10 segundos de duración?');
-
-    const wantsLogo = window.confirm('¿Quieres añadir un logo de la carrera?');
-
-    const afterLogo = (logoDataUrl: string | null) => {
-      // 👉 Guardamos TODO en sessionStorage para evitar URLs enormes
-      const payload = { names: namesPayload, colors: colorsPayload, tracks: tracksPayload, logo: logoDataUrl, rmstops: !!removeStops };
-      sessionStorage.setItem('gpxViewerPayload', JSON.stringify(payload));
-
-      // Navegamos con una URL corta
-      this.router.navigate(['/map'], { queryParams: { s: '1' } });
-    };
-
-    if (wantsLogo) {
-      const input = document.createElement('input');
-      input.type = 'file';
-      input.accept = 'image/png,image/jpeg,image/webp';
-      input.onchange = async () => {
-        const file = input.files?.[0];
-        if (!file) return afterLogo(null);
-        try {
-          // usa tu helper (ancho o alto como prefieras)
-          const dataUrl = await this.downscaleImageFromFile(file, 122, 'image/png', 0.92, false);
-          afterLogo(dataUrl);
-        } catch { afterLogo(null); }
-      };
-      input.click();
-    } else {
-      afterLogo(null);
-    }
   }
 
-  cuadroConfiguracion(){
-    this.dialog.open(DialogoConfiguracionComponent ).afterClosed().subscribe(result => {
-      if (result) {
-        console.log('Resultado:', result);
-        
+  cuadroConfiguracion(namesPayload: any, colorsPayload: any, tracksPayload: any) {
+    this.dialog.open<DialogoConfiguracionComponent, Partial<DialogoConfiguracionData>, DialogoConfiguracionData>(
+      DialogoConfiguracionComponent,
+      {
+        width: '420px',
+        data: {  // opcional: valores por defecto
+          eliminarPausasLargas: false,
+          anadirLogoTitulos: false
+        }
       }
-    });
+    )
+      .afterClosed()
+      .subscribe((result) => {
+        if (!result) return; // pulsó Cancelar o cerró el diálogo
+
+        const afterLogo = (logoDataUrl: string | null) => {
+          // 👉 Guardamos TODO en sessionStorage para evitar URLs enormes
+          const payload = { names: namesPayload, colors: colorsPayload, tracks: tracksPayload, logo: logoDataUrl, rmstops: !!result.eliminarPausasLargas };
+          sessionStorage.setItem('gpxViewerPayload', JSON.stringify(payload));
+
+          // Navegamos con una URL corta
+          this.router.navigate(['/map'], { queryParams: { s: '1' } });
+        };
+
+        if (result.anadirLogoTitulos) {
+          const input = document.createElement('input');
+          input.type = 'file';
+          input.accept = 'image/png,image/jpeg,image/webp';
+          input.onchange = async () => {
+            const file = input.files?.[0];
+            if (!file) return afterLogo(null);
+            try {
+              // usa tu helper (ancho o alto como prefieras)
+              const dataUrl = await this.downscaleImageFromFile(file, 122, 'image/png', 0.92, false);
+              afterLogo(dataUrl);
+            } catch { afterLogo(null); }
+          };
+          input.click();
+        } else {
+          afterLogo(null);
+        }
+
+      });
   }
 
 

@@ -1,6 +1,8 @@
 import { Component, AfterViewInit, OnInit, AfterContentInit } from '@angular/core';
 import { Router } from '@angular/router';
+import { MatDialog } from '@angular/material/dialog';
 import Chart from 'chart.js/auto';
+import { DialogoConfiguracionComponent } from '../dialogo-configuracion/dialogo-configuracion.component';
 
 interface TrackPoint {
   lat: number;
@@ -26,7 +28,9 @@ export class LoadGpxComponent implements OnInit, AfterViewInit, AfterContentInit
   // load-gpx.component.ts (añade propiedad)
   fileNames: string[] = ['Track 1', 'Track 2'];
 
-  constructor(private router: Router) { }
+  constructor(
+    public dialog: MatDialog,
+    private router: Router) { }
 
   ngAfterContentInit(): void {
 
@@ -254,9 +258,14 @@ export class LoadGpxComponent implements OnInit, AfterViewInit, AfterContentInit
     const namesPayload = loadedIdx.map(i => this.fileNames[i] ?? `Track ${i + 1}`);
     const colorsPayload = loadedIdx.map(i => this.colors[i] ?? '#0000ff');
 
+    this.cuadroConfiguracion()
+
+    return
+
     const removeStops = window.confirm('¿Quitar paradas de más de 10 segundos de duración?');
 
     const wantsLogo = window.confirm('¿Quieres añadir un logo de la carrera?');
+
     const afterLogo = (logoDataUrl: string | null) => {
       // 👉 Guardamos TODO en sessionStorage para evitar URLs enormes
       const payload = { names: namesPayload, colors: colorsPayload, tracks: tracksPayload, logo: logoDataUrl, rmstops: !!removeStops };
@@ -285,6 +294,14 @@ export class LoadGpxComponent implements OnInit, AfterViewInit, AfterContentInit
     }
   }
 
+  cuadroConfiguracion(){
+    this.dialog.open(DialogoConfiguracionComponent ).afterClosed().subscribe(result => {
+      if (result) {
+        console.log('Resultado:', result);
+        
+      }
+    });
+  }
 
 
   private downscaleImageFromFile(

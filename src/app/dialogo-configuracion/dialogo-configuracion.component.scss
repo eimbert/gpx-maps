@@ -1,0 +1,21 @@
+
+::ng-deep .mat-dialog-container {
+    overflow: hidden ;
+}
+
+.dialog-header {
+  margin: -24px -24px 16px;   // “come” el padding del contenedor
+  padding: 16px 24px;
+  background: #2f65a8;
+  color: #fff;
+}
+
+.dialog-content {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.dialog-actions {
+  margin-top: 16px;
+}

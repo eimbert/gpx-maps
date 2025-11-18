@@ -1,0 +1,26 @@
+<h2 mat-dialog-title class="dialog-header">
+  Configurar opciones
+</h2>
+
+<mat-dialog-content class="dialog-content">
+
+  <mat-checkbox [(ngModel)]="eliminarPausasLargas">
+    ¿Quieres depurar el track para eliminar pausas largas?
+  </mat-checkbox>
+
+  <mat-checkbox [(ngModel)]="anadirLogoTitulos">
+    ¿Quieres añadir un logo a los títulos (ej. logo de la carrera)?
+  </mat-checkbox>
+
+</mat-dialog-content>
+
+<mat-dialog-actions align="end" class="dialog-actions">
+  <button mat-button mat-dialog-close>Cancel·lar</button>
+  <button
+    mat-raised-button
+    color="primary"
+    [mat-dialog-close]="{ eliminarPausasLargas, anadirLogoTitulos }"
+  >
+    Guardar
+  </button>
+</mat-dialog-actions>

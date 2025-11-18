@@ -6,19 +6,31 @@ import { AppComponent } from './app.component';
 import { MapComponent } from './map/map.component';
 import { HttpClientModule } from '@angular/common/http';
 import { LoadGpxComponent } from './load-gpx/load-gpx.component';
-import { FormsModule } from '@angular/forms'; // Importar FormsModule
+import { FormsModule } from '@angular/forms';
+import { DialogoConfiguracionComponent } from './dialogo-configuracion/dialogo-configuracion.component';
+import { BrowserAnimationsModule } from '@angular/platform-browser/animations'; // Importar FormsModule
+import { MatDialogModule } from '@angular/material/dialog';
+import { MatButtonModule } from '@angular/material/button';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
+
 
 @NgModule({
   declarations: [
     AppComponent,
     MapComponent,
-    LoadGpxComponent
+    LoadGpxComponent,
+    DialogoConfiguracionComponent
   ],
   imports: [
+    MatButtonModule,
+    MatFormFieldModule,
+    MatInputModule,
+    MatDialogModule,
     BrowserModule,
     AppRoutingModule,
     HttpClientModule, // Asegúrate de incluir HttpClientModule aquí
-    FormsModule
+    FormsModule, BrowserAnimationsModule
   ],
   providers: [],
   bootstrap: [AppComponent]

@@ -11,7 +11,7 @@ body, html {
   align-items: center;
   height: 100vh;
   text-align: center;
-  background-image: url('/assets/fondo_pantalla.png'); /* Usar ruta absoluta */
+  background-image: url('/assets/fondo_pantalla2.webp'); /* Usar ruta absoluta */
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;

@@ -1,6 +1,8 @@
 import { Component, OnInit, AfterViewInit } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
+
 import * as L from 'leaflet';
+import { RecorderService } from '../recording/recorder.service';
 
 interface TrackPoint { lat: number; lon: number; ele: number; time: string; }
 interface TPx extends TrackPoint { t: number; }
@@ -56,7 +58,9 @@ export class MapComponent implements OnInit, AfterViewInit {
   colors: string[] = ['blue', 'red'];
   names: string[] = ['Track 1', 'Track 2'];
 
-  constructor(private route: ActivatedRoute) { }
+  constructor(
+    private route: ActivatedRoute,
+    public rec: RecorderService) { }
 
   // ---------- util ----------
   private isCoordValid(lat: number, lon: number): boolean {
@@ -242,20 +246,53 @@ export class MapComponent implements OnInit, AfterViewInit {
     // window.addEventListener('keydown', unlock, { once: true });
   }
 
-  onStartClick(): void {
-    this.showStartOverlay = false;   // ocultar overlay
-    this.startArmed = true;          // autoriza el arranque
+  async onStartClick(): Promise<void> {
+    try {
+      // 1) Empieza la grabación (elige “Pestaña” y marca audio de la pestaña)
+      await this.rec.startCapture({ includeAudio: true, frameRate: 60, videoBitsPerSecond: 8_000_000 });
 
-    // intentar reproducir música (ya hay interacción del usuario)
-    if (this.audio) {
-      this.audio.play().catch(err => console.warn('Audio no pudo empezar:', err));
-    }
+      // 2) Arranca música (ya hay interacción del usuario)
+      await this.audio.play().catch(() => { /* ignore */ });
 
-    // arrancar animación si ya están los datos
-    if(this.inicioMapa != null){
-      this.afterInicio(this.inicioMapa.has1, this.inicioMapa.has2)
+      // 3) Lanza tu animación normal
+      this.showStartOverlay = false;
+      // arrancar animación si ya están los datos
+      if(this.inicioMapa != null){
+        this.afterInicio(this.inicioMapa.has1, this.inicioMapa.has2)
+      }
+    } catch (e) {
+      console.error('No se pudo iniciar la captura:', e);
+      // Puedes seguir sin grabar si quieres:
+      this.showStartOverlay = false;
+      if(this.inicioMapa != null){
+        this.afterInicio(this.inicioMapa.has1, this.inicioMapa.has2)
+      }
     }
   }
+
+  async stopRecordingAndDownload(): Promise<void> {
+    try {
+      const blob = await this.rec.stopAndGetBlob();
+      this.rec.downloadBlob(blob, 'gpx-anim');
+    } catch (e) {
+      console.error('Error al parar/descargar:', e);
+    }
+  }
+
+  // onStartClick(): void {
+  //   this.showStartOverlay = false;   // ocultar overlay
+  //   this.startArmed = true;          // autoriza el arranque
+
+  //   // intentar reproducir música (ya hay interacción del usuario)
+  //   if (this.audio) {
+  //     this.audio.play().catch(err => console.warn('Audio no pudo empezar:', err));
+  //   }
+
+  //   // arrancar animación si ya están los datos
+  //   if(this.inicioMapa != null){
+  //     this.afterInicio(this.inicioMapa.has1, this.inicioMapa.has2)
+  //   }
+  // }
 
   // ---------- mapa ----------
   private initMap(): void {
@@ -417,7 +454,8 @@ export class MapComponent implements OnInit, AfterViewInit {
           this.rafId = requestAnimationFrame(step);
         } else {
           cancelAnimationFrame(this.rafId);
-          this.audio?.pause();          
+          this.audio?.pause();        
+          this.stopRecordingAndDownload()  
         }
       };
 

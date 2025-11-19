@@ -1,6 +1,7 @@
 import { Component, Inject } from '@angular/core';
 import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
 import { DialogoConfiguracionData } from '../interfaces/estructuras';
+import { color } from 'html2canvas/dist/types/css/types/color';
 
 @Component({
   selector: 'app-dialogo-configuracion',
@@ -8,6 +9,7 @@ import { DialogoConfiguracionData } from '../interfaces/estructuras';
   styleUrls: ['./dialogo-configuracion.component.scss']
 })
 export class DialogoConfiguracionComponent {
+  colors: string[] = ['#0000ff', '#ff0000'];
 
   eliminarPausasLargas = false;
   anadirLogoTitulos = false;
@@ -31,7 +33,8 @@ export class DialogoConfiguracionComponent {
     this.dialogRef.close({
       eliminarPausasLargas: this.eliminarPausasLargas,
       anadirLogoTitulos: this.anadirLogoTitulos,
-      activarMusica: this.activarMusica
+      activarMusica: this.activarMusica,
+      colors: this.colors
     });
   }
 

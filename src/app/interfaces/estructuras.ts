@@ -1,5 +1,7 @@
 export interface DialogoConfiguracionData {
   eliminarPausasLargas: boolean;
   anadirLogoTitulos: boolean;
-  activarMusica: boolean
+  activarMusica: boolean,
+  colors: string[]
+
 }

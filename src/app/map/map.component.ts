@@ -417,10 +417,12 @@ export class MapComponent implements OnInit, AfterViewInit {
           this.rafId = requestAnimationFrame(step);
         } else {
           cancelAnimationFrame(this.rafId);
+          this.audio?.pause();          
         }
       };
 
       this.rafId = requestAnimationFrame(step);
+      
   }
 
   // Detecta paradas de forma adaptativa: (A) pasos cortos acumulados y (B) intervalos únicos largos.

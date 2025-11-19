@@ -4,6 +4,15 @@
 
 <mat-dialog-content class="dialog-content">
 
+
+  <div style="display:flex;align-items:center;gap:.5rem">
+    <label for="colorPicker2">Color player 1</label>
+    <input id="colorPicker2" type="color" [(ngModel)]="colors[0]" />
+    <label for="colorPicker2">Color player 2</label>
+    <input id="colorPicker2" type="color" [(ngModel)]="colors[1]" />
+  </div>
+
+
   <mat-checkbox [(ngModel)]="eliminarPausasLargas">
     ¿Quieres depurar el track para eliminar pausas largas?
   </mat-checkbox>

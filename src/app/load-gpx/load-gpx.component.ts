@@ -210,9 +210,6 @@ export class LoadGpxComponent implements OnInit, AfterViewInit, AfterContentInit
   }
 
 
-  updateColor(index: number): void {
-    // Lógica para actualizar el color del track
-  }
 
   borrarFichero(index: number): void {
     this.tracks[index] = null;
@@ -224,22 +221,22 @@ export class LoadGpxComponent implements OnInit, AfterViewInit, AfterContentInit
     return this.trackLoaded.some(Boolean);
   }
 
-  private navegarAlMapa(
-    namesPayload: string[],
-    colorsPayload: string[],
-    tracksPayload: Array<{ trkpts: any[] }>,
-    logoDataUrl: string | null,
-    removeStops: boolean
-  ): void {
-    const query: any = {
-      names: JSON.stringify(namesPayload),
-      colors: JSON.stringify(colorsPayload),
-      tracks: JSON.stringify(tracksPayload)
-    };
-    if (logoDataUrl) query.logo = logoDataUrl;
-    if (removeStops) query.rmstops = '1';   // ← flag para “quitar paradas”
-    this.router.navigate(['/map'], { queryParams: query });
-  }
+  // private navegarAlMapa(
+  //   namesPayload: string[],
+  //   colorsPayload: string[],
+  //   tracksPayload: Array<{ trkpts: any[] }>,
+  //   logoDataUrl: string | null,
+  //   removeStops: boolean
+  // ): void {
+  //   const query: any = {
+  //     names: JSON.stringify(namesPayload),
+  //     colors: JSON.stringify(colorsPayload),
+  //     tracks: JSON.stringify(tracksPayload)
+  //   };
+  //   if (logoDataUrl) query.logo = logoDataUrl;
+  //   if (removeStops) query.rmstops = '1';   // ← flag para “quitar paradas”
+  //   this.router.navigate(['/map'], { queryParams: query });
+  // }
 
   iniciarVisualizacion(): void {
     const loadedIdx = this.tracks
@@ -268,7 +265,7 @@ export class LoadGpxComponent implements OnInit, AfterViewInit, AfterContentInit
       DialogoConfiguracionComponent,
       {
         width: '480px',
-        height: '270px',
+        height: '298px',
         data: {  // opcional: valores por defecto
           eliminarPausasLargas: false,
           anadirLogoTitulos: false
@@ -278,7 +275,8 @@ export class LoadGpxComponent implements OnInit, AfterViewInit, AfterContentInit
       .afterClosed()
       .subscribe((result) => {
         if (!result) return; // pulsó Cancelar o cerró el diálogo
-
+        colorsPayload = result.colors
+        
         const afterLogo = (logoDataUrl: string | null) => {
           // 👉 Guardamos TODO en sessionStorage para evitar URLs enormes
           const payload = { names: namesPayload, colors: colorsPayload, tracks: tracksPayload, logo: logoDataUrl, rmstops: !!result.eliminarPausasLargas };

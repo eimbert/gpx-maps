@@ -4,7 +4,7 @@
       <div (click)="cargarFichero(0)" matTooltip="Pulsa para cargar el track">
         <img src="assets/player1.png" alt="Player 1" class="player-image" style="cursor: pointer;"  >
       </div>
-   
+
       <!-- <label for="colorPicker1">Choose color</label>
       <input id="colorPicker1" type="color" [(ngModel)]="colors[0]" (change)="updateColor(0)" /> -->
     </div>
@@ -42,5 +42,10 @@
       <button (click)="borrarFichero(1)" class="btn">Borrar</button>
     </div>
   </div>
-  <button (click)="iniciarVisualizacion()" [disabled]="!tracksCargados()" class="btn-start">Iniciar</button>
+  <button (click)="iniciarVisualizacion()" [disabled]="!tracksCargados()" class="btn-start">
+    <span>Iniciar</span>
+    <svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" class="btn-start__icon">
+      <path d="M5 3l14 9-14 9V3z" fill="currentColor" />
+    </svg>
+  </button>
 </div>

@@ -12,10 +12,16 @@
   color: #fff;
 }
 
+.dialog-subtitle {
+  margin: 0 0 8px;
+  color: #4a4a4a;
+  font-size: 14px;
+}
+
 .dialog-content {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 16px;
 }
 
 .dialog-actions {
@@ -24,6 +30,68 @@
 
 .mat-dialog-content {
     min-height: 12vh;
+}
+
+.option-section {
+  background: #f7f9fc;
+  border: 1px solid #e2e6ed;
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.section-header {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.section-header h3 {
+  margin: 0;
+  color: #234271;
+  font-weight: 700;
+  font-size: 16px;
+}
+
+.section-hint {
+  margin: 0;
+  color: #6c6f75;
+  font-size: 13px;
+}
+
+.color-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+}
+
+.color-field {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid #dfe4ec;
+  background: #fff;
+  font-weight: 600;
+  color: #2f3542;
+}
+
+.color-field input[type='color'] {
+  width: 50px;
+  height: 32px;
+  border: none;
+  padding: 0;
+  background: transparent;
+}
+
+.checkbox-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 8px 12px;
 }
 
 .virtual-time {

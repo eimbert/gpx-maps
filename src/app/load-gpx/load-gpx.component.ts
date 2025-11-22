@@ -266,8 +266,8 @@ export class LoadGpxComponent implements OnInit, AfterViewInit, AfterContentInit
     this.dialog.open<DialogoConfiguracionComponent, Partial<DialogoConfiguracionData>, DialogoConfiguracionData>(
       DialogoConfiguracionComponent,
       {
-        width: '480px',
-        height: '360px',
+        width: '520px',
+        height: '520px',
         data: {  // opcional: valores por defecto
           eliminarPausasLargas: false,
           anadirLogoTitulos: false,

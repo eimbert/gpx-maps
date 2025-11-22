@@ -23,5 +23,12 @@
 }
 
 .mat-dialog-content {
-    min-height: 12vh; 
+    min-height: 12vh;
+}
+
+.virtual-time {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  padding-left: 26px;
 }

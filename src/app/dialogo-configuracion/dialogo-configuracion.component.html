@@ -25,6 +25,22 @@
     ¿Quieres activar la musica?
   </mat-checkbox>
 
+  <ng-container *ngIf="permitirAdversarioVirtual">
+    <mat-checkbox [(ngModel)]="incluirAdversarioVirtual">
+      ¿Quieres añadir un adversario virtual (player 2)?
+    </mat-checkbox>
+
+    <div class="virtual-time" *ngIf="incluirAdversarioVirtual">
+      <label for="virtual-time-input">Tiempo objetivo (hh:mm)</label>
+      <input
+        id="virtual-time-input"
+        type="time"
+        step="60"
+        [(ngModel)]="tiempoAdversarioVirtual"
+      />
+    </div>
+  </ng-container>
+
 </mat-dialog-content>
 
 <mat-dialog-actions align="end">

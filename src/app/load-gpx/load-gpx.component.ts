@@ -248,6 +248,8 @@ export class LoadGpxComponent implements OnInit, AfterViewInit, AfterContentInit
       return;
     }
 
+    const permiteAdversarioVirtual = this.trackLoaded[0] && !this.trackLoaded[1];
+
     const tracksPayload = loadedIdx.map(i => ({
       trkpts: this.tracks[i].trkpts.map((p: any) => ({
         lat: p.lat, lon: p.lon, ele: p.ele, time: p.time, hr: p.hr ?? null
@@ -256,30 +258,48 @@ export class LoadGpxComponent implements OnInit, AfterViewInit, AfterContentInit
     const namesPayload = loadedIdx.map(i => this.fileNames[i] ?? `Track ${i + 1}`);
     const colorsPayload = loadedIdx.map(i => this.colors[i] ?? '#0000ff');
 
-    this.cuadroConfiguracion(namesPayload, colorsPayload, tracksPayload)
+    this.cuadroConfiguracion(namesPayload, colorsPayload, tracksPayload, permiteAdversarioVirtual)
 
   }
 
-  cuadroConfiguracion(namesPayload: any, colorsPayload: any, tracksPayload: any) {
+  cuadroConfiguracion(namesPayload: any, colorsPayload: any, tracksPayload: any, permitirAdversarioVirtual: boolean) {
     this.dialog.open<DialogoConfiguracionComponent, Partial<DialogoConfiguracionData>, DialogoConfiguracionData>(
       DialogoConfiguracionComponent,
       {
         width: '480px',
-        height: '298px',
+        height: '360px',
         data: {  // opcional: valores por defecto
           eliminarPausasLargas: false,
-          anadirLogoTitulos: false
+          anadirLogoTitulos: false,
+          permitirAdversarioVirtual,
+          colors: this.colors
         }
       }
     )
       .afterClosed()
       .subscribe((result) => {
         if (!result) return; // pulsó Cancelar o cerró el diálogo
-        colorsPayload = result.colors
-        
+        colorsPayload = result.colors;
+
+        let tracksFinal = tracksPayload;
+        let namesFinal = namesPayload;
+        const colorsFinal = colorsPayload.slice();
+
+        if (permitirAdversarioVirtual && result.incluirAdversarioVirtual) {
+          const objetivoSegundos = this.parsearTiempoObjetivo(result.tiempoAdversarioVirtual ?? '00:45');
+          const virtualTrack = this.generarAdversarioVirtual(this.tracks[0], objetivoSegundos);
+          if (virtualTrack) {
+            tracksFinal = [tracksPayload[0], virtualTrack];
+            namesFinal = [namesPayload[0], 'Adversario virtual'];
+            if (!colorsFinal[1]) {
+              colorsFinal[1] = '#ff0000';
+            }
+          }
+        }
+
         const afterLogo = (logoDataUrl: string | null) => {
           // 👉 Guardamos TODO en sessionStorage para evitar URLs enormes
-          const payload = { names: namesPayload, colors: colorsPayload, tracks: tracksPayload, logo: logoDataUrl, rmstops: !!result.eliminarPausasLargas };
+          const payload = { names: namesFinal, colors: colorsFinal, tracks: tracksFinal, logo: logoDataUrl, rmstops: !!result.eliminarPausasLargas };
           sessionStorage.setItem('gpxViewerPayload', JSON.stringify(payload));
 
           // Navegamos con una URL corta
@@ -345,6 +365,62 @@ export class LoadGpxComponent implements OnInit, AfterViewInit, AfterContentInit
       img.onerror = (e) => { URL.revokeObjectURL(url); reject(e); };
       img.src = url;
     });
+  }
+
+  private parsearTiempoObjetivo(valor: string): number {
+    const partes = valor.split(':');
+    const horas = parseInt(partes[0] ?? '0', 10);
+    const minutos = parseInt(partes[1] ?? '0', 10);
+    const total = Math.max(0, (horas * 60 + minutos));
+    return total > 0 ? total * 60 : 45 * 60; // por defecto 45 minutos
+  }
+
+  private velocidadSegunPendiente(porcentaje: number): number {
+    if (porcentaje > 6) return 10;      // km/h
+    if (porcentaje > 2) return 12;
+    if (porcentaje > -2) return 14;
+    if (porcentaje > -6) return 16;
+    return 18;
+  }
+
+  private generarAdversarioVirtual(track: any, objetivoSegundos: number): { trkpts: any[] } | null {
+    if (!track?.trkpts || track.trkpts.length < 2) return null;
+
+    const puntos = track.trkpts as any[];
+    const baseDuraciones: number[] = [];
+
+    for (let i = 1; i < puntos.length; i++) {
+      const dist = this.calculateDistance(puntos[i - 1].lat, puntos[i - 1].lon, puntos[i].lat, puntos[i].lon);
+      const deltaEle = (puntos[i].ele ?? 0) - (puntos[i - 1].ele ?? 0);
+      const pendiente = dist > 0 ? (deltaEle / dist) * 100 : 0;
+      const velocidadKmh = this.velocidadSegunPendiente(pendiente);
+      const velocidadMs = velocidadKmh / 3.6;
+      const duracion = velocidadMs > 0 ? dist / velocidadMs : 0;
+      baseDuraciones.push(Number.isFinite(duracion) && duracion > 0 ? duracion : 1);
+    }
+
+    const totalBase = baseDuraciones.reduce((a, b) => a + b, 0);
+    if (!Number.isFinite(totalBase) || totalBase <= 0) return null;
+    const factorEscala = Math.max(0.1, objetivoSegundos / totalBase);
+
+    const inicio = new Date(puntos[0].time ?? Date.now());
+    let tiempoActual = isNaN(inicio.getTime()) ? Date.now() : inicio.getTime();
+
+    const nuevosPuntos = [
+      { ...puntos[0], time: new Date(tiempoActual).toISOString(), hr: puntos[0].hr ?? null }
+    ];
+
+    for (let i = 1; i < puntos.length; i++) {
+      const duracionSegmento = baseDuraciones[i - 1] * factorEscala * 1000;
+      tiempoActual += duracionSegmento;
+      nuevosPuntos.push({
+        ...puntos[i],
+        time: new Date(tiempoActual).toISOString(),
+        hr: puntos[i].hr ?? null
+      });
+    }
+
+    return { trkpts: nuevosPuntos };
   }
 
 

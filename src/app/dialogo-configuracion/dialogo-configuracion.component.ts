@@ -1,7 +1,6 @@
 import { Component, Inject } from '@angular/core';
 import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
 import { DialogoConfiguracionData } from '../interfaces/estructuras';
-import { color } from 'html2canvas/dist/types/css/types/color';
 
 @Component({
   selector: 'app-dialogo-configuracion',
@@ -13,7 +12,10 @@ export class DialogoConfiguracionComponent {
 
   eliminarPausasLargas = false;
   anadirLogoTitulos = false;
-  activarMusica = true
+  activarMusica = true;
+  permitirAdversarioVirtual = false;
+  incluirAdversarioVirtual = false;
+  tiempoAdversarioVirtual = '00:45';
 
    constructor(
     private dialogRef: MatDialogRef<DialogoConfiguracionComponent, DialogoConfiguracionData>,
@@ -23,6 +25,12 @@ export class DialogoConfiguracionComponent {
     if (data) {
       this.eliminarPausasLargas = !!data.eliminarPausasLargas;
       this.anadirLogoTitulos   = !!data.anadirLogoTitulos;
+      this.permitirAdversarioVirtual = !!data.permitirAdversarioVirtual;
+      this.incluirAdversarioVirtual = !!data.incluirAdversarioVirtual;
+      this.tiempoAdversarioVirtual = data.tiempoAdversarioVirtual ?? this.tiempoAdversarioVirtual;
+      if (Array.isArray(data.colors) && data.colors.length >= 2) {
+        this.colors = data.colors.slice(0, 2) as string[];
+      }
     }
   }
 
@@ -34,7 +42,10 @@ export class DialogoConfiguracionComponent {
       eliminarPausasLargas: this.eliminarPausasLargas,
       anadirLogoTitulos: this.anadirLogoTitulos,
       activarMusica: this.activarMusica,
-      colors: this.colors
+      colors: this.colors,
+      permitirAdversarioVirtual: this.permitirAdversarioVirtual,
+      incluirAdversarioVirtual: this.incluirAdversarioVirtual,
+      tiempoAdversarioVirtual: this.tiempoAdversarioVirtual
     });
   }
 

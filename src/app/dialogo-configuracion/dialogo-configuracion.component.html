@@ -3,47 +3,72 @@
 </h2>
 
 <mat-dialog-content class="dialog-content">
+  <p class="dialog-subtitle">
+    Personaliza la experiencia de tu vídeo antes de generar el recorrido.
+  </p>
 
+  <section class="option-section">
+    <div class="section-header">
+      <h3>Colores de los corredores</h3>
+      <p class="section-hint">Define los tonos para identificar cada participante.</p>
+    </div>
+    <div class="color-grid">
+      <label class="color-field" for="color-player-1">
+        <span>Player 1</span>
+        <input id="color-player-1" type="color" [(ngModel)]="colors[0]" />
+      </label>
+      <label class="color-field" for="color-player-2">
+        <span>Player 2</span>
+        <input id="color-player-2" type="color" [(ngModel)]="colors[1]" />
+      </label>
+    </div>
+  </section>
 
-  <div style="display:flex;align-items:center;gap:.5rem">
-    <label for="colorPicker2">Color player 1</label>
-    <input id="colorPicker2" type="color" [(ngModel)]="colors[0]" />
-    <label for="colorPicker2">Color player 2</label>
-    <input id="colorPicker2" type="color" [(ngModel)]="colors[1]" />
-  </div>
+  <section class="option-section">
+    <div class="section-header">
+      <h3>Preferencias del vídeo</h3>
+      <p class="section-hint">Selecciona los ajustes que mejor se adapten a tu proyecto.</p>
+    </div>
+    <div class="checkbox-grid">
+      <mat-checkbox [(ngModel)]="eliminarPausasLargas">
+        Depurar el track para eliminar pausas largas
+      </mat-checkbox>
 
+      <mat-checkbox [(ngModel)]="anadirLogoTitulos">
+        Añadir un logo a los títulos (ej. logo de la carrera)
+      </mat-checkbox>
 
-  <mat-checkbox [(ngModel)]="eliminarPausasLargas">
-    ¿Quieres depurar el track para eliminar pausas largas?
-  </mat-checkbox>
-
-  <mat-checkbox [(ngModel)]="anadirLogoTitulos">
-    ¿Quieres añadir un logo a los títulos (ej. logo de la carrera)?
-  </mat-checkbox>
-
-  <mat-checkbox [(ngModel)]="activarMusica">
-    ¿Quieres activar la musica?
-  </mat-checkbox>
+      <mat-checkbox [(ngModel)]="activarMusica">
+        Activar la música
+      </mat-checkbox>
+    </div>
+  </section>
 
   <ng-container *ngIf="permitirAdversarioVirtual">
-    <mat-checkbox [(ngModel)]="incluirAdversarioVirtual">
-      ¿Quieres añadir un adversario virtual (player 2)?
-    </mat-checkbox>
+    <section class="option-section">
+      <div class="section-header">
+        <h3>Adversario virtual</h3>
+        <p class="section-hint">Añade un segundo corredor para comparar ritmos.</p>
+      </div>
 
-    <div class="virtual-time" *ngIf="incluirAdversarioVirtual">
-      <label for="virtual-time-input">Tiempo objetivo (hh:mm)</label>
-      <input
-        id="virtual-time-input"
-        type="time"
-        step="60"
-        [(ngModel)]="tiempoAdversarioVirtual"
-      />
-    </div>
+      <mat-checkbox [(ngModel)]="incluirAdversarioVirtual">
+        Incluir adversario virtual (player 2)
+      </mat-checkbox>
+
+      <div class="virtual-time" *ngIf="incluirAdversarioVirtual">
+        <label for="virtual-time-input">Tiempo objetivo (hh:mm)</label>
+        <input
+          id="virtual-time-input"
+          type="time"
+          step="60"
+          [(ngModel)]="tiempoAdversarioVirtual"
+        />
+      </div>
+    </section>
   </ng-container>
-
 </mat-dialog-content>
 
-<mat-dialog-actions align="end">
+<mat-dialog-actions align="end" class="dialog-actions">
   <button mat-button (click)="cancelar()">Cancelar</button>
   <button mat-flat-button color="primary" (click)="guardar()">Continuar</button>
 </mat-dialog-actions>

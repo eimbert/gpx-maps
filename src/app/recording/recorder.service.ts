@@ -33,9 +33,17 @@ export class RecorderService {
     } = options;
 
     // Pide capturar PANTALLA/VENTANA/PESTAÑA (recomendado: elige la PESTAÑA y marca “compartir audio”).
-    const videoConstraints: MediaTrackConstraints = { frameRate };
+    const videoConstraints: MediaTrackConstraints = {
+      frameRate,
+      // Pide al navegador priorizar la pestaña actual y no permitir cambios durante la captura
+      displaySurface: 'browser',
+      logicalSurface: true,
+      preferCurrentTab: true,
+      surfaceSwitching: 'exclude'
+    };
     if (width) videoConstraints.width = width;
     if (height) videoConstraints.height = height;
+    if (width && height) videoConstraints.aspectRatio = Number((width / height).toFixed(4));
 
     this.stream = await navigator.mediaDevices.getDisplayMedia({
       video: videoConstraints,

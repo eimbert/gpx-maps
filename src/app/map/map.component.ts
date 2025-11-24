@@ -265,7 +265,14 @@ export class MapComponent implements OnInit, AfterViewInit {
       // 1) Empieza la grabación (elige “Pestaña” y marca audio de la pestaña)
       if (this.recordingEnabled) {
         const { width, height } = this.getVideoDimensions();
-        await this.rec.startCapture({ includeAudio: true, frameRate: 60, videoBitsPerSecond: 8_000_000, width, height });
+        await this.rec.startCapture({
+          includeAudio: true,
+          frameRate: 60,
+          videoBitsPerSecond: 8_000_000,
+          width,
+          height,
+          aspectRatio: width / height
+        });
       }
 
       // 2) Arranca música (ya hay interacción del usuario)

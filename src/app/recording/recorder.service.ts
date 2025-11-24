@@ -6,6 +6,8 @@ export interface RecorderOptions {
   frameRate?: number;           // 30-60 típico
   videoBitsPerSecond?: number;  // calidad/bitrate
   mimeType?: string;            // 'video/webm;codecs=vp9' | 'video/webm;codecs=vp8'
+  width?: number;
+  height?: number;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -25,12 +27,18 @@ export class RecorderService {
       includeAudio = true,
       frameRate = 60,
       videoBitsPerSecond = 6_000_000,
-      mimeType = 'video/webm;codecs=vp9'
+      mimeType = 'video/webm;codecs=vp9',
+      width,
+      height
     } = options;
 
     // Pide capturar PANTALLA/VENTANA/PESTAÑA (recomendado: elige la PESTAÑA y marca “compartir audio”).
+    const videoConstraints: MediaTrackConstraints = { frameRate };
+    if (width) videoConstraints.width = width;
+    if (height) videoConstraints.height = height;
+
     this.stream = await navigator.mediaDevices.getDisplayMedia({
-      video: { frameRate },
+      video: videoConstraints,
       audio: includeAudio
     } as MediaStreamConstraints);
 

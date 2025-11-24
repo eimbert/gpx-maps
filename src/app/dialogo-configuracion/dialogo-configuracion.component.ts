@@ -13,6 +13,8 @@ export class DialogoConfiguracionComponent {
   eliminarPausasLargas = false;
   anadirLogoTitulos = false;
   activarMusica = true;
+  grabarAnimacion = false;
+  relacionAspectoGrabacion: '16:9' | '9:16' = '16:9';
   permitirAdversarioVirtual = false;
   incluirAdversarioVirtual = false;
   tiempoAdversarioVirtual = '00:45';
@@ -28,6 +30,8 @@ export class DialogoConfiguracionComponent {
       this.permitirAdversarioVirtual = !!data.permitirAdversarioVirtual;
       this.incluirAdversarioVirtual = !!data.incluirAdversarioVirtual;
       this.tiempoAdversarioVirtual = data.tiempoAdversarioVirtual ?? this.tiempoAdversarioVirtual;
+      this.grabarAnimacion = !!data.grabarAnimacion;
+      this.relacionAspectoGrabacion = data.relacionAspectoGrabacion ?? this.relacionAspectoGrabacion;
       if (Array.isArray(data.colors) && data.colors.length >= 2) {
         this.colors = data.colors.slice(0, 2) as string[];
       }
@@ -42,6 +46,8 @@ export class DialogoConfiguracionComponent {
       eliminarPausasLargas: this.eliminarPausasLargas,
       anadirLogoTitulos: this.anadirLogoTitulos,
       activarMusica: this.activarMusica,
+      grabarAnimacion: this.grabarAnimacion,
+      relacionAspectoGrabacion: this.relacionAspectoGrabacion,
       colors: this.colors,
       permitirAdversarioVirtual: this.permitirAdversarioVirtual,
       incluirAdversarioVirtual: this.incluirAdversarioVirtual,

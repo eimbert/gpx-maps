@@ -65,6 +65,13 @@
 .map-wrap { position: relative; height: 100%; }
 #map { position: absolute; inset: 0; } /* 100% alto/ancho */
 
+.map-wrap.aspect-vertical{
+  margin: 0 auto;
+  width: min(100vw, calc(100vh * 9 / 16));
+  height: min(100vh, calc(100vw * 16 / 9));
+  aspect-ratio: 9 / 16;
+}
+
 .map-legend{
   position: absolute;
   left: 12px;

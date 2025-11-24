@@ -27,6 +27,7 @@ export class MapComponent implements OnInit, AfterViewInit {
   private musicEnabled = true;
   private recordingEnabled = false;
   private recordingAspect: '16:9' | '9:16' = '16:9';
+  isVerticalViewport = false;
 
   // Capas: ghost + progreso + marcador actual
   private full1!: L.Polyline; private prog1!: L.Polyline; private mark1!: L.Marker;
@@ -209,6 +210,7 @@ export class MapComponent implements OnInit, AfterViewInit {
       if (payload.relacionAspectoGrabacion === '9:16') {
         this.recordingAspect = '9:16';
       }
+      this.isVerticalViewport = this.recordingAspect === '9:16';
     } else {
       // Fallback (por si alguien entra directo a /map sin pasar por /load)
       this.route.queryParams.subscribe(params => {
@@ -241,9 +243,10 @@ export class MapComponent implements OnInit, AfterViewInit {
   ngAfterViewInit(): void {
     
     this.initMap();
-    setTimeout(() => { 
-      this.map.invalidateSize(); 
-      this.inicioMapa = this.startIfReady(); 
+    setTimeout(() => {
+      this.applyAspectViewport().then(() => {
+        this.inicioMapa = this.startIfReady();
+      });
     }, 0);
 
      this.audio = document.getElementById('background-music-carrera') as HTMLAudioElement;
@@ -262,6 +265,8 @@ export class MapComponent implements OnInit, AfterViewInit {
 
   async onStartClick(): Promise<void> {
     try {
+      await this.applyAspectViewport();
+
       // 1) Empieza la grabación (elige “Pestaña” y marca audio de la pestaña)
       if (this.recordingEnabled) {
         const { width, height } = this.getVideoDimensions();
@@ -294,6 +299,19 @@ export class MapComponent implements OnInit, AfterViewInit {
         this.afterInicio(this.inicioMapa.has1, this.inicioMapa.has2)
       }
     }
+  }
+
+  private applyAspectViewport(): Promise<void> {
+    this.isVerticalViewport = this.recordingAspect === '9:16';
+
+    return new Promise(resolve => {
+      requestAnimationFrame(() => {
+        if (this.map) {
+          this.map.invalidateSize();
+        }
+        resolve();
+      });
+    });
   }
 
   async stopRecordingAndDownload(): Promise<void> {

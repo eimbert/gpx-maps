@@ -24,6 +24,9 @@ export class MapComponent implements OnInit, AfterViewInit {
   private startArmed = false;
   private audio!: HTMLAudioElement;
   private  inicioMapa: any;
+  private musicEnabled = true;
+  private recordingEnabled = false;
+  private recordingAspect: '16:9' | '9:16' = '16:9';
 
   // Capas: ghost + progreso + marcador actual
   private full1!: L.Polyline; private prog1!: L.Polyline; private mark1!: L.Marker;
@@ -63,6 +66,12 @@ export class MapComponent implements OnInit, AfterViewInit {
     public rec: RecorderService) { }
 
   // ---------- util ----------
+  private getVideoDimensions(): { width: number; height: number } {
+    return this.recordingAspect === '9:16'
+      ? { width: 1080, height: 1920 }
+      : { width: 1920, height: 1080 };
+  }
+
   private isCoordValid(lat: number, lon: number): boolean {
     return Number.isFinite(lat) && Number.isFinite(lon) && Math.abs(lat) <= 90 && Math.abs(lon) <= 180;
   }
@@ -195,6 +204,11 @@ export class MapComponent implements OnInit, AfterViewInit {
       this.raw2 = (trks[1]?.trkpts ?? []) as TrackPoint[];
       this.logoDataUrl = payload.logo ?? null;
       this.removeStops = !!payload.rmstops;
+      this.musicEnabled = payload.activarMusica ?? true;
+      this.recordingEnabled = !!payload.grabarAnimacion;
+      if (payload.relacionAspectoGrabacion === '9:16') {
+        this.recordingAspect = '9:16';
+      }
     } else {
       // Fallback (por si alguien entra directo a /map sin pasar por /load)
       this.route.queryParams.subscribe(params => {
@@ -249,10 +263,15 @@ export class MapComponent implements OnInit, AfterViewInit {
   async onStartClick(): Promise<void> {
     try {
       // 1) Empieza la grabación (elige “Pestaña” y marca audio de la pestaña)
-      await this.rec.startCapture({ includeAudio: true, frameRate: 60, videoBitsPerSecond: 8_000_000 });
+      if (this.recordingEnabled) {
+        const { width, height } = this.getVideoDimensions();
+        await this.rec.startCapture({ includeAudio: true, frameRate: 60, videoBitsPerSecond: 8_000_000, width, height });
+      }
 
       // 2) Arranca música (ya hay interacción del usuario)
-      await this.audio.play().catch(() => { /* ignore */ });
+      if (this.musicEnabled) {
+        await this.audio.play().catch(() => { /* ignore */ });
+      }
 
       // 3) Lanza tu animación normal
       this.showStartOverlay = false;
@@ -271,6 +290,9 @@ export class MapComponent implements OnInit, AfterViewInit {
   }
 
   async stopRecordingAndDownload(): Promise<void> {
+    if (!this.recordingEnabled || !this.rec.isRecording) {
+      return;
+    }
     try {
       const blob = await this.rec.stopAndGetBlob();
       this.rec.downloadBlob(blob, 'gpx-anim');

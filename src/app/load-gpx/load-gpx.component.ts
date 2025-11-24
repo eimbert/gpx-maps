@@ -270,6 +270,9 @@ export class LoadGpxComponent implements OnInit, AfterViewInit, AfterContentInit
         data: {  // opcional: valores por defecto
           eliminarPausasLargas: false,
           anadirLogoTitulos: false,
+          activarMusica: true,
+          grabarAnimacion: false,
+          relacionAspectoGrabacion: '16:9',
           permitirAdversarioVirtual,
           colors: this.colors
         }
@@ -298,7 +301,16 @@ export class LoadGpxComponent implements OnInit, AfterViewInit, AfterContentInit
 
         const afterLogo = (logoDataUrl: string | null) => {
           // 👉 Guardamos TODO en sessionStorage para evitar URLs enormes
-          const payload = { names: namesFinal, colors: colorsFinal, tracks: tracksFinal, logo: logoDataUrl, rmstops: !!result.eliminarPausasLargas };
+          const payload = {
+            names: namesFinal,
+            colors: colorsFinal,
+            tracks: tracksFinal,
+            logo: logoDataUrl,
+            rmstops: !!result.eliminarPausasLargas,
+            activarMusica: !!result.activarMusica,
+            grabarAnimacion: !!result.grabarAnimacion,
+            relacionAspectoGrabacion: result.relacionAspectoGrabacion ?? '16:9'
+          };
           sessionStorage.setItem('gpxViewerPayload', JSON.stringify(payload));
 
           // Navegamos con una URL corta

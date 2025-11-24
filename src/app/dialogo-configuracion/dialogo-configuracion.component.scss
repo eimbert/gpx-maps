@@ -100,3 +100,26 @@
   align-items: center;
   padding-left: 26px;
 }
+
+.recording-orientation {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 8px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px dashed #c6d0e0;
+  background: #fff;
+}
+
+.orientation-label {
+  font-weight: 600;
+  color: #2f3542;
+}
+
+.orientation-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #30343b;
+}

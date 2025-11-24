@@ -41,6 +41,32 @@
       <mat-checkbox [(ngModel)]="activarMusica">
         Activar la música
       </mat-checkbox>
+
+      <mat-checkbox [(ngModel)]="grabarAnimacion">
+        Grabar automáticamente la animación
+      </mat-checkbox>
+    </div>
+
+    <div class="recording-orientation" *ngIf="grabarAnimacion">
+      <span class="orientation-label">Relación de aspecto para la grabación:</span>
+      <label class="orientation-option">
+        <input
+          type="radio"
+          name="grabacion-aspect"
+          value="16:9"
+          [(ngModel)]="relacionAspectoGrabacion"
+        />
+        16:9 (horizontal)
+      </label>
+      <label class="orientation-option">
+        <input
+          type="radio"
+          name="grabacion-aspect"
+          value="9:16"
+          [(ngModel)]="relacionAspectoGrabacion"
+        />
+        9:16 (vertical)
+      </label>
     </div>
   </section>
 

@@ -69,8 +69,8 @@ export class MapComponent implements OnInit, AfterViewInit {
   // ---------- util ----------
   private getVideoDimensions(): { width: number; height: number } {
     return this.recordingAspect === '9:16'
-      ? { width: 1080, height: 1920 }
-      : { width: 1920, height: 1080 };
+      ? { width: 1440, height: 2560 }
+      : { width: 2560, height: 1440 };
   }
 
   private isCoordValid(lat: number, lon: number): boolean {

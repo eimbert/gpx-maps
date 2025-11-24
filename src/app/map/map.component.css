@@ -262,33 +262,4 @@
 }
 .stop-rec:hover{ filter:brightness(1.05) }
 
-/* --- Ajustes de aspecto para grabación vertical 9:16 --- */
-:host{
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 100vh;
-  background: #000;
-}
-
-.map-wrap{
-  position: relative;
-  width: 100%;
-  height: 100vh;
-}
-
-.map-wrap.vertical-recording{
-  width: min(100vw, calc(100vh * 9 / 16));
-  height: min(100vh, calc(100vw * 16 / 9));
-  aspect-ratio: 9 / 16;
-  margin: 0 auto;
-  border-radius: 14px;
-  overflow: hidden;
-  background: #000;
-}
-
-.map-wrap.vertical-recording #map{
-  border-radius: inherit;
-}
-
 

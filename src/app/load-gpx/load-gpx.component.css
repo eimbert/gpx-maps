@@ -18,12 +18,13 @@
 .hero h1 {
   margin: 0 0 6px;
   font-size: clamp(28px, 4vw, 40px);
-  color: #0f172a;
+  color: rgb(43, 11, 11);
+  
 }
 
 .hero p {
   margin: 0;
-  color: #475569;
+  color: rgb(161, 237, 10);
   font-weight: 500;
 }
 
@@ -202,4 +203,22 @@
     justify-self: end;
     grid-column: 2;
   }
+}
+
+.container {
+  /* display: flex; */
+  /* flex-direction: column; */
+  /* justify-content: center; */
+  /* align-items: center; */
+  height: 100vh;
+  /* text-align: center; */
+  background-image: url('/assets/fondo_pantalla2.webp'); /* Usar ruta absoluta */
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+.dropzone{
+    background-color: rgba(255, 255, 255, 0.7) !important;
+    
 }

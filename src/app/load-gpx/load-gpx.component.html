@@ -1,54 +1,56 @@
-<div class="load-wrapper">
-  <header class="hero">
-    <div>
-      <h1>Comparte tus GPX</h1>
-      <p>Arrastra y suelta hasta {{ maxTracks }} recorridos o pulsa para seleccionarlos.</p>
-    </div>
-  </header>
+<div class="container">
+  <div class="load-wrapper">
+    <header class="hero">
+      <div>
+        <h1>Comparte tus GPX</h1>
+        <p>Arrastra y suelta hasta {{ maxTracks }} recorridos o pulsa para seleccionarlos.</p>
+      </div>
+    </header>
 
-  <div
-    class="dropzone"
-    [class.dropzone--active]="isDragOver"
-    (click)="triggerFileDialog()"
-    (dragover)="onDragOver($event)"
-    (dragleave)="onDragLeave()"
-    (drop)="onDrop($event)"
-  >
-    <input
-      #fileInput
-      type="file"
-      accept=".gpx"
-      multiple
-      (change)="onFileInputChange($event)"
-      hidden
-    />
+    <div
+      class="dropzone"
+      [class.dropzone--active]="isDragOver"
+      (click)="triggerFileDialog()"
+      (dragover)="onDragOver($event)"
+      (dragleave)="onDragLeave()"
+      (drop)="onDrop($event)"
+    >
+      <input
+        #fileInput
+        type="file"
+        accept=".gpx"
+        multiple
+        (change)="onFileInputChange($event)"
+        hidden
+      />
 
-    <div class="dropzone__content">
-      <div class="icon">📂</div>
-      <p class="title">Suelta aquí tus archivos GPX</p>
-      <p class="subtitle">También puedes pulsar para abrir el selector</p>
-      <button type="button" class="secondary">Añadir archivos</button>
+      <div class="dropzone__content">
+        <div class="icon">📂</div>
+        <p class="title">Suelta aquí tus archivos GPX</p>
+        <p class="subtitle">También puedes pulsar para abrir el selector</p>
+        <button type="button" class="secondary">Añadir archivos</button>
+      </div>
     </div>
+
+    <section class="tracks" *ngIf="tracks.length">
+      <h2>Tracks cargados</h2>
+      <ul class="file-list">
+        <li class="file-item" *ngFor="let track of tracks; index as i">
+          <span class="file-pill">{{ i + 1 }}</span>
+          <div class="file-texts">
+            <span class="file-name" [title]="track.fileName">{{ track.fileName }}</span>
+            <span class="file-alias" [title]="track.name">{{ track.name }}</span>
+          </div>
+          <button type="button" class="ghost" (click)="borrarFichero(i)">Quitar</button>
+        </li>
+      </ul>
+    </section>
+
+    <button (click)="iniciarVisualizacion()" [disabled]="!tracksCargados()" class="btn-start">
+      <span>Iniciar</span>
+      <svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" class="btn-start__icon">
+        <path d="M5 3l14 9-14 9V3z" fill="currentColor" />
+      </svg>
+    </button>
   </div>
-
-  <section class="tracks" *ngIf="tracks.length">
-    <h2>Tracks cargados</h2>
-    <ul class="file-list">
-      <li class="file-item" *ngFor="let track of tracks; index as i">
-        <span class="file-pill">{{ i + 1 }}</span>
-        <div class="file-texts">
-          <span class="file-name" [title]="track.fileName">{{ track.fileName }}</span>
-          <span class="file-alias" [title]="track.name">{{ track.name }}</span>
-        </div>
-        <button type="button" class="ghost" (click)="borrarFichero(i)">Quitar</button>
-      </li>
-    </ul>
-  </section>
-
-  <button (click)="iniciarVisualizacion()" [disabled]="!tracksCargados()" class="btn-start">
-    <span>Iniciar</span>
-    <svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" class="btn-start__icon">
-      <path d="M5 3l14 9-14 9V3z" fill="currentColor" />
-    </svg>
-  </button>
 </div>

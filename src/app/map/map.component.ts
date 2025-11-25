@@ -589,7 +589,7 @@ export class MapComponent implements OnInit, AfterViewInit {
   }
 
   private buildRanking(): RankingEntry[] {
-    const sorted = this.trackMetas
+    const valid = this.trackMetas
       .filter(meta => meta.has && meta.sanitized.length >= 2)
       .map(meta => ({
         name: meta.name,
@@ -597,20 +597,21 @@ export class MapComponent implements OnInit, AfterViewInit {
         durationMs: meta.sanitized[meta.sanitized.length - 1].t - meta.sanitized[0].t
       }))
       .filter(r => Number.isFinite(r.durationMs) && r.durationMs > 0)
-      .sort((a, b) => a.durationMs - b.durationMs)
-      .map((entry, index): RankingEntry => ({
-        ...entry,
-        medal: index === 0
-          ? 'gold'
-          : index === 1
-            ? 'silver'
-            : index === 2
-              ? 'bronze'
-              : undefined
+      .sort((a, b) => a.durationMs - b.durationMs);
 
-      }));
+    if (valid.length < 2) return [];
 
-    return sorted;
+    return valid.map((entry, index): RankingEntry => ({
+      ...entry,
+      medal: index === 0
+        ? 'gold'
+        : index === 1
+          ? 'silver'
+          : index === 2
+            ? 'bronze'
+            : undefined
+
+    }));
   }
 
   formatRaceTime(ms: number): string {

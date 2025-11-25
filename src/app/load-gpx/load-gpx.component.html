@@ -33,31 +33,16 @@
 
   <section class="tracks" *ngIf="tracks.length">
     <h2>Tracks cargados</h2>
-    <div class="tracks-grid">
-      <article class="track-card" *ngFor="let track of tracks; index as i">
-        <div class="track-card__header">
-          <div class="track-id">{{ i + 1 }}</div>
-          <input
-            [(ngModel)]="track.name"
-            class="track-name"
-            [placeholder]="'Track ' + (i + 1)"
-          />
-          <div class="color-dot" [style.background]="track.color"></div>
-          <input class="color-input" type="color" [(ngModel)]="track.color" (change)="updateChartColor(track.chartId, track.color)" aria-label="Color del track" />
-          <button type="button" class="ghost" (click)="borrarFichero(i)">Borrar</button>
+    <ul class="file-list">
+      <li class="file-item" *ngFor="let track of tracks; index as i">
+        <span class="file-pill">{{ i + 1 }}</span>
+        <div class="file-texts">
+          <span class="file-name" [title]="track.fileName">{{ track.fileName }}</span>
+          <span class="file-alias" [title]="track.name">{{ track.name }}</span>
         </div>
-
-        <div class="track-card__meta">
-          <span><strong>Fecha:</strong> {{ track.details.date }}</span>
-          <span><strong>Kms:</strong> {{ track.details.distance.toFixed(2) }}</span>
-          <span><strong>Ascenso:</strong> {{ track.details.ascent.toFixed(2) }}</span>
-        </div>
-
-        <div class="profile-chart">
-          <canvas [id]="track.chartId"></canvas>
-        </div>
-      </article>
-    </div>
+        <button type="button" class="ghost" (click)="borrarFichero(i)">Quitar</button>
+      </li>
+    </ul>
   </section>
 
   <button (click)="iniciarVisualizacion()" [disabled]="!tracksCargados()" class="btn-start">

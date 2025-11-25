@@ -1,7 +1,6 @@
-import { AfterContentInit, AfterViewInit, Component, ElementRef, OnInit, ViewChild } from '@angular/core';
+import { Component, ElementRef, OnInit, ViewChild } from '@angular/core';
 import { Router } from '@angular/router';
 import { MatDialog } from '@angular/material/dialog';
-import Chart from 'chart.js/auto';
 import { DialogoConfiguracionComponent } from '../dialogo-configuracion/dialogo-configuracion.component';
 import { DialogoConfiguracionData } from '../interfaces/estructuras';
 import { TrackMetadataDialogComponent, TrackMetadataDialogResult } from '../track-metadata-dialog/track-metadata-dialog.component';
@@ -20,7 +19,6 @@ interface LoadedTrack {
   fileName: string;
   details: { date: string; distance: number; ascent: number };
   data: { elevations: number[]; trkpts: TrackPoint[] };
-  chartId: string;
 }
 
 @Component({
@@ -28,7 +26,7 @@ interface LoadedTrack {
   templateUrl: './load-gpx.component.html',
   styleUrls: ['./load-gpx.component.css']
 })
-export class LoadGpxComponent implements OnInit, AfterViewInit, AfterContentInit {
+export class LoadGpxComponent implements OnInit {
   @ViewChild('fileInput') fileInputRef!: ElementRef<HTMLInputElement>;
 
   readonly maxTracks = 5;
@@ -38,10 +36,6 @@ export class LoadGpxComponent implements OnInit, AfterViewInit, AfterContentInit
   constructor(
     public dialog: MatDialog,
     private router: Router) { }
-
-  ngAfterContentInit(): void {
-
-  }
 
   ngOnInit() {
     // Aquí se pueden inicializar cosas necesarias
@@ -55,11 +49,6 @@ export class LoadGpxComponent implements OnInit, AfterViewInit, AfterContentInit
         console.error('Error playing background music:', error);
       });
     }
-  }
-
-  ngAfterViewInit() {
-    // No-op: los charts se generan al terminar de parsear cada GPX
-
   }
 
   triggerFileDialog(): void {
@@ -167,16 +156,10 @@ export class LoadGpxComponent implements OnInit, AfterViewInit, AfterContentInit
           time: trkpt.getElementsByTagName('time')[0]?.textContent || '',
           hr: trkpt.getElementsByTagName('ns3:hr')[0] ? parseInt(trkpt.getElementsByTagName('ns3:hr')[0].textContent || '0') : null
         }))
-      },
-      chartId: this.createChartId()
+      }
     };
 
     this.tracks = [...this.tracks, newTrack];
-
-    // Esperar un breve momento para asegurarse de que el DOM se haya actualizado antes de inicializar el gráfico
-    setTimeout(() => {
-      this.initChart(newTrack.chartId, elevations, newTrack.color);
-    }, 200);
   }
 
   private calculateTotalDistance(trkpts: HTMLCollectionOf<Element>): number {
@@ -206,10 +189,6 @@ export class LoadGpxComponent implements OnInit, AfterViewInit, AfterContentInit
     return R * c; // Distancia en metros
   }
 
-  private createChartId(): string {
-    return `chart-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
-  }
-
   private pickColor(index: number): string {
     const palette = ['#3b82f6', '#f87171', '#22c55e', '#f59e0b', '#a855f7'];
     return palette[index % palette.length];
@@ -220,66 +199,12 @@ export class LoadGpxComponent implements OnInit, AfterViewInit, AfterContentInit
       ...track,
       name: meta.names[index]?.trim() || track.name,
       color: meta.colors[index] || track.color
-    })).map((track) => {
-      this.updateChartColor(track.chartId, track.color);
-      return track;
-    });
-  }
-
-  private updateChartColor(chartId: string, color: string): void {
-    const canvas = document.getElementById(chartId) as HTMLCanvasElement | null;
-    const chart = canvas ? Chart.getChart(canvas) : null;
-    if (chart?.data?.datasets?.[0]) {
-      chart.data.datasets[0].borderColor = color;
-      chart.update();
-    }
-  }
-
-  initChart(chartId: string, data: number[], color = 'rgba(75, 192, 192, 1)'): void {
-    const ctx = document.getElementById(chartId) as HTMLCanvasElement;
-    if (ctx) {
-      new Chart(ctx, {
-        type: 'line',
-        data: {
-          labels: data.map((_, i) => i),
-          datasets: [{
-            label: '',
-            data: data,
-            borderColor: color,
-            borderWidth: 1, // Hacer la línea más fina
-            fill: false
-          }]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: true,
-          scales: {
-            x: {
-              display: false
-            },
-            y: {
-              beginAtZero: true
-            }
-          },
-          plugins: {
-            legend: {
-              display: false // Eliminar la leyenda
-            }
-          }
-        }
-      });
-    }
+    }));
   }
 
 
 
   borrarFichero(index: number): void {
-    const track = this.tracks[index];
-    const canvas = document.getElementById(track.chartId) as HTMLCanvasElement | null;
-    if (canvas) {
-      const chartInstance = Chart.getChart(canvas);
-      chartInstance?.destroy();
-    }
     this.tracks = this.tracks.filter((_, i) => i !== index);
   }
 

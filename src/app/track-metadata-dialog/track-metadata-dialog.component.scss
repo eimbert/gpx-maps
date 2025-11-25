@@ -1,0 +1,96 @@
+.dialog-header {
+  margin: -24px -24px 16px;
+  padding: 16px 24px;
+  background: #2563eb;
+  color: #fff;
+}
+
+.dialog-content {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.dialog-subtitle {
+  margin: 0;
+  color: #4b5563;
+}
+
+.track-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.track-row {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  background: #f9fafb;
+}
+
+.track-label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 700;
+  color: #111827;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  background: #e0e7ff;
+  color: #312e81;
+  font-weight: 800;
+}
+
+.track-inputs {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid #e5e7eb;
+  background: #fff;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.field input[type='color'] {
+  width: 64px;
+  height: 36px;
+  padding: 0;
+  border: none;
+  background: transparent;
+}
+
+.field input[type='text'],
+.field input[type='color'],
+.field input:not([type]) {
+  font-size: 14px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  padding: 8px 10px;
+}
+
+.color-field {
+  max-width: 140px;
+}
+
+.dialog-actions {
+  margin-top: 12px;
+}

@@ -1,9 +1,10 @@
-import { Component, AfterViewInit, OnInit, AfterContentInit } from '@angular/core';
+import { AfterContentInit, AfterViewInit, Component, ElementRef, OnInit, ViewChild } from '@angular/core';
 import { Router } from '@angular/router';
 import { MatDialog } from '@angular/material/dialog';
 import Chart from 'chart.js/auto';
 import { DialogoConfiguracionComponent } from '../dialogo-configuracion/dialogo-configuracion.component';
 import { DialogoConfiguracionData } from '../interfaces/estructuras';
+import { TrackMetadataDialogComponent, TrackMetadataDialogResult } from '../track-metadata-dialog/track-metadata-dialog.component';
 
 interface TrackPoint {
   lat: number;
@@ -13,21 +14,26 @@ interface TrackPoint {
   hr: number | null;
 }
 
+interface LoadedTrack {
+  name: string;
+  color: string;
+  fileName: string;
+  details: { date: string; distance: number; ascent: number };
+  data: { elevations: number[]; trkpts: TrackPoint[] };
+  chartId: string;
+}
+
 @Component({
   selector: 'app-load-gpx',
   templateUrl: './load-gpx.component.html',
   styleUrls: ['./load-gpx.component.css']
 })
 export class LoadGpxComponent implements OnInit, AfterViewInit, AfterContentInit {
-  colors: string[] = ['#0000ff', '#ff0000'];
-  tracks: any[] = [null, null];
-  trackLoaded: boolean[] = [false, false];
-  trackDetails: { date: string, distance: number, ascent: number }[] = [
-    { date: '', distance: 0, ascent: 0 },
-    { date: '', distance: 0, ascent: 0 }
-  ];
-  // load-gpx.component.ts (añade propiedad)
-  fileNames: string[] = ['Track 1', 'Track 2'];
+  @ViewChild('fileInput') fileInputRef!: ElementRef<HTMLInputElement>;
+
+  readonly maxTracks = 5;
+  isDragOver = false;
+  tracks: LoadedTrack[] = [];
 
   constructor(
     public dialog: MatDialog,
@@ -52,42 +58,63 @@ export class LoadGpxComponent implements OnInit, AfterViewInit, AfterContentInit
   }
 
   ngAfterViewInit() {
-    // Inicializar gráficos aquí si los datos ya están disponibles
-    if (this.trackLoaded[0]) {
-      this.initChart('chart-0', this.tracks[0].elevations);
-    }
-    if (this.trackLoaded[1]) {
-      this.initChart('chart-1', this.tracks[1].elevations);
-    }
+    // No-op: los charts se generan al terminar de parsear cada GPX
 
   }
 
-  cargarFichero(index: number): void {
-    let input = document.createElement('input');
-    input.type = 'file';
-    input.accept = '.gpx';
-
-    input.onchange = _ => {
-      if (input.files) {
-        this.onFileSelected(input.files[0], index);
-      }
-    };
-    input.click();
+  triggerFileDialog(): void {
+    this.fileInputRef?.nativeElement.click();
   }
 
-  // en onFileSelected(...)
-  onFileSelected(file: File, index: number): void {
-    this.fileNames[index] = file.name.replace(/\.[^.]+$/, ''); // nombre sin extensión
+  onFileInputChange(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    this.handleFiles(input.files);
+    if (input) {
+      input.value = '';
+    }
+  }
+
+  onDragOver(event: DragEvent): void {
+    event.preventDefault();
+    this.isDragOver = true;
+  }
+
+  onDragLeave(): void {
+    this.isDragOver = false;
+  }
+
+  onDrop(event: DragEvent): void {
+    event.preventDefault();
+    this.isDragOver = false;
+    this.handleFiles(event.dataTransfer?.files ?? null);
+  }
+
+  private handleFiles(fileList: FileList | null): void {
+    if (!fileList || fileList.length === 0) return;
+
+    const availableSlots = this.maxTracks - this.tracks.length;
+    if (availableSlots <= 0) {
+      alert(`Puedes cargar como máximo ${this.maxTracks} archivos GPX a la vez.`);
+      return;
+    }
+
+    const files = Array.from(fileList).filter(f => f.name.toLowerCase().endsWith('.gpx')).slice(0, availableSlots);
+    if (!files.length) return;
+
+    files.forEach(file => this.onFileSelected(file));
+  }
+
+  private onFileSelected(file: File): void {
     const reader = new FileReader();
     reader.onload = (e: any) => {
       const gpxData = e.target.result as string;
-      this.parseGPX(gpxData, index);
+      this.parseGPX(gpxData, file);
     };
     reader.readAsText(file);
   }
 
 
-  parseGPX(gpxData: string, index: number): void {
+  parseGPX(gpxData: string, file: File): void {
     const parser = new DOMParser();
     const gpx = parser.parseFromString(gpxData, 'application/xml');
     const trkpts = gpx.getElementsByTagName('trkpt');
@@ -122,27 +149,33 @@ export class LoadGpxComponent implements OnInit, AfterViewInit, AfterContentInit
 
     const date = firstTime ? new Date(firstTime).toLocaleString() : new Date().toLocaleString();
 
-    this.trackDetails[index] = {
-      date: date,
-      distance: this.calculateTotalDistance(trkpts),
-      ascent: totalAscent // Ascenso acumulado
+    const newTrack: LoadedTrack = {
+      name: file.name.replace(/\.[^.]+$/, ''),
+      color: this.pickColor(this.tracks.length),
+      fileName: file.name,
+      details: {
+        date: date,
+        distance: this.calculateTotalDistance(trkpts),
+        ascent: totalAscent // Ascenso acumulado
+      },
+      data: {
+        elevations,
+        trkpts: Array.from(trkpts).map((trkpt: Element) => ({
+          lat: parseFloat(trkpt.getAttribute('lat')!),
+          lon: parseFloat(trkpt.getAttribute('lon')!),
+          ele: parseFloat(trkpt.getElementsByTagName('ele')[0]?.textContent || '0'),
+          time: trkpt.getElementsByTagName('time')[0]?.textContent || '',
+          hr: trkpt.getElementsByTagName('ns3:hr')[0] ? parseInt(trkpt.getElementsByTagName('ns3:hr')[0].textContent || '0') : null
+        }))
+      },
+      chartId: this.createChartId()
     };
 
-    this.tracks[index] = {
-      elevations,
-      trkpts: Array.from(trkpts).map((trkpt: Element) => ({
-        lat: parseFloat(trkpt.getAttribute('lat')!),
-        lon: parseFloat(trkpt.getAttribute('lon')!),
-        ele: parseFloat(trkpt.getElementsByTagName('ele')[0]?.textContent || '0'),
-        time: trkpt.getElementsByTagName('time')[0]?.textContent || '',
-        hr: trkpt.getElementsByTagName('ns3:hr')[0] ? parseInt(trkpt.getElementsByTagName('ns3:hr')[0].textContent || '0') : null
-      }))
-    };
-    this.trackLoaded[index] = true;
+    this.tracks = [...this.tracks, newTrack];
 
     // Esperar un breve momento para asegurarse de que el DOM se haya actualizado antes de inicializar el gráfico
     setTimeout(() => {
-      this.initChart(`chart-${index}`, elevations);
+      this.initChart(newTrack.chartId, elevations, newTrack.color);
     }, 200);
   }
 
@@ -173,7 +206,36 @@ export class LoadGpxComponent implements OnInit, AfterViewInit, AfterContentInit
     return R * c; // Distancia en metros
   }
 
-  initChart(chartId: string, data: number[]): void {
+  private createChartId(): string {
+    return `chart-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
+  }
+
+  private pickColor(index: number): string {
+    const palette = ['#3b82f6', '#f87171', '#22c55e', '#f59e0b', '#a855f7'];
+    return palette[index % palette.length];
+  }
+
+  private applyMetadata(meta: TrackMetadataDialogResult): void {
+    this.tracks = this.tracks.map((track, index) => ({
+      ...track,
+      name: meta.names[index]?.trim() || track.name,
+      color: meta.colors[index] || track.color
+    })).map((track) => {
+      this.updateChartColor(track.chartId, track.color);
+      return track;
+    });
+  }
+
+  private updateChartColor(chartId: string, color: string): void {
+    const canvas = document.getElementById(chartId) as HTMLCanvasElement | null;
+    const chart = canvas ? Chart.getChart(canvas) : null;
+    if (chart?.data?.datasets?.[0]) {
+      chart.data.datasets[0].borderColor = color;
+      chart.update();
+    }
+  }
+
+  initChart(chartId: string, data: number[], color = 'rgba(75, 192, 192, 1)'): void {
     const ctx = document.getElementById(chartId) as HTMLCanvasElement;
     if (ctx) {
       new Chart(ctx, {
@@ -183,7 +245,7 @@ export class LoadGpxComponent implements OnInit, AfterViewInit, AfterContentInit
           datasets: [{
             label: '',
             data: data,
-            borderColor: 'rgba(75, 192, 192, 1)',
+            borderColor: color,
             borderWidth: 1, // Hacer la línea más fina
             fill: false
           }]
@@ -212,57 +274,56 @@ export class LoadGpxComponent implements OnInit, AfterViewInit, AfterContentInit
 
 
   borrarFichero(index: number): void {
-    this.tracks[index] = null;
-    this.trackLoaded[index] = false;
-    this.trackDetails[index] = { date: '', distance: 0, ascent: 0 };
+    const track = this.tracks[index];
+    const canvas = document.getElementById(track.chartId) as HTMLCanvasElement | null;
+    if (canvas) {
+      const chartInstance = Chart.getChart(canvas);
+      chartInstance?.destroy();
+    }
+    this.tracks = this.tracks.filter((_, i) => i !== index);
   }
 
   tracksCargados(): boolean {
-    return this.trackLoaded.some(Boolean);
+    return this.tracks.length > 0;
   }
-
-  // private navegarAlMapa(
-  //   namesPayload: string[],
-  //   colorsPayload: string[],
-  //   tracksPayload: Array<{ trkpts: any[] }>,
-  //   logoDataUrl: string | null,
-  //   removeStops: boolean
-  // ): void {
-  //   const query: any = {
-  //     names: JSON.stringify(namesPayload),
-  //     colors: JSON.stringify(colorsPayload),
-  //     tracks: JSON.stringify(tracksPayload)
-  //   };
-  //   if (logoDataUrl) query.logo = logoDataUrl;
-  //   if (removeStops) query.rmstops = '1';   // ← flag para “quitar paradas”
-  //   this.router.navigate(['/map'], { queryParams: query });
-  // }
-
   iniciarVisualizacion(): void {
-    const loadedIdx = this.tracks
-      .map((t, i) => (t && this.trackLoaded[i]) ? i : -1)
-      .filter(i => i >= 0);
-
-    if (loadedIdx.length === 0) {
+    if (!this.tracksCargados()) {
       alert('Carga al menos un track.');
       return;
     }
 
-    const permiteAdversarioVirtual = this.trackLoaded[0] && !this.trackLoaded[1];
+    const metadataDefaults: TrackMetadataDialogResult = {
+      names: this.tracks.map((t, i) => t.name || `Track ${i + 1}`),
+      colors: this.tracks.map((t, i) => t.color || this.pickColor(i))
+    };
 
-    const tracksPayload = loadedIdx.map(i => ({
-      trkpts: this.tracks[i].trkpts.map((p: any) => ({
+    this.dialog.open<TrackMetadataDialogComponent, TrackMetadataDialogResult, TrackMetadataDialogResult>(
+      TrackMetadataDialogComponent,
+      {
+        width: '520px',
+        data: metadataDefaults
+      }
+    )
+      .afterClosed()
+      .subscribe((meta) => {
+        if (!meta) return;
+        this.applyMetadata(meta);
+        this.abrirCuadroConfiguracion(meta);
+      });
+  }
+
+  private abrirCuadroConfiguracion(meta: TrackMetadataDialogResult): void {
+    const permitirAdversarioVirtual = this.tracks.length > 0;
+
+    const tracksPayload = this.tracks.map(track => ({
+      trkpts: track.data.trkpts.map(p => ({
         lat: p.lat, lon: p.lon, ele: p.ele, time: p.time, hr: p.hr ?? null
       }))
     }));
-    const namesPayload = loadedIdx.map(i => this.fileNames[i] ?? `Track ${i + 1}`);
-    const colorsPayload = loadedIdx.map(i => this.colors[i] ?? '#0000ff');
 
-    this.cuadroConfiguracion(namesPayload, colorsPayload, tracksPayload, permiteAdversarioVirtual)
+    const namesPayload = meta.names.map((n, i) => n?.trim() || `Track ${i + 1}`);
+    const colorsPayload = meta.colors.map((c, i) => c || this.pickColor(i));
 
-  }
-
-  cuadroConfiguracion(namesPayload: any, colorsPayload: any, tracksPayload: any, permitirAdversarioVirtual: boolean) {
     this.dialog.open<DialogoConfiguracionComponent, Partial<DialogoConfiguracionData>, DialogoConfiguracionData>(
       DialogoConfiguracionComponent,
       {
@@ -274,28 +335,24 @@ export class LoadGpxComponent implements OnInit, AfterViewInit, AfterContentInit
           grabarAnimacion: false,
           relacionAspectoGrabacion: '16:9',
           permitirAdversarioVirtual,
-          colors: this.colors
         }
       }
     )
       .afterClosed()
       .subscribe((result) => {
         if (!result) return; // pulsó Cancelar o cerró el diálogo
-        colorsPayload = result.colors;
 
         let tracksFinal = tracksPayload;
         let namesFinal = namesPayload;
-        const colorsFinal = colorsPayload.slice();
+        let colorsFinal = colorsPayload.slice();
 
         if (permitirAdversarioVirtual && result.incluirAdversarioVirtual) {
           const objetivoSegundos = this.parsearTiempoObjetivo(result.tiempoAdversarioVirtual ?? '00:45');
           const virtualTrack = this.generarAdversarioVirtual(this.tracks[0], objetivoSegundos);
           if (virtualTrack) {
-            tracksFinal = [tracksPayload[0], virtualTrack];
-            namesFinal = [namesPayload[0], 'Adversario virtual'];
-            if (!colorsFinal[1]) {
-              colorsFinal[1] = '#ff0000';
-            }
+            tracksFinal = [...tracksPayload, virtualTrack];
+            namesFinal = [...namesPayload, 'Adversario virtual'];
+            colorsFinal = [...colorsFinal, '#ff006e'];
           }
         }
 
@@ -394,10 +451,10 @@ export class LoadGpxComponent implements OnInit, AfterViewInit, AfterContentInit
     return 18;
   }
 
-  private generarAdversarioVirtual(track: any, objetivoSegundos: number): { trkpts: any[] } | null {
-    if (!track?.trkpts || track.trkpts.length < 2) return null;
+  private generarAdversarioVirtual(track: LoadedTrack, objetivoSegundos: number): { trkpts: any[] } | null {
+    if (!track?.data?.trkpts || track.data.trkpts.length < 2) return null;
 
-    const puntos = track.trkpts as any[];
+    const puntos = track.data.trkpts as any[];
     const baseDuraciones: number[] = [];
 
     for (let i = 1; i < puntos.length; i++) {

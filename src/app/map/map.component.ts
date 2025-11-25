@@ -7,6 +7,21 @@ import { RecorderService } from '../recording/recorder.service';
 interface TrackPoint { lat: number; lon: number; ele: number; time: string; }
 interface TPx extends TrackPoint { t: number; }
 
+interface TrackMeta {
+  name: string;
+  color: string;
+  raw: TrackPoint[];
+  sanitized: TPx[];
+  full?: L.Polyline;
+  prog?: L.Polyline;
+  mark?: L.Marker;
+  ticks?: L.LayerGroup;
+  cursor: number;
+  nextTickRel: number;
+  finalAdded: boolean;
+  has: boolean;
+}
+
 @Component({
   selector: 'app-map',
   templateUrl: './map.component.html',
@@ -23,25 +38,13 @@ export class MapComponent implements OnInit, AfterViewInit {
   showStartOverlay = true;
   private startArmed = false;
   private audio!: HTMLAudioElement;
-  private  inicioMapa: any;
+  private hasTracksReady = false;
   private musicEnabled = true;
   private recordingEnabled = false;
   private recordingAspect: '16:9' | '9:16' = '16:9';
   isVerticalViewport = false;
 
-  // Capas: ghost + progreso + marcador actual
-  private full1!: L.Polyline; private prog1!: L.Polyline; private mark1!: L.Marker;
-  private full2!: L.Polyline; private prog2!: L.Polyline; private mark2!: L.Marker;
-
-  // Grupos de “ticks” (marcas de tiempo)
-  private ticks1!: L.LayerGroup;
-  private ticks2!: L.LayerGroup;
-
-  private raw1: TrackPoint[] = []; private raw2: TrackPoint[] = [];
-  private t1: TPx[] = []; private t2: TPx[] = [];
-
-  private i1 = 0;   // último punto real alcanzado
-  private i2 = 0;
+  trackMetas: TrackMeta[] = [];
   private relMs = 0;
   private rafId = 0;
   private started = false;
@@ -52,15 +55,9 @@ export class MapComponent implements OnInit, AfterViewInit {
 
   // Ticks dinámicos cada 30 min
   private readonly TICK_STEP_MS = 30 * 60 * 1000;
-  private nextTickRel1 = this.TICK_STEP_MS;
-  private nextTickRel2 = this.TICK_STEP_MS;
 
-  // Flags para añadir la marca final solo una vez
-  private finalAdded1 = false;
-  private finalAdded2 = false;
-
-  colors: string[] = ['blue', 'red'];
-  names: string[] = ['Track 1', 'Track 2'];
+  colors: string[] = [];
+  names: string[] = [];
 
   constructor(
     private route: ActivatedRoute,
@@ -197,12 +194,26 @@ export class MapComponent implements OnInit, AfterViewInit {
     let payload: any = null;
     try { payload = JSON.parse(sessionStorage.getItem('gpxViewerPayload') || 'null'); } catch { payload = null; }
 
+    const defaultColors = ['#3b82f6', '#ef4444', '#22c55e', '#f59e0b', '#8b5cf6'];
+
+    const buildMetas = (names: string[], colors: string[], tracks: any[]) => {
+      this.trackMetas = tracks.map((track, index) => ({
+        name: names[index] ?? `Track ${index + 1}`,
+        color: colors[index] ?? defaultColors[index % defaultColors.length],
+        raw: (track?.trkpts ?? []) as TrackPoint[],
+        sanitized: [],
+        cursor: 0,
+        nextTickRel: this.TICK_STEP_MS,
+        finalAdded: false,
+        has: false,
+      }));
+    };
+
     if (payload) {
-      this.names = Array.isArray(payload.names) ? payload.names : ['Track 1', 'Track 2'];
-      this.colors = Array.isArray(payload.colors) ? payload.colors : ['blue', 'red'];
+      this.names = Array.isArray(payload.names) ? payload.names : [];
+      this.colors = Array.isArray(payload.colors) ? payload.colors : [];
       const trks = Array.isArray(payload.tracks) ? payload.tracks : [];
-      this.raw1 = (trks[0]?.trkpts ?? []) as TrackPoint[];
-      this.raw2 = (trks[1]?.trkpts ?? []) as TrackPoint[];
+      buildMetas(this.names, this.colors, trks);
       this.logoDataUrl = payload.logo ?? null;
       this.removeStops = !!payload.rmstops;
       this.musicEnabled = payload.activarMusica ?? true;
@@ -214,29 +225,24 @@ export class MapComponent implements OnInit, AfterViewInit {
     } else {
       // Fallback (por si alguien entra directo a /map sin pasar por /load)
       this.route.queryParams.subscribe(params => {
-        try { this.names = JSON.parse(params['names'] ?? '["Track 1","Track 2"]'); } catch { }
-        try { this.colors = JSON.parse(params['colors'] ?? '["blue","red"]'); } catch { }
-        try {
-          const trks = JSON.parse(params['tracks'] ?? '[]');
-          this.raw1 = (trks?.[0]?.trkpts ?? []) as TrackPoint[];
-          this.raw2 = (trks?.[1]?.trkpts ?? []) as TrackPoint[];
-        } catch { this.raw1 = []; this.raw2 = []; }
+        try { this.names = JSON.parse(params['names'] ?? '[]'); } catch { this.names = []; }
+        try { this.colors = JSON.parse(params['colors'] ?? '[]'); } catch { this.colors = []; }
+        let trks: any[] = [];
+        try { trks = JSON.parse(params['tracks'] ?? '[]'); } catch { trks = []; }
+        buildMetas(this.names, this.colors, trks);
         this.logoDataUrl = (params['logo'] ?? null) as string | null;
         this.removeStops = (params['rmstops'] === '1' || params['rmstops'] === 'true');
       });
     }
 
     // 2) Sanitizar y aplicar compresión de paradas si procede
-    this.t1 = this.sanitize(this.raw1);
-    this.t2 = this.sanitize(this.raw2);
-
-    console.log('[init] rmstops?', this.removeStops, 't1 len:', this.t1.length, 't2 len:', this.t2.length);
-
-    if (this.removeStops) {
-      this.t1 = this.removeStopsAdaptive(this.t1, 20_000, 4, 10, 25, 12, 1_500);
-      this.t2 = this.removeStopsAdaptive(this.t2, 20_000, 4, 10, 25, 12, 1_500);
-      console.log('[init] after removeStopsByStep t1 len:', this.t1.length, 't2 len:', this.t2.length);
-    }
+    this.trackMetas = this.trackMetas.map((meta) => {
+      let sanitized = this.sanitize(meta.raw);
+      if (this.removeStops) {
+        sanitized = this.removeStopsAdaptive(sanitized, 20_000, 4, 10, 25, 12, 1_500);
+      }
+      return { ...meta, sanitized };
+    });
   }
 
 
@@ -245,7 +251,7 @@ export class MapComponent implements OnInit, AfterViewInit {
     this.initMap();
     setTimeout(() => {
       this.applyAspectViewport().then(() => {
-        this.inicioMapa = this.startIfReady();
+        this.hasTracksReady = this.startIfReady();
       });
     }, 0);
 
@@ -288,15 +294,15 @@ export class MapComponent implements OnInit, AfterViewInit {
       // 3) Lanza tu animación normal
       this.showStartOverlay = false;
       // arrancar animación si ya están los datos
-      if(this.inicioMapa != null){
-        this.afterInicio(this.inicioMapa.has1, this.inicioMapa.has2)
+      if (this.hasTracksReady) {
+        this.afterInicio();
       }
     } catch (e) {
       console.error('No se pudo iniciar la captura:', e);
       // Puedes seguir sin grabar si quieres:
       this.showStartOverlay = false;
-      if(this.inicioMapa != null){
-        this.afterInicio(this.inicioMapa.has1, this.inicioMapa.has2)
+      if (this.hasTracksReady) {
+        this.afterInicio();
       }
     }
   }
@@ -353,161 +359,113 @@ export class MapComponent implements OnInit, AfterViewInit {
     const prog = (color: string): L.PolylineOptions => ({
       color, weight: 4, opacity: 0.95, renderer: this.renderer, interactive: false, fill: false, stroke: true
     });
-
-    this.full1 = L.polyline([], ghost(this.colors[0])).addTo(this.map);
-    this.prog1 = L.polyline([], prog(this.colors[0])).addTo(this.map);
-
-    this.full2 = L.polyline([], ghost(this.colors[1])).addTo(this.map);
-    this.prog2 = L.polyline([], prog(this.colors[1])).addTo(this.map);
-
     const mk = (c: string) => L.divIcon({
       className: 'custom-circle-icon',
       html: `<div style="width:14px;height:14px;background:${c};border-radius:50%"></div>`,
       iconSize: [18, 18], iconAnchor: [9, 9]
     });
-    this.mark1 = L.marker([0, 0], { icon: mk(this.colors[0]) });
-    this.mark2 = L.marker([0, 0], { icon: mk(this.colors[1]) });
 
-    // Grupos para ticks
-    this.ticks1 = L.layerGroup().addTo(this.map);
-    this.ticks2 = L.layerGroup().addTo(this.map);
+    this.trackMetas = this.trackMetas.map((meta) => ({
+      ...meta,
+      full: L.polyline([], ghost(meta.color)).addTo(this.map),
+      prog: L.polyline([], prog(meta.color)).addTo(this.map),
+      mark: L.marker([0, 0], { icon: mk(meta.color) }),
+      ticks: L.layerGroup().addTo(this.map)
+    }));
   }
 
-  private startIfReady(): any {
-    if (this.started) return;
+  private startIfReady(): boolean {
+    if (this.started) return false;
 
-    const has1 = this.t1.length >= 2;
-    const has2 = this.t2.length >= 2;
-    if (!has1 && !has2) return; // nada que animar
-
-    // pinta “ghost” de los que existan
     const boundsPts: L.LatLng[] = [];
-    if (has1) {
-      const l1 = this.t1.map(p => L.latLng(p.lat, p.lon));
-      this.full1.setLatLngs(l1);
-      boundsPts.push(...l1);
-    } else {
-      this.full1.setLatLngs([]);
-      this.prog1.setLatLngs([]);
-    }
-    if (has2) {
-      const l2 = this.t2.map(p => L.latLng(p.lat, p.lon));
-      this.full2.setLatLngs(l2);
-      boundsPts.push(...l2);
-    } else {
-      this.full2.setLatLngs([]);
-      this.prog2.setLatLngs([]);
-    }
+    let anyTrack = false;
 
-    // encuadre con lo disponible
+    this.trackMetas.forEach((meta) => {
+      meta.has = meta.sanitized.length >= 2;
+      meta.cursor = 0;
+      meta.nextTickRel = this.TICK_STEP_MS;
+      meta.finalAdded = false;
+
+      if (meta.has && meta.full && meta.prog && meta.mark && meta.ticks) {
+        const latlngs = meta.sanitized.map(p => L.latLng(p.lat, p.lon));
+        meta.full.setLatLngs(latlngs);
+        meta.prog.setLatLngs([[meta.sanitized[0].lat, meta.sanitized[0].lon]]);
+        meta.mark.setLatLng([meta.sanitized[0].lat, meta.sanitized[0].lon]).addTo(this.map);
+        meta.ticks.clearLayers();
+        boundsPts.push(...latlngs);
+        anyTrack = true;
+      } else if (meta.full && meta.prog && meta.ticks) {
+        meta.full.setLatLngs([]);
+        meta.prog.setLatLngs([]);
+        meta.ticks.clearLayers();
+      }
+    });
+
     const union = L.latLngBounds(boundsPts);
     if (union.isValid()) this.map.fitBounds(union.pad(0.05));
 
-    // arranque y estado inicial
-    this.ticks1.clearLayers();
-    this.ticks2.clearLayers();
-    this.nextTickRel1 = this.TICK_STEP_MS;
-    this.nextTickRel2 = this.TICK_STEP_MS;
-    this.finalAdded1 = false;
-    this.finalAdded2 = false;
+    if (!anyTrack) return false;
 
-    
-    if (has1) {
-      this.prog1.setLatLngs([[this.t1[0].lat, this.t1[0].lon]]);
-      this.mark1.setLatLng([this.t1[0].lat, this.t1[0].lon]).addTo(this.map);
-      this.i1 = 0;
-    }
-    if (has2) {
-      this.prog2.setLatLngs([[this.t2[0].lat, this.t2[0].lon]]);
-      this.mark2.setLatLng([this.t2[0].lat, this.t2[0].lon]).addTo(this.map);
-      this.i2 = 0;
-    }
-
-
-    // velocidad: que el más largo termine aprox. en desiredDurationSec
-    const d1 = has1 ? (this.t1[this.t1.length - 1].t - this.t1[0].t) : 0;
-    const d2 = has2 ? (this.t2[this.t2.length - 1].t - this.t2[0].t) : 0;
-    const maxDur = Math.max(d1, d2);
+    const durations = this.trackMetas
+      .filter(meta => meta.has && meta.sanitized.length >= 2)
+      .map(meta => meta.sanitized[meta.sanitized.length - 1].t - meta.sanitized[0].t);
+    const maxDur = durations.length ? Math.max(...durations) : 0;
     this.replaySpeed = maxDur > 0 ? maxDur / (this.desiredDurationSec * 1000) : 8;
     if (!Number.isFinite(this.replaySpeed) || this.replaySpeed <= 0) this.replaySpeed = 8;
 
     this.relMs = 0;
     this.started = true;
 
-    return {has1, has2}
+    return true;
   }
-  
-  afterInicio (has1: any, has2: any){
-      let last = performance.now();
-      const step = (now: number) => {
-        const rawDt = now - last; last = now;
-        const dt = Math.min(rawDt, 50);
-        this.relMs += dt * this.replaySpeed;
 
-        let allDone = true;
+  afterInicio(): void {
+    let last = performance.now();
+    const step = (now: number) => {
+      const rawDt = now - last; last = now;
+      const dt = Math.min(rawDt, 50);
+      this.relMs += dt * this.replaySpeed;
 
-        if (has1) {
-          const start1 = this.t1[0].t, end1 = this.t1[this.t1.length - 1].t;
-          const tAbs1 = start1 + this.relMs;
+      let allDone = true;
 
-          while (this.i1 + 1 < this.t1.length && this.t1[this.i1 + 1].t <= tAbs1) this.i1++;
+      this.trackMetas.forEach((meta) => {
+        if (!meta.has || !meta.sanitized.length || !meta.prog || !meta.mark || !meta.ticks) return;
 
-          // ticks dinámicos 30 min (reservando el final)
-          const rel1 = tAbs1 - start1;
-          const endRel1 = end1 - start1;
-          while (this.nextTickRel1 <= rel1 && this.nextTickRel1 < endRel1) {
-            const absTick1 = start1 + this.nextTickRel1;
-            this.addTickAtAbs(this.t1, absTick1, this.colors[0], this.ticks1, start1);
-            this.nextTickRel1 += this.TICK_STEP_MS;
-          }
+        const start = meta.sanitized[0].t;
+        const end = meta.sanitized[meta.sanitized.length - 1].t;
+        const tAbs = start + this.relMs;
 
-          const pos1 = this.positionAt(this.t1, tAbs1, { i: this.i1 });
-          const path1: [number, number][] = this.t1.slice(0, this.i1 + 1).map(p => [p.lat, p.lon]);
-          path1.push([pos1[0], pos1[1]]);
-          this.prog1.setLatLngs(path1);
-          this.mark1.setLatLng(pos1);
+        while (meta.cursor + 1 < meta.sanitized.length && meta.sanitized[meta.cursor + 1].t <= tAbs) meta.cursor++;
 
-          const done1 = this.i1 >= this.t1.length - 1 && tAbs1 >= end1;
-          if (done1 && !this.finalAdded1) { this.addFinalTick(this.t1, this.colors[0], this.ticks1, start1); this.finalAdded1 = true; }
-          if (!done1) allDone = false;
+        const rel = tAbs - start;
+        const endRel = end - start;
+        while (meta.nextTickRel <= rel && meta.nextTickRel < endRel) {
+          const absTick = start + meta.nextTickRel;
+          this.addTickAtAbs(meta.sanitized, absTick, meta.color, meta.ticks, start);
+          meta.nextTickRel += this.TICK_STEP_MS;
         }
 
-        if (has2) {
-          const start2 = this.t2[0].t, end2 = this.t2[this.t2.length - 1].t;
-          const tAbs2 = start2 + this.relMs;
+        const pos = this.positionAt(meta.sanitized, tAbs, { i: meta.cursor });
+        const path: [number, number][] = meta.sanitized.slice(0, meta.cursor + 1).map(p => [p.lat, p.lon]);
+        path.push([pos[0], pos[1]]);
+        meta.prog.setLatLngs(path);
+        meta.mark.setLatLng(pos);
 
-          while (this.i2 + 1 < this.t2.length && this.t2[this.i2 + 1].t <= tAbs2) this.i2++;
+        const done = meta.cursor >= meta.sanitized.length - 1 && tAbs >= end;
+        if (done && !meta.finalAdded) { this.addFinalTick(meta.sanitized, meta.color, meta.ticks, start); meta.finalAdded = true; }
+        if (!done) allDone = false;
+      });
 
-          const rel2 = tAbs2 - start2;
-          const endRel2 = end2 - start2;
-          while (this.nextTickRel2 <= rel2 && this.nextTickRel2 < endRel2) {
-            const absTick2 = start2 + this.nextTickRel2;
-            this.addTickAtAbs(this.t2, absTick2, this.colors[1], this.ticks2, start2);
-            this.nextTickRel2 += this.TICK_STEP_MS;
-          }
+      if (!allDone) {
+        this.rafId = requestAnimationFrame(step);
+      } else {
+        cancelAnimationFrame(this.rafId);
+        this.audio?.pause();
+        this.stopRecordingAndDownload();
+      }
+    };
 
-          const pos2 = this.positionAt(this.t2, tAbs2, { i: this.i2 });
-          const path2: [number, number][] = this.t2.slice(0, this.i2 + 1).map(p => [p.lat, p.lon]);
-          path2.push([pos2[0], pos2[1]]);
-          this.prog2.setLatLngs(path2);
-          this.mark2.setLatLng(pos2);
-
-          const done2 = this.i2 >= this.t2.length - 1 && tAbs2 >= end2;
-          if (done2 && !this.finalAdded2) { this.addFinalTick(this.t2, this.colors[1], this.ticks2, start2); this.finalAdded2 = true; }
-          if (!done2) allDone = false;
-        }
-
-        if (!allDone) {
-          this.rafId = requestAnimationFrame(step);
-        } else {
-          cancelAnimationFrame(this.rafId);
-          this.audio?.pause();        
-          this.stopRecordingAndDownload()  
-        }
-      };
-
-      this.rafId = requestAnimationFrame(step);
-      
+    this.rafId = requestAnimationFrame(step);
   }
 
   // Detecta paradas de forma adaptativa: (A) pasos cortos acumulados y (B) intervalos únicos largos.

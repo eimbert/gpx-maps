@@ -8,6 +8,7 @@ import { HttpClientModule } from '@angular/common/http';
 import { LoadGpxComponent } from './load-gpx/load-gpx.component';
 import { FormsModule } from '@angular/forms';
 import { DialogoConfiguracionComponent } from './dialogo-configuracion/dialogo-configuracion.component';
+import { TrackMetadataDialogComponent } from './track-metadata-dialog/track-metadata-dialog.component';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations'; // Importar FormsModule
 import { MatDialogModule } from '@angular/material/dialog';
 import { MatButtonModule } from '@angular/material/button';
@@ -20,7 +21,8 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
     AppComponent,
     MapComponent,
     LoadGpxComponent,
-    DialogoConfiguracionComponent
+    DialogoConfiguracionComponent,
+    TrackMetadataDialogComponent
   ],
   imports: [
     MatCheckboxModule,

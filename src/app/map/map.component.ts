@@ -22,6 +22,13 @@ interface TrackMeta {
   has: boolean;
 }
 
+interface RankingEntry {
+  name: string;
+  color: string;
+  durationMs: number;
+  medal?: 'gold' | 'silver' | 'bronze';
+}
+
 @Component({
   selector: 'app-map',
   templateUrl: './map.component.html',
@@ -43,6 +50,8 @@ export class MapComponent implements OnInit, AfterViewInit {
   private recordingEnabled = false;
   private recordingAspect: '16:9' | '9:16' = '16:9';
   isVerticalViewport = false;
+  showRanking = false;
+  ranking: RankingEntry[] = [];
 
   trackMetas: TrackMeta[] = [];
   private relMs = 0;
@@ -271,6 +280,8 @@ export class MapComponent implements OnInit, AfterViewInit {
 
   async onStartClick(): Promise<void> {
     try {
+      this.showRanking = false;
+      this.ranking = [];
       await this.applyAspectViewport();
 
       // 1) Empieza la grabación (elige “Pestaña” y marca audio de la pestaña)
@@ -377,6 +388,9 @@ export class MapComponent implements OnInit, AfterViewInit {
   private startIfReady(): boolean {
     if (this.started) return false;
 
+    this.showRanking = false;
+    this.ranking = [];
+
     const boundsPts: L.LatLng[] = [];
     let anyTrack = false;
 
@@ -462,6 +476,8 @@ export class MapComponent implements OnInit, AfterViewInit {
         cancelAnimationFrame(this.rafId);
         this.audio?.pause();
         this.stopRecordingAndDownload();
+        this.ranking = this.buildRanking();
+        this.showRanking = this.ranking.length > 0;
       }
     };
 
@@ -570,6 +586,43 @@ export class MapComponent implements OnInit, AfterViewInit {
       'tiempo comprimido (s):', Math.round(totalPaused / 1000),
       { minStopMs, stepRadius, stayRadius, pathSumMax, sparseStayRadius, mergeGapMs });
     return out;
+  }
+
+  private buildRanking(): RankingEntry[] {
+    const sorted = this.trackMetas
+      .filter(meta => meta.has && meta.sanitized.length >= 2)
+      .map(meta => ({
+        name: meta.name,
+        color: meta.color,
+        durationMs: meta.sanitized[meta.sanitized.length - 1].t - meta.sanitized[0].t
+      }))
+      .filter(r => Number.isFinite(r.durationMs) && r.durationMs > 0)
+      .sort((a, b) => a.durationMs - b.durationMs)
+      .map((entry, index): RankingEntry => ({
+        ...entry,
+        medal: index === 0
+          ? 'gold'
+          : index === 1
+            ? 'silver'
+            : index === 2
+              ? 'bronze'
+              : undefined
+      }));
+
+    return sorted;
+  }
+
+  formatRaceTime(ms: number): string {
+    const totalSeconds = Math.round(ms / 1000);
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const seconds = totalSeconds % 60;
+
+    const mm = minutes.toString().padStart(2, '0');
+    const ss = seconds.toString().padStart(2, '0');
+    return hours > 0
+      ? `${hours}:${mm}:${ss}`
+      : `${mm}:${ss}`;
   }
 
 }

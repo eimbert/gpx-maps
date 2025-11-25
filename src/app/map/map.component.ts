@@ -607,6 +607,7 @@ export class MapComponent implements OnInit, AfterViewInit {
             : index === 2
               ? 'bronze'
               : undefined
+
       }));
 
     return sorted;

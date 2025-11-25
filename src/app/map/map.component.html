@@ -8,10 +8,9 @@
     </div>
 
     <div class="map-title">
-      <span class="title-chip" [style.borderColor]="colors[0]" [style.color]="colors[0]" [title]="names[0]">{{ names[0] }}</span>
-      <ng-container *ngIf="names.length > 1">
-        <span class="vs">VS</span>
-        <span class="title-chip" [style.borderColor]="colors[1]" [style.color]="colors[1]" [title]="names[1]">{{ names[1] }}</span>
+      <ng-container *ngFor="let track of trackMetas; let last = last">
+        <span class="title-chip" [style.borderColor]="track.color" [style.color]="track.color" [title]="track.name">{{ track.name }}</span>
+        <span class="vs" *ngIf="!last">VS</span>
       </ng-container>
     </div>
 

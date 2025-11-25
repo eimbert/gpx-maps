@@ -1,0 +1,35 @@
+<h2 mat-dialog-title class="dialog-header">
+  Personaliza tus tracks
+</h2>
+
+<mat-dialog-content class="dialog-content">
+  <p class="dialog-subtitle">
+    Renombra los GPX y asigna un color a cada recorrido antes de configurar la animación.
+  </p>
+
+  <div class="track-list">
+    <div class="track-row" *ngFor="let entry of entries; let i = index">
+      <div class="track-label">
+        <span class="badge">{{ i + 1 }}</span>
+        <span>Track {{ i + 1 }}</span>
+      </div>
+
+      <div class="track-inputs">
+        <label class="field">
+          <span>Nombre</span>
+          <input [(ngModel)]="entry.name" placeholder="Nombre del track" />
+        </label>
+
+        <label class="field color-field">
+          <span>Color</span>
+          <input type="color" [(ngModel)]="entry.color" />
+        </label>
+      </div>
+    </div>
+  </div>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end" class="dialog-actions">
+  <button mat-button (click)="cancelar()">Cancelar</button>
+  <button mat-flat-button color="primary" (click)="guardar()">Continuar</button>
+</mat-dialog-actions>

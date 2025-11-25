@@ -1,47 +1,65 @@
-<div class="container">
-  <div class="row">
-    <div class="column" *ngIf="!trackLoaded[0]">
-      <div (click)="cargarFichero(0)" matTooltip="Pulsa para cargar el track">
-        <img src="assets/player1.png" alt="Player 1" class="player-image" style="cursor: pointer;"  >
-      </div>
+<div class="load-wrapper">
+  <header class="hero">
+    <div>
+      <h1>Comparte tus GPX</h1>
+      <p>Arrastra y suelta hasta {{ maxTracks }} recorridos o pulsa para seleccionarlos.</p>
+    </div>
+  </header>
 
-      <!-- <label for="colorPicker1">Choose color</label>
-      <input id="colorPicker1" type="color" [(ngModel)]="colors[0]" (change)="updateColor(0)" /> -->
-    </div>
-    <div class="column" *ngIf="trackLoaded[0]">
-      <div class="card">
-        <p><strong>Nombre corredor:</strong><input [(ngModel)]="fileNames[0]" /></p>
-        <p><strong>Fecha:</strong> {{ trackDetails[0]?.date || '' }}</p>
-        <p><strong>Kms:</strong> {{ trackDetails[0]?.distance ? trackDetails[0].distance.toFixed(2) : '0.00' }}</p>
-        <p><strong>Ascenso:</strong> {{ trackDetails[0]?.ascent ? trackDetails[0].ascent.toFixed(2) : '0.00' }}</p>
-        <div class="profile-chart">
-          <canvas id="chart-0"></canvas>
-        </div>
-      </div>
-      <button (click)="borrarFichero(0)" class="btn">Borrar</button>
-    </div>
-    <div class="column" *ngIf="!trackLoaded[1]">
-      <div (click)="cargarFichero(1)" matTooltip="Pulsa para cargar el track">
-        <img src="assets/player2.png" alt="Player 2" class="player-image" style="cursor: pointer;">
-        <!-- <button (click)="cargarFichero(1)" class="btn">Load GPX</button> -->
-      </div>
-      <br>
-      <!-- <label for="colorPicker2">Choose color</label>
-      <input id="colorPicker2" type="color" [(ngModel)]="colors[1]" (change)="updateColor(1)" /> -->
-    </div>
-    <div class="column" *ngIf="trackLoaded[1]">
-      <div class="card">
-        <p><strong>Nombre corredor:</strong><input [(ngModel)]="fileNames[1]" /></p>
-        <p><strong>Fecha:</strong> {{ trackDetails[1]?.date || '' }}</p>
-        <p><strong>Kms:</strong> {{ trackDetails[1]?.distance ? trackDetails[1].distance.toFixed(2) : '0.00' }}</p>
-        <p><strong>Ascenso:</strong> {{ trackDetails[1]?.ascent ? trackDetails[1].ascent.toFixed(2) : '0.00' }}</p>
-        <div class="profile-chart">
-          <canvas id="chart-1"></canvas>
-        </div>
-      </div>
-      <button (click)="borrarFichero(1)" class="btn">Borrar</button>
+  <div
+    class="dropzone"
+    [class.dropzone--active]="isDragOver"
+    (click)="triggerFileDialog()"
+    (dragover)="onDragOver($event)"
+    (dragleave)="onDragLeave()"
+    (drop)="onDrop($event)"
+  >
+    <input
+      #fileInput
+      type="file"
+      accept=".gpx"
+      multiple
+      (change)="onFileInputChange($event)"
+      hidden
+    />
+
+    <div class="dropzone__content">
+      <div class="icon">📂</div>
+      <p class="title">Suelta aquí tus archivos GPX</p>
+      <p class="subtitle">También puedes pulsar para abrir el selector</p>
+      <button type="button" class="secondary">Añadir archivos</button>
     </div>
   </div>
+
+  <section class="tracks" *ngIf="tracks.length">
+    <h2>Tracks cargados</h2>
+    <div class="tracks-grid">
+      <article class="track-card" *ngFor="let track of tracks; index as i">
+        <div class="track-card__header">
+          <div class="track-id">{{ i + 1 }}</div>
+          <input
+            [(ngModel)]="track.name"
+            class="track-name"
+            [placeholder]="'Track ' + (i + 1)"
+          />
+          <div class="color-dot" [style.background]="track.color"></div>
+          <input class="color-input" type="color" [(ngModel)]="track.color" (change)="updateChartColor(track.chartId, track.color)" aria-label="Color del track" />
+          <button type="button" class="ghost" (click)="borrarFichero(i)">Borrar</button>
+        </div>
+
+        <div class="track-card__meta">
+          <span><strong>Fecha:</strong> {{ track.details.date }}</span>
+          <span><strong>Kms:</strong> {{ track.details.distance.toFixed(2) }}</span>
+          <span><strong>Ascenso:</strong> {{ track.details.ascent.toFixed(2) }}</span>
+        </div>
+
+        <div class="profile-chart">
+          <canvas [id]="track.chartId"></canvas>
+        </div>
+      </article>
+    </div>
+  </section>
+
   <button (click)="iniciarVisualizacion()" [disabled]="!tracksCargados()" class="btn-start">
     <span>Iniciar</span>
     <svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" class="btn-start__icon">

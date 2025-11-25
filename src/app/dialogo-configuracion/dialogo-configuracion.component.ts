@@ -8,8 +8,6 @@ import { DialogoConfiguracionData } from '../interfaces/estructuras';
   styleUrls: ['./dialogo-configuracion.component.scss']
 })
 export class DialogoConfiguracionComponent {
-  colors: string[] = ['#0000ff', '#ff0000'];
-
   eliminarPausasLargas = false;
   anadirLogoTitulos = false;
   activarMusica = true;
@@ -32,9 +30,6 @@ export class DialogoConfiguracionComponent {
       this.tiempoAdversarioVirtual = data.tiempoAdversarioVirtual ?? this.tiempoAdversarioVirtual;
       this.grabarAnimacion = !!data.grabarAnimacion;
       this.relacionAspectoGrabacion = data.relacionAspectoGrabacion ?? this.relacionAspectoGrabacion;
-      if (Array.isArray(data.colors) && data.colors.length >= 2) {
-        this.colors = data.colors.slice(0, 2) as string[];
-      }
     }
   }
 
@@ -48,7 +43,6 @@ export class DialogoConfiguracionComponent {
       activarMusica: this.activarMusica,
       grabarAnimacion: this.grabarAnimacion,
       relacionAspectoGrabacion: this.relacionAspectoGrabacion,
-      colors: this.colors,
       permitirAdversarioVirtual: this.permitirAdversarioVirtual,
       incluirAdversarioVirtual: this.incluirAdversarioVirtual,
       tiempoAdversarioVirtual: this.tiempoAdversarioVirtual

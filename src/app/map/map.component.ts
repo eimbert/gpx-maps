@@ -598,9 +598,16 @@ export class MapComponent implements OnInit, AfterViewInit {
       }))
       .filter(r => Number.isFinite(r.durationMs) && r.durationMs > 0)
       .sort((a, b) => a.durationMs - b.durationMs)
-      .map((entry, index) => ({
+      .map((entry, index): RankingEntry => ({
         ...entry,
-        medal: index === 0 ? 'gold' : index === 1 ? 'silver' : index === 2 ? 'bronze' : undefined
+        medal: index === 0
+          ? 'gold'
+          : index === 1
+            ? 'silver'
+            : index === 2
+              ? 'bronze'
+              : undefined
+
       }));
 
     return sorted;

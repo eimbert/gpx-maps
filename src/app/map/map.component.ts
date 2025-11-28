@@ -418,9 +418,10 @@ export class MapComponent implements OnInit, AfterViewInit {
 
       if (meta.has && meta.full && meta.prog && meta.mark && meta.ticks) {
         const latlngs = meta.sanitized.map(p => L.latLng(p.lat, p.lon));
+        const startLatLng = latlngs[0];
         meta.full.setLatLngs(latlngs);
-        meta.prog.setLatLngs([[meta.sanitized[0].lat, meta.sanitized[0].lon]]);
-        meta.mark.setLatLng([meta.sanitized[0].lat, meta.sanitized[0].lon]).addTo(this.map);
+        meta.prog.setLatLngs([startLatLng]);
+        meta.mark.setLatLng(startLatLng).addTo(this.map);
         meta.ticks.clearLayers();
         boundsPts.push(...latlngs);
         anyTrack = true;
@@ -477,8 +478,8 @@ export class MapComponent implements OnInit, AfterViewInit {
         if (!meta.has || !meta.sanitized.length || !meta.prog || !meta.mark || !meta.ticks) return;
 
         const start = meta.sanitized[0].t;
-        const end = meta.sanitized[meta.sanitized.length - 1].t;
-        const tAbs = start + this.relMs;
+      const end = meta.sanitized[meta.sanitized.length - 1].t;
+      const tAbs = start + this.relMs;
 
         while (meta.cursor + 1 < meta.sanitized.length && meta.sanitized[meta.cursor + 1].t <= tAbs) meta.cursor++;
 
@@ -491,10 +492,12 @@ export class MapComponent implements OnInit, AfterViewInit {
         }
 
         const pos = this.positionAt(meta.sanitized, tAbs, { i: meta.cursor });
-        const path: [number, number][] = meta.sanitized.slice(0, meta.cursor + 1).map(p => [p.lat, p.lon]);
-        path.push([pos[0], pos[1]]);
+        const path = meta.sanitized
+          .slice(0, meta.cursor + 1)
+          .map(p => L.latLng(p.lat, p.lon));
+        path.push(L.latLng(pos[0], pos[1]));
         meta.prog.setLatLngs(path);
-        meta.mark.setLatLng(pos);
+        meta.mark.setLatLng(L.latLng(pos[0], pos[1]));
 
         const done = meta.cursor >= meta.sanitized.length - 1 && tAbs >= end;
         if (done && !meta.finalAdded) { this.addFinalTick(meta.sanitized, meta.color, meta.ticks, start); meta.finalAdded = true; }

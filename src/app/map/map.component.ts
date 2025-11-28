@@ -56,8 +56,9 @@ export class MapComponent implements OnInit, AfterViewInit {
   private visualizationMode: 'general' | 'zoomCabeza' = 'general';
   private zoomPhase: 'focus' | 'overview' = 'focus';
   private lastZoomSwitch = 0;
-  private readonly focusDurationMs = 6000;
   private readonly overviewDurationMs = 2000;
+  private maxRaceDurationMs = 0;
+  private midOverviewShown = false;
   private firstFinisherSeen = false;
   private lastLeaderPan = 0;
   private readonly leaderPanIntervalMs = 450;
@@ -439,6 +440,7 @@ export class MapComponent implements OnInit, AfterViewInit {
       .filter(meta => meta.has && meta.sanitized.length >= 2)
       .map(meta => meta.sanitized[meta.sanitized.length - 1].t - meta.sanitized[0].t);
     const maxDur = durations.length ? Math.max(...durations) : 0;
+    this.maxRaceDurationMs = maxDur;
     this.replaySpeed = maxDur > 0 ? maxDur / (this.desiredDurationSec * 1000) : 8;
     if (!Number.isFinite(this.replaySpeed) || this.replaySpeed <= 0) this.replaySpeed = 8;
 
@@ -451,6 +453,7 @@ export class MapComponent implements OnInit, AfterViewInit {
   afterInicio(): void {
     this.lastZoomSwitch = performance.now();
     this.zoomPhase = 'focus';
+    this.midOverviewShown = false;
     this.firstFinisherSeen = false;
     this.lastLeaderPan = 0;
     this.lastLeaderTarget = null;
@@ -586,21 +589,25 @@ export class MapComponent implements OnInit, AfterViewInit {
 
     if (this.firstFinisherSeen) return;
 
-    if (this.zoomPhase === 'focus' && now - this.lastZoomSwitch >= this.focusDurationMs) {
+    const halfRaceMs = this.maxRaceDurationMs > 0 ? this.maxRaceDurationMs / 2 : null;
+    if (!this.midOverviewShown && halfRaceMs !== null && relMs >= halfRaceMs) {
+      this.midOverviewShown = true;
       this.zoomPhase = 'overview';
       this.lastZoomSwitch = now;
       this.setGeneralView();
       return;
     }
 
-    if (this.zoomPhase === 'overview' && now - this.lastZoomSwitch >= this.overviewDurationMs) {
-      this.zoomPhase = 'focus';
-      this.lastZoomSwitch = now;
+    if (this.zoomPhase === 'overview') {
+      if (now - this.lastZoomSwitch >= this.overviewDurationMs) {
+        this.zoomPhase = 'focus';
+        this.lastZoomSwitch = now;
+      } else {
+        return;
+      }
     }
 
-    if (this.zoomPhase === 'focus') {
-      this.followLeader(relMs, now);
-    }
+    this.followLeader(relMs, now);
   }
 
   // Detecta paradas de forma adaptativa: (A) pasos cortos acumulados y (B) intervalos únicos largos.

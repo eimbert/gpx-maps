@@ -382,18 +382,32 @@ export class LoadGpxComponent implements OnInit {
     if (!track?.data?.trkpts || track.data.trkpts.length < 2) return null;
 
     const puntos = track.data.trkpts as any[];
-    const baseDuraciones: number[] = [];
+    const segmentos = [] as { distancia: number; pendiente: number }[];
 
     for (let i = 1; i < puntos.length; i++) {
       const dist = this.calculateDistance(puntos[i - 1].lat, puntos[i - 1].lon, puntos[i].lat, puntos[i].lon);
       const deltaEle = (puntos[i].ele ?? 0) - (puntos[i - 1].ele ?? 0);
       const pendiente = dist > 0 ? (deltaEle / dist) * 100 : 0;
-      const velocidadKmh = this.velocidadSegunPendiente(pendiente);
-      const velocidadMs = velocidadKmh / 3.6;
-      const duracion = velocidadMs > 0 ? dist / velocidadMs : 0;
-      baseDuraciones.push(Number.isFinite(duracion) && duracion > 0 ? duracion : 1);
+      segmentos.push({ distancia: dist, pendiente });
     }
 
+    if (!segmentos.length) return null;
+
+    // Suaviza cambios bruscos de velocidad aplicando una media móvil sobre las pendientes.
+    const windowSize = 5;
+    const velocidadesSuavizadasMs = segmentos.map((seg, idx, arr) => {
+      const half = Math.floor(windowSize / 2);
+      let sum = 0, count = 0;
+      for (let j = Math.max(0, idx - half); j <= Math.min(arr.length - 1, idx + half); j++) {
+        const velKmh = this.velocidadSegunPendiente(arr[j].pendiente);
+        sum += velKmh / 3.6;
+        count++;
+      }
+      const media = count > 0 ? sum / count : this.velocidadSegunPendiente(seg.pendiente) / 3.6;
+      return Math.max(0.5, media); // evita saltos por velocidades demasiado bajas
+    });
+
+    const baseDuraciones = segmentos.map((seg, idx) => seg.distancia / velocidadesSuavizadasMs[idx]);
     const totalBase = baseDuraciones.reduce((a, b) => a + b, 0);
     if (!Number.isFinite(totalBase) || totalBase <= 0) return null;
     const factorEscala = Math.max(0.1, objetivoSegundos / totalBase);

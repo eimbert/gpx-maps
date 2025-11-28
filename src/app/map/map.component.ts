@@ -59,13 +59,15 @@ export class MapComponent implements OnInit, AfterViewInit {
   private readonly overviewDurationMs = 2000;
   private maxRaceDurationMs = 0;
   private midOverviewShown = false;
+  private midOverviewActive = false;
   private firstFinisherSeen = false;
   private lastLeaderPan = 0;
   private leaderAnimationRunning = false;
   private readonly leaderPanIntervalMs = 450;
   private readonly leaderZoomLevel = 17;
   private readonly leaderFlyDurationMs = 650;
-  private readonly ghostOpacity = 0.25;
+  private readonly ghostOpacity = 0.4;
+  private readonly ghostWeight = 3;
   private readonly progressOpacity = 0.95;
   private readonly zoomPlaybackFactor = 0.3;
   private readonly zoomPanSlowdownFactor = 2;
@@ -386,7 +388,7 @@ export class MapComponent implements OnInit, AfterViewInit {
     this.renderer = L.canvas({ padding: 0.25 }).addTo(this.map);
 
     const ghost = (color: string): L.PolylineOptions => ({
-      color, weight: 2, opacity: this.ghostOpacity, renderer: this.renderer, interactive: false, fill: false, stroke: true
+      color, weight: this.ghostWeight, opacity: this.ghostOpacity, renderer: this.renderer, interactive: false, fill: false, stroke: true
     });
     const prog = (color: string): L.PolylineOptions => ({
       color, weight: 4, opacity: this.progressOpacity, renderer: this.renderer, interactive: false, fill: false, stroke: true
@@ -478,6 +480,7 @@ export class MapComponent implements OnInit, AfterViewInit {
     this.lastZoomSwitch = performance.now();
     this.zoomPhase = 'focus';
     this.midOverviewShown = false;
+    this.midOverviewActive = false;
     this.firstFinisherSeen = false;
     this.lastLeaderPan = 0;
     this.lastLeaderTarget = null;
@@ -572,10 +575,11 @@ export class MapComponent implements OnInit, AfterViewInit {
   }
 
   private applyTrackVisibility(): void {
-    const showProgress = this.shouldShowTracks;
+    const hideProgressForMidOverview = this.midOverviewActive && !this.firstFinisherSeen;
+    const showProgress = this.shouldShowTracks && !hideProgressForMidOverview;
 
     this.trackMetas.forEach((meta) => {
-      if (meta.full) meta.full.setStyle({ opacity: this.ghostOpacity });
+      if (meta.full) meta.full.setStyle({ opacity: this.ghostOpacity, weight: this.ghostWeight });
       if (meta.prog) meta.prog.setStyle({ opacity: showProgress ? this.progressOpacity : 0 });
     });
   }
@@ -644,6 +648,7 @@ export class MapComponent implements OnInit, AfterViewInit {
 
     if (someoneFinished && !this.firstFinisherSeen) {
       this.firstFinisherSeen = true;
+      this.midOverviewActive = false;
       this.zoomPhase = 'overview';
       this.setGeneralView();
       this.applyTrackVisibility();
@@ -655,6 +660,7 @@ export class MapComponent implements OnInit, AfterViewInit {
     const halfRaceMs = this.maxRaceDurationMs > 0 ? this.maxRaceDurationMs / 2 : null;
     if (!this.midOverviewShown && halfRaceMs !== null && relMs >= halfRaceMs) {
       this.midOverviewShown = true;
+      this.midOverviewActive = true;
       this.zoomPhase = 'overview';
       this.lastZoomSwitch = now;
       this.setGeneralView();
@@ -666,6 +672,7 @@ export class MapComponent implements OnInit, AfterViewInit {
       if (now - this.lastZoomSwitch >= this.overviewDurationMs) {
         this.zoomPhase = 'focus';
         this.lastZoomSwitch = now;
+        this.midOverviewActive = false;
         this.applyTrackVisibility();
       } else {
         return;

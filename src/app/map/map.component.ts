@@ -65,6 +65,8 @@ export class MapComponent implements OnInit, AfterViewInit {
   private readonly leaderPanIntervalMs = 450;
   private readonly leaderZoomLevel = 17;
   private readonly leaderFlyDurationMs = 650;
+  private readonly ghostOpacity = 0.25;
+  private readonly progressOpacity = 0.95;
   private readonly zoomPlaybackFactor = 0.3;
   private readonly zoomPanSlowdownFactor = 2;
   private lastLeaderTarget: L.LatLng | null = null;
@@ -384,10 +386,10 @@ export class MapComponent implements OnInit, AfterViewInit {
     this.renderer = L.canvas({ padding: 0.25 }).addTo(this.map);
 
     const ghost = (color: string): L.PolylineOptions => ({
-      color, weight: 2, opacity: 0.25, renderer: this.renderer, interactive: false, fill: false, stroke: true
+      color, weight: 2, opacity: this.ghostOpacity, renderer: this.renderer, interactive: false, fill: false, stroke: true
     });
     const prog = (color: string): L.PolylineOptions => ({
-      color, weight: 4, opacity: 0.95, renderer: this.renderer, interactive: false, fill: false, stroke: true
+      color, weight: 4, opacity: this.progressOpacity, renderer: this.renderer, interactive: false, fill: false, stroke: true
     });
     const mk = (c: string) => L.divIcon({
       className: 'custom-circle-icon',
@@ -435,6 +437,8 @@ export class MapComponent implements OnInit, AfterViewInit {
       }
     });
 
+    this.applyTrackVisibility();
+
     const union = L.latLngBounds(boundsPts);
     this.allTracksBounds = union.isValid() ? union.pad(0.05) : null;
     if (this.allTracksBounds) {
@@ -477,6 +481,8 @@ export class MapComponent implements OnInit, AfterViewInit {
     this.firstFinisherSeen = false;
     this.lastLeaderPan = 0;
     this.lastLeaderTarget = null;
+
+    this.applyTrackVisibility();
 
     let last = performance.now();
     const step = (now: number) => {
@@ -546,6 +552,10 @@ export class MapComponent implements OnInit, AfterViewInit {
     return this.visualizationMode === 'zoomCabeza';
   }
 
+  private get shouldShowTracks(): boolean {
+    return !this.isZoomMode || this.zoomPhase === 'overview';
+  }
+
   private get leaderPanInterval(): number {
     return this.isZoomMode ? this.leaderPanIntervalMs * this.zoomPanSlowdownFactor : this.leaderPanIntervalMs;
   }
@@ -559,6 +569,15 @@ export class MapComponent implements OnInit, AfterViewInit {
     if (this.allTracksBounds && this.allTracksBounds.isValid()) {
       this.map.flyToBounds(this.allTracksBounds, { animate: true, duration: 0.7 });
     }
+  }
+
+  private applyTrackVisibility(): void {
+    const show = this.shouldShowTracks;
+
+    this.trackMetas.forEach((meta) => {
+      if (meta.full) meta.full.setStyle({ opacity: show ? this.ghostOpacity : 0 });
+      if (meta.prog) meta.prog.setStyle({ opacity: show ? this.progressOpacity : 0 });
+    });
   }
 
   private getLeaderPosition(relMs: number): L.LatLngExpression | null {
@@ -627,6 +646,7 @@ export class MapComponent implements OnInit, AfterViewInit {
       this.firstFinisherSeen = true;
       this.zoomPhase = 'overview';
       this.setGeneralView();
+      this.applyTrackVisibility();
       return;
     }
 
@@ -638,6 +658,7 @@ export class MapComponent implements OnInit, AfterViewInit {
       this.zoomPhase = 'overview';
       this.lastZoomSwitch = now;
       this.setGeneralView();
+      this.applyTrackVisibility();
       return;
     }
 
@@ -645,6 +666,7 @@ export class MapComponent implements OnInit, AfterViewInit {
       if (now - this.lastZoomSwitch >= this.overviewDurationMs) {
         this.zoomPhase = 'focus';
         this.lastZoomSwitch = now;
+        this.applyTrackVisibility();
       } else {
         return;
       }

@@ -537,10 +537,12 @@ export class MapComponent implements OnInit, AfterViewInit {
       }
     });
 
+
     if (!best) return null;
 
     const [lat, lon] = best.pos;
     return L.latLng(lat, lon);
+
   }
 
   private followLeader(relMs: number, now: number): void {

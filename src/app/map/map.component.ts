@@ -61,6 +61,7 @@ export class MapComponent implements OnInit, AfterViewInit {
   private midOverviewShown = false;
   private firstFinisherSeen = false;
   private lastLeaderPan = 0;
+  private leaderAnimationRunning = false;
   private readonly leaderPanIntervalMs = 450;
   private readonly leaderZoomLevel = 16;
   private readonly leaderFlyDurationMs = 650;
@@ -566,6 +567,7 @@ export class MapComponent implements OnInit, AfterViewInit {
 
   private followLeader(relMs: number, now: number): void {
     if (!this.map) return;
+    if (this.leaderAnimationRunning) return;
     if (now - this.lastLeaderPan < this.leaderPanIntervalMs) return;
 
     const leader = this.getLeaderPosition(relMs);
@@ -577,6 +579,8 @@ export class MapComponent implements OnInit, AfterViewInit {
 
     if (!movedEnough && !zoomChanged) return;
 
+    this.leaderAnimationRunning = true;
+    this.map.once('moveend', () => { this.leaderAnimationRunning = false; });
     this.map.flyTo(target, this.leaderZoomLevel, {
       animate: true,
       duration: this.leaderFlyDurationMs / 1000,

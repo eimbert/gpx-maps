@@ -16,6 +16,7 @@ export class DialogoConfiguracionComponent {
   permitirAdversarioVirtual = false;
   incluirAdversarioVirtual = false;
   tiempoAdversarioVirtual = '00:45';
+  modoVisualizacion: 'general' | 'zoomCabeza' = 'general';
 
    constructor(
     private dialogRef: MatDialogRef<DialogoConfiguracionComponent, DialogoConfiguracionData>,
@@ -30,6 +31,7 @@ export class DialogoConfiguracionComponent {
       this.tiempoAdversarioVirtual = data.tiempoAdversarioVirtual ?? this.tiempoAdversarioVirtual;
       this.grabarAnimacion = !!data.grabarAnimacion;
       this.relacionAspectoGrabacion = data.relacionAspectoGrabacion ?? this.relacionAspectoGrabacion;
+      this.modoVisualizacion = data.modoVisualizacion ?? this.modoVisualizacion;
     }
   }
 
@@ -45,7 +47,8 @@ export class DialogoConfiguracionComponent {
       relacionAspectoGrabacion: this.relacionAspectoGrabacion,
       permitirAdversarioVirtual: this.permitirAdversarioVirtual,
       incluirAdversarioVirtual: this.incluirAdversarioVirtual,
-      tiempoAdversarioVirtual: this.tiempoAdversarioVirtual
+      tiempoAdversarioVirtual: this.tiempoAdversarioVirtual,
+      modoVisualizacion: this.modoVisualizacion
     });
   }
 

@@ -30,6 +30,28 @@
       </mat-checkbox>
     </div>
 
+    <div class="visualization-modes">
+      <span class="orientation-label">Modo de visualización:</span>
+      <label class="orientation-option">
+        <input
+          type="radio"
+          name="visualizacion"
+          value="general"
+          [(ngModel)]="modoVisualizacion"
+        />
+        Vista actual (general)
+      </label>
+      <label class="orientation-option">
+        <input
+          type="radio"
+          name="visualizacion"
+          value="zoomCabeza"
+          [(ngModel)]="modoVisualizacion"
+        />
+        Zoom a la cabeza de carrera
+      </label>
+    </div>
+
     <div class="recording-orientation" *ngIf="grabarAnimacion">
       <span class="orientation-label">Relación de aspecto para la grabación:</span>
       <label class="orientation-option">

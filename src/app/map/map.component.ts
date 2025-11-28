@@ -379,7 +379,7 @@ export class MapComponent implements OnInit, AfterViewInit {
   private initMap(): void {
     this.map = L.map('map', { preferCanvas: true }).setView([40.4168, -3.7038], 6);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '© OpenStreetMap' }).addTo(this.map);
-    this.renderer = L.canvas({ padding: 0.25 });
+    this.renderer = L.canvas({ padding: 0.25 }).addTo(this.map);
 
     const ghost = (color: string): L.PolylineOptions => ({
       color, weight: 2, opacity: 0.25, renderer: this.renderer, interactive: false, fill: false, stroke: true

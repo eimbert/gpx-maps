@@ -572,11 +572,11 @@ export class MapComponent implements OnInit, AfterViewInit {
   }
 
   private applyTrackVisibility(): void {
-    const show = this.shouldShowTracks;
+    const showProgress = this.shouldShowTracks;
 
     this.trackMetas.forEach((meta) => {
-      if (meta.full) meta.full.setStyle({ opacity: show ? this.ghostOpacity : 0 });
-      if (meta.prog) meta.prog.setStyle({ opacity: show ? this.progressOpacity : 0 });
+      if (meta.full) meta.full.setStyle({ opacity: this.ghostOpacity });
+      if (meta.prog) meta.prog.setStyle({ opacity: showProgress ? this.progressOpacity : 0 });
     });
   }
 

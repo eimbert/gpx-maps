@@ -53,6 +53,17 @@ export class MapComponent implements OnInit, AfterViewInit {
   showRanking = false;
   ranking: RankingEntry[] = [];
 
+  private visualizationMode: 'general' | 'zoomCabeza' = 'general';
+  private zoomPhase: 'focus' | 'overview' = 'focus';
+  private lastZoomSwitch = 0;
+  private readonly focusDurationMs = 6000;
+  private readonly overviewDurationMs = 2000;
+  private firstFinisherSeen = false;
+  private lastLeaderPan = 0;
+  private readonly leaderPanIntervalMs = 450;
+  private readonly leaderZoomLevel = 15;
+  private allTracksBounds: L.LatLngBounds | null = null;
+
   trackMetas: TrackMeta[] = [];
   private relMs = 0;
   private rafId = 0;
@@ -230,6 +241,7 @@ export class MapComponent implements OnInit, AfterViewInit {
       if (payload.relacionAspectoGrabacion === '9:16') {
         this.recordingAspect = '9:16';
       }
+      this.visualizationMode = payload.modoVisualizacion === 'zoomCabeza' ? 'zoomCabeza' : 'general';
       this.isVerticalViewport = this.recordingAspect === '9:16';
     } else {
       // Fallback (por si alguien entra directo a /map sin pasar por /load)
@@ -416,7 +428,8 @@ export class MapComponent implements OnInit, AfterViewInit {
     });
 
     const union = L.latLngBounds(boundsPts);
-    if (union.isValid()) this.map.fitBounds(union.pad(0.05));
+    this.allTracksBounds = union.isValid() ? union.pad(0.05) : null;
+    if (this.allTracksBounds) this.map.fitBounds(this.allTracksBounds);
 
     if (!anyTrack) return false;
 
@@ -434,6 +447,11 @@ export class MapComponent implements OnInit, AfterViewInit {
   }
 
   afterInicio(): void {
+    this.lastZoomSwitch = performance.now();
+    this.zoomPhase = 'focus';
+    this.firstFinisherSeen = false;
+    this.lastLeaderPan = 0;
+
     let last = performance.now();
     const step = (now: number) => {
       const rawDt = now - last; last = now;
@@ -470,6 +488,9 @@ export class MapComponent implements OnInit, AfterViewInit {
         if (!done) allDone = false;
       });
 
+      const someoneFinished = this.hasAnyFinished(this.relMs);
+      this.updateVisualization(now, this.relMs, someoneFinished);
+
       if (!allDone) {
         this.rafId = requestAnimationFrame(step);
       } else {
@@ -482,6 +503,85 @@ export class MapComponent implements OnInit, AfterViewInit {
     };
 
     this.rafId = requestAnimationFrame(step);
+  }
+
+  private hasAnyFinished(relMs: number): boolean {
+    return this.trackMetas.some(meta => {
+      if (!meta.has || meta.sanitized.length < 2) return false;
+      const start = meta.sanitized[0].t;
+      const end = meta.sanitized[meta.sanitized.length - 1].t;
+      return relMs >= (end - start);
+    });
+  }
+
+  private setGeneralView(): void {
+    if (!this.map) return;
+    if (this.allTracksBounds && this.allTracksBounds.isValid()) {
+      this.map.flyToBounds(this.allTracksBounds, { animate: true, duration: 0.7 });
+    }
+  }
+
+  private getLeaderPosition(relMs: number): L.LatLngExpression | null {
+    let best: { progress: number; pos: [number, number] } | null = null;
+
+    for (const meta of this.trackMetas) {
+      if (!meta.has || meta.sanitized.length < 2) continue;
+      const start = meta.sanitized[0].t;
+      const end = meta.sanitized[meta.sanitized.length - 1].t;
+      const rel = Math.max(0, Math.min(relMs, end - start));
+      const progress = (end - start) > 0 ? rel / (end - start) : 0;
+      if (!best || progress >= best.progress) {
+        const tAbs = start + rel;
+        const pos = this.positionAtAbs(meta.sanitized, tAbs);
+        best = { progress, pos };
+      }
+    }
+
+    if (!best) return null;
+
+    const [lat, lon] = best.pos;
+    return L.latLng(lat, lon);
+  }
+
+  private followLeader(relMs: number, now: number): void {
+    if (!this.map) return;
+    if (now - this.lastLeaderPan < this.leaderPanIntervalMs) return;
+
+    const leader = this.getLeaderPosition(relMs);
+    if (!leader) return;
+
+    this.map.setView(leader, this.leaderZoomLevel, { animate: false });
+    this.lastLeaderPan = now;
+  }
+
+  private updateVisualization(now: number, relMs: number, someoneFinished: boolean): void {
+    if (!this.map) return;
+    if (this.visualizationMode === 'general') return;
+
+    if (someoneFinished && !this.firstFinisherSeen) {
+      this.firstFinisherSeen = true;
+      this.zoomPhase = 'overview';
+      this.setGeneralView();
+      return;
+    }
+
+    if (this.firstFinisherSeen) return;
+
+    if (this.zoomPhase === 'focus' && now - this.lastZoomSwitch >= this.focusDurationMs) {
+      this.zoomPhase = 'overview';
+      this.lastZoomSwitch = now;
+      this.setGeneralView();
+      return;
+    }
+
+    if (this.zoomPhase === 'overview' && now - this.lastZoomSwitch >= this.overviewDurationMs) {
+      this.zoomPhase = 'focus';
+      this.lastZoomSwitch = now;
+    }
+
+    if (this.zoomPhase === 'focus') {
+      this.followLeader(relMs, now);
+    }
   }
 
   // Detecta paradas de forma adaptativa: (A) pasos cortos acumulados y (B) intervalos únicos largos.

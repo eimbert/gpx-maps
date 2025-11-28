@@ -7,5 +7,6 @@ export interface DialogoConfiguracionData {
   tiempoAdversarioVirtual?: string;
   grabarAnimacion?: boolean;
   relacionAspectoGrabacion?: '16:9' | '9:16';
+  modoVisualizacion?: 'general' | 'zoomCabeza';
 
 }

@@ -260,6 +260,7 @@ export class LoadGpxComponent implements OnInit {
           grabarAnimacion: false,
           relacionAspectoGrabacion: '16:9',
           permitirAdversarioVirtual,
+          modoVisualizacion: 'general',
         }
       }
     )
@@ -291,7 +292,8 @@ export class LoadGpxComponent implements OnInit {
             rmstops: !!result.eliminarPausasLargas,
             activarMusica: !!result.activarMusica,
             grabarAnimacion: !!result.grabarAnimacion,
-            relacionAspectoGrabacion: result.relacionAspectoGrabacion ?? '16:9'
+            relacionAspectoGrabacion: result.relacionAspectoGrabacion ?? '16:9',
+            modoVisualizacion: result.modoVisualizacion ?? 'general'
           };
           sessionStorage.setItem('gpxViewerPayload', JSON.stringify(payload));
 

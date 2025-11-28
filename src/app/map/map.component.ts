@@ -65,6 +65,8 @@ export class MapComponent implements OnInit, AfterViewInit {
   private readonly leaderPanIntervalMs = 450;
   private readonly leaderZoomLevel = 17;
   private readonly leaderFlyDurationMs = 650;
+  private readonly zoomPlaybackFactor = 0.3;
+  private readonly zoomPanSlowdownFactor = 2;
   private lastLeaderTarget: L.LatLng | null = null;
   private allTracksBounds: L.LatLngBounds | null = null;
   private readonly maxReasonableSpeedMs = 45; // ~162 km/h, evita descartar puntos válidos en coche
@@ -458,6 +460,10 @@ export class MapComponent implements OnInit, AfterViewInit {
     this.replaySpeed = maxDur > 0 ? maxDur / (this.desiredDurationSec * 1000) : 8;
     if (!Number.isFinite(this.replaySpeed) || this.replaySpeed <= 0) this.replaySpeed = 8;
 
+    if (this.isZoomMode) {
+      this.replaySpeed *= this.zoomPlaybackFactor;
+    }
+
     this.relMs = 0;
     this.started = true;
 
@@ -536,6 +542,18 @@ export class MapComponent implements OnInit, AfterViewInit {
     });
   }
 
+  private get isZoomMode(): boolean {
+    return this.visualizationMode === 'zoomCabeza';
+  }
+
+  private get leaderPanInterval(): number {
+    return this.isZoomMode ? this.leaderPanIntervalMs * this.zoomPanSlowdownFactor : this.leaderPanIntervalMs;
+  }
+
+  private get leaderFlyDuration(): number {
+    return this.isZoomMode ? this.leaderFlyDurationMs * this.zoomPanSlowdownFactor : this.leaderFlyDurationMs;
+  }
+
   private setGeneralView(): void {
     if (!this.map) return;
     if (this.allTracksBounds && this.allTracksBounds.isValid()) {
@@ -573,7 +591,7 @@ export class MapComponent implements OnInit, AfterViewInit {
   private followLeader(relMs: number, now: number): void {
     if (!this.map) return;
     if (this.leaderAnimationRunning) return;
-    if (now - this.lastLeaderPan < this.leaderPanIntervalMs) return;
+    if (now - this.lastLeaderPan < this.leaderPanInterval) return;
 
     const leader = this.getLeaderPosition(relMs);
     if (!leader) return;
@@ -594,7 +612,7 @@ export class MapComponent implements OnInit, AfterViewInit {
     this.map.once('moveend', () => { this.leaderAnimationRunning = false; });
     this.map.flyTo(target, this.leaderZoomLevel, {
       animate: true,
-      duration: this.leaderFlyDurationMs / 1000,
+      duration: this.leaderFlyDuration / 1000,
       easeLinearity: 0.25,
     });
     this.lastLeaderPan = now;

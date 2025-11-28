@@ -123,3 +123,14 @@
   gap: 8px;
   color: #30343b;
 }
+
+.visualization-modes {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 8px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px dashed #c6d0e0;
+  background: #fff;
+}

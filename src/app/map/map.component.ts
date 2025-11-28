@@ -524,8 +524,10 @@ export class MapComponent implements OnInit, AfterViewInit {
   private getLeaderPosition(relMs: number): L.LatLngExpression | null {
     let best: { progress: number; pos: [number, number] } | null = null;
 
+
     for (const meta of this.trackMetas) {
       if (!meta.has || meta.sanitized.length < 2) continue;
+
       const start = meta.sanitized[0].t;
       const end = meta.sanitized[meta.sanitized.length - 1].t;
       const rel = Math.max(0, Math.min(relMs, end - start));
@@ -537,10 +539,13 @@ export class MapComponent implements OnInit, AfterViewInit {
       }
     }
 
+
     if (!best) return null;
 
     const [lat, lon] = best.pos;
     return L.latLng(lat, lon);
+
+
   }
 
   private followLeader(relMs: number, now: number): void {

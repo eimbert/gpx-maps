@@ -63,7 +63,7 @@ export class MapComponent implements OnInit, AfterViewInit {
   private lastLeaderPan = 0;
   private leaderAnimationRunning = false;
   private readonly leaderPanIntervalMs = 450;
-  private readonly leaderZoomLevel = 16;
+  private readonly leaderZoomLevel = 17;
   private readonly leaderFlyDurationMs = 650;
   private lastLeaderTarget: L.LatLng | null = null;
   private allTracksBounds: L.LatLngBounds | null = null;
@@ -440,6 +440,11 @@ export class MapComponent implements OnInit, AfterViewInit {
         padding: [24, 24],
         maxZoom: this.leaderZoomLevel - 1
       });
+      const currentZoom = this.map.getZoom();
+      const targetZoom = Math.min(this.leaderZoomLevel - 1, currentZoom + 1);
+      if (targetZoom > currentZoom) {
+        this.map.setZoom(targetZoom);
+      }
       this.map.invalidateSize();
     }
 
@@ -574,10 +579,16 @@ export class MapComponent implements OnInit, AfterViewInit {
     if (!leader) return;
 
     const target = L.latLng(leader);
-    const movedEnough = !this.lastLeaderTarget || this.lastLeaderTarget.distanceTo(target) > 5;
-    const zoomChanged = this.map.getZoom() !== this.leaderZoomLevel;
+    const viewBounds = this.map.getBounds().pad(-0.2);
+    const zoomMismatch = this.map.getZoom() < this.leaderZoomLevel;
 
-    if (!movedEnough && !zoomChanged) return;
+    if (viewBounds.contains(target) && !zoomMismatch) {
+      this.lastLeaderTarget = target;
+      return;
+    }
+
+    const movedEnough = !this.lastLeaderTarget || this.lastLeaderTarget.distanceTo(target) > 5;
+    if (!movedEnough && !zoomMismatch) return;
 
     this.leaderAnimationRunning = true;
     this.map.once('moveend', () => { this.leaderAnimationRunning = false; });

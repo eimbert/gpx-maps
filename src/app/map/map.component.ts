@@ -61,7 +61,9 @@ export class MapComponent implements OnInit, AfterViewInit {
   private firstFinisherSeen = false;
   private lastLeaderPan = 0;
   private readonly leaderPanIntervalMs = 450;
-  private readonly leaderZoomLevel = 15;
+  private readonly leaderZoomLevel = 17;
+  private readonly leaderFlyDurationMs = 650;
+  private lastLeaderTarget: L.LatLng | null = null;
   private allTracksBounds: L.LatLngBounds | null = null;
 
   trackMetas: TrackMeta[] = [];
@@ -451,6 +453,7 @@ export class MapComponent implements OnInit, AfterViewInit {
     this.zoomPhase = 'focus';
     this.firstFinisherSeen = false;
     this.lastLeaderPan = 0;
+    this.lastLeaderTarget = null;
 
     let last = performance.now();
     const step = (now: number) => {
@@ -555,8 +558,19 @@ export class MapComponent implements OnInit, AfterViewInit {
     const leader = this.getLeaderPosition(relMs);
     if (!leader) return;
 
-    this.map.setView(leader, this.leaderZoomLevel, { animate: false });
+    const target = L.latLng(leader);
+    const movedEnough = !this.lastLeaderTarget || this.lastLeaderTarget.distanceTo(target) > 5;
+    const zoomChanged = this.map.getZoom() !== this.leaderZoomLevel;
+
+    if (!movedEnough && !zoomChanged) return;
+
+    this.map.flyTo(target, this.leaderZoomLevel, {
+      animate: true,
+      duration: this.leaderFlyDurationMs / 1000,
+      easeLinearity: 0.25,
+    });
     this.lastLeaderPan = now;
+    this.lastLeaderTarget = target;
   }
 
   private updateVisualization(now: number, relMs: number, someoneFinished: boolean): void {

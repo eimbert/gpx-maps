@@ -62,7 +62,7 @@ export class MapComponent implements OnInit, AfterViewInit {
   private firstFinisherSeen = false;
   private lastLeaderPan = 0;
   private readonly leaderPanIntervalMs = 450;
-  private readonly leaderZoomLevel = 17;
+  private readonly leaderZoomLevel = 16;
   private readonly leaderFlyDurationMs = 650;
   private lastLeaderTarget: L.LatLng | null = null;
   private allTracksBounds: L.LatLngBounds | null = null;
@@ -432,7 +432,13 @@ export class MapComponent implements OnInit, AfterViewInit {
 
     const union = L.latLngBounds(boundsPts);
     this.allTracksBounds = union.isValid() ? union.pad(0.05) : null;
-    if (this.allTracksBounds) this.map.fitBounds(this.allTracksBounds);
+    if (this.allTracksBounds) {
+      this.map.fitBounds(this.allTracksBounds, {
+        padding: [24, 24],
+        maxZoom: this.leaderZoomLevel - 1
+      });
+      this.map.invalidateSize();
+    }
 
     if (!anyTrack) return false;
 

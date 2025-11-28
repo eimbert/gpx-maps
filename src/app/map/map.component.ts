@@ -66,6 +66,7 @@ export class MapComponent implements OnInit, AfterViewInit {
   private readonly leaderFlyDurationMs = 650;
   private lastLeaderTarget: L.LatLng | null = null;
   private allTracksBounds: L.LatLngBounds | null = null;
+  private readonly maxReasonableSpeedMs = 45; // ~162 km/h, evita descartar puntos válidos en coche
 
   trackMetas: TrackMeta[] = [];
   private relMs = 0;
@@ -152,7 +153,7 @@ export class MapComponent implements OnInit, AfterViewInit {
     const out: TPx[] = [xs[0]];
     for (let i = 1; i < xs.length; i++) {
       const prev = out[out.length - 1], cur = xs[i];
-      if (this.speedMs(prev, cur) <= 16.67 /* ~60 km/h */) out.push(cur);
+      if (this.speedMs(prev, cur) <= this.maxReasonableSpeedMs) out.push(cur);
     }
     return out;
   }

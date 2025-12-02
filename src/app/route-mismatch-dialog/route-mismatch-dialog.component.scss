@@ -1,0 +1,28 @@
+.dialog-header {
+  margin: -24px -24px 16px;
+  padding: 16px 24px;
+  background: #dc2626;
+  color: #fff;
+}
+
+.dialog-content {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.dialog-subtitle {
+  margin: 0;
+  color: #4b5563;
+  font-weight: 600;
+}
+
+.dialog-body {
+  margin: 0;
+  color: #1f2937;
+  line-height: 1.5;
+}
+
+.dialog-actions {
+  margin-top: 8px;
+}

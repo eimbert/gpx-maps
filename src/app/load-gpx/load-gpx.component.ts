@@ -1,9 +1,11 @@
 import { Component, ElementRef, OnInit, ViewChild } from '@angular/core';
 import { Router } from '@angular/router';
 import { MatDialog } from '@angular/material/dialog';
+import { firstValueFrom } from 'rxjs';
 import { DialogoConfiguracionComponent } from '../dialogo-configuracion/dialogo-configuracion.component';
 import { DialogoConfiguracionData } from '../interfaces/estructuras';
 import { TrackMetadataDialogComponent, TrackMetadataDialogResult } from '../track-metadata-dialog/track-metadata-dialog.component';
+import { RouteMismatchDialogComponent } from '../route-mismatch-dialog/route-mismatch-dialog.component';
 
 interface TrackPoint {
   lat: number;
@@ -97,15 +99,15 @@ export class LoadGpxComponent implements OnInit {
 
   private onFileSelected(file: File): void {
     const reader = new FileReader();
-    reader.onload = (e: any) => {
+    reader.onload = async (e: any) => {
       const gpxData = e.target.result as string;
-      this.parseGPX(gpxData, file);
+      await this.parseGPX(gpxData, file);
     };
     reader.readAsText(file);
   }
 
 
-  parseGPX(gpxData: string, file: File): void {
+  async parseGPX(gpxData: string, file: File): Promise<void> {
     const parser = new DOMParser();
     const gpx = parser.parseFromString(gpxData, 'application/xml');
     const trkpts = gpx.getElementsByTagName('trkpt');
@@ -162,7 +164,7 @@ export class LoadGpxComponent implements OnInit {
     };
 
     const updatedTracks = [...this.tracks, newTrack];
-    if (this.shouldAbortBecauseOfRouteMismatch(updatedTracks)) {
+    if (await this.shouldAbortBecauseOfRouteMismatch(updatedTracks)) {
       return;
     }
 
@@ -201,7 +203,7 @@ export class LoadGpxComponent implements OnInit {
     return palette[index % palette.length];
   }
 
-  private shouldAbortBecauseOfRouteMismatch(tracks: LoadedTrack[]): boolean {
+  private async shouldAbortBecauseOfRouteMismatch(tracks: LoadedTrack[]): Promise<boolean> {
     if (tracks.length < 2) return false;
 
     const base = tracks[0].data.trkpts;
@@ -214,9 +216,12 @@ export class LoadGpxComponent implements OnInit {
 
     if (minOverlap < this.overlapThreshold) {
       const percentage = Math.round(minOverlap * 100);
-      const message = `Los tracks cargados parecen no corresponder a la misma ruta (coincidencia mínima estimada: ${percentage}%). ` +
-        'Si continúas, el resultado puede no ser el adecuado porque se pintarán tracks en diferentes zonas del mapa. ¿Quieres continuar igualmente?';
-      return !confirm(message);
+      const continueAnyway = await firstValueFrom(
+        this.dialog.open(RouteMismatchDialogComponent, {
+          data: { percentage }
+        }).afterClosed()
+      );
+      return !continueAnyway;
     }
 
     return false;

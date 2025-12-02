@@ -620,7 +620,7 @@ export class MapComponent implements OnInit, AfterViewInit {
     if (!leader) return;
 
     const target = L.latLng(leader);
-    const viewBounds = this.map.getBounds().pad(-0.2);
+    const viewBounds = this.map.getBounds().pad(this.isZoomMode ? -0.3 : -0.2);
     const zoomMismatch = this.map.getZoom() < this.leaderZoomLevel;
 
     if (viewBounds.contains(target) && !zoomMismatch) {
@@ -628,7 +628,7 @@ export class MapComponent implements OnInit, AfterViewInit {
       return;
     }
 
-    const movedEnough = !this.lastLeaderTarget || this.lastLeaderTarget.distanceTo(target) > 5;
+    const movedEnough = !this.lastLeaderTarget || this.lastLeaderTarget.distanceTo(target) > (this.isZoomMode ? 2 : 5);
     if (!movedEnough && !zoomMismatch) return;
 
     this.leaderAnimationRunning = true;

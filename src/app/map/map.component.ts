@@ -66,6 +66,7 @@ export class MapComponent implements OnInit, AfterViewInit {
   private readonly leaderPanIntervalMs = 450;
   private readonly leaderZoomLevel = 17;
   private readonly leaderFlyDurationMs = 650;
+  private readonly generalViewZoomScale = 0.75;
   private readonly ghostOpacity = 0.4;
   private readonly ghostWeight = 3;
   private readonly progressOpacity = 0.95;
@@ -383,7 +384,7 @@ export class MapComponent implements OnInit, AfterViewInit {
 
   // ---------- mapa ----------
   private initMap(): void {
-    this.map = L.map('map', { preferCanvas: true }).setView([40.4168, -3.7038], 6);
+    this.map = L.map('map', { preferCanvas: true, zoomSnap: 0.1 }).setView([40.4168, -3.7038], 6);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '© OpenStreetMap' }).addTo(this.map);
     this.renderer = L.canvas({ padding: 0.25 }).addTo(this.map);
 
@@ -449,9 +450,17 @@ export class MapComponent implements OnInit, AfterViewInit {
         maxZoom: this.leaderZoomLevel - 1
       });
       const currentZoom = this.map.getZoom();
-      const targetZoom = Math.min(this.leaderZoomLevel - 1, currentZoom + 1);
-      if (targetZoom > currentZoom) {
-        this.map.setZoom(targetZoom);
+      if (this.isZoomMode) {
+        const targetZoom = Math.min(this.leaderZoomLevel - 1, currentZoom + 1);
+        if (targetZoom > currentZoom) {
+          this.map.setZoom(targetZoom);
+        }
+      } else {
+        const scaledZoom = currentZoom + Math.log2(this.generalViewZoomScale);
+        const boundedZoom = Math.max(this.map.getMinZoom(), Math.min(this.leaderZoomLevel - 1, scaledZoom));
+        if (boundedZoom !== currentZoom) {
+          this.map.setZoom(boundedZoom);
+        }
       }
       this.map.invalidateSize();
     }

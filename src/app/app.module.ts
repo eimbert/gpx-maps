@@ -15,6 +15,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatCheckboxModule } from '@angular/material/checkbox';
+import { RouteMismatchDialogComponent } from './route-mismatch-dialog/route-mismatch-dialog.component';
 
 @NgModule({
   declarations: [
@@ -22,7 +23,8 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
     MapComponent,
     LoadGpxComponent,
     DialogoConfiguracionComponent,
-    TrackMetadataDialogComponent
+    TrackMetadataDialogComponent,
+    RouteMismatchDialogComponent
   ],
   imports: [
     MatCheckboxModule,

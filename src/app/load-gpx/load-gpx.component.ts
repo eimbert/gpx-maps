@@ -30,6 +30,8 @@ export class LoadGpxComponent implements OnInit {
   @ViewChild('fileInput') fileInputRef!: ElementRef<HTMLInputElement>;
 
   readonly maxTracks = 5;
+  private readonly overlapThreshold = 0.65;
+  private readonly overlapProximityMeters = 150;
   isDragOver = false;
   tracks: LoadedTrack[] = [];
 
@@ -159,7 +161,12 @@ export class LoadGpxComponent implements OnInit {
       }
     };
 
-    this.tracks = [...this.tracks, newTrack];
+    const updatedTracks = [...this.tracks, newTrack];
+    if (this.shouldAbortBecauseOfRouteMismatch(updatedTracks)) {
+      return;
+    }
+
+    this.tracks = updatedTracks;
   }
 
   private calculateTotalDistance(trkpts: HTMLCollectionOf<Element>): number {
@@ -192,6 +199,55 @@ export class LoadGpxComponent implements OnInit {
   private pickColor(index: number): string {
     const palette = ['#3b82f6', '#f87171', '#22c55e', '#f59e0b', '#a855f7'];
     return palette[index % palette.length];
+  }
+
+  private shouldAbortBecauseOfRouteMismatch(tracks: LoadedTrack[]): boolean {
+    if (tracks.length < 2) return false;
+
+    const base = tracks[0].data.trkpts;
+    let minOverlap = 1;
+
+    for (let i = 1; i < tracks.length; i++) {
+      const overlap = this.computeOverlapRatio(base, tracks[i].data.trkpts);
+      minOverlap = Math.min(minOverlap, overlap);
+    }
+
+    if (minOverlap < this.overlapThreshold) {
+      const percentage = Math.round(minOverlap * 100);
+      const message = `Los tracks cargados parecen no corresponder a la misma ruta (coincidencia mínima estimada: ${percentage}%). ` +
+        'Si continúas, el resultado puede no ser el adecuado porque se pintarán tracks en diferentes zonas del mapa. ¿Quieres continuar igualmente?';
+      return !confirm(message);
+    }
+
+    return false;
+  }
+
+  private computeOverlapRatio(reference: TrackPoint[], candidate: TrackPoint[]): number {
+    if (!reference.length || !candidate.length) return 0;
+
+    const sampleStepCandidate = Math.max(1, Math.floor(candidate.length / 500));
+    const sampleStepReference = Math.max(1, Math.floor(reference.length / 1000));
+
+    let matches = 0;
+    let total = 0;
+
+    for (let i = 0; i < candidate.length; i += sampleStepCandidate) {
+      total++;
+      if (this.isPointCloseToTrack(candidate[i], reference, sampleStepReference, this.overlapProximityMeters)) {
+        matches++;
+      }
+    }
+
+    return total > 0 ? matches / total : 0;
+  }
+
+  private isPointCloseToTrack(point: TrackPoint, track: TrackPoint[], step: number, thresholdMeters: number): boolean {
+    for (let i = 0; i < track.length; i += step) {
+      const candidate = track[i];
+      const distance = this.calculateDistance(point.lat, point.lon, candidate.lat, candidate.lon);
+      if (distance <= thresholdMeters) return true;
+    }
+    return false;
   }
 
   private applyMetadata(meta: TrackMetadataDialogResult): void {

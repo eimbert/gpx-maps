@@ -70,6 +70,9 @@
         <h1>Elige evento, sube tu track y anima la carrera</h1>
         <p>Explora recorridos, súmate al ranking por categoría y compara tu GPX con otros riders (hasta 4 a la vez).</p>
       </div>
+      <div class="events-actions">
+        <button type="button" class="secondary" (click)="openEventSearch()">🔍 Buscar eventos</button>
+      </div>
     </header>
 
     <div class="events-grid">
@@ -80,13 +83,13 @@
         (click)="selectEvent(event.id)"
       >
         <div class="event-card__header">
-          <div class="event-logo" *ngIf="event.logo">
-            <img [src]="event.logo" [alt]="event.name" />
+          <div class="event-logo" [class.event-logo--placeholder]="!event.logo">
+            <img [src]="getEventLogo(event)" [alt]="event.logo ? event.name : 'Imagen no disponible'" />
           </div>
           <div>
             <p class="eyebrow">{{ event.year }}</p>
             <h3>{{ event.name }}</h3>
-            <p class="muted">{{ event.location }}</p>
+            <p class="muted">{{ getEventLocation(event) }}</p>
           </div>
         </div>
         <div class="pill-group">
@@ -117,7 +120,11 @@
           </label>
           <label>
             <span>Población</span>
-            <input type="text" [(ngModel)]="newEvent.location" placeholder="Ciudad / pueblo" />
+            <input type="text" [(ngModel)]="newEvent.population" placeholder="Ciudad / pueblo" />
+          </label>
+          <label>
+            <span>Comunidad autónoma</span>
+            <input type="text" [(ngModel)]="newEvent.autonomousCommunity" placeholder="Ej: Catalunya" />
           </label>
           <label>
             <span>Año</span>
@@ -143,7 +150,7 @@
     <section *ngIf="selectedEvent" class="event-detail">
       <div class="event-summary">
         <div>
-          <p class="eyebrow">{{ selectedEvent.year }} • {{ selectedEvent.location }}</p>
+          <p class="eyebrow">{{ selectedEvent.year }} • {{ getEventLocation(selectedEvent) }}</p>
           <h2>{{ selectedEvent.name }}</h2>
           <p class="muted">{{ selectedEvent.modalities.length }} recorridos · {{ selectedEvent.tracks.length }} aportes</p>
         </div>

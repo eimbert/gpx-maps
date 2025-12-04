@@ -25,7 +25,7 @@ export class EventService {
   }
 
   addEvent(event: RaceEvent): void {
-    const updated = [...this.events$.value, event];
+    const updated = [...this.events$.value, this.normalizeEvent(event)];
     this.persist(updated);
     this.events$.next(updated);
   }
@@ -47,7 +47,7 @@ export class EventService {
 
     this.http.get<RaceEvent[]>('assets/events.json')
       .subscribe(events => {
-        this.events$.next(events);
+        this.events$.next(this.normalizeEvents(events));
       });
   }
 
@@ -61,9 +61,36 @@ export class EventService {
     if (typeof localStorage === 'undefined') return null;
     try {
       const raw = localStorage.getItem(this.storageKey);
-      return raw ? JSON.parse(raw) as PersistedEvents : null;
+      if (!raw) return null;
+      const parsed = JSON.parse(raw) as PersistedEvents;
+      if (parsed?.events?.length) {
+        parsed.events = this.normalizeEvents(parsed.events);
+      }
+      return parsed;
     } catch {
       return null;
     }
+  }
+
+  private normalizeEvents(events: RaceEvent[]): RaceEvent[] {
+    return events.map(event => this.normalizeEvent(event));
+  }
+
+  private normalizeEvent(event: RaceEvent): RaceEvent {
+    const location = (event as any).location as string | undefined;
+    let population = event.population || '';
+    let autonomousCommunity = event.autonomousCommunity || '';
+
+    if (location && (!population || !autonomousCommunity)) {
+      const [locPopulation, locCommunity] = location.split(',').map(p => p.trim());
+      population = population || locPopulation || '';
+      autonomousCommunity = autonomousCommunity || locCommunity || '';
+    }
+
+    return {
+      ...event,
+      population,
+      autonomousCommunity
+    };
   }
 }

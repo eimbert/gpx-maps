@@ -93,6 +93,19 @@
           <span class="pill" *ngFor="let modality of event.modalities">{{ modality.name }} · {{ modality.distanceKm }} km</span>
         </div>
         <p class="muted">{{ event.tracks.length }} tracks subidos</p>
+        <div class="event-card__ranking" *ngIf="getEventRanking(event, 5).length">
+          <p class="eyebrow">Top tiempos</p>
+          <ol>
+            <li *ngFor="let track of getEventRanking(event, 5); index as i">
+              <span class="position">#{{ i + 1 }}</span>
+              <div class="event-card__runner">
+                <p class="strong">{{ track.nickname }}</p>
+                <p class="muted">{{ findModalityNameForEvent(event, track.modalityId) }}</p>
+              </div>
+              <span class="time">{{ formatTime(track.timeSeconds) }}</span>
+            </li>
+          </ol>
+        </div>
       </article>
 
       <article class="event-card event-card--create">

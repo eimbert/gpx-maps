@@ -676,6 +676,19 @@ export class LoadGpxComponent implements OnInit {
     return this.selectedEvent?.tracks ?? [];
   }
 
+  getEventRanking(event: RaceEvent, limit = 3): EventTrack[] {
+    const bestByNickname = new Map<string, EventTrack>();
+    event.tracks.forEach(track => {
+      const current = bestByNickname.get(track.nickname);
+      if (!current || track.timeSeconds < current.timeSeconds) {
+        bestByNickname.set(track.nickname, track);
+      }
+    });
+    return Array.from(bestByNickname.values())
+      .sort((a, b) => a.timeSeconds - b.timeSeconds)
+      .slice(0, limit);
+  }
+
   private refreshPersonalHistory(): void {
     const nickname = this.personalNickname;
     if (!nickname) {
@@ -701,6 +714,10 @@ export class LoadGpxComponent implements OnInit {
 
   findModalityName(modalityId: string): string {
     return this.selectedEvent?.modalities.find(m => m.id === modalityId)?.name || 'Recorrido';
+  }
+
+  findModalityNameForEvent(event: RaceEvent, modalityId: string): string {
+    return event.modalities.find(m => m.id === modalityId)?.name || 'Recorrido';
   }
 
   async createEvent(): Promise<void> {

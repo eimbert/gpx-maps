@@ -2,7 +2,8 @@
   {
     "id": "pota-roja-2024",
     "name": "La Pota Roja",
-    "location": "Cervelló, Catalunya",
+    "population": "Cervelló",
+    "autonomousCommunity": "Catalunya",
     "year": 2025,
     "logo": "assets/lapota.png",
     "modalities": [
@@ -51,7 +52,8 @@
   {
     "id": "open-natura-2025",
     "name": "Open Maxxis Sant Vicenç dels Horts",
-    "location": "Sant Vicenç dels Horts, Catalunya",
+    "population": "Sant Vicenç dels Horts",
+    "autonomousCommunity": "Catalunya",
     "year": 2025,
     "logo": "assets/maxxis_open_natura.png",
     "modalities": [

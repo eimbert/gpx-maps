@@ -1,0 +1,44 @@
+<div class="search-dialog">
+  <header class="search-dialog__header">
+    <div>
+      <p class="eyebrow">Buscador de eventos</p>
+      <h2>Explora por nombre, zona o distancia</h2>
+      <p class="muted">Haz doble clic sobre una fila para seleccionar el evento y volver a la pantalla anterior.</p>
+    </div>
+  </header>
+
+  <div class="search-dialog__table">
+    <table>
+      <thead>
+        <tr>
+          <th class="logo-col">Logo</th>
+          <th>Nombre</th>
+          <th>Año</th>
+          <th>Población</th>
+          <th>Comunidad</th>
+          <th class="distance-col">Distancia</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr
+          *ngFor="let row of rows"
+          (dblclick)="onRowDoubleClick(row)"
+          [class.is-selected]="isSelected(row)"
+        >
+          <td class="logo-col">
+            <div class="logo-wrapper" [class.logo-wrapper--placeholder]="!row.logo">
+              <img [src]="getLogo(row)" [alt]="row.logo ? row.name : 'Imagen no disponible'" />
+            </div>
+          </td>
+          <td>
+            <div class="main-text">{{ row.name }}</div>
+          </td>
+          <td>{{ row.year }}</td>
+          <td>{{ row.population }}</td>
+          <td>{{ row.autonomousCommunity }}</td>
+          <td class="distance-col">{{ row.distanceKm | number:'1.0-1' }} km</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>

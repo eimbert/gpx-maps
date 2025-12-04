@@ -7,6 +7,7 @@ import { DialogoConfiguracionComponent } from '../dialogo-configuracion/dialogo-
 import { DialogoConfiguracionData } from '../interfaces/estructuras';
 import { TrackMetadataDialogComponent, TrackMetadataDialogResult } from '../track-metadata-dialog/track-metadata-dialog.component';
 import { RouteMismatchDialogComponent } from '../route-mismatch-dialog/route-mismatch-dialog.component';
+import { EventSearchDialogComponent, EventSearchDialogData, EventSearchDialogResult } from '../event-search-dialog/event-search-dialog.component';
 import { BikeType, EventTrack, RaceCategory, RaceEvent } from '../interfaces/events';
 import { EventService } from '../services/event.service';
 
@@ -66,7 +67,8 @@ export class LoadGpxComponent implements OnInit {
 
   newEvent = {
     name: '',
-    location: '',
+    population: '',
+    autonomousCommunity: '',
     year: new Date().getFullYear(),
     modalityName: 'Recorrido 20 km',
     distanceKm: 20,
@@ -102,18 +104,49 @@ export class LoadGpxComponent implements OnInit {
     }
   }
 
-  selectEvent(eventId: string): void {
+  selectEvent(eventId: string, modalityId?: string): void {
     this.selectedEventId = eventId;
     const event = this.selectedEvent;
     this.selectedComparisonIds.clear();
     if (event?.tracks?.length) {
       event.tracks.slice(0, 3).forEach(track => this.selectedComparisonIds.add(track.id));
     }
-    this.selectedModalityId = event?.modalities?.[0]?.id ?? null;
+    this.selectedModalityId = modalityId ?? event?.modalities?.[0]?.id ?? null;
     this.eventUpload = { ...this.eventUpload, modalityId: this.selectedModalityId || '' };
     if (this.personalNickname) {
       this.refreshPersonalHistory();
     }
+  }
+
+  getEventLocation(event: RaceEvent): string {
+    const parts = [event.population, event.autonomousCommunity].filter(Boolean);
+    return parts.join(' • ');
+  }
+
+  getEventLogo(event: RaceEvent): string {
+    return event.logo || 'assets/no-image.svg';
+  }
+
+  openEventSearch(): void {
+    const dialogRef = this.dialog.open<EventSearchDialogComponent, EventSearchDialogData, EventSearchDialogResult>(
+      EventSearchDialogComponent,
+      {
+        width: '960px',
+        height: '640px',
+        data: {
+          events: this.events,
+          selectedEventId: this.selectedEventId,
+          selectedModalityId: this.selectedModalityId
+        }
+      }
+    );
+
+    dialogRef.afterClosed().subscribe(result => {
+      if (result?.eventId) {
+        this.selectMode('events');
+        this.selectEvent(result.eventId, result.modalityId || undefined);
+      }
+    });
   }
 
   startBackgroundMusic() {
@@ -721,7 +754,7 @@ export class LoadGpxComponent implements OnInit {
   }
 
   async createEvent(): Promise<void> {
-    if (!this.newEvent.name.trim() || !this.newEvent.location.trim()) {
+    if (!this.newEvent.name.trim() || !this.newEvent.population.trim()) {
       alert('Completa el nombre y la población del evento.');
       return;
     }
@@ -730,7 +763,8 @@ export class LoadGpxComponent implements OnInit {
     const event: RaceEvent = {
       id: newId,
       name: this.newEvent.name.trim(),
-      location: this.newEvent.location.trim(),
+      population: this.newEvent.population.trim(),
+      autonomousCommunity: this.newEvent.autonomousCommunity.trim(),
       year: this.newEvent.year,
       logo: this.newEvent.logo,
       modalities: [
@@ -746,7 +780,7 @@ export class LoadGpxComponent implements OnInit {
     this.eventService.addEvent(event);
     this.selectMode('events');
     this.selectEvent(event.id);
-    this.newEvent = { ...this.newEvent, name: '', location: '', logo: '' };
+    this.newEvent = { ...this.newEvent, name: '', population: '', autonomousCommunity: '', logo: '' };
   }
 
   async handleLogoUpload(event: Event): Promise<void> {

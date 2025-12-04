@@ -31,7 +31,8 @@ export interface EventTrack {
 export interface RaceEvent {
   id: string;
   name: string;
-  location: string;
+  population: string;
+  autonomousCommunity: string;
   year: number;
   logo?: string;
   modalities: EventModality[];

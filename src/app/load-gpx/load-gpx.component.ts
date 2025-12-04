@@ -1,11 +1,14 @@
 import { Component, ElementRef, OnInit, ViewChild } from '@angular/core';
 import { Router } from '@angular/router';
+import { HttpClient } from '@angular/common/http';
 import { MatDialog } from '@angular/material/dialog';
 import { firstValueFrom } from 'rxjs';
 import { DialogoConfiguracionComponent } from '../dialogo-configuracion/dialogo-configuracion.component';
 import { DialogoConfiguracionData } from '../interfaces/estructuras';
 import { TrackMetadataDialogComponent, TrackMetadataDialogResult } from '../track-metadata-dialog/track-metadata-dialog.component';
 import { RouteMismatchDialogComponent } from '../route-mismatch-dialog/route-mismatch-dialog.component';
+import { BikeType, EventTrack, RaceCategory, RaceEvent } from '../interfaces/events';
+import { EventService } from '../services/event.service';
 
 interface TrackPoint {
   lat: number;
@@ -23,6 +26,11 @@ interface LoadedTrack {
   data: { elevations: number[]; trkpts: TrackPoint[] };
 }
 
+interface ParsedTrackResult {
+  track: LoadedTrack;
+  durationSeconds: number;
+}
+
 @Component({
   selector: 'app-load-gpx',
   templateUrl: './load-gpx.component.html',
@@ -30,20 +38,82 @@ interface LoadedTrack {
 })
 export class LoadGpxComponent implements OnInit {
   @ViewChild('fileInput') fileInputRef!: ElementRef<HTMLInputElement>;
+  @ViewChild('eventFileInput') eventFileInputRef!: ElementRef<HTMLInputElement>;
 
   readonly maxTracks = 5;
+  readonly maxComparison = 4;
   private readonly overlapThreshold = 0.65;
   private readonly overlapProximityMeters = 150;
   isDragOver = false;
   tracks: LoadedTrack[] = [];
 
+  mode: 'routes' | 'events' = 'routes';
+  events: RaceEvent[] = [];
+  selectedEventId: string | null = null;
+  selectedModalityId: string | null = null;
+  selectedComparisonIds = new Set<string>();
+  latestUploadedTrackId: string | null = null;
+  personalNickname = '';
+  personalHistory: EventTrack[] = [];
+
+  eventUpload = {
+    nickname: '',
+    category: 'Senior M' as RaceCategory,
+    bikeType: 'MTB' as BikeType,
+    modalityId: '',
+    file: null as File | null
+  };
+
+  newEvent = {
+    name: '',
+    location: '',
+    year: new Date().getFullYear(),
+    modalityName: 'Recorrido 20 km',
+    distanceKm: 20,
+    logo: ''
+  };
+
+  categories: RaceCategory[] = ['Sub 23M', 'Sub 23F', 'Senior M', 'Senior F', 'Master 40M', 'Master 40F', 'Master 50M', 'Master 50F', 'Master 60M', 'Master 60F'];
+  bikeTypes: BikeType[] = ['MTB', 'Carretera', 'Gravel', 'Eléctrica'];
+
   constructor(
     public dialog: MatDialog,
-    private router: Router) { }
+    private router: Router,
+    private eventService: EventService,
+    private http: HttpClient) { }
 
   ngOnInit() {
-    // Aquí se pueden inicializar cosas necesarias
-    //this.startBackgroundMusic()
+    this.eventService.getEvents().subscribe(events => {
+      this.events = events;
+      if (!this.selectedEventId && events.length) {
+        this.selectEvent(events[0].id);
+      }
+    });
+  }
+
+  get selectedEvent(): RaceEvent | undefined {
+    return this.events.find(e => e.id === this.selectedEventId);
+  }
+
+  selectMode(mode: 'routes' | 'events'): void {
+    this.mode = mode;
+    if (mode === 'events' && this.events.length && !this.selectedEventId) {
+      this.selectEvent(this.events[0].id);
+    }
+  }
+
+  selectEvent(eventId: string): void {
+    this.selectedEventId = eventId;
+    const event = this.selectedEvent;
+    this.selectedComparisonIds.clear();
+    if (event?.tracks?.length) {
+      event.tracks.slice(0, 3).forEach(track => this.selectedComparisonIds.add(track.id));
+    }
+    this.selectedModalityId = event?.modalities?.[0]?.id ?? null;
+    this.eventUpload = { ...this.eventUpload, modalityId: this.selectedModalityId || '' };
+    if (this.personalNickname) {
+      this.refreshPersonalHistory();
+    }
   }
 
   startBackgroundMusic() {
@@ -106,34 +176,32 @@ export class LoadGpxComponent implements OnInit {
     reader.readAsText(file);
   }
 
-
-  async parseGPX(gpxData: string, file: File): Promise<void> {
+  private parseGpxData(gpxData: string, fileName: string, colorIndex: number): ParsedTrackResult {
     const parser = new DOMParser();
     const gpx = parser.parseFromString(gpxData, 'application/xml');
     const trkpts = gpx.getElementsByTagName('trkpt');
 
-    let totalDistance = 0;
     let totalAscent = 0;
     let previousElevation: number | null = null;
-    let elevations: number[] = [];
+    const elevations: number[] = [];
     let firstTime: string | null = null;
+    let lastTime: string | null = null;
 
     for (let i = 0; i < trkpts.length; i++) {
       const ele = parseFloat(trkpts[i].getElementsByTagName('ele')[0]?.textContent || '0');
       const time = trkpts[i].getElementsByTagName('time')[0]?.textContent || '';
-      const lat = parseFloat(trkpts[i].getAttribute('lat')!);
-      const lon = parseFloat(trkpts[i].getAttribute('lon')!);
       const hrElement = trkpts[i].getElementsByTagName('ns3:hr')[0];
       const hr = hrElement ? parseInt(hrElement.textContent || '0') : null;
 
       if (i === 0) {
         firstTime = time;
       }
+      lastTime = time || lastTime;
 
       elevations.push(ele);
       if (previousElevation !== null) {
         const elevationDiff = ele - previousElevation;
-        if (elevationDiff > 0) { // Considerar solo las subidas
+        if (elevationDiff > 0) {
           totalAscent += elevationDiff;
         }
       }
@@ -141,15 +209,18 @@ export class LoadGpxComponent implements OnInit {
     }
 
     const date = firstTime ? new Date(firstTime).toLocaleString() : new Date().toLocaleString();
+    const durationSeconds = (firstTime && lastTime)
+      ? Math.max(0, (new Date(lastTime).getTime() - new Date(firstTime).getTime()) / 1000)
+      : 0;
 
-    const newTrack: LoadedTrack = {
-      name: file.name.replace(/\.[^.]+$/, ''),
-      color: this.pickColor(this.tracks.length),
-      fileName: file.name,
+    const track: LoadedTrack = {
+      name: fileName.replace(/\.[^.]+$/, ''),
+      color: this.pickColor(colorIndex),
+      fileName,
       details: {
-        date: date,
+        date,
         distance: this.calculateTotalDistance(trkpts),
-        ascent: totalAscent // Ascenso acumulado
+        ascent: totalAscent
       },
       data: {
         elevations,
@@ -163,12 +234,27 @@ export class LoadGpxComponent implements OnInit {
       }
     };
 
-    const updatedTracks = [...this.tracks, newTrack];
+    return { track, durationSeconds };
+  }
+
+  async parseGPX(gpxData: string, file: File): Promise<void> {
+    const { track } = this.parseGpxData(gpxData, file.name, this.tracks.length);
+
+    const updatedTracks = [...this.tracks, track];
     if (await this.shouldAbortBecauseOfRouteMismatch(updatedTracks)) {
       return;
     }
 
     this.tracks = updatedTracks;
+  }
+
+  private async readFileAsText(file: File): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = () => reject(reader.error);
+      reader.readAsText(file);
+    });
   }
 
   private calculateTotalDistance(trkpts: HTMLCollectionOf<Element>): number {
@@ -180,11 +266,11 @@ export class LoadGpxComponent implements OnInit {
       const lon = parseFloat(trkpts[i].getAttribute('lon')!);
       totalDistance += this.calculateDistance(prevLat, prevLon, lat, lon);
     }
-    return totalDistance / 1000; // Convertir a kilómetros
+    return totalDistance / 1000;
   }
 
   private calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
-    const R = 6371e3; // Radio de la Tierra en metros
+    const R = 6371e3;
     const φ1 = lat1 * Math.PI / 180;
     const φ2 = lat2 * Math.PI / 180;
     const Δφ = (lat2 - lat1) * Math.PI / 180;
@@ -195,7 +281,7 @@ export class LoadGpxComponent implements OnInit {
       Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 
-    return R * c; // Distancia en metros
+    return R * c;
   }
 
   private pickColor(index: number): string {
@@ -263,8 +349,6 @@ export class LoadGpxComponent implements OnInit {
     }));
   }
 
-
-
   borrarFichero(index: number): void {
     this.tracks = this.tracks.filter((_, i) => i !== index);
   }
@@ -272,6 +356,7 @@ export class LoadGpxComponent implements OnInit {
   tracksCargados(): boolean {
     return this.tracks.length > 0;
   }
+
   iniciarVisualizacion(): void {
     if (!this.tracksCargados()) {
       alert('Carga al menos un track.');
@@ -314,7 +399,7 @@ export class LoadGpxComponent implements OnInit {
       DialogoConfiguracionComponent,
       {
         width: '520px',
-        data: {  // opcional: valores por defecto
+        data: {
           eliminarPausasLargas: false,
           anadirLogoTitulos: false,
           activarMusica: true,
@@ -327,7 +412,7 @@ export class LoadGpxComponent implements OnInit {
     )
       .afterClosed()
       .subscribe((result) => {
-        if (!result) return; // pulsó Cancelar o cerró el diálogo
+        if (!result) return;
 
         let tracksFinal = tracksPayload;
         let namesFinal = namesPayload;
@@ -344,7 +429,6 @@ export class LoadGpxComponent implements OnInit {
         }
 
         const afterLogo = (logoDataUrl: string | null) => {
-          // 👉 Guardamos TODO en sessionStorage para evitar URLs enormes
           const payload = {
             names: namesFinal,
             colors: colorsFinal,
@@ -358,7 +442,6 @@ export class LoadGpxComponent implements OnInit {
           };
           sessionStorage.setItem('gpxViewerPayload', JSON.stringify(payload));
 
-          // Navegamos con una URL corta
           this.router.navigate(['/map'], { queryParams: { s: '1' } });
         };
 
@@ -370,7 +453,6 @@ export class LoadGpxComponent implements OnInit {
             const file = input.files?.[0];
             if (!file) return afterLogo(null);
             try {
-              // usa tu helper (ancho o alto como prefieras)
               const dataUrl = await this.downscaleImageFromFile(file, 122, 'image/png', 0.92, false);
               afterLogo(dataUrl);
             } catch { afterLogo(null); }
@@ -382,7 +464,6 @@ export class LoadGpxComponent implements OnInit {
 
       });
   }
-
 
   private downscaleImageFromFile(
     file: File,
@@ -398,7 +479,7 @@ export class LoadGpxComponent implements OnInit {
         try {
           const scale = allowUpscale
             ? (targetHeight / img.naturalHeight)
-            : Math.min(1, targetHeight / img.naturalHeight); // no ampliar si es más pequeño
+            : Math.min(1, targetHeight / img.naturalHeight);
 
           const h = Math.max(1, Math.round(img.naturalHeight * scale));
           const w = Math.max(1, Math.round(img.naturalWidth * scale));
@@ -428,11 +509,11 @@ export class LoadGpxComponent implements OnInit {
     const horas = parseInt(partes[0] ?? '0', 10);
     const minutos = parseInt(partes[1] ?? '0', 10);
     const total = Math.max(0, (horas * 60 + minutos));
-    return total > 0 ? total * 60 : 45 * 60; // por defecto 45 minutos
+    return total > 0 ? total * 60 : 45 * 60;
   }
 
   private velocidadSegunPendiente(porcentaje: number): number {
-    if (porcentaje > 6) return 10;      // km/h
+    if (porcentaje > 6) return 10;
     if (porcentaje > 2) return 12;
     if (porcentaje > -2) return 14;
     if (porcentaje > -6) return 16;
@@ -454,7 +535,6 @@ export class LoadGpxComponent implements OnInit {
 
     if (!segmentos.length) return null;
 
-    // Suaviza cambios bruscos de velocidad aplicando una media móvil sobre las pendientes.
     const windowSize = 5;
     const velocidadesSuavizadasMs = segmentos.map((seg, idx, arr) => {
       const half = Math.floor(windowSize / 2);
@@ -465,7 +545,7 @@ export class LoadGpxComponent implements OnInit {
         count++;
       }
       const media = count > 0 ? sum / count : this.velocidadSegunPendiente(seg.pendiente) / 3.6;
-      return Math.max(0.5, media); // evita saltos por velocidades demasiado bajas
+      return Math.max(0.5, media);
     });
 
     const baseDuraciones = segmentos.map((seg, idx) => seg.distancia / velocidadesSuavizadasMs[idx]);
@@ -493,7 +573,192 @@ export class LoadGpxComponent implements OnInit {
     return { trkpts: nuevosPuntos };
   }
 
+  async uploadTrackToEvent(): Promise<void> {
+    if (!this.selectedEventId) {
+      alert('Elige un evento primero.');
+      return;
+    }
+    if (!this.eventUpload.file) {
+      alert('Selecciona un archivo GPX.');
+      return;
+    }
+    const nickname = this.eventUpload.nickname.trim();
+    if (!nickname) {
+      alert('Añade tu nick para entrar en el ranking.');
+      return;
+    }
 
+    const gpxData = await this.readFileAsText(this.eventUpload.file);
+    const modalityId = this.eventUpload.modalityId || this.selectedModalityId || this.selectedEvent?.modalities?.[0]?.id || '';
+    const { track, durationSeconds } = this.parseGpxData(gpxData, this.eventUpload.file.name, 0);
 
+    const newTrack: EventTrack = {
+      id: `evt-${Date.now()}`,
+      nickname,
+      category: this.eventUpload.category,
+      bikeType: this.eventUpload.bikeType,
+      modalityId,
+      timeSeconds: Math.max(1, Math.round(durationSeconds)),
+      distanceKm: track.details.distance,
+      ascent: track.details.ascent,
+      gpxData,
+      fileName: this.eventUpload.file.name,
+      uploadedAt: new Date().toISOString()
+    };
 
+    this.eventService.addTrack(this.selectedEventId, newTrack);
+    this.latestUploadedTrackId = newTrack.id;
+    this.personalNickname = nickname;
+    this.refreshPersonalHistory();
+    this.selectedComparisonIds.add(newTrack.id);
+    this.eventUpload = { ...this.eventUpload, file: null };
+    if (this.eventFileInputRef?.nativeElement) {
+      this.eventFileInputRef.nativeElement.value = '';
+    }
+  }
+
+  async animateSelectedTracks(): Promise<void> {
+    const event = this.selectedEvent;
+    if (!event) return;
+
+    const selectedIds = Array.from(this.selectedComparisonIds).slice(0, this.maxComparison);
+    if (!selectedIds.length) {
+      alert('Selecciona al menos un track para comparar.');
+      return;
+    }
+
+    const loaded: LoadedTrack[] = [];
+    for (let i = 0; i < selectedIds.length; i++) {
+      const trackRef = event.tracks.find(t => t.id === selectedIds[i]);
+      if (!trackRef) continue;
+      const built = await this.ensureLoadedTrackFromEventTrack(trackRef, i);
+      if (built) {
+        loaded.push({
+          ...built,
+          color: this.pickColor(i),
+          name: `${trackRef.nickname} • ${this.findModalityName(trackRef.modalityId)}`
+        });
+      }
+    }
+
+    if (!loaded.length) {
+      alert('No se pudieron cargar los tracks seleccionados.');
+      return;
+    }
+
+    this.tracks = loaded;
+    this.iniciarVisualizacion();
+  }
+
+  toggleComparisonSelection(trackId: string): void {
+    if (this.selectedComparisonIds.has(trackId)) {
+      this.selectedComparisonIds.delete(trackId);
+      return;
+    }
+    if (this.selectedComparisonIds.size >= this.maxComparison) return;
+    this.selectedComparisonIds.add(trackId);
+  }
+
+  get ranking(): EventTrack[] {
+    const event = this.selectedEvent;
+    if (!event) return [];
+    const bestByNickname = new Map<string, EventTrack>();
+    event.tracks.forEach(track => {
+      const current = bestByNickname.get(track.nickname);
+      if (!current || track.timeSeconds < current.timeSeconds) {
+        bestByNickname.set(track.nickname, track);
+      }
+    });
+    return Array.from(bestByNickname.values()).sort((a, b) => a.timeSeconds - b.timeSeconds);
+  }
+
+  get availableTracks(): EventTrack[] {
+    return this.selectedEvent?.tracks ?? [];
+  }
+
+  private refreshPersonalHistory(): void {
+    const nickname = this.personalNickname;
+    if (!nickname) {
+      this.personalHistory = [];
+      return;
+    }
+    const event = this.selectedEvent;
+    if (!event) return;
+    this.personalHistory = event.tracks
+      .filter(t => t.nickname === nickname)
+      .sort((a, b) => new Date(b.uploadedAt).getTime() - new Date(a.uploadedAt).getTime());
+  }
+
+  formatTime(seconds: number): string {
+    const total = Math.max(0, Math.round(seconds));
+    const hours = Math.floor(total / 3600);
+    const minutes = Math.floor((total % 3600) / 60);
+    const secs = total % 60;
+    const hh = hours ? `${hours}:` : '';
+    const mm = hours ? String(minutes).padStart(2, '0') : minutes.toString();
+    return `${hh}${mm}:${String(secs).padStart(2, '0')}`;
+  }
+
+  findModalityName(modalityId: string): string {
+    return this.selectedEvent?.modalities.find(m => m.id === modalityId)?.name || 'Recorrido';
+  }
+
+  async createEvent(): Promise<void> {
+    if (!this.newEvent.name.trim() || !this.newEvent.location.trim()) {
+      alert('Completa el nombre y la población del evento.');
+      return;
+    }
+
+    const newId = `${this.newEvent.name.toLowerCase().replace(/\s+/g, '-')}-${this.newEvent.year}`;
+    const event: RaceEvent = {
+      id: newId,
+      name: this.newEvent.name.trim(),
+      location: this.newEvent.location.trim(),
+      year: this.newEvent.year,
+      logo: this.newEvent.logo,
+      modalities: [
+        {
+          id: `${newId}-modalidad-1`,
+          name: this.newEvent.modalityName || 'Recorrido principal',
+          distanceKm: this.newEvent.distanceKm || 0
+        }
+      ],
+      tracks: []
+    };
+
+    this.eventService.addEvent(event);
+    this.selectMode('events');
+    this.selectEvent(event.id);
+    this.newEvent = { ...this.newEvent, name: '', location: '', logo: '' };
+  }
+
+  async handleLogoUpload(event: Event): Promise<void> {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      this.newEvent.logo = reader.result as string;
+    };
+    reader.readAsDataURL(file);
+  }
+
+  onEventFileChange(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    this.eventUpload.file = input.files?.[0] ?? null;
+  }
+
+  private async ensureLoadedTrackFromEventTrack(track: EventTrack, colorIndex: number): Promise<LoadedTrack | null> {
+    try {
+      const gpxData = track.gpxData || (track.gpxAsset
+        ? await firstValueFrom(this.http.get(track.gpxAsset, { responseType: 'text' }))
+        : null);
+      if (!gpxData) return null;
+      const { track: loadedTrack } = this.parseGpxData(gpxData, track.fileName || track.nickname, colorIndex);
+      loadedTrack.name = `${track.nickname} (${track.category})`;
+      return loadedTrack;
+    } catch {
+      return null;
+    }
+  }
 }

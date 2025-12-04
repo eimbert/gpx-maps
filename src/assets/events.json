@@ -1,0 +1,76 @@
+[
+  {
+    "id": "pota-roja-2024",
+    "name": "La Pota Roja",
+    "location": "Pota, Asturias",
+    "year": 2024,
+    "logo": "assets/lapota.png",
+    "modalities": [
+      { "id": "pota-20k", "name": "Recorrido 20 km", "distanceKm": 20 },
+      { "id": "pota-60k", "name": "Recorrido 60 km", "distanceKm": 60 }
+    ],
+    "tracks": [
+      {
+        "id": "trk-01",
+        "nickname": "María S.",
+        "category": "Senior F",
+        "bikeType": "MTB",
+        "modalityId": "pota-20k",
+        "timeSeconds": 4200,
+        "distanceKm": 20,
+        "ascent": 560,
+        "gpxAsset": "assets/track.gpx",
+        "uploadedAt": "2024-06-01T10:00:00Z"
+      },
+      {
+        "id": "trk-02",
+        "nickname": "Iker",
+        "category": "Sub 23M",
+        "bikeType": "Carretera",
+        "modalityId": "pota-20k",
+        "timeSeconds": 4050,
+        "distanceKm": 20,
+        "ascent": 560,
+        "gpxAsset": "assets/track.gpx",
+        "uploadedAt": "2024-06-10T08:00:00Z"
+      },
+      {
+        "id": "trk-03",
+        "nickname": "Lucía",
+        "category": "Master 40F",
+        "bikeType": "Gravel",
+        "modalityId": "pota-60k",
+        "timeSeconds": 10500,
+        "distanceKm": 60,
+        "ascent": 1800,
+        "gpxAsset": "assets/track.gpx",
+        "uploadedAt": "2024-07-20T06:30:00Z"
+      }
+    ]
+  },
+  {
+    "id": "valle-verde-2023",
+    "name": "Valle Verde",
+    "location": "Navarra",
+    "year": 2023,
+    "logo": "",
+    "modalities": [
+      { "id": "verde-30k", "name": "Circuito 30 km", "distanceKm": 30 },
+      { "id": "verde-55k", "name": "Circuito 55 km", "distanceKm": 55 }
+    ],
+    "tracks": [
+      {
+        "id": "trk-04",
+        "nickname": "Carlos",
+        "category": "Senior M",
+        "bikeType": "MTB",
+        "modalityId": "verde-30k",
+        "timeSeconds": 5400,
+        "distanceKm": 30,
+        "ascent": 720,
+        "gpxAsset": "assets/track.gpx",
+        "uploadedAt": "2023-05-10T09:00:00Z"
+      }
+    ]
+  }
+]

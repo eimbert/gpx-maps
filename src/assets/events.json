@@ -2,8 +2,8 @@
   {
     "id": "pota-roja-2024",
     "name": "La Pota Roja",
-    "location": "Pota, Asturias",
-    "year": 2024,
+    "location": "Cervelló, Catalunya",
+    "year": 2025,
     "logo": "assets/lapota.png",
     "modalities": [
       { "id": "pota-20k", "name": "Recorrido 20 km", "distanceKm": 20 },
@@ -49,14 +49,15 @@
     ]
   },
   {
-    "id": "valle-verde-2023",
-    "name": "Valle Verde",
-    "location": "Navarra",
-    "year": 2023,
-    "logo": "",
+    "id": "open-natura-2025",
+    "name": "Open Maxxis Sant Vicenç dels Horts",
+    "location": "Sant Vicenç dels Horts, Catalunya",
+    "year": 2025,
+    "logo": "assets/maxxis_open_natura.png",
     "modalities": [
-      { "id": "verde-30k", "name": "Circuito 30 km", "distanceKm": 30 },
-      { "id": "verde-55k", "name": "Circuito 55 km", "distanceKm": 55 }
+      { "id": "maxxis-21k", "name": "Circuito 21 km", "distanceKm": 21 },
+      { "id": "maxxis-35k", "name": "Circuito 35 km", "distanceKm": 35 },
+      { "id": "maxxis-48k", "name": "Circuito 48 km", "distanceKm": 48 }
     ],
     "tracks": [
       {

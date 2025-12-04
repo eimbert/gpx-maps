@@ -69,6 +69,20 @@
   color: #334155;
 }
 
+.events-hero {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+
+.events-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .dropzone {
   border: 2px dashed #cbd5e1;
   border-radius: 18px;
@@ -277,9 +291,24 @@
   align-items: center;
 }
 
+.event-logo {
+  width: 52px;
+  height: 52px;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  background: #fff;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+}
+
+.event-logo--placeholder {
+  background: linear-gradient(135deg, #f8fafc, #e2e8f0);
+}
+
 .event-logo img {
-  width: 46px;
-  height: 46px;
+  width: 100%;
+  height: 100%;
   object-fit: contain;
 }
 

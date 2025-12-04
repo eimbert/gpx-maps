@@ -272,9 +272,11 @@
 }
 
 .event-logo img {
-  width: 46px;
+  width: 84px;
   height: 46px;
   object-fit: contain;
+  border-radius: 5px;
+  background-color: darkgoldenrod;
 }
 
 .pill-group {

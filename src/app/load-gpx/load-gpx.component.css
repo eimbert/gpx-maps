@@ -566,28 +566,26 @@ input[type="file"] {
 
 .event-card__ranking {
   margin-top: 12px;
-    padding: 10px 12px;
-    border-radius: 12px;
-    background: transparent;
-    border: 2px dashed red;
-    width: 1024px;
-    align-self: flex-start;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.75);
+  border: 1px dashed #cbd5e1;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .event-card__ranking ol {
   list-style: none;
   margin: 6px 0 0;
   padding: 0;
-  /* display: flex; */
+  display: flex;
   flex-direction: column;
   gap: 6px;
 }
 
 .event-card__ranking li {
   display: grid;
-  grid-template-columns: auto 0.8fr auto;
-  max-width: 1000px;
-  
+  grid-template-columns: auto 1fr auto;
   align-items: center;
   gap: 8px;
 }

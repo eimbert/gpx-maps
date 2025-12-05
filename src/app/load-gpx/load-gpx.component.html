@@ -83,6 +83,7 @@
 
         <article
           class="event-card event-card--carousel"
+          [@carouselTransition]="carouselIndex"
           [class.event-card--active]="currentEvent.id === selectedEventId"
           (click)="handleCarouselSelection()"
         >

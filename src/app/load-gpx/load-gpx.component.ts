@@ -3,6 +3,7 @@ import { Router } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
 import { MatDialog } from '@angular/material/dialog';
 import { firstValueFrom } from 'rxjs';
+import { animate, style, transition, trigger } from '@angular/animations';
 import { DialogoConfiguracionComponent } from '../dialogo-configuracion/dialogo-configuracion.component';
 import { DialogoConfiguracionData } from '../interfaces/estructuras';
 import { TrackMetadataDialogComponent, TrackMetadataDialogResult } from '../track-metadata-dialog/track-metadata-dialog.component';
@@ -36,7 +37,19 @@ interface ParsedTrackResult {
 @Component({
   selector: 'app-load-gpx',
   templateUrl: './load-gpx.component.html',
-  styleUrls: ['./load-gpx.component.css']
+  styleUrls: ['./load-gpx.component.css'],
+  animations: [
+    trigger('carouselTransition', [
+      transition(':increment', [
+        style({ opacity: 0, transform: 'translateX(24px)' }),
+        animate('350ms ease', style({ opacity: 1, transform: 'translateX(0)' }))
+      ]),
+      transition(':decrement', [
+        style({ opacity: 0, transform: 'translateX(-24px)' }),
+        animate('350ms ease', style({ opacity: 1, transform: 'translateX(0)' }))
+      ])
+    ])
+  ]
 })
 export class LoadGpxComponent implements OnInit, OnDestroy {
   @ViewChild('fileInput') fileInputRef!: ElementRef<HTMLInputElement>;

@@ -3,7 +3,6 @@ import { Router } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
 import { MatDialog } from '@angular/material/dialog';
 import { firstValueFrom } from 'rxjs';
-import { animate, group, query, style, transition, trigger } from '@angular/animations';
 import { DialogoConfiguracionComponent } from '../dialogo-configuracion/dialogo-configuracion.component';
 import { DialogoConfiguracionData } from '../interfaces/estructuras';
 import { TrackMetadataDialogComponent, TrackMetadataDialogResult } from '../track-metadata-dialog/track-metadata-dialog.component';
@@ -37,45 +36,7 @@ interface ParsedTrackResult {
 @Component({
   selector: 'app-load-gpx',
   templateUrl: './load-gpx.component.html',
-  styleUrls: ['./load-gpx.component.css'],
-  animations: [
-    trigger('carouselTransition', [
-      transition(':increment', [
-        query(':enter, :leave', [
-          style({
-            position: 'absolute',
-            inset: 0
-          })
-        ], { optional: true }),
-        group([
-          query(':leave', [
-            animate('500ms ease', style({ transform: 'translateX(-50%)', opacity: 0.6 }))
-          ], { optional: true }),
-          query(':enter', [
-            style({ transform: 'translateX(50%)', opacity: 0.6 }),
-            animate('500ms ease', style({ transform: 'translateX(0)', opacity: 1 }))
-          ], { optional: true })
-        ])
-      ]),
-      transition(':decrement', [
-        query(':enter, :leave', [
-          style({
-            position: 'absolute',
-            inset: 0
-          })
-        ], { optional: true }),
-        group([
-          query(':leave', [
-            animate('500ms ease', style({ transform: 'translateX(50%)', opacity: 0.6 }))
-          ], { optional: true }),
-          query(':enter', [
-            style({ transform: 'translateX(-50%)', opacity: 0.6 }),
-            animate('500ms ease', style({ transform: 'translateX(0)', opacity: 1 }))
-          ], { optional: true })
-        ])
-      ])
-    ])
-  ]
+  styleUrls: ['./load-gpx.component.css']
 })
 export class LoadGpxComponent implements OnInit, OnDestroy {
   @ViewChild('fileInput') fileInputRef!: ElementRef<HTMLInputElement>;
@@ -133,6 +94,10 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
 
   get selectedEvent(): RaceEvent | undefined {
     return this.events.find(e => e.id === this.selectedEventId);
+  }
+
+  get carouselTransform(): string {
+    return `translateX(-${this.carouselIndex * 100}%)`;
   }
 
   selectMode(mode: 'routes' | 'events'): void {

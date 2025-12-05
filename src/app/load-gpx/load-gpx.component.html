@@ -79,13 +79,14 @@
 
     <ng-container *ngIf="events.length; else emptyEvents">
       <div class="events-carousel">
-        <div class="carousel-window" [@carouselTransition]="carouselIndex">
-          <ng-container *ngFor="let event of events; index as i">
+        <div class="carousel-window">
+          <div class="carousel-track" [style.transform]="carouselTransform">
             <article
-              *ngIf="i === carouselIndex"
+              *ngFor="let event of events; index as i"
               class="event-card event-card--carousel"
               [ngStyle]="{ '--event-logo-url': 'url(' + getEventLogo(event) + ')' }"
               [class.event-card--active]="event.id === selectedEventId"
+              [class.event-card--current]="i === carouselIndex"
               (click)="handleCarouselSelection(event.id)"
             >
               <div class="event-card__header">
@@ -114,7 +115,7 @@
               </div>
 
             </article>
-          </ng-container>
+          </div>
         </div>
       </div>
 

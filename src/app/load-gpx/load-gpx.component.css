@@ -265,23 +265,36 @@
 }
 
 .events-carousel {
-  display: flex;
-  justify-content: center;
   width: 100%;
 }
 
+.carousel-window {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+}
 
+.carousel-track {
+  display: flex;
+  width: 100%;
+  transition: transform 500ms ease;
+}
 
 .event-card--carousel {
   position: relative;
+  flex: 0 0 100%;
   width: 100%;
-  height: 100%;
-  max-width: none;
+  max-width: 1100px;
+  margin: 0 auto;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
   gap: 14px;
   isolation: isolate;
+}
+
+.event-card--current {
+  opacity: 1;
 }
 
 .event-card--carousel::before {
@@ -613,21 +626,4 @@ input[type="file"] {
     justify-self: end;
     grid-column: 2;
   }
-}
-.event-card--carousel {
-    position: relative;
-    width: 100%;
-    height: 100%;
-    max-width: none;
-    display:block;
-    flex-direction: column;
-    justify-content: space-between;
-    gap: 14px;
-    isolation: isolate;
-}
-.carousel-window {
-    position: relative;
-    /* width: min(1100px, 100%); */
-    /* height: 420px; */
-    /* overflow: hidden; */
 }

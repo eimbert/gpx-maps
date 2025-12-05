@@ -150,7 +150,7 @@
 
 .ranking-panel{
   pointer-events: auto;
-  width: min(460px, 92vw);
+  width: min(420px, 90vw);
   background: radial-gradient(circle at 20% 20%, rgba(236,72,153,0.18), transparent 40%),
     radial-gradient(circle at 80% 0%, rgba(59,130,246,0.18), transparent 38%),
     rgba(17,24,39,0.9);

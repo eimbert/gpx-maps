@@ -3,7 +3,7 @@ import { Router } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
 import { MatDialog } from '@angular/material/dialog';
 import { firstValueFrom } from 'rxjs';
-import { animate, style, transition, trigger } from '@angular/animations';
+import { animate, group, query, style, transition, trigger } from '@angular/animations';
 import { DialogoConfiguracionComponent } from '../dialogo-configuracion/dialogo-configuracion.component';
 import { DialogoConfiguracionData } from '../interfaces/estructuras';
 import { TrackMetadataDialogComponent, TrackMetadataDialogResult } from '../track-metadata-dialog/track-metadata-dialog.component';
@@ -41,12 +41,38 @@ interface ParsedTrackResult {
   animations: [
     trigger('carouselTransition', [
       transition(':increment', [
-        style({ opacity: 0, transform: 'translateX(24px)' }),
-        animate('350ms ease', style({ opacity: 1, transform: 'translateX(0)' }))
+        query(':enter, :leave', [
+          style({
+            position: 'absolute',
+            inset: 0
+          })
+        ], { optional: true }),
+        group([
+          query(':leave', [
+            animate('500ms ease', style({ transform: 'translateX(-50%)', opacity: 0.6 }))
+          ], { optional: true }),
+          query(':enter', [
+            style({ transform: 'translateX(50%)', opacity: 0.6 }),
+            animate('500ms ease', style({ transform: 'translateX(0)', opacity: 1 }))
+          ], { optional: true })
+        ])
       ]),
       transition(':decrement', [
-        style({ opacity: 0, transform: 'translateX(-24px)' }),
-        animate('350ms ease', style({ opacity: 1, transform: 'translateX(0)' }))
+        query(':enter, :leave', [
+          style({
+            position: 'absolute',
+            inset: 0
+          })
+        ], { optional: true }),
+        group([
+          query(':leave', [
+            animate('500ms ease', style({ transform: 'translateX(50%)', opacity: 0.6 }))
+          ], { optional: true }),
+          query(':enter', [
+            style({ transform: 'translateX(-50%)', opacity: 0.6 }),
+            animate('500ms ease', style({ transform: 'translateX(0)', opacity: 1 }))
+          ], { optional: true })
+        ])
       ])
     ])
   ]
@@ -140,10 +166,6 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
     return event.logo || 'assets/no-image.svg';
   }
 
-  get currentCarouselEvent(): RaceEvent | null {
-    return this.events[this.carouselIndex] ?? null;
-  }
-
   nextEvent(manual = false): void {
     if (!this.events.length) return;
     this.carouselIndex = (this.carouselIndex + 1) % this.events.length;
@@ -162,10 +184,8 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
     this.restartCarouselTimer();
   }
 
-  handleCarouselSelection(): void {
-    if (this.currentCarouselEvent) {
-      this.selectEvent(this.currentCarouselEvent.id);
-    }
+  handleCarouselSelection(eventId: string): void {
+    this.selectEvent(eventId);
   }
 
   restartCarouselTimer(): void {

@@ -17,6 +17,7 @@ import { MatInputModule } from '@angular/material/input';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { RouteMismatchDialogComponent } from './route-mismatch-dialog/route-mismatch-dialog.component';
 import { EventSearchDialogComponent } from './event-search-dialog/event-search-dialog.component';
+import { EventCreateDialogComponent } from './event-create-dialog/event-create-dialog.component';
 
 @NgModule({
   declarations: [
@@ -26,7 +27,8 @@ import { EventSearchDialogComponent } from './event-search-dialog/event-search-d
     DialogoConfiguracionComponent,
     TrackMetadataDialogComponent,
     RouteMismatchDialogComponent,
-    EventSearchDialogComponent
+    EventSearchDialogComponent,
+    EventCreateDialogComponent
   ],
   imports: [
     MatCheckboxModule,

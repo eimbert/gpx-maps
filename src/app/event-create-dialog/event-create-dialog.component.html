@@ -1,0 +1,45 @@
+<div class="create-dialog">
+  <header class="create-dialog__header">
+    <div>
+      <p class="eyebrow">Nuevo evento</p>
+      <h2>Crea un evento con su primera modalidad</h2>
+      <p class="muted">Estos datos podrán editarse más adelante desde tu almacenamiento local.</p>
+    </div>
+  </header>
+
+  <div class="form-grid">
+    <label>
+      <span>Nombre</span>
+      <input type="text" [(ngModel)]="newEvent.name" placeholder="Nombre del evento" />
+    </label>
+    <label>
+      <span>Población</span>
+      <input type="text" [(ngModel)]="newEvent.population" placeholder="Ciudad / pueblo" />
+    </label>
+    <label>
+      <span>Comunidad autónoma</span>
+      <input type="text" [(ngModel)]="newEvent.autonomousCommunity" placeholder="Ej: Catalunya" />
+    </label>
+    <label>
+      <span>Año</span>
+      <input type="number" [(ngModel)]="newEvent.year" />
+    </label>
+    <label>
+      <span>Modalidad</span>
+      <input type="text" [(ngModel)]="newEvent.modalityName" placeholder="Recorrido 20 km" />
+    </label>
+    <label>
+      <span>Distancia (km)</span>
+      <input type="number" [(ngModel)]="newEvent.distanceKm" />
+    </label>
+    <label>
+      <span>Logo (opcional)</span>
+      <input type="file" accept="image/*" (change)="handleLogoUpload($event)" />
+    </label>
+  </div>
+
+  <div class="actions">
+    <button mat-button type="button" (click)="onCancel()">Cancelar</button>
+    <button class="btn-start" type="button" (click)="onSave()">Guardar evento</button>
+  </div>
+</div>

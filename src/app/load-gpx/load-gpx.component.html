@@ -78,49 +78,50 @@
     </div>
 
     <ng-container *ngIf="events.length; else emptyEvents">
-      <div class="events-carousel" *ngIf="currentCarouselEvent as currentEvent">
-        <button type="button" class="carousel-nav" (click)="prevEvent(true)" aria-label="Evento anterior">‹</button>
-
-        <article
-          class="event-card event-card--carousel"
-          [@carouselTransition]="carouselIndex"
-          [class.event-card--active]="currentEvent.id === selectedEventId"
-          (click)="handleCarouselSelection()"
-        >
-          <div class="event-card__header">
-            <div class="event-logo" [class.event-logo--placeholder]="!currentEvent.logo">
-              <img [src]="getEventLogo(currentEvent)" [alt]="currentEvent.logo ? currentEvent.name : 'Imagen no disponible'" />
-            </div>
-            <div>
-              <p class="eyebrow">{{ currentEvent.year }}</p>
-              <h3>{{ currentEvent.name }}</h3>
-              <p class="muted">{{ getEventLocation(currentEvent) }}</p>
-            </div>
-          </div>
-          <div class="pill-group">
-            <span class="pill" *ngFor="let modality of currentEvent.modalities">{{ modality.name }} · {{ modality.distanceKm }} km</span>
-          </div>
-          <p class="muted">{{ currentEvent.tracks.length }} tracks subidos</p>
-          <div class="event-card__ranking" *ngIf="getEventRanking(currentEvent, 5).length">
-            <p class="eyebrow">Top tiempos</p>
-            <ol>
-              <li *ngFor="let track of getEventRanking(currentEvent, 5); index as i">
-                <span class="position">#{{ i + 1 }}</span>
-                <div class="event-card__runner">
-                  <p class="strong">{{ track.nickname }}</p>
-                  <p class="muted">{{ findModalityNameForEvent(currentEvent, track.modalityId) }}</p>
+      <div class="events-carousel">
+        <div class="carousel-window" [@carouselTransition]="carouselIndex">
+          <ng-container *ngFor="let event of events; index as i">
+            <article
+              *ngIf="i === carouselIndex"
+              class="event-card event-card--carousel"
+              [ngStyle]="{ '--event-logo-url': 'url(' + getEventLogo(event) + ')' }"
+              [class.event-card--active]="event.id === selectedEventId"
+              (click)="handleCarouselSelection(event.id)"
+            >
+              <div class="event-card__header">
+                <div class="event-logo" [class.event-logo--placeholder]="!event.logo">
+                  <img [src]="getEventLogo(event)" [alt]="event.logo ? event.name : 'Imagen no disponible'" />
                 </div>
-                <span class="time">{{ formatTime(track.timeSeconds) }}</span>
-              </li>
-            </ol>
-          </div>
+                <div>
+                  <p class="eyebrow">{{ event.year }}</p>
+                  <h3>{{ event.name }}</h3>
+                  <p class="muted">{{ getEventLocation(event) }}</p>
+                </div>
+              </div>
+              <div class="pill-group">
+                <span class="pill" *ngFor="let modality of event.modalities">{{ modality.name }} · {{ modality.distanceKm }} km</span>
+              </div>
+              <p class="muted">{{ event.tracks.length }} tracks subidos</p>
+              <div class="event-card__ranking" *ngIf="getEventRanking(event, 5).length">
+                <p class="eyebrow">Top tiempos</p>
+                <ol>
+                  <li *ngFor="let track of getEventRanking(event, 5); index as i">
+                    <span class="position">#{{ i + 1 }}</span>
+                    <div class="event-card__runner">
+                      <p class="strong">{{ track.nickname }}</p>
+                      <p class="muted">{{ findModalityNameForEvent(event, track.modalityId) }}</p>
+                    </div>
+                    <span class="time">{{ formatTime(track.timeSeconds) }}</span>
+                  </li>
+                </ol>
+              </div>
 
-          <button class="secondary full" type="button" (click)="handleCarouselSelection(); $event.stopPropagation()">
-            Seleccionar evento
-          </button>
-        </article>
-
-        <button type="button" class="carousel-nav" (click)="nextEvent(true)" aria-label="Evento siguiente">›</button>
+              <button class="secondary full" type="button" (click)="handleCarouselSelection(event.id); $event.stopPropagation()">
+                Seleccionar evento
+              </button>
+            </article>
+          </ng-container>
+        </div>
       </div>
 
       <div class="carousel-dots" *ngIf="events.length > 1">

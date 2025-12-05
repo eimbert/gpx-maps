@@ -270,12 +270,7 @@
   width: 100%;
 }
 
-.carousel-window {
-  position: relative;
-  width: min(1100px, 100%);
-  height: 520px;
-  overflow: hidden;
-}
+
 
 .event-card--carousel {
   position: relative;
@@ -374,8 +369,8 @@
 .pill-group {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
-  margin: 10px 0;
+  gap: 3px;
+  margin: 5px 0;
 }
 
 .pill {
@@ -557,19 +552,19 @@ input[type="file"] {
 
 .event-card__ranking {
   margin-top: 12px;
-  padding: 10px 12px;
-  border-radius: 12px;
-  background: #f8fafc;
-  border: 1px dashed #e2e8f0;
-  width: min(720px, 100%);
-  align-self: flex-start;
+    padding: 10px 12px;
+    border-radius: 12px;
+    background: transparent;
+    border: 2px dashed red;
+    width: 1024px;
+    align-self: flex-start;
 }
 
 .event-card__ranking ol {
   list-style: none;
   margin: 6px 0 0;
   padding: 0;
-  display: flex;
+  /* display: flex; */
   flex-direction: column;
   gap: 6px;
 }
@@ -577,7 +572,8 @@ input[type="file"] {
 .event-card__ranking li {
   display: grid;
   grid-template-columns: auto 0.8fr auto;
-  max-width: 700px;
+  max-width: 1000px;
+  
   align-items: center;
   gap: 8px;
 }
@@ -617,4 +613,21 @@ input[type="file"] {
     justify-self: end;
     grid-column: 2;
   }
+}
+.event-card--carousel {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    max-width: none;
+    display:block;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 14px;
+    isolation: isolate;
+}
+.carousel-window {
+    position: relative;
+    /* width: min(1100px, 100%); */
+    /* height: 420px; */
+    /* overflow: hidden; */
 }

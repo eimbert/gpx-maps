@@ -1,4 +1,4 @@
-import { Component, ElementRef, OnInit, ViewChild } from '@angular/core';
+import { Component, ElementRef, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { Router } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
 import { MatDialog } from '@angular/material/dialog';
@@ -10,6 +10,7 @@ import { RouteMismatchDialogComponent } from '../route-mismatch-dialog/route-mis
 import { EventSearchDialogComponent, EventSearchDialogData, EventSearchDialogResult } from '../event-search-dialog/event-search-dialog.component';
 import { BikeType, EventTrack, RaceCategory, RaceEvent } from '../interfaces/events';
 import { EventService } from '../services/event.service';
+import { EventCreateDialogComponent, EventCreateDialogResult } from '../event-create-dialog/event-create-dialog.component';
 
 interface TrackPoint {
   lat: number;
@@ -37,7 +38,7 @@ interface ParsedTrackResult {
   templateUrl: './load-gpx.component.html',
   styleUrls: ['./load-gpx.component.css']
 })
-export class LoadGpxComponent implements OnInit {
+export class LoadGpxComponent implements OnInit, OnDestroy {
   @ViewChild('fileInput') fileInputRef!: ElementRef<HTMLInputElement>;
   @ViewChild('eventFileInput') eventFileInputRef!: ElementRef<HTMLInputElement>;
 
@@ -52,6 +53,8 @@ export class LoadGpxComponent implements OnInit {
   events: RaceEvent[] = [];
   selectedEventId: string | null = null;
   selectedModalityId: string | null = null;
+  carouselIndex = 0;
+  private carouselTimer?: ReturnType<typeof setInterval>;
   selectedComparisonIds = new Set<string>();
   latestUploadedTrackId: string | null = null;
   personalNickname = '';
@@ -63,16 +66,6 @@ export class LoadGpxComponent implements OnInit {
     bikeType: 'MTB' as BikeType,
     modalityId: '',
     file: null as File | null
-  };
-
-  newEvent = {
-    name: '',
-    population: '',
-    autonomousCommunity: '',
-    year: new Date().getFullYear(),
-    modalityName: 'Recorrido 20 km',
-    distanceKm: 20,
-    logo: ''
   };
 
   categories: RaceCategory[] = ['Sub 23M', 'Sub 23F', 'Senior M', 'Senior F', 'Master 40M', 'Master 40F', 'Master 50M', 'Master 50F', 'Master 60M', 'Master 60F'];
@@ -90,7 +83,13 @@ export class LoadGpxComponent implements OnInit {
       if (!this.selectedEventId && events.length) {
         this.selectEvent(events[0].id);
       }
+      this.syncCarouselIndex();
+      this.restartCarouselTimer();
     });
+  }
+
+  ngOnDestroy(): void {
+    this.clearCarouselTimer();
   }
 
   get selectedEvent(): RaceEvent | undefined {
@@ -107,6 +106,7 @@ export class LoadGpxComponent implements OnInit {
   selectEvent(eventId: string, modalityId?: string): void {
     this.selectedEventId = eventId;
     const event = this.selectedEvent;
+    this.carouselIndex = Math.max(0, this.events.findIndex(e => e.id === eventId));
     this.selectedComparisonIds.clear();
     if (event?.tracks?.length) {
       event.tracks.slice(0, 3).forEach(track => this.selectedComparisonIds.add(track.id));
@@ -127,6 +127,60 @@ export class LoadGpxComponent implements OnInit {
     return event.logo || 'assets/no-image.svg';
   }
 
+  get currentCarouselEvent(): RaceEvent | null {
+    return this.events[this.carouselIndex] ?? null;
+  }
+
+  nextEvent(manual = false): void {
+    if (!this.events.length) return;
+    this.carouselIndex = (this.carouselIndex + 1) % this.events.length;
+    if (manual) this.restartCarouselTimer();
+  }
+
+  prevEvent(manual = false): void {
+    if (!this.events.length) return;
+    this.carouselIndex = (this.carouselIndex - 1 + this.events.length) % this.events.length;
+    if (manual) this.restartCarouselTimer();
+  }
+
+  goToEvent(index: number): void {
+    if (index < 0 || index >= this.events.length) return;
+    this.carouselIndex = index;
+    this.restartCarouselTimer();
+  }
+
+  handleCarouselSelection(): void {
+    if (this.currentCarouselEvent) {
+      this.selectEvent(this.currentCarouselEvent.id);
+    }
+  }
+
+  restartCarouselTimer(): void {
+    this.clearCarouselTimer();
+    if (!this.events.length) return;
+    this.carouselTimer = setInterval(() => this.nextEvent(), 6000);
+  }
+
+  private clearCarouselTimer(): void {
+    if (this.carouselTimer) {
+      clearInterval(this.carouselTimer);
+      this.carouselTimer = undefined;
+    }
+  }
+
+  private syncCarouselIndex(): void {
+    if (!this.events.length) {
+      this.carouselIndex = 0;
+      return;
+    }
+    const selectedIndex = this.selectedEventId ? this.events.findIndex(e => e.id === this.selectedEventId) : -1;
+    if (selectedIndex >= 0) {
+      this.carouselIndex = selectedIndex;
+    } else if (this.carouselIndex >= this.events.length) {
+      this.carouselIndex = 0;
+    }
+  }
+
   openEventSearch(): void {
     const dialogRef = this.dialog.open<EventSearchDialogComponent, EventSearchDialogData, EventSearchDialogResult>(
       EventSearchDialogComponent,
@@ -145,6 +199,23 @@ export class LoadGpxComponent implements OnInit {
       if (result?.eventId) {
         this.selectMode('events');
         this.selectEvent(result.eventId, result.modalityId || undefined);
+      }
+    });
+  }
+
+  openCreateEventDialog(): void {
+    const dialogRef = this.dialog.open<EventCreateDialogComponent, undefined, EventCreateDialogResult>(
+      EventCreateDialogComponent,
+      {
+        width: '720px'
+      }
+    );
+
+    dialogRef.afterClosed().subscribe(result => {
+      if (result?.event) {
+        this.eventService.addEvent(result.event);
+        this.selectMode('events');
+        this.selectEvent(result.event.id);
       }
     });
   }
@@ -751,47 +822,6 @@ export class LoadGpxComponent implements OnInit {
 
   findModalityNameForEvent(event: RaceEvent, modalityId: string): string {
     return event.modalities.find(m => m.id === modalityId)?.name || 'Recorrido';
-  }
-
-  async createEvent(): Promise<void> {
-    if (!this.newEvent.name.trim() || !this.newEvent.population.trim()) {
-      alert('Completa el nombre y la población del evento.');
-      return;
-    }
-
-    const newId = `${this.newEvent.name.toLowerCase().replace(/\s+/g, '-')}-${this.newEvent.year}`;
-    const event: RaceEvent = {
-      id: newId,
-      name: this.newEvent.name.trim(),
-      population: this.newEvent.population.trim(),
-      autonomousCommunity: this.newEvent.autonomousCommunity.trim(),
-      year: this.newEvent.year,
-      logo: this.newEvent.logo,
-      modalities: [
-        {
-          id: `${newId}-modalidad-1`,
-          name: this.newEvent.modalityName || 'Recorrido principal',
-          distanceKm: this.newEvent.distanceKm || 0
-        }
-      ],
-      tracks: []
-    };
-
-    this.eventService.addEvent(event);
-    this.selectMode('events');
-    this.selectEvent(event.id);
-    this.newEvent = { ...this.newEvent, name: '', population: '', autonomousCommunity: '', logo: '' };
-  }
-
-  async handleLogoUpload(event: Event): Promise<void> {
-    const input = event.target as HTMLInputElement;
-    const file = input.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => {
-      this.newEvent.logo = reader.result as string;
-    };
-    reader.readAsDataURL(file);
   }
 
   onEventFileChange(event: Event): void {

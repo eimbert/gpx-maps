@@ -70,82 +70,72 @@
         <h1>Elige evento, sube tu track y anima la carrera</h1>
         <p>Explora recorridos, súmate al ranking por categoría y compara tu GPX con otros riders (hasta 4 a la vez).</p>
       </div>
-      <div class="events-actions">
-        <button type="button" class="secondary" (click)="openEventSearch()">🔍 Buscar eventos</button>
-      </div>
     </header>
 
-    <div class="events-grid">
-      <article
-        class="event-card"
-        *ngFor="let event of events"
-        [class.event-card--active]="event.id === selectedEventId"
-        (click)="selectEvent(event.id)"
-      >
-        <div class="event-card__header">
-          <div class="event-logo" [class.event-logo--placeholder]="!event.logo">
-            <img [src]="getEventLogo(event)" [alt]="event.logo ? event.name : 'Imagen no disponible'" />
-          </div>
-          <div>
-            <p class="eyebrow">{{ event.year }}</p>
-            <h3>{{ event.name }}</h3>
-            <p class="muted">{{ getEventLocation(event) }}</p>
-          </div>
-        </div>
-        <div class="pill-group">
-          <span class="pill" *ngFor="let modality of event.modalities">{{ modality.name }} · {{ modality.distanceKm }} km</span>
-        </div>
-        <p class="muted">{{ event.tracks.length }} tracks subidos</p>
-        <div class="event-card__ranking" *ngIf="getEventRanking(event, 5).length">
-          <p class="eyebrow">Top tiempos</p>
-          <ol>
-            <li *ngFor="let track of getEventRanking(event, 5); index as i">
-              <span class="position">#{{ i + 1 }}</span>
-              <div class="event-card__runner">
-                <p class="strong">{{ track.nickname }}</p>
-                <p class="muted">{{ findModalityNameForEvent(event, track.modalityId) }}</p>
-              </div>
-              <span class="time">{{ formatTime(track.timeSeconds) }}</span>
-            </li>
-          </ol>
-        </div>
-      </article>
-
-      <article class="event-card event-card--create">
-        <h3>Crea un nuevo evento</h3>
-        <div class="form-grid">
-          <label>
-            <span>Nombre</span>
-            <input type="text" [(ngModel)]="newEvent.name" placeholder="Nombre del evento" />
-          </label>
-          <label>
-            <span>Población</span>
-            <input type="text" [(ngModel)]="newEvent.population" placeholder="Ciudad / pueblo" />
-          </label>
-          <label>
-            <span>Comunidad autónoma</span>
-            <input type="text" [(ngModel)]="newEvent.autonomousCommunity" placeholder="Ej: Catalunya" />
-          </label>
-          <label>
-            <span>Año</span>
-            <input type="number" [(ngModel)]="newEvent.year" />
-          </label>
-          <label>
-            <span>Modalidad</span>
-            <input type="text" [(ngModel)]="newEvent.modalityName" placeholder="Recorrido 20 km" />
-          </label>
-          <label>
-            <span>Distancia (km)</span>
-            <input type="number" [(ngModel)]="newEvent.distanceKm" />
-          </label>
-          <label>
-            <span>Logo (opcional)</span>
-            <input type="file" accept="image/*" (change)="handleLogoUpload($event)" />
-          </label>
-        </div>
-        <button class="secondary full" type="button" (click)="createEvent()">Guardar evento</button>
-      </article>
+    <div class="events-actions">
+      <button type="button" class="secondary" (click)="openEventSearch()">🔍 Buscar eventos</button>
+      <button type="button" class="secondary" (click)="openCreateEventDialog()">➕ Crear nuevo evento</button>
     </div>
+
+    <ng-container *ngIf="events.length; else emptyEvents">
+      <div class="events-carousel" *ngIf="currentCarouselEvent as currentEvent">
+        <button type="button" class="carousel-nav" (click)="prevEvent(true)" aria-label="Evento anterior">‹</button>
+
+        <article
+          class="event-card event-card--carousel"
+          [class.event-card--active]="currentEvent.id === selectedEventId"
+          (click)="handleCarouselSelection()"
+        >
+          <div class="event-card__header">
+            <div class="event-logo" [class.event-logo--placeholder]="!currentEvent.logo">
+              <img [src]="getEventLogo(currentEvent)" [alt]="currentEvent.logo ? currentEvent.name : 'Imagen no disponible'" />
+            </div>
+            <div>
+              <p class="eyebrow">{{ currentEvent.year }}</p>
+              <h3>{{ currentEvent.name }}</h3>
+              <p class="muted">{{ getEventLocation(currentEvent) }}</p>
+            </div>
+          </div>
+          <div class="pill-group">
+            <span class="pill" *ngFor="let modality of currentEvent.modalities">{{ modality.name }} · {{ modality.distanceKm }} km</span>
+          </div>
+          <p class="muted">{{ currentEvent.tracks.length }} tracks subidos</p>
+          <div class="event-card__ranking" *ngIf="getEventRanking(currentEvent, 5).length">
+            <p class="eyebrow">Top tiempos</p>
+            <ol>
+              <li *ngFor="let track of getEventRanking(currentEvent, 5); index as i">
+                <span class="position">#{{ i + 1 }}</span>
+                <div class="event-card__runner">
+                  <p class="strong">{{ track.nickname }}</p>
+                  <p class="muted">{{ findModalityNameForEvent(currentEvent, track.modalityId) }}</p>
+                </div>
+                <span class="time">{{ formatTime(track.timeSeconds) }}</span>
+              </li>
+            </ol>
+          </div>
+
+          <button class="secondary full" type="button" (click)="handleCarouselSelection(); $event.stopPropagation()">
+            Seleccionar evento
+          </button>
+        </article>
+
+        <button type="button" class="carousel-nav" (click)="nextEvent(true)" aria-label="Evento siguiente">›</button>
+      </div>
+
+      <div class="carousel-dots" *ngIf="events.length > 1">
+        <button
+          type="button"
+          *ngFor="let event of events; index as i"
+          [class.is-active]="i === carouselIndex"
+          (click)="goToEvent(i)"
+          [attr.aria-label]="'Ir al evento ' + event.name"
+        ></button>
+      </div>
+    </ng-container>
+
+    <ng-template #emptyEvents>
+      <p class="muted">No hay eventos disponibles todavía.</p>
+    </ng-template>
 
     <section *ngIf="selectedEvent" class="event-detail">
       <div class="event-summary">

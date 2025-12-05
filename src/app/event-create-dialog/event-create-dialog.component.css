@@ -1,0 +1,73 @@
+.create-dialog {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.create-dialog__header h2 {
+  margin: 4px 0;
+}
+
+.eyebrow {
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 12px;
+  margin: 0;
+  color: #475569;
+}
+
+.muted {
+  color: #475569;
+}
+
+.create-dialog .muted {
+  margin: 0;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+}
+
+label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+label span {
+  font-weight: 700;
+  color: #0f172a;
+}
+
+input[type="text"],
+input[type="number"],
+input[type="file"] {
+  width: 100%;
+  padding: 10px;
+  border-radius: 10px;
+  border: 1px solid #cbd5e1;
+  background: #fff;
+  box-sizing: border-box;
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 6px;
+}
+
+.btn-start {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 20px;
+  font-weight: 800;
+  color: #fff;
+  background: linear-gradient(135deg, #6a5acd 0%, #3c92ff 100%);
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+}

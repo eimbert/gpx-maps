@@ -126,32 +126,34 @@
       <p class="muted">No hay eventos disponibles todavía.</p>
     </ng-template>
 
-    <section *ngIf="selectedEvent" class="event-detail">
-      <div class="event-summary">
-        <div>
-          <p class="eyebrow">{{ selectedEvent.year }} • {{ getEventLocation(selectedEvent) }}</p>
-          <h2>{{ selectedEvent.name }}</h2>
-          <p class="muted">{{ selectedEvent.modalities.length }} recorridos · {{ selectedEvent.tracks.length }} aportes</p>
-        </div>
-        <div class="pill-group">
-          <span
-            class="pill"
-            *ngFor="let modality of selectedEvent.modalities"
-            [class.pill--active]="modality.id === selectedModalityId"
-            (click)="selectedModalityId = modality.id"
-          >
-            {{ modality.name }}
-          </span>
-        </div>
-      </div>
-
+    <section *ngIf="events.length" class="event-detail">
       <div class="event-panels">
         <article class="panel">
-          <div class="panel__header">
-            <h3>Sube tu track</h3>
-            <p class="muted">Nick, categoría, bici y GPX para entrar al ranking automático.</p>
+          <div class="panel__header panel__header--stacked">
+            <div>
+              <h3>Sube tu track</h3>
+              <p class="muted">Nick, categoría, bici y GPX para entrar al ranking automático.</p>
+            </div>
+            <div class="event-status" [class.event-status--empty]="!selectedEvent">
+              <p class="eyebrow">Evento seleccionado</p>
+              <ng-container *ngIf="selectedEvent; else noEventSelected">
+                <p class="event-status__title">{{ selectedEvent.name }}</p>
+                <p class="muted">{{ selectedEvent.year }} • {{ getEventLocation(selectedEvent) }}</p>
+              </ng-container>
+              <ng-template #noEventSelected>
+                <p class="event-status__title">Ningún evento seleccionado</p>
+                <p class="muted">Elige un evento para habilitar la subida.</p>
+              </ng-template>
+            </div>
           </div>
           <div class="form-grid">
+            <label>
+              <span>Evento</span>
+              <select [ngModel]="selectedEventId" (ngModelChange)="handleEventSelection($event)">
+                <option value="">Selecciona un evento</option>
+                <option *ngFor="let event of events" [ngValue]="event.id">{{ event.name }} ({{ event.year }})</option>
+              </select>
+            </label>
             <label>
               <span>Nick name</span>
               <input type="text" [(ngModel)]="eventUpload.nickname" placeholder="Tu alias" />
@@ -164,8 +166,13 @@
             </label>
             <label>
               <span>Modalidad</span>
-              <select [(ngModel)]="eventUpload.modalityId">
-                <option *ngFor="let modality of selectedEvent.modalities" [ngValue]="modality.id">{{ modality.name }}</option>
+              <select
+                [(ngModel)]="eventUpload.modalityId"
+                (ngModelChange)="onModalityChange($event)"
+                [disabled]="!selectedEvent"
+              >
+                <option value="" disabled>Selecciona un recorrido</option>
+                <option *ngFor="let modality of selectedEvent?.modalities || []" [ngValue]="modality.id">{{ modality.name }}</option>
               </select>
             </label>
             <label>
@@ -176,50 +183,66 @@
             </label>
             <label class="file-input">
               <span>Track GPX</span>
-              <input #eventFileInput type="file" accept=".gpx" (change)="onEventFileChange($event)" />
+              <input #eventFileInput type="file" accept=".gpx" (change)="onEventFileChange($event)" [disabled]="!selectedEvent" />
             </label>
           </div>
-          <button class="btn-start" type="button" (click)="uploadTrackToEvent()">
+          <button class="btn-start" type="button" (click)="uploadTrackToEvent()" [disabled]="!canUploadToEvent()">
             <span>Enviar al ranking</span>
           </button>
         </article>
 
         <article class="panel">
-          <div class="panel__header">
-            <h3>Ranking mejor tiempo</h3>
-            <p class="muted">Tu mejor marca se conserva, el resto queda en historial personal.</p>
-          </div>
-          <ol class="ranking">
-            <li *ngFor="let track of ranking; index as i" [class.ranking__item--mine]="track.id === latestUploadedTrackId || track.nickname === personalNickname">
-              <span class="position">#{{ i + 1 }}</span>
-              <div>
-                <p class="strong">{{ track.nickname }} · {{ findModalityName(track.modalityId) }}</p>
-                <p class="muted">{{ track.category }} · {{ track.bikeType }}</p>
-              </div>
-              <span class="time">{{ formatTime(track.timeSeconds) }}</span>
-            </li>
-          </ol>
+          <ng-container *ngIf="selectedEvent; else rankingPlaceholder">
+            <div class="panel__header">
+              <h3>Ranking mejor tiempo</h3>
+              <p class="muted">Tu mejor marca se conserva, el resto queda en historial personal.</p>
+            </div>
+            <ol class="ranking">
+              <li *ngFor="let track of ranking; index as i" [class.ranking__item--mine]="track.id === latestUploadedTrackId || track.nickname === personalNickname">
+                <span class="position">#{{ i + 1 }}</span>
+                <div>
+                  <p class="strong">{{ track.nickname }} · {{ findModalityName(track.modalityId) }}</p>
+                  <p class="muted">{{ track.category }} · {{ track.bikeType }}</p>
+                </div>
+                <span class="time">{{ formatTime(track.timeSeconds) }}</span>
+              </li>
+            </ol>
+          </ng-container>
+          <ng-template #rankingPlaceholder>
+            <div class="panel__header">
+              <h3>Ranking mejor tiempo</h3>
+              <p class="muted">Selecciona un evento para ver el ranking.</p>
+            </div>
+          </ng-template>
         </article>
       </div>
 
       <article class="panel">
-        <div class="panel__header">
-          <h3>Elige hasta 4 rivales</h3>
-          <p class="muted">Activa los que quieras comparar y pulsa "Animar selección".</p>
-        </div>
-        <div class="track-grid">
-          <label class="track-card" *ngFor="let track of availableTracks">
-            <input type="checkbox" [checked]="selectedComparisonIds.has(track.id)" (change)="toggleComparisonSelection(track.id)" />
-            <div>
-              <p class="strong">{{ track.nickname }} · {{ findModalityName(track.modalityId) }}</p>
-              <p class="muted">{{ track.category }} · {{ track.bikeType }} · {{ formatTime(track.timeSeconds) }}</p>
-            </div>
-            <span class="pill">{{ track.distanceKm | number:'1.0-1' }} km</span>
-          </label>
-        </div>
-        <div class="actions">
-          <button class="btn-start" type="button" (click)="animateSelectedTracks()">Animar selección</button>
-        </div>
+        <ng-container *ngIf="selectedEvent; else selectionPlaceholder">
+          <div class="panel__header">
+            <h3>Elige hasta 4 rivales</h3>
+            <p class="muted">Activa los que quieras comparar y pulsa "Animar selección".</p>
+          </div>
+          <div class="track-grid">
+            <label class="track-card" *ngFor="let track of availableTracks">
+              <input type="checkbox" [checked]="selectedComparisonIds.has(track.id)" (change)="toggleComparisonSelection(track.id)" />
+              <div>
+                <p class="strong">{{ track.nickname }} · {{ findModalityName(track.modalityId) }}</p>
+                <p class="muted">{{ track.category }} · {{ track.bikeType }} · {{ formatTime(track.timeSeconds) }}</p>
+              </div>
+              <span class="pill">{{ track.distanceKm | number:'1.0-1' }} km</span>
+            </label>
+          </div>
+          <div class="actions">
+            <button class="btn-start" type="button" (click)="animateSelectedTracks()">Animar selección</button>
+          </div>
+        </ng-container>
+        <ng-template #selectionPlaceholder>
+          <div class="panel__header">
+            <h3>Elige hasta 4 rivales</h3>
+            <p class="muted">Selecciona un evento para ver los aportes disponibles.</p>
+          </div>
+        </ng-template>
       </article>
 
       <article class="panel" *ngIf="personalHistory.length">

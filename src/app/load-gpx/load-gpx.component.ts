@@ -11,6 +11,7 @@ import { EventSearchDialogComponent, EventSearchDialogData, EventSearchDialogRes
 import { BikeType, EventTrack, RaceCategory, RaceEvent } from '../interfaces/events';
 import { EventService } from '../services/event.service';
 import { EventCreateDialogComponent, EventCreateDialogResult } from '../event-create-dialog/event-create-dialog.component';
+import { UserIdentityService } from '../services/user-identity.service';
 
 interface TrackPoint {
   lat: number;
@@ -70,12 +71,16 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
 
   categories: RaceCategory[] = ['Sub 23M', 'Sub 23F', 'Senior M', 'Senior F', 'Master 40M', 'Master 40F', 'Master 50M', 'Master 50F', 'Master 60M', 'Master 60F'];
   bikeTypes: BikeType[] = ['MTB', 'Carretera', 'Gravel', 'Eléctrica'];
+  private readonly userId: string;
 
   constructor(
     public dialog: MatDialog,
     private router: Router,
     private eventService: EventService,
-    private http: HttpClient) { }
+    private http: HttpClient,
+    identityService: UserIdentityService) {
+    this.userId = identityService.getUserId();
+  }
 
   ngOnInit() {
     this.eventService.getEvents().subscribe(events => {
@@ -221,6 +226,7 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
 
     dialogRef.afterClosed().subscribe(result => {
       if (result?.event) {
+        result.event.createdBy = this.userId;
         this.eventService.addEvent(result.event);
         this.selectMode('events');
         this.selectEvent(result.event.id);
@@ -715,7 +721,8 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
       ascent: track.details.ascent,
       gpxData,
       fileName: this.eventUpload.file.name,
-      uploadedAt: new Date().toISOString()
+      uploadedAt: new Date().toISOString(),
+      createdBy: this.userId
     };
 
     this.eventService.addTrack(this.selectedEventId, newTrack);
@@ -780,6 +787,28 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
     this.selectedComparisonIds.add(trackId);
   }
 
+  canDeleteTrack(track: EventTrack): boolean {
+    if (track.createdBy === this.userId) return true;
+    return Boolean(!track.createdBy && this.personalNickname && track.nickname === this.personalNickname);
+  }
+
+  deleteTrack(trackId: string, eventId?: string): void {
+    const targetEventId = eventId ?? this.selectedEventId;
+    if (!targetEventId) return;
+    const event = this.events.find(e => e.id === targetEventId);
+    const track = event?.tracks.find(t => t.id === trackId);
+    if (!track || !this.canDeleteTrack(track)) return;
+
+    const removed = this.eventService.removeTrack(targetEventId, trackId, this.userId);
+    if (!removed) return;
+
+    this.selectedComparisonIds.delete(trackId);
+    if (this.latestUploadedTrackId === trackId) {
+      this.latestUploadedTrackId = null;
+    }
+    this.refreshPersonalHistory();
+  }
+
   get ranking(): EventTrack[] {
     const event = this.selectedEvent;
     if (!event) return [];
@@ -839,6 +868,22 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
 
   findModalityNameForEvent(event: RaceEvent, modalityId: string): string {
     return event.modalities.find(m => m.id === modalityId)?.name || 'Recorrido';
+  }
+
+  canDeleteSelectedEvent(): boolean {
+    const event = this.selectedEvent;
+    return Boolean(event && event.createdBy === this.userId && event.tracks.length === 0);
+  }
+
+  deleteSelectedEvent(): void {
+    const eventId = this.selectedEventId;
+    if (!eventId || !this.selectedEvent) return;
+    if (!this.canDeleteSelectedEvent()) return;
+
+    const removed = this.eventService.removeEvent(eventId, this.userId);
+    if (removed) {
+      this.handleEventSelection('');
+    }
   }
 
   onEventFileChange(event: Event): void {

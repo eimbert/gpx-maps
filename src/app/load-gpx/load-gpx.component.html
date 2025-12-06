@@ -75,6 +75,14 @@
     <div class="events-actions">
       <button type="button" class="secondary" (click)="openEventSearch()">🔍 Buscar eventos</button>
       <button type="button" class="secondary" (click)="openCreateEventDialog()">➕ Crear nuevo evento</button>
+      <button
+        *ngIf="canDeleteSelectedEvent()"
+        type="button"
+        class="ghost ghost--danger"
+        (click)="deleteSelectedEvent()"
+      >
+        🗑️ Eliminar evento
+      </button>
     </div>
 
     <ng-container *ngIf="events.length; else emptyEvents">
@@ -218,7 +226,16 @@
                   <p class="strong">{{ track.nickname }} · {{ findModalityName(track.modalityId) }}</p>
                   <p class="muted">{{ track.category }} · {{ track.bikeType }}</p>
                 </div>
-                <span class="time">{{ formatTime(track.timeSeconds) }}</span>
+                <div class="ranking__actions">
+                  <span class="time">{{ formatTime(track.timeSeconds) }}</span>
+                  <button
+                    *ngIf="canDeleteTrack(track)"
+                    type="button"
+                    class="icon-button"
+                    (click)="deleteTrack(track.id)">
+                    🗑️
+                  </button>
+                </div>
               </li>
             </ol>
           </ng-container>
@@ -245,6 +262,13 @@
                 <p class="muted">{{ track.category }} · {{ track.bikeType }} · {{ formatTime(track.timeSeconds) }}</p>
               </div>
               <span class="pill">{{ track.distanceKm | number:'1.0-1' }} km</span>
+              <button
+                *ngIf="canDeleteTrack(track)"
+                type="button"
+                class="icon-button"
+                (click)="deleteTrack(track.id); $event.stopPropagation(); $event.preventDefault();">
+                🗑️
+              </button>
             </label>
           </div>
           <div class="actions">
@@ -273,6 +297,13 @@
             <div class="history__meta">
               <span class="pill">{{ formatTime(track.timeSeconds) }}</span>
               <span class="muted">{{ track.uploadedAt | date:'medium' }}</span>
+              <button
+                *ngIf="canDeleteTrack(track)"
+                type="button"
+                class="icon-button"
+                (click)="deleteTrack(track.id, selectedEventId || undefined)">
+                🗑️
+              </button>
             </div>
           </li>
         </ul>

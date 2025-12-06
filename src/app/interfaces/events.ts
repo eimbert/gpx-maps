@@ -26,6 +26,7 @@ export interface EventTrack {
   gpxData?: string;
   fileName?: string;
   uploadedAt: string;
+  createdBy?: string;
 }
 
 export interface RaceEvent {
@@ -37,4 +38,5 @@ export interface RaceEvent {
   logo?: string;
   modalities: EventModality[];
   tracks: EventTrack[];
+  createdBy?: string;
 }

@@ -107,7 +107,7 @@
                     <span class="position">#{{ i + 1 }}</span>
                     <div class="event-card__runner">
                       <p class="strong">{{ track.nickname }}</p>
-                      <p class="muted">{{ findModalityNameForEvent(event, track.modalityId) }}</p>
+                      <p class="muted">{{track.category}} · {{ findModalityNameForEvent(event, track.modalityId) }}</p>
                     </div>
                     <span class="time">{{ formatTime(track.timeSeconds) }}</span>
                   </li>

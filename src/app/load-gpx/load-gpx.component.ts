@@ -156,7 +156,7 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
   restartCarouselTimer(): void {
     this.clearCarouselTimer();
     if (!this.events.length) return;
-    this.carouselTimer = setInterval(() => this.nextEvent(), 6000);
+    this.carouselTimer = setInterval(() => this.nextEvent(), 16000);
   }
 
   private clearCarouselTimer(): void {

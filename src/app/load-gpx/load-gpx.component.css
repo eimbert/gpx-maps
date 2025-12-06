@@ -270,7 +270,6 @@
 
 .carousel-window {
   position: relative;
-  width: min(100%, 1100px);
   margin: 0 auto;
   overflow: hidden;
 }
@@ -285,7 +284,7 @@
   position: relative;
   flex: 0 0 100%;
   width: 100%;
-  max-width: none;
+  /* max-width: none; */
   margin: 0;
   display: flex;
   flex-direction: column;
@@ -345,6 +344,7 @@
   transform: translateY(-2px);
   border: 2px solid #facc15;
   box-shadow: 0 16px 40px rgba(250, 204, 21, 0.25), 0 0 0 3px rgba(250, 204, 21, 0.18);
+  max-width: 96.5%;
 }
 
 .event-card--create {
@@ -355,6 +355,7 @@
   display: flex;
   gap: 12px;
   align-items: center;
+  width: fit-content;
 }
 
 .event-logo {
@@ -568,8 +569,9 @@ input[type="file"] {
   margin-top: 12px;
   padding: 10px 12px;
   border-radius: 12px;
-  background: rgba(255, 255, 255, 0.75);
-  border: 1px dashed #cbd5e1;
+  background: transparent;
+  /* max-width: 1055px; */
+  border: 1px dashed orange;
   width: 100%;
   box-sizing: border-box;
 }
@@ -578,7 +580,6 @@ input[type="file"] {
   list-style: none;
   margin: 6px 0 0;
   padding: 0;
-  display: flex;
   flex-direction: column;
   gap: 6px;
 }

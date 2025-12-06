@@ -16,7 +16,7 @@
           <th>Año</th>
           <th>Población</th>
           <th>Comunidad</th>
-          <th class="distance-col">Distancia</th>
+          <th class="distance-col">Distancias</th>
         </tr>
       </thead>
       <tbody>
@@ -36,7 +36,7 @@
           <td>{{ row.year }}</td>
           <td>{{ row.population }}</td>
           <td>{{ row.autonomousCommunity }}</td>
-          <td class="distance-col">{{ row.distanceKm | number:'1.0-1' }} km</td>
+          <td class="distance-col">{{ getDistancesLabel(row) }}</td>
         </tr>
       </tbody>
     </table>

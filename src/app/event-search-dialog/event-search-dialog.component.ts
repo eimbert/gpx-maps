@@ -15,12 +15,11 @@ export interface EventSearchDialogResult {
 
 interface EventSearchRow {
   eventId: string;
-  modalityId: string;
   name: string;
   year: number;
   population: string;
   autonomousCommunity: string;
-  distanceKm: number;
+  distancesKm: number[];
   logo?: string;
 }
 
@@ -45,25 +44,26 @@ export class EventSearchDialogComponent {
   }
 
   isSelected(row: EventSearchRow): boolean {
-    return row.eventId === this.data.selectedEventId && (!!this.data.selectedModalityId ? row.modalityId === this.data.selectedModalityId : true);
+    return row.eventId === this.data.selectedEventId;
   }
 
   onRowDoubleClick(row: EventSearchRow): void {
-    this.dialogRef.close({ eventId: row.eventId, modalityId: row.modalityId });
+    this.dialogRef.close({ eventId: row.eventId });
+  }
+
+  getDistancesLabel(row: EventSearchRow): string {
+    return row.distancesKm.map(distance => `${distance.toLocaleString('es-ES', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} km`).join(' · ');
   }
 
   private buildRows(events: RaceEvent[]): EventSearchRow[] {
-    return events.flatMap(event =>
-      event.modalities.map(modality => ({
-        eventId: event.id,
-        modalityId: modality.id,
-        name: event.name,
-        year: event.year,
-        population: event.population,
-        autonomousCommunity: event.autonomousCommunity,
-        distanceKm: modality.distanceKm,
-        logo: event.logo
-      }))
-    );
+    return events.map(event => ({
+      eventId: event.id,
+      name: event.name,
+      year: event.year,
+      population: event.population,
+      autonomousCommunity: event.autonomousCommunity,
+      distancesKm: event.modalities.map(modality => modality.distanceKm),
+      logo: event.logo
+    }));
   }
 }

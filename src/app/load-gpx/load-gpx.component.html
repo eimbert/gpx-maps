@@ -119,7 +119,7 @@
         </div>
       </div>
 
-      <div class="carousel-dots" *ngIf="events.length > 1">
+      <!-- <div class="carousel-dots" *ngIf="events.length > 1">
         <button
           type="button"
           *ngFor="let event of events; index as i"
@@ -127,7 +127,7 @@
           (click)="goToEvent(i)"
           [attr.aria-label]="'Ir al evento ' + event.name"
         ></button>
-      </div>
+      </div> -->
     </ng-container>
 
     <ng-template #emptyEvents>

@@ -261,7 +261,11 @@
   border: 1px solid #e2e8f0;
   box-shadow: 0 12px 30px rgba(15, 23, 42, 0.08);
   cursor: pointer;
-  transition: transform 0.2s ease, box-shadow 0.2s ease, border 0.2s ease;
+  /* transition: transform 0.2s ease, box-shadow 0.2s ease, border 0.2s ease; */
+    /* transform: translateY(-2px); */
+  border: 2px solid #facc15;
+  box-shadow: 0 16px 40px rgba(250, 204, 21, 0.25), 0 0 0 3px rgba(250, 204, 21, 0.18);
+  max-width: 96.5%;
 }
 
 .events-carousel {
@@ -345,12 +349,12 @@
   border-color: #3b82f6;
 }
 
-.event-card--active {
+/* .event-card--active {
   transform: translateY(-2px);
   border: 2px solid #facc15;
   box-shadow: 0 16px 40px rgba(250, 204, 21, 0.25), 0 0 0 3px rgba(250, 204, 21, 0.18);
   max-width: 96.5%;
-}
+} */
 
 .event-card--create {
   background: linear-gradient(135deg, #ecfeff, #fff7ed);

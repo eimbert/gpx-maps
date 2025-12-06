@@ -1,5 +1,5 @@
 import { Component, ElementRef, OnDestroy, OnInit, ViewChild } from '@angular/core';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
 import { MatDialog } from '@angular/material/dialog';
 import { firstValueFrom } from 'rxjs';
@@ -76,6 +76,7 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
   constructor(
     public dialog: MatDialog,
     private router: Router,
+    private route: ActivatedRoute,
     private eventService: EventService,
     private http: HttpClient,
     identityService: UserIdentityService) {
@@ -83,6 +84,7 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit() {
+    this.applyInitialMode();
     this.eventService.getEvents().subscribe(events => {
       this.events = events;
       this.syncCarouselIndex();
@@ -96,6 +98,17 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
 
   get selectedEvent(): RaceEvent | undefined {
     return this.events.find(e => e.id === this.selectedEventId);
+  }
+
+  private applyInitialMode(): void {
+    const modeFromRoute = (this.route.snapshot.data['mode'] || this.route.snapshot.queryParamMap.get('mode')) as
+      | 'routes'
+      | 'events'
+      | null;
+
+    if (modeFromRoute === 'routes' || modeFromRoute === 'events') {
+      this.mode = modeFromRoute;
+    }
   }
 
   selectMode(mode: 'routes' | 'events'): void {

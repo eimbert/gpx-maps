@@ -73,8 +73,8 @@
     </header>
 
     <div class="events-actions">
-      <button type="button" class="secondary" (click)="openEventSearch()">🔍 Buscar eventos</button>
-      <button type="button" class="secondary" (click)="openCreateEventDialog()">➕ Crear nuevo evento</button>
+      <button type="button" class="secondary" style="cursor: pointer;" (click)="openEventSearch()">🔍 Buscar eventos</button>
+      <button type="button" class="secondary" style="cursor: pointer;" (click)="openCreateEventDialog()">➕ Crear nuevo evento</button>
       <button
         *ngIf="canDeleteSelectedEvent()"
         type="button"

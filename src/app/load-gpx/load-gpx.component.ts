@@ -194,7 +194,7 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
       EventSearchDialogComponent,
       {
         width: '960px',
-        height: '640px',
+        height: '700px',
         data: {
           events: this.events,
           selectedEventId: this.selectedEventId,

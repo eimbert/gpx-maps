@@ -4,6 +4,7 @@
   gap: 16px;
   height: 100%;
   padding: 8px;
+ 
 }
 
 .search-dialog__header {
@@ -110,4 +111,8 @@
 
 .main-text {
   font-weight: 700;
+}
+
+:host ::ng-deep .mat-dialog-container {
+    overflow: hidden;
 }

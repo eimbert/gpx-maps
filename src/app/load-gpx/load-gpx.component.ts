@@ -80,9 +80,6 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
   ngOnInit() {
     this.eventService.getEvents().subscribe(events => {
       this.events = events;
-      if (!this.selectedEventId && events.length) {
-        this.selectEvent(events[0].id);
-      }
       this.syncCarouselIndex();
       this.restartCarouselTimer();
     });
@@ -98,9 +95,6 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
 
   selectMode(mode: 'routes' | 'events'): void {
     this.mode = mode;
-    if (mode === 'events' && this.events.length && !this.selectedEventId) {
-      this.selectEvent(this.events[0].id);
-    }
   }
 
   selectEvent(eventId: string, modalityId?: string): void {
@@ -116,6 +110,26 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
     if (this.personalNickname) {
       this.refreshPersonalHistory();
     }
+  }
+
+  handleEventSelection(eventId: string): void {
+    if (!eventId) {
+      this.selectedEventId = null;
+      this.selectedModalityId = null;
+      this.selectedComparisonIds.clear();
+      this.personalHistory = [];
+      this.eventUpload = { ...this.eventUpload, modalityId: '', file: null };
+      if (this.eventFileInputRef?.nativeElement) {
+        this.eventFileInputRef.nativeElement.value = '';
+      }
+      return;
+    }
+
+    this.selectEvent(eventId);
+  }
+
+  onModalityChange(modalityId: string): void {
+    this.selectedModalityId = modalityId;
   }
 
   getEventLocation(event: RaceEvent): string {
@@ -713,6 +727,15 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
     if (this.eventFileInputRef?.nativeElement) {
       this.eventFileInputRef.nativeElement.value = '';
     }
+  }
+
+  canUploadToEvent(): boolean {
+    return Boolean(
+      this.selectedEvent &&
+      this.eventUpload.file &&
+      this.eventUpload.nickname.trim() &&
+      (this.eventUpload.modalityId || this.selectedModalityId)
+    );
   }
 
   async animateSelectedTracks(): Promise<void> {

@@ -464,6 +464,34 @@
   min-width: 240px;
 }
 
+.event-selection {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.event-logo-preview {
+  width: 96px;
+  height: 96px;
+  border-radius: 14px;
+  border: 1px solid #e2e8f0;
+  background: #fff;
+  display: grid;
+  place-items: center;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
+  overflow: hidden;
+}
+
+.event-logo-preview--empty {
+  background: linear-gradient(135deg, #f8fafc, #e2e8f0);
+}
+
+.event-logo-preview__image {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
 .event-status--empty {
   background: #fff7ed;
   border-color: #fdba74;

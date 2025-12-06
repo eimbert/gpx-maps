@@ -134,16 +134,30 @@
               <h3>Sube tu track</h3>
               <p class="muted">Nick, categoría, bici y GPX para entrar al ranking automático.</p>
             </div>
-            <div class="event-status" [class.event-status--empty]="!selectedEvent">
-              <p class="eyebrow">Evento seleccionado</p>
-              <ng-container *ngIf="selectedEvent; else noEventSelected">
-                <p class="event-status__title">{{ selectedEvent.name }}</p>
-                <p class="muted">{{ selectedEvent.year }} • {{ getEventLocation(selectedEvent) }}</p>
-              </ng-container>
-              <ng-template #noEventSelected>
-                <p class="event-status__title">Ningún evento seleccionado</p>
-                <p class="muted">Elige un evento para habilitar la subida.</p>
-              </ng-template>
+            <div class="event-selection">
+              <div class="event-status" [class.event-status--empty]="!selectedEvent">
+                <p class="eyebrow">Evento seleccionado</p>
+                <ng-container *ngIf="selectedEvent; else noEventSelected">
+                  <p class="event-status__title">{{ selectedEvent.name }}</p>
+                  <p class="muted">{{ selectedEvent.year }} • {{ getEventLocation(selectedEvent) }}</p>
+                </ng-container>
+                <ng-template #noEventSelected>
+                  <p class="event-status__title">Ningún evento seleccionado</p>
+                  <p class="muted">Elige un evento para habilitar la subida.</p>
+                </ng-template>
+              </div>
+              <div class="event-logo-preview" [class.event-logo-preview--empty]="!selectedEvent">
+                <ng-container *ngIf="selectedEvent; else logoPlaceholder">
+                  <img
+                    [src]="getEventLogo(selectedEvent)"
+                    [alt]="selectedEvent.name + ' logo'"
+                    class="event-logo-preview__image"
+                  />
+                </ng-container>
+                <ng-template #logoPlaceholder>
+                  <span class="muted">Sin logo</span>
+                </ng-template>
+              </div>
             </div>
           </div>
           <div class="form-grid">

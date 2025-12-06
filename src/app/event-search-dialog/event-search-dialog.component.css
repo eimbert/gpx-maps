@@ -113,6 +113,6 @@
   font-weight: 700;
 }
 
-:host ::ng-deep .mat-dialog-container {
-    overflow: hidden;
+::ng-deep .mat-dialog-container {
+    overflow: hidden ;
 }

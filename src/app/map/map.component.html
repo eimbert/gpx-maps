@@ -23,6 +23,13 @@
     <button class="big-start" (click)="onStartClick()">▶ Start</button>
   </div>
 
+  <div class="info-overlay" *ngIf="showUniformSpeedDialog">
+    <div class="info-dialog" role="dialog" aria-modal="true" aria-label="Aviso de reproducción uniforme">
+      <p>El track cargado no contiene información del tiempo, por lo que la representación se realizará uniformemente sin tener en cuenta tramos más rápidos o lentos y se mostrará a velocidad constante.</p>
+      <button type="button" class="info-btn" (click)="dismissUniformSpeedDialog()">Entendido</button>
+    </div>
+  </div>
+
   <div class="ranking-overlay" *ngIf="showRanking && ranking.length">
     <div class="ranking-panel" aria-label="Clasificación final">
       <div class="ranking-title">🏁 Ranking final</div>

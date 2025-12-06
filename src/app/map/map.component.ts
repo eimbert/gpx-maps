@@ -72,6 +72,7 @@ export class MapComponent implements OnInit, AfterViewInit {
   private readonly progressOpacity = 0.95;
   private readonly zoomPlaybackFactor = 0.3;
   private readonly zoomPanSlowdownFactor = 2;
+  private readonly fallbackUniformSpeedMs = 5; // velocidad constante para tracks sin tiempo
   private lastLeaderTarget: L.LatLng | null = null;
   private allTracksBounds: L.LatLngBounds | null = null;
   private readonly maxReasonableSpeedMs = 45; // ~162 km/h, evita descartar puntos válidos en coche
@@ -80,6 +81,8 @@ export class MapComponent implements OnInit, AfterViewInit {
   private relMs = 0;
   private rafId = 0;
   private started = false;
+
+  showUniformSpeedDialog = false;
 
   // Ambos terminan aprox. en este tiempo de reproducción
   private desiredDurationSec = 30;
@@ -152,18 +155,41 @@ export class MapComponent implements OnInit, AfterViewInit {
 
   // limpia: ordena y filtra saltos >60 km/h
   private sanitize(arr: TrackPoint[]): TPx[] {
-    const xs = arr
-      .filter(p => this.isCoordValid(p.lat, p.lon) && Number.isFinite(this.ms(p.time)))
-      .map(p => ({ ...p, t: this.ms(p.time) }))
-      .sort((a, b) => a.t - b.t);
+    const validCoords = arr.filter(p => this.isCoordValid(p.lat, p.lon));
+    const parsed = validCoords.map(p => ({ ...p, t: this.ms(p.time) }));
+    const withTime = parsed.filter(p => Number.isFinite(p.t));
 
-    if (xs.length < 2) return xs;
-    const out: TPx[] = [xs[0]];
-    for (let i = 1; i < xs.length; i++) {
-      const prev = out[out.length - 1], cur = xs[i];
-      if (this.speedMs(prev, cur) <= this.maxReasonableSpeedMs) out.push(cur);
+    if (withTime.length >= 2) {
+      const xs = withTime.sort((a, b) => a.t - b.t);
+      const out: TPx[] = [xs[0]];
+      for (let i = 1; i < xs.length; i++) {
+        const prev = out[out.length - 1], cur = xs[i];
+        if (this.speedMs(prev, cur) <= this.maxReasonableSpeedMs) out.push(cur);
+      }
+      return out;
     }
-    return out;
+
+    if (parsed.length < 2) return [];
+
+    // Sin tiempos válidos: generamos una línea de tiempo uniforme basada en distancia
+    this.showUniformSpeedDialog = true;
+    const uniform: TPx[] = [];
+    let cumulativeMs = 0;
+
+    for (let i = 0; i < parsed.length; i++) {
+      const cur = parsed[i];
+      if (i === 0) {
+        uniform.push({ ...cur, t: 0 });
+        continue;
+      }
+      const prev = uniform[uniform.length - 1];
+      const dist = this.hav(prev.lat, prev.lon, cur.lat, cur.lon);
+      const dt = dist / this.fallbackUniformSpeedMs * 1000;
+      cumulativeMs += Number.isFinite(dt) ? dt : 0;
+      uniform.push({ ...cur, t: cumulativeMs });
+    }
+
+    return uniform;
   }
 
   // Formatea duración (ms) como "X h Y min" (o "Y min", o "X h")
@@ -819,6 +845,10 @@ export class MapComponent implements OnInit, AfterViewInit {
             : undefined
 
     }));
+  }
+
+  dismissUniformSpeedDialog(): void {
+    this.showUniformSpeedDialog = false;
   }
 
   formatRaceTime(ms: number): string {

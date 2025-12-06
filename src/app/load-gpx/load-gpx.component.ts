@@ -96,10 +96,6 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
     return this.events.find(e => e.id === this.selectedEventId);
   }
 
-  get carouselTransform(): string {
-    return `translateX(-${this.carouselIndex * 100}%)`;
-  }
-
   selectMode(mode: 'routes' | 'events'): void {
     this.mode = mode;
     if (mode === 'events' && this.events.length && !this.selectedEventId) {

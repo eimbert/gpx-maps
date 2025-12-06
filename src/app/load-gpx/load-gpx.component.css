@@ -212,6 +212,11 @@
   color: #ef4444;
 }
 
+.ghost--danger {
+  color: #b91c1c;
+  border-color: #fecaca;
+}
+
 .btn-start {
   align-self: flex-start;
   margin-top: 12px;
@@ -577,6 +582,12 @@ input[type="file"] {
   font-weight: 800;
 }
 
+.ranking__actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .strong {
   margin: 0;
   font-weight: 800;
@@ -589,11 +600,40 @@ input[type="file"] {
   gap: 10px;
 }
 
+.track-card {
+  display: grid;
+  grid-template-columns: auto 1fr auto auto;
+  gap: 10px;
+  align-items: center;
+  padding: 10px 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  background: #fff;
+}
+
 
 
 .track-card input {
   width: 18px;
   height: 18px;
+}
+
+.icon-button {
+  border: 1px solid #e2e8f0;
+  background: #fff;
+  border-radius: 10px;
+  padding: 6px 8px;
+  cursor: pointer;
+  transition: background 0.15s ease, transform 0.15s ease;
+}
+
+.icon-button:hover {
+  background: #f8fafc;
+  transform: translateY(-1px);
+}
+
+.icon-button:active {
+  transform: translateY(0);
 }
 
 .actions {

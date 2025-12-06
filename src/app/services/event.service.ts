@@ -38,6 +38,37 @@ export class EventService {
     this.events$.next(updated);
   }
 
+  removeTrack(eventId: string, trackId: string, requesterId: string): boolean {
+    let removed = false;
+    const updated = this.events$.value.map(event => {
+      if (event.id !== eventId) return event;
+      const track = event.tracks.find(t => t.id === trackId);
+      if (!track) return event;
+      if (track.createdBy && track.createdBy !== requesterId) return event;
+      removed = true;
+      return { ...event, tracks: event.tracks.filter(t => t.id !== trackId) };
+    });
+
+    if (removed) {
+      this.persist(updated);
+      this.events$.next(updated);
+    }
+
+    return removed;
+  }
+
+  removeEvent(eventId: string, requesterId: string): boolean {
+    const event = this.events$.value.find(e => e.id === eventId);
+    if (!event) return false;
+    if (event.tracks.length) return false;
+    if (event.createdBy && event.createdBy !== requesterId) return false;
+
+    const updated = this.events$.value.filter(e => e.id !== eventId);
+    this.persist(updated);
+    this.events$.next(updated);
+    return true;
+  }
+
   private loadEvents(): void {
     const stored = this.readPersisted();
     if (stored?.events?.length) {

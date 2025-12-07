@@ -8,11 +8,11 @@
 
 .container {
   min-height: 100vh;
-  background-image: url('/assets/fondo_pantalla2.webp');
+  background-image: url('/assets/fondo_pantalla2.png');
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
-  padding: 24px 16px 64px;
+  /* padding: 24px 16px 64px; */
 }
 
 .mode-toggle {
@@ -20,6 +20,7 @@
   gap: 12px;
   justify-content: center;
   margin-bottom: 18px;
+  padding-top: 100px;
 }
 
 .mode-button {
@@ -57,7 +58,7 @@
 
 .hero p {
   margin: 0;
-  color: black;
+  color: whitesmoke;
   font-weight: 500;
   font-size: 20px;
 }

@@ -1,10 +1,8 @@
 <div class="container">
-  <div class="mode-toggle">
-    <button class="mode-button" [class.active]="mode === 'routes'" (click)="selectMode('routes')">
-      🚵‍♀️ Animar GPX
-    </button>
-    <button class="mode-button" [class.active]="mode === 'events'" (click)="selectMode('events')">
-      🏁 Eventos y rankings
+  <div class="page-actions">
+    <button type="button" class="home-button" (click)="goHome()">
+      <span class="home-button__icon">🏠</span>
+      <span class="home-button__label">Volver al inicio</span>
     </button>
   </div>
 

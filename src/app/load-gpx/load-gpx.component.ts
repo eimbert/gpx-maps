@@ -150,6 +150,10 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
     this.selectedModalityId = modalityId;
   }
 
+  goHome(): void {
+    this.router.navigate(['/']);
+  }
+
   getEventLocation(event: RaceEvent): string {
     const parts = [event.population, event.autonomousCommunity].filter(Boolean);
     return parts.join(' • ');

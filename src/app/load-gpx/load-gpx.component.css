@@ -12,33 +12,46 @@
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
-  /* padding: 24px 16px 64px; */
+  padding: 32px 16px 64px;
 }
 
-.mode-toggle {
+.page-actions {
   display: flex;
-  gap: 12px;
   justify-content: center;
-  margin-bottom: 18px;
-  padding-top: 100px;
+  margin-bottom: 28px;
 }
 
-.mode-button {
-  padding: 12px 18px;
-  border-radius: 14px;
-  border: 1px solid #cbd5e1;
-  background: rgba(255, 255, 255, 0.85);
-  color: #0f172a;
+.home-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 22px;
+  border-radius: 9999px;
+  border: none;
+  background: linear-gradient(120deg, #111827, #1f2937 40%, #2563eb);
+  color: #f8fafc;
   font-weight: 800;
-  box-shadow: 0 10px 25px rgba(15, 23, 42, 0.08);
+  letter-spacing: 0.01em;
+  box-shadow: 0 15px 35px rgba(15, 23, 42, 0.18), 0 0 0 1px rgba(255, 255, 255, 0.05) inset;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: transform 0.15s ease, box-shadow 0.2s ease;
 }
 
-.mode-button.active {
-  background: linear-gradient(135deg, #6a5acd 0%, #3c92ff 100%);
-  color: #fff;
-  border-color: transparent;
+.home-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 18px 40px rgba(37, 99, 235, 0.25);
+}
+
+.home-button:active {
+  transform: translateY(0);
+}
+
+.home-button__icon {
+  font-size: 20px;
+}
+
+.home-button__label {
+  font-size: 15px;
 }
 
 .load-wrapper,

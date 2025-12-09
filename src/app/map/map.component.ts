@@ -780,25 +780,6 @@ export class MapComponent implements OnInit, AfterViewInit {
       }
     }
 
-    // --- (C) Velocidad muy baja de forma continuada (permite deriva ligera) ---
-    // Captura tramos donde el movimiento es casi nulo pero con ruido que supera stayRadius/pathSumMax.
-    const slowSpeedMs = 0.5; // ~1.8 km/h, compatible con caminar muy despacio
-    let slowStart = -1, slowDur = 0;
-    for (let i = 1; i < xs.length; i++) {
-      const dt = xs[i].t - xs[i - 1].t;
-      if (dt <= 0) continue;
-      const speed = dist(xs[i], xs[i - 1]) / (dt / 1000);
-
-      if (speed <= slowSpeedMs) {
-        if (slowStart === -1) slowStart = i - 1;
-        slowDur += dt;
-      } else {
-        if (slowStart !== -1 && slowDur >= minStopMs) raw.push({ start: slowStart, end: i - 1, dur: slowDur });
-        slowStart = -1; slowDur = 0;
-      }
-    }
-    if (slowStart !== -1 && slowDur >= minStopMs) raw.push({ start: slowStart, end: xs.length - 1, dur: slowDur });
-
     if (raw.length === 0) { console.log('[StopsAdaptive] no stops'); return xs.slice(); }
 
     // Ordenar y fusionar paradas (solapes o gaps cortos en la misma zona)
@@ -824,20 +805,9 @@ export class MapComponent implements OnInit, AfterViewInit {
     let paused = 0, idx = 0;
     for (let i = 0; i < xs.length; i++) {
       if (idx < merged.length && i === merged[idx].start) {
-        const start = merged[idx];
-        const startPoint = { ...xs[i], t: xs[i].t - paused };
-        out.push(startPoint);
-
-        paused += start.dur;
-
-        const resumeIdx = start.end + 1;
-        if (resumeIdx < xs.length) {
-          out.push({ ...startPoint, time: xs[resumeIdx].time, t: xs[resumeIdx].t - paused });
-          i = resumeIdx;
-        } else {
-          i = start.end;
-        }
-
+        out.push({ ...xs[i], t: xs[i].t - paused });
+        paused += merged[idx].dur;
+        i = merged[idx].end;
         idx++;
         continue;
       }

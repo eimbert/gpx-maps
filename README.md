@@ -2,15 +2,6 @@
 
 This project was generated with [Angular CLI](https://github.com/angular/angular-cli) version 14.2.4.
 
-## API de autenticación
-
-La aplicación espera un backend con los siguientes puntos finales de autenticación:
-
-* `POST /api/auth/login` → cuerpo `{ email, password }` → respuesta `{ user: { id, email, displayName, roles }, accessToken, refreshToken, expiresIn }`.
-* `POST /api/auth/refresh` → cuerpo `{ refreshToken }` → respuesta `{ accessToken, expiresIn }`.
-* `POST /api/auth/logout` → cuerpo `{ refreshToken }` → respuesta vacía con código 204.
-* `GET /api/auth/me` → encabezado `Authorization: Bearer <token>` → respuesta `{ id, email, displayName, roles }`.
-
 ## Development server
 
 Run `ng serve` for a dev server. Navigate to `http://localhost:4200/`. The application will automatically reload if you change any of the source files.

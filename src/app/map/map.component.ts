@@ -824,9 +824,20 @@ export class MapComponent implements OnInit, AfterViewInit {
     let paused = 0, idx = 0;
     for (let i = 0; i < xs.length; i++) {
       if (idx < merged.length && i === merged[idx].start) {
-        out.push({ ...xs[i], t: xs[i].t - paused });
-        paused += merged[idx].dur;
-        i = merged[idx].end;
+        const start = merged[idx];
+        const startPoint = { ...xs[i], t: xs[i].t - paused };
+        out.push(startPoint);
+
+        paused += start.dur;
+
+        const resumeIdx = start.end + 1;
+        if (resumeIdx < xs.length) {
+          out.push({ ...startPoint, time: xs[resumeIdx].time, t: xs[resumeIdx].t - paused });
+          i = resumeIdx;
+        } else {
+          i = start.end;
+        }
+
         idx++;
         continue;
       }

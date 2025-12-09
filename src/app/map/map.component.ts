@@ -298,7 +298,7 @@ export class MapComponent implements OnInit, AfterViewInit {
     this.trackMetas = this.trackMetas.map((meta) => {
       let sanitized = this.sanitize(meta.raw);
       if (this.removeStops) {
-        sanitized = this.removeStopsAdaptive(sanitized, 20_000, 4, 10, 25, 12, 1_500);
+        sanitized = this.removeStopsAdaptive(sanitized);
       }
       return { ...meta, sanitized };
     });
@@ -717,107 +717,25 @@ export class MapComponent implements OnInit, AfterViewInit {
     this.followLeader(relMs, now);
   }
 
-  // Detecta paradas de forma adaptativa: (A) pasos cortos acumulados y (B) intervalos únicos largos.
-  // Luego comprime el timeline restando la duración de cada parada a los puntos siguientes.
-  private removeStopsAdaptive(
-    xs: TPx[],
-    minStopMs = 15_000,  // duración mínima para contar como parada
-    stepRadius = 4,      // (A) salto máximo entre puntos “quieto”
-    stayRadius = 10,     // (A) deriva máxima desde el inicio de la parada
-    pathSumMax = 25,     // (A) distancia acumulada máxima dentro de la parada
-    sparseStayRadius = 12, // (B) radio para considerar que un solo intervalo largo es “quieto”
-    mergeGapMs = 1500      // fusiona paradas separadas por gaps cortos
-  ): TPx[] {
+  // Comprime el timeline detectando pausas como saltos de tiempo > 30 s entre puntos consecutivos.
+  // Cada pausa se acumula y se resta a todos los puntos posteriores, dejando el track como si no se
+  // hubiera detenido la grabación.
+  private removeStopsAdaptive(xs: TPx[], pauseThresholdMs = 30_000): TPx[] {
     console.log('[StopsAdaptive] ENTER len=', xs?.length);
     if (!xs || xs.length < 2) { console.log('[StopsAdaptive] EXIT early'); return xs?.slice() ?? []; }
 
-    const dist = (a: TPx, b: TPx) => this.hav(a.lat, a.lon, b.lat, b.lon);
-
-    type Stop = { start: number; end: number; dur: number, sumDist?: number, maxRad?: number };
-    const raw: Stop[] = [];
-
-    // --- (A) Parada por pasos cortos + deriva + distancia acumulada ---
-    let inStop = false, startIdx = 0;
-    let anchor = xs[0];
-    let dur = 0, sumDist = 0, maxRad = 0;
+    const out: TPx[] = [{ ...xs[0] }];
+    let paused = 0;
 
     for (let i = 1; i < xs.length; i++) {
       const dt = xs[i].t - xs[i - 1].t;
-      if (dt <= 0) continue;
-      const dStep = dist(xs[i], xs[i - 1]);
-      const r = dist(xs[i], anchor);
-
-      if (!inStop) {
-        if (dStep <= stepRadius) {
-          inStop = true;
-          startIdx = i - 1;
-          anchor = xs[startIdx];
-          dur = dt; sumDist = dStep; maxRad = r;
-        }
-      } else {
-        if (dStep <= stepRadius && r <= stayRadius) {
-          dur += dt; sumDist += dStep; if (r > maxRad) maxRad = r;
-        } else {
-          if (dur >= minStopMs && maxRad <= stayRadius && sumDist <= pathSumMax) {
-            raw.push({ start: startIdx, end: i - 1, dur, sumDist, maxRad });
-          }
-          inStop = false; dur = 0; sumDist = 0; maxRad = 0;
-        }
-      }
-    }
-    if (inStop && dur >= minStopMs && maxRad <= stayRadius && sumDist <= pathSumMax) {
-      raw.push({ start: startIdx, end: xs.length - 1, dur, sumDist, maxRad });
-    }
-
-    // --- (B) Parada por intervalo único largo (pocos puntos/sampling bajo) ---
-    for (let i = 1; i < xs.length; i++) {
-      const dt = xs[i].t - xs[i - 1].t;
-      if (dt >= minStopMs) {
-        const d = dist(xs[i], xs[i - 1]);
-        if (d <= sparseStayRadius) {
-          raw.push({ start: i - 1, end: i, dur: dt });
-        }
-      }
-    }
-
-    if (raw.length === 0) { console.log('[StopsAdaptive] no stops'); return xs.slice(); }
-
-    // Ordenar y fusionar paradas (solapes o gaps cortos en la misma zona)
-    raw.sort((a, b) => a.start - b.start);
-    const merged: Stop[] = [];
-    const sameArea = (a: Stop, b: Stop) => dist(xs[a.start], xs[b.start]) <= Math.max(stayRadius, sparseStayRadius);
-
-    for (const s of raw) {
-      if (!merged.length) { merged.push({ ...s }); continue; }
-      const prev = merged[merged.length - 1];
-      const overlap = s.start <= prev.end;
-      const gapMs = xs[s.start].t - xs[prev.end].t;
-      if (overlap || (gapMs > 0 && gapMs <= mergeGapMs && sameArea(prev, s))) {
-        prev.end = Math.max(prev.end, s.end);
-        prev.dur += (overlap ? 0 : gapMs) + s.dur;
-      } else {
-        merged.push({ ...s });
-      }
-    }
-
-    // Comprimir timeline y eliminar puntos intermedios de cada parada
-    const out: TPx[] = [];
-    let paused = 0, idx = 0;
-    for (let i = 0; i < xs.length; i++) {
-      if (idx < merged.length && i === merged[idx].start) {
-        out.push({ ...xs[i], t: xs[i].t - paused });
-        paused += merged[idx].dur;
-        i = merged[idx].end;
-        idx++;
-        continue;
+      if (dt > pauseThresholdMs) {
+        paused += dt;
       }
       out.push({ ...xs[i], t: xs[i].t - paused });
     }
 
-    const totalPaused = merged.reduce((a, s) => a + s.dur, 0);
-    console.log('[StopsAdaptive] paradas:', merged.length,
-      'tiempo comprimido (s):', Math.round(totalPaused / 1000),
-      { minStopMs, stepRadius, stayRadius, pathSumMax, sparseStayRadius, mergeGapMs });
+    console.log('[StopsAdaptive] total pausa (s):', Math.round(paused / 1000), 'umbral (ms):', pauseThresholdMs);
     return out;
   }
 

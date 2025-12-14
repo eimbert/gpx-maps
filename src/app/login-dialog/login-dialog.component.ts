@@ -52,6 +52,7 @@ export class LoginDialogComponent {
 
         const successResponse = response as LoginSuccessResponse;
         if (!successResponse.verified) {
+          this.authService.saveSession(successResponse);
           this.openVerificationDialog();
           return;
         }

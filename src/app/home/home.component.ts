@@ -34,4 +34,9 @@ export class HomeComponent implements OnInit {
       width: '480px'
     });
   }
+
+  logout(): void {
+    this.authService.clearSession();
+    this.loggedUser = null;
+  }
 }

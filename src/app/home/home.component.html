@@ -25,14 +25,19 @@
       </a>
     </div>
 
-    <div class="home__auth">
-      <button class="auth-link auth-button" type="button" (click)="openLoginDialog()">Iniciar sesión</button>
-      <span aria-hidden="true">·</span>
-      <button class="auth-link auth-button" type="button" (click)="openRegisterDialog()">Registrarse</button>
+    <div *ngIf="loggedUser; else authActions" class="home__auth">
+      <span class="home__user-info">
+        Sesión iniciada como <strong>{{ loggedUser.name || loggedUser.email }}</strong>.
+      </span>
+      <button class="auth-link auth-button auth-button--logout" type="button" (click)="logout()">Cerrar sesión</button>
     </div>
 
-    <p *ngIf="loggedUser" class="home__user-info">
-      Sesión iniciada como <strong>{{ loggedUser.name || loggedUser.email }}</strong>.
-    </p>
+    <ng-template #authActions>
+      <div class="home__auth">
+        <button class="auth-link auth-button" type="button" (click)="openLoginDialog()">Iniciar sesión</button>
+        <span aria-hidden="true">·</span>
+        <button class="auth-link auth-button" type="button" (click)="openRegisterDialog()">Registrarse</button>
+      </div>
+    </ng-template>
   </main>
 </div>

@@ -1,6 +1,7 @@
 import { Component } from '@angular/core';
-import { MatDialogRef } from '@angular/material/dialog';
+import { MatDialog, MatDialogRef } from '@angular/material/dialog';
 import { RaceEvent } from '../interfaces/events';
+import { InfoDialogComponent } from '../info-dialog/info-dialog.component';
 
 export interface EventCreateDialogResult {
   event: RaceEvent;
@@ -22,7 +23,20 @@ export class EventCreateDialogComponent {
     logo: ''
   };
 
-  constructor(private dialogRef: MatDialogRef<EventCreateDialogComponent, EventCreateDialogResult | undefined>) { }
+  constructor(
+    private dialogRef: MatDialogRef<EventCreateDialogComponent, EventCreateDialogResult | undefined>,
+    private dialog: MatDialog
+  ) { }
+
+  private showMessage(message: string): void {
+    this.dialog.open(InfoDialogComponent, {
+      width: '420px',
+      data: {
+        title: 'Datos requeridos',
+        message
+      }
+    });
+  }
 
   onCancel(): void {
     this.dialogRef.close();
@@ -30,7 +44,7 @@ export class EventCreateDialogComponent {
 
   async onSave(): Promise<void> {
     if (!this.newEvent.name.trim() || !this.newEvent.population.trim()) {
-      alert('Completa el nombre y la población del evento.');
+      this.showMessage('Completa el nombre y la población del evento.');
       return;
     }
 

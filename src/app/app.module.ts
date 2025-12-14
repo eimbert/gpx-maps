@@ -21,6 +21,7 @@ import { EventCreateDialogComponent } from './event-create-dialog/event-create-d
 import { HomeComponent } from './home/home.component';
 import { LoginDialogComponent } from './login-dialog/login-dialog.component';
 import { RegisterDialogComponent } from './register-dialog/register-dialog.component';
+import { InfoDialogComponent } from './info-dialog/info-dialog.component';
 
 @NgModule({
   declarations: [
@@ -34,7 +35,8 @@ import { RegisterDialogComponent } from './register-dialog/register-dialog.compo
     EventCreateDialogComponent,
     HomeComponent,
     LoginDialogComponent,
-    RegisterDialogComponent
+    RegisterDialogComponent,
+    InfoDialogComponent
   ],
   imports: [
     MatCheckboxModule,

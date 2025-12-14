@@ -11,6 +11,7 @@
       <div>
         <h1>Anima tus Rutas</h1>
         <p>Arrastra y suelta hasta {{ maxTracks }} recorridos o pulsa para seleccionarlos.</p>
+        <p *ngIf="!isAuthenticated" class="guest-note">Sin sesión iniciada solo puedes cargar un archivo GPX a la vez.</p>
       </div>
     </header>
 
@@ -26,7 +27,7 @@
         #fileInput
         type="file"
         accept=".gpx"
-        multiple
+        [attr.multiple]="isAuthenticated ? '' : null"
         (change)="onFileInputChange($event)"
         hidden
       />
@@ -71,73 +72,79 @@
         <p style="color: beige;">Compara tu GPX con otros riders</p>
       </div>
     </header>
-
-    <div class="events-actions">
-      <button type="button" class="secondary" style="cursor: pointer;" (click)="openEventSearch()">🔍 Buscar eventos</button>
-      <button type="button" class="secondary" style="cursor: pointer;" (click)="openCreateEventDialog()">➕ Crear nuevo evento</button>
-      <button
-        *ngIf="canDeleteSelectedEvent()"
-        type="button"
-        class="ghost ghost--danger"
-        (click)="deleteSelectedEvent()"
-      >
-        🗑️ Eliminar evento
-      </button>
+    <div *ngIf="!isAuthenticated" class="events-locked">
+      <p class="events-locked__title">Eventos y rankings están disponibles solo para usuarios registrados.</p>
+      <p class="muted">Inicia sesión o regístrate desde la pantalla principal para subir y comparar tracks.</p>
+      <button type="button" class="secondary" (click)="goHome()">Volver a la pantalla principal</button>
     </div>
 
-    <ng-container *ngIf="events.length; else emptyEvents">
-      <div class="events-carousel">
-        <div class="carousel-window">
-          <div class="carousel-track">
-            <article
-              *ngFor="let event of events; index as i"
-              class="event-card event-card--carousel"
-              [ngStyle]="{ '--event-logo-url': 'url(' + getEventLogo(event) + ')' }"
-              [class.event-card--active]="event.id === selectedEventId"
-              [class.event-card--current]="i === carouselIndex"
-              (click)="handleCarouselSelection(event.id)"
-            >
-              <div class="event-card__header">
-                <div>
-                  <p class="eyebrow">{{ event.year }}</p>
-                  <h3>{{ event.name }}</h3>
-                  <p class="muted">{{ getEventLocation(event) }}</p>
-                </div>
-              </div>
-              <div class="pill-group">
-                <span class="pill" *ngFor="let modality of event.modalities">{{ modality.name }} · {{ modality.distanceKm }} km</span>
-              </div>
-              <p class="muted">{{ event.tracks.length }} tracks subidos</p>
-              <div class="event-card__ranking" *ngIf="getEventRanking(event, 5).length">
-                <p class="eyebrow">Top tiempos</p>
-                <ol>
-                  <li *ngFor="let track of getEventRanking(event, 5); index as i">
-                    <span class="position">#{{ i + 1 }}</span>
-                    <div class="event-card__runner">
-                      <p class="strong">{{ track.nickname }}</p>
-                      <p class="muted">{{track.category}} · {{ findModalityNameForEvent(event, track.modalityId) }}</p>
-                    </div>
-                    <span class="time">{{ formatTime(track.timeSeconds) }}</span>
-                  </li>
-                </ol>
-              </div>
-
-            </article>
-          </div>
-        </div>
+    <ng-container *ngIf="isAuthenticated">
+      <div class="events-actions">
+        <button type="button" class="secondary" style="cursor: pointer;" (click)="openEventSearch()">🔍 Buscar eventos</button>
+        <button type="button" class="secondary" style="cursor: pointer;" (click)="openCreateEventDialog()">➕ Crear nuevo evento</button>
+        <button
+          *ngIf="canDeleteSelectedEvent()"
+          type="button"
+          class="ghost ghost--danger"
+          (click)="deleteSelectedEvent()"
+        >
+          🗑️ Eliminar evento
+        </button>
       </div>
 
+      <ng-container *ngIf="events.length; else emptyEvents">
+        <div class="events-carousel">
+          <div class="carousel-window">
+            <div class="carousel-track">
+              <article
+                *ngFor="let event of events; index as i"
+                class="event-card event-card--carousel"
+                [ngStyle]="{ '--event-logo-url': 'url(' + getEventLogo(event) + ')' }"
+                [class.event-card--active]="event.id === selectedEventId"
+                [class.event-card--current]="i === carouselIndex"
+                (click)="handleCarouselSelection(event.id)"
+              >
+                <div class="event-card__header">
+                  <div>
+                    <p class="eyebrow">{{ event.year }}</p>
+                    <h3>{{ event.name }}</h3>
+                    <p class="muted">{{ getEventLocation(event) }}</p>
+                  </div>
+                </div>
+                <div class="pill-group">
+                  <span class="pill" *ngFor="let modality of event.modalities">{{ modality.name }} · {{ modality.distanceKm }} km</span>
+                </div>
+                <p class="muted">{{ event.tracks.length }} tracks subidos</p>
+                <div class="event-card__ranking" *ngIf="getEventRanking(event, 5).length">
+                  <p class="eyebrow">Top tiempos</p>
+                  <ol>
+                    <li *ngFor="let track of getEventRanking(event, 5); index as i">
+                      <span class="position">#{{ i + 1 }}</span>
+                      <div class="event-card__runner">
+                        <p class="strong">{{ track.nickname }}</p>
+                        <p class="muted">{{track.category}} · {{ findModalityNameForEvent(event, track.modalityId) }}</p>
+                      </div>
+                      <span class="time">{{ formatTime(track.timeSeconds) }}</span>
+                    </li>
+                  </ol>
+                </div>
 
-    </ng-container>
+              </article>
+            </div>
+          </div>
+        </div>
 
-    <ng-template #emptyEvents>
-      <p class="muted">No hay eventos disponibles todavía.</p>
-    </ng-template>
 
-    <section *ngIf="events.length" class="event-detail">
-      <div class="event-panels">
-        <article class="panel">
-          <div class="panel__header panel__header--stacked">
+      </ng-container>
+
+      <ng-template #emptyEvents>
+        <p class="muted">No hay eventos disponibles todavía.</p>
+      </ng-template>
+
+      <section *ngIf="events.length" class="event-detail">
+        <div class="event-panels">
+          <article class="panel">
+            <div class="panel__header panel__header--stacked">
             <div>
               <h3>Sube tu track</h3>
               <p class="muted">Nick, categoría, bici y GPX para entrar al ranking automático.</p>
@@ -283,31 +290,32 @@
         </ng-template>
       </article>
 
-      <article class="panel" *ngIf="personalHistory.length">
-        <div class="panel__header">
-          <h3>Historial de {{ personalNickname }}</h3>
-          <p class="muted">Guardamos todos tus intentos, el ranking usa tu mejor tiempo.</p>
-        </div>
-        <ul class="history">
-          <li *ngFor="let track of personalHistory">
-            <div>
-              <p class="strong">{{ findModalityName(track.modalityId) }}</p>
-              <p class="muted">{{ track.category }} · {{ track.bikeType }}</p>
-            </div>
-            <div class="history__meta">
-              <span class="pill">{{ formatTime(track.timeSeconds) }}</span>
-              <span class="muted">{{ track.uploadedAt | date:'medium' }}</span>
-              <button
-                *ngIf="canDeleteTrack(track)"
-                type="button"
-                class="icon-button"
-                (click)="deleteTrack(track.id, selectedEventId || undefined)">
-                🗑️
-              </button>
-            </div>
-          </li>
-        </ul>
-      </article>
-    </section>
+        <article class="panel" *ngIf="personalHistory.length">
+          <div class="panel__header">
+            <h3>Historial de {{ personalNickname }}</h3>
+            <p class="muted">Guardamos todos tus intentos, el ranking usa tu mejor tiempo.</p>
+          </div>
+          <ul class="history">
+            <li *ngFor="let track of personalHistory">
+              <div>
+                <p class="strong">{{ findModalityName(track.modalityId) }}</p>
+                <p class="muted">{{ track.category }} · {{ track.bikeType }}</p>
+              </div>
+              <div class="history__meta">
+                <span class="pill">{{ formatTime(track.timeSeconds) }}</span>
+                <span class="muted">{{ track.uploadedAt | date:'medium' }}</span>
+                <button
+                  *ngIf="canDeleteTrack(track)"
+                  type="button"
+                  class="icon-button"
+                  (click)="deleteTrack(track.id, selectedEventId || undefined)">
+                  🗑️
+                </button>
+              </div>
+            </li>
+          </ul>
+        </article>
+      </section>
+    </ng-container>
   </section>
 </div>

@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
-import { Observable, of } from 'rxjs';
+import { Observable, BehaviorSubject, of } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
 import { LoginResponse, RegisterResponse } from '../interfaces/auth';
 import { environment } from '../../environments/environment';
@@ -17,8 +17,11 @@ interface UserInfoResponse {
 export class AuthService {
   private readonly storageKey = 'gpxAuthSession';
   private cachedSession: LoginSuccessResponse | null = null;
+  private readonly sessionSubject = new BehaviorSubject<LoginSuccessResponse | null>(this.readSessionFromStorage());
 
-  constructor(private http: HttpClient) {}
+  constructor(private http: HttpClient) {
+    this.cachedSession = this.sessionSubject.value;
+  }
 
   login(email: string, password: string): Observable<LoginResponse> {
     return this.http.post<LoginResponse>(environment.loginUrl, { email, password });
@@ -41,25 +44,14 @@ export class AuthService {
     } catch {
       // Silently ignore persistence errors.
     }
+
+    this.sessionSubject.next(session);
   }
 
   getSession(): LoginSuccessResponse | null {
-    if (typeof localStorage !== 'undefined') {
-      try {
-        const stored = localStorage.getItem(this.storageKey);
+    if (this.cachedSession) return this.cachedSession;
 
-        if (!stored) {
-          this.cachedSession = null;
-          return null;
-        }
-
-        this.cachedSession = JSON.parse(stored) as LoginSuccessResponse;
-      } catch {
-        this.cachedSession = null;
-        return null;
-      }
-    }
-
+    this.cachedSession = this.readSessionFromStorage();
     return this.cachedSession;
   }
 
@@ -71,6 +63,12 @@ export class AuthService {
     } catch {
       // Ignore persistence issues.
     }
+
+    this.sessionSubject.next(null);
+  }
+
+  get sessionChanges$(): Observable<LoginSuccessResponse | null> {
+    return this.sessionSubject.asObservable();
   }
 
   isAuthenticated(): boolean {
@@ -112,6 +110,20 @@ export class AuthService {
         return of(null);
       })
     );
+  }
+
+  private readSessionFromStorage(): LoginSuccessResponse | null {
+    if (typeof localStorage === 'undefined') return null;
+
+    try {
+      const stored = localStorage.getItem(this.storageKey);
+      if (!stored) return null;
+
+      const parsed = JSON.parse(stored) as LoginSuccessResponse;
+      return parsed;
+    } catch {
+      return null;
+    }
   }
 
   private isTokenValid(token: string): boolean {

@@ -1,5 +1,10 @@
 <h2 mat-dialog-title>Crear cuenta</h2>
-<form #registerForm="ngForm" (ngSubmit)="onSubmit(registerForm)" novalidate>
+<form
+  *ngIf="!verificationEmailSent; else verificationState"
+  #registerForm="ngForm"
+  (ngSubmit)="onSubmit(registerForm)"
+  novalidate
+>
   <mat-dialog-content>
     <p class="dialog-description">
       Completa los datos para registrarte.
@@ -73,3 +78,39 @@
     </button>
   </mat-dialog-actions>
 </form>
+
+<ng-template #verificationState>
+  <mat-dialog-content>
+    <p class="dialog-description">
+      Te enviamos un correo, revisa tu bandeja y haz clic en el enlace para confirmar tu cuenta.
+    </p>
+
+    <div class="verification-card">
+      <p class="verification-title">Finaliza tu alta desde el correo</p>
+      <ul>
+        <li>Si no lo ves, revisa la carpeta de spam o correo no deseado.</li>
+        <li>Si el enlace está vencido o ya se usó, puedes pedir que te lo reenviemos.</li>
+      </ul>
+
+      <div class="resend-row">
+        <button
+          type="button"
+          mat-stroked-button
+          color="primary"
+          (click)="resendVerification()"
+          [disabled]="loading || resendCountdown > 0"
+        >
+          {{ resendCountdown > 0 ? 'Reenviar en ' + resendCountdown + 's' : 'Reenviar correo' }}
+        </button>
+        <span class="resend-hint" *ngIf="resendCountdown > 0">Podrás reenviar cuando termine el temporizador.</span>
+      </div>
+    </div>
+
+    <p *ngIf="errorMessage" class="error">{{ errorMessage }}</p>
+    <p *ngIf="successMessage" class="success">{{ successMessage }}</p>
+  </mat-dialog-content>
+
+  <mat-dialog-actions align="end">
+    <button type="button" mat-button (click)="close()">Cerrar</button>
+  </mat-dialog-actions>
+</ng-template>

@@ -38,6 +38,38 @@
   padding: 32px;
 }
 
+.home__auth {
+  align-self: flex-end;
+  display: flex;
+  gap: 12px;
+}
+
+.auth-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border-radius: 999px;
+  color: #cbd5e1;
+  text-decoration: none;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+
+.auth-link:hover {
+  transform: translateY(-1px);
+  color: #f8fafc;
+  border-color: rgba(122, 162, 255, 0.6);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+}
+
+.auth-link--primary {
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.28), rgba(59, 130, 246, 0.26));
+  color: #f8fafc;
+  border-color: rgba(99, 102, 241, 0.5);
+}
+
 .eyebrow {
   margin: 0;
   letter-spacing: 2px;
@@ -143,6 +175,16 @@
 @media (max-width: 640px) {
   .home__content {
     padding: 16px;
+  }
+
+  .home__auth {
+    align-self: center;
+    justify-content: center;
+    width: 100%;
+  }
+
+  .auth-link {
+    justify-content: center;
   }
 
   .action-card {

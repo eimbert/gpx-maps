@@ -14,6 +14,7 @@ import { EventCreateDialogComponent, EventCreateDialogResult } from '../event-cr
 import { UserIdentityService } from '../services/user-identity.service';
 import { AuthService } from '../services/auth.service';
 import { Subscription } from 'rxjs';
+import { InfoDialogComponent, InfoDialogData, InfoDialogResult } from '../info-dialog/info-dialog.component';
 
 interface TrackPoint {
   lat: number;
@@ -87,6 +88,22 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
     private authService: AuthService,
     identityService: UserIdentityService) {
     this.userId = identityService.getUserId();
+  }
+
+  private openInfoDialog(data: InfoDialogData): Promise<InfoDialogResult | undefined> {
+    const dialogRef = this.dialog.open<InfoDialogComponent, InfoDialogData, InfoDialogResult>(InfoDialogComponent, {
+      width: '420px',
+      data
+    });
+
+    return firstValueFrom(dialogRef.afterClosed());
+  }
+
+  private showMessage(message: string, title = 'Aviso'): void {
+    this.openInfoDialog({
+      title,
+      message
+    });
   }
 
   ngOnInit() {
@@ -184,15 +201,31 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
   }
 
   private notifyMultiTrackRequiresAuth(): void {
-    alert('Solo los usuarios registrados pueden cargar más de un GPX a la vez. Ve a la pantalla principal para iniciar sesión o registrarte.');
-    this.router.navigate(['/']);
+    this.openInfoDialog({
+      title: 'Acceso limitado',
+      message: 'Solo los usuarios registrados pueden cargar más de un GPX a la vez. Ve a la pantalla principal para iniciar sesión o registrarte.',
+      confirmLabel: 'Ir a inicio',
+      cancelLabel: 'Seguir aquí'
+    }).then(result => {
+      if (result === 'confirm') {
+        this.router.navigate(['/']);
+      }
+    });
   }
 
   private showEventsAuthNotice(): void {
     if (this.eventsNoticeShown) return;
     this.eventsNoticeShown = true;
-    alert('La sección de eventos y rankings es exclusiva para usuarios registrados. Inicia sesión o regístrate desde la pantalla principal.');
-    this.router.navigate(['/']);
+    this.openInfoDialog({
+      title: 'Función para usuarios registrados',
+      message: 'La sección de eventos y rankings es exclusiva para usuarios registrados. Inicia sesión o regístrate desde la pantalla principal.',
+      confirmLabel: 'Ir a inicio',
+      cancelLabel: 'Seguir aquí'
+    }).then(result => {
+      if (result === 'confirm') {
+        this.router.navigate(['/']);
+      }
+    });
   }
 
   private ensureEventsAccess(): boolean {
@@ -357,7 +390,7 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
       if (!this.isAuthenticated) {
         this.notifyMultiTrackRequiresAuth();
       } else {
-        alert(`Puedes cargar como máximo ${this.maxTracks} archivos GPX a la vez.`);
+        this.showMessage(`Puedes cargar como máximo ${this.maxTracks} archivos GPX a la vez.`, 'Límite de tracks');
       }
       return;
     }
@@ -560,7 +593,7 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
 
   iniciarVisualizacion(): void {
     if (!this.tracksCargados()) {
-      alert('Carga al menos un track.');
+      this.showMessage('Carga al menos un track.');
       return;
     }
 
@@ -777,16 +810,16 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
   async uploadTrackToEvent(): Promise<void> {
     if (!this.ensureEventsAccess()) return;
     if (!this.selectedEventId) {
-      alert('Elige un evento primero.');
+      this.showMessage('Elige un evento primero.');
       return;
     }
     if (!this.eventUpload.file) {
-      alert('Selecciona un archivo GPX.');
+      this.showMessage('Selecciona un archivo GPX.');
       return;
     }
     const nickname = this.eventUpload.nickname.trim();
     if (!nickname) {
-      alert('Añade tu nick para entrar en el ranking.');
+      this.showMessage('Añade tu nick para entrar en el ranking.');
       return;
     }
 
@@ -837,7 +870,7 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
 
     const selectedIds = Array.from(this.selectedComparisonIds).slice(0, this.maxComparison);
     if (!selectedIds.length) {
-      alert('Selecciona al menos un track para comparar.');
+      this.showMessage('Selecciona al menos un track para comparar.');
       return;
     }
 
@@ -856,7 +889,7 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
     }
 
     if (!loaded.length) {
-      alert('No se pudieron cargar los tracks seleccionados.');
+      this.showMessage('No se pudieron cargar los tracks seleccionados.');
       return;
     }
 

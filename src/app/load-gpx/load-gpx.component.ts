@@ -216,15 +216,11 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
   private showEventsAuthNotice(): void {
     if (this.eventsNoticeShown) return;
     this.eventsNoticeShown = true;
+    this.router.navigate(['/']);
     this.openInfoDialog({
       title: 'Función para usuarios registrados',
       message: 'La sección de eventos y rankings es exclusiva para usuarios registrados. Inicia sesión o regístrate desde la pantalla principal.',
-      confirmLabel: 'Ir a inicio',
-      cancelLabel: 'Seguir aquí'
-    }).then(result => {
-      if (result === 'confirm') {
-        this.router.navigate(['/']);
-      }
+      confirmLabel: 'OK'
     });
   }
 

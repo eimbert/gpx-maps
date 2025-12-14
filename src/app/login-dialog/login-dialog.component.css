@@ -1,0 +1,14 @@
+.dialog-description {
+  margin: 0 0 12px;
+  color: #475569;
+}
+
+.full-width {
+  width: 100%;
+  display: block;
+}
+
+.error {
+  color: #b91c1c;
+  margin: 8px 0 0;
+}

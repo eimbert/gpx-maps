@@ -1,0 +1,45 @@
+<h2 mat-dialog-title>Iniciar sesión</h2>
+<form #loginForm="ngForm" (ngSubmit)="onSubmit(loginForm)" novalidate>
+  <mat-dialog-content>
+    <p class="dialog-description">
+      Introduce tus credenciales para acceder. En el entorno de pruebas se usará el servicio local.
+    </p>
+
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Correo electrónico</mat-label>
+      <input
+        matInput
+        name="email"
+        [(ngModel)]="email"
+        type="email"
+        required
+        autocomplete="email"
+        placeholder="tu@correo.com"
+      />
+      <mat-error>El correo es obligatorio</mat-error>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Contraseña</mat-label>
+      <input
+        matInput
+        name="password"
+        [(ngModel)]="password"
+        type="password"
+        required
+        minlength="4"
+        autocomplete="current-password"
+      />
+      <mat-error>Introduce tu contraseña</mat-error>
+    </mat-form-field>
+
+    <p *ngIf="errorMessage" class="error">{{ errorMessage }}</p>
+  </mat-dialog-content>
+
+  <mat-dialog-actions align="end">
+    <button type="button" mat-button (click)="close()">Cancelar</button>
+    <button type="submit" mat-flat-button color="primary" [disabled]="loading">
+      {{ loading ? 'Accediendo...' : 'Iniciar sesión' }}
+    </button>
+  </mat-dialog-actions>
+</form>

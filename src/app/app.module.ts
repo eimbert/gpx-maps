@@ -22,6 +22,7 @@ import { HomeComponent } from './home/home.component';
 import { LoginDialogComponent } from './login-dialog/login-dialog.component';
 import { RegisterDialogComponent } from './register-dialog/register-dialog.component';
 import { InfoDialogComponent } from './info-dialog/info-dialog.component';
+import { VerificationDialogComponent } from './verification-dialog/verification-dialog.component';
 
 @NgModule({
   declarations: [
@@ -36,7 +37,8 @@ import { InfoDialogComponent } from './info-dialog/info-dialog.component';
     HomeComponent,
     LoginDialogComponent,
     RegisterDialogComponent,
-    InfoDialogComponent
+    InfoDialogComponent,
+    VerificationDialogComponent
   ],
   imports: [
     MatCheckboxModule,

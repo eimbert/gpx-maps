@@ -37,7 +37,13 @@ export class AuthService {
   }
 
   resendVerification(email: string): Observable<RegisterResponse> {
-    return this.http.post<RegisterResponse>(environment.resendVerificationUrl, { email });
+    const headers = this.buildAuthHeaders();
+
+    return this.http.post<RegisterResponse>(
+      environment.resendVerificationUrl,
+      { email },
+      headers ? { headers } : {}
+    );
   }
 
   saveSession(session: LoginSuccessResponse): void {
@@ -152,5 +158,12 @@ export class AuthService {
     } catch {
       return null;
     }
+  }
+
+  private buildAuthHeaders(): HttpHeaders | null {
+    const session = this.getSession();
+    if (!session) return null;
+
+    return new HttpHeaders({ Authorization: `Bearer ${session.token}` });
   }
 }

@@ -16,3 +16,15 @@ export interface LoginErrorResponse {
 }
 
 export type LoginResponse = LoginSuccessResponse | LoginErrorResponse;
+
+export interface RegisterSuccessResponse {
+  exitCode: 0;
+  message?: string;
+}
+
+export interface RegisterErrorResponse {
+  message: string;
+  exitCode: number;
+}
+
+export type RegisterResponse = RegisterSuccessResponse | RegisterErrorResponse;

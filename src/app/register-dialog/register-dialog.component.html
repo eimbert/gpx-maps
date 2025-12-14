@@ -1,0 +1,75 @@
+<h2 mat-dialog-title>Crear cuenta</h2>
+<form #registerForm="ngForm" (ngSubmit)="onSubmit(registerForm)" novalidate>
+  <mat-dialog-content>
+    <p class="dialog-description">
+      Completa los datos para registrarte. Usaremos el servicio en <strong>{{ environment?.registerUrl || 'registro local' }}</strong>.
+    </p>
+
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Correo electrónico</mat-label>
+      <input
+        matInput
+        name="email"
+        [(ngModel)]="email"
+        type="email"
+        required
+        autocomplete="email"
+        placeholder="tu@correo.com"
+      />
+      <mat-error>El correo es obligatorio</mat-error>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Nombre</mat-label>
+      <input
+        matInput
+        name="name"
+        [(ngModel)]="name"
+        required
+        autocomplete="name"
+        placeholder="Tu nombre"
+      />
+      <mat-error>El nombre es obligatorio</mat-error>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Nick</mat-label>
+      <input
+        matInput
+        name="nickname"
+        [(ngModel)]="nickname"
+        required
+        autocomplete="nickname"
+        placeholder="Tu alias en la app"
+      />
+      <mat-error>El nick es obligatorio</mat-error>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Contraseña</mat-label>
+      <input
+        matInput
+        name="password"
+        [(ngModel)]="password"
+        type="password"
+        required
+        [pattern]="passwordPattern"
+        minlength="6"
+        autocomplete="new-password"
+        placeholder="Mínimo 6 caracteres"
+      />
+      <mat-hint>Mín. 6 caracteres, mayúscula, minúscula y símbolo</mat-hint>
+      <mat-error>La contraseña debe cumplir los requisitos</mat-error>
+    </mat-form-field>
+
+    <p *ngIf="errorMessage" class="error">{{ errorMessage }}</p>
+    <p *ngIf="successMessage" class="success">{{ successMessage }}</p>
+  </mat-dialog-content>
+
+  <mat-dialog-actions align="end">
+    <button type="button" mat-button (click)="close()">Cancelar</button>
+    <button type="submit" mat-flat-button color="primary" [disabled]="loading">
+      {{ loading ? 'Registrando...' : 'Registrarse' }}
+    </button>
+  </mat-dialog-actions>
+</form>

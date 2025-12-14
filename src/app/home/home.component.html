@@ -28,7 +28,7 @@
     <div class="home__auth">
       <button class="auth-link auth-button" type="button" (click)="openLoginDialog()">Iniciar sesión</button>
       <span aria-hidden="true">·</span>
-      <a class="auth-link" href="#register">Registrarse</a>
+      <button class="auth-link auth-button" type="button" (click)="openRegisterDialog()">Registrarse</button>
     </div>
 
     <p *ngIf="loggedUser" class="home__user-info">

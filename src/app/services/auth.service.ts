@@ -36,6 +36,10 @@ export class AuthService {
     });
   }
 
+  resendVerification(email: string): Observable<RegisterResponse> {
+    return this.http.post<RegisterResponse>(environment.resendVerificationUrl, { email });
+  }
+
   saveSession(session: LoginSuccessResponse): void {
     this.cachedSession = session;
     if (typeof localStorage === 'undefined') return;

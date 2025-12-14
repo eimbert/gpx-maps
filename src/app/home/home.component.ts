@@ -2,6 +2,7 @@ import { Component } from '@angular/core';
 import { MatDialog } from '@angular/material/dialog';
 import { LoginDialogComponent } from '../login-dialog/login-dialog.component';
 import { LoginSuccessResponse } from '../interfaces/auth';
+import { RegisterDialogComponent } from '../register-dialog/register-dialog.component';
 
 @Component({
   selector: 'app-home',
@@ -20,6 +21,12 @@ export class HomeComponent {
       if (result) {
         this.loggedUser = result;
       }
+    });
+  }
+
+  openRegisterDialog(): void {
+    this.dialog.open<RegisterDialogComponent, void, void>(RegisterDialogComponent, {
+      width: '480px'
     });
   }
 }

@@ -20,6 +20,7 @@ import { EventSearchDialogComponent } from './event-search-dialog/event-search-d
 import { EventCreateDialogComponent } from './event-create-dialog/event-create-dialog.component';
 import { HomeComponent } from './home/home.component';
 import { LoginDialogComponent } from './login-dialog/login-dialog.component';
+import { RegisterDialogComponent } from './register-dialog/register-dialog.component';
 
 @NgModule({
   declarations: [
@@ -32,7 +33,8 @@ import { LoginDialogComponent } from './login-dialog/login-dialog.component';
     EventSearchDialogComponent,
     EventCreateDialogComponent,
     HomeComponent,
-    LoginDialogComponent
+    LoginDialogComponent,
+    RegisterDialogComponent
   ],
   imports: [
     MatCheckboxModule,

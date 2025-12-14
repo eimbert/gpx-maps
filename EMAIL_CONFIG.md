@@ -11,6 +11,43 @@ spring.mail.properties.mail.smtp.auth=true
 spring.mail.properties.mail.smtp.starttls.enable=true
 ```
 
+### Cómo depurar el envío
+Si necesitas ver qué valores está tomando la configuración SMTP justo antes de enviar un correo, añade un log explícito en el
+punto donde construyas el `SimpleMailMessage` (o equivalente). Procura no volcar la contraseña sin enmascararla:
+
+```java
+@Slf4j
+@Service
+public class MailService {
+
+  private final JavaMailSender mailSender;
+  private final Environment env;
+
+  public MailService(JavaMailSender mailSender, Environment env) {
+    this.mailSender = mailSender;
+    this.env = env;
+  }
+
+  public void sendEmail(SimpleMailMessage message) {
+    // Log de valores de configuración antes de enviar
+    String host = env.getProperty("spring.mail.host", "localhost");
+    String port = env.getProperty("spring.mail.port", "1025");
+    String username = env.getProperty("spring.mail.username", "");
+    String password = env.getProperty("spring.mail.password", "");
+
+    log.info("SMTP host: {}", host);
+    log.info("SMTP port: {}", port);
+    log.info("SMTP username: {}", username);
+    log.info("SMTP password (masked): {}", password.isBlank() ? "<vacía>" : "****" + password.substring(Math.max(0, password.length() - 2)));
+
+    mailSender.send(message);
+  }
+}
+```
+
+En entornos con perfiles o valores por defecto, puedes ajustarlo a las variables con fallback, por ejemplo `MAIL_HOST:localhos`
+t, `MAIL_PORT:1025`, etc., tal y como se definen arriba.
+
 ## Valores habituales
 - **Gmail (contraseña de aplicación)**
   - `MAIL_HOST=smtp.gmail.com`

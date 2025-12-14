@@ -8,7 +8,7 @@ import { DialogoConfiguracionData } from '../interfaces/estructuras';
   styleUrls: ['./dialogo-configuracion.component.scss']
 })
 export class DialogoConfiguracionComponent {
-  eliminarPausasLargas = false;
+  eliminarPausasLargas = true;
   anadirLogoTitulos = false;
   activarMusica = true;
   grabarAnimacion = false;
@@ -24,7 +24,7 @@ export class DialogoConfiguracionComponent {
   ) {
     // valores iniciales opcionales
     if (data) {
-      this.eliminarPausasLargas = !!data.eliminarPausasLargas;
+      this.eliminarPausasLargas = true;
       this.anadirLogoTitulos   = !!data.anadirLogoTitulos;
       this.permitirAdversarioVirtual = !!data.permitirAdversarioVirtual;
       this.incluirAdversarioVirtual = !!data.incluirAdversarioVirtual;

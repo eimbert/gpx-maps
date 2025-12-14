@@ -12,6 +12,8 @@ import { BikeType, EventTrack, RaceCategory, RaceEvent } from '../interfaces/eve
 import { EventService } from '../services/event.service';
 import { EventCreateDialogComponent, EventCreateDialogResult } from '../event-create-dialog/event-create-dialog.component';
 import { UserIdentityService } from '../services/user-identity.service';
+import { AuthService } from '../services/auth.service';
+import { Subscription } from 'rxjs';
 
 interface TrackPoint {
   lat: number;
@@ -49,6 +51,9 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
   private readonly overlapProximityMeters = 150;
   isDragOver = false;
   tracks: LoadedTrack[] = [];
+  isAuthenticated = false;
+  private sessionSub?: Subscription;
+  private eventsNoticeShown = false;
 
   mode: 'routes' | 'events' = 'routes';
   events: RaceEvent[] = [];
@@ -79,12 +84,26 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
     private route: ActivatedRoute,
     private eventService: EventService,
     private http: HttpClient,
+    private authService: AuthService,
     identityService: UserIdentityService) {
     this.userId = identityService.getUserId();
   }
 
   ngOnInit() {
     this.applyInitialMode();
+    this.isAuthenticated = this.authService.isAuthenticated();
+    this.sessionSub = this.authService.sessionChanges$.subscribe(session => {
+      this.isAuthenticated = !!session;
+      if (!this.isAuthenticated && this.mode === 'events') {
+        this.showEventsAuthNotice();
+      }
+    });
+    this.authService.validateSessionWithBackend().subscribe(session => {
+      this.isAuthenticated = !!session;
+      if (!this.isAuthenticated && this.mode === 'events') {
+        this.showEventsAuthNotice();
+      }
+    });
     this.eventService.getEvents().subscribe(events => {
       this.events = events;
       this.syncCarouselIndex();
@@ -94,6 +113,7 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.clearCarouselTimer();
+    this.sessionSub?.unsubscribe();
   }
 
   get selectedEvent(): RaceEvent | undefined {
@@ -109,13 +129,21 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
     if (modeFromRoute === 'routes' || modeFromRoute === 'events') {
       this.mode = modeFromRoute;
     }
+
+    if (this.mode === 'events' && !this.authService.isAuthenticated()) {
+      this.showEventsAuthNotice();
+    }
   }
 
   selectMode(mode: 'routes' | 'events'): void {
     this.mode = mode;
+    if (mode === 'events' && !this.isAuthenticated) {
+      this.showEventsAuthNotice();
+    }
   }
 
   selectEvent(eventId: string, modalityId?: string): void {
+    if (!this.ensureEventsAccess()) return;
     this.selectedEventId = eventId;
     const event = this.selectedEvent;
     this.carouselIndex = Math.max(0, this.events.findIndex(e => e.id === eventId));
@@ -147,11 +175,30 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
   }
 
   onModalityChange(modalityId: string): void {
+    if (!this.ensureEventsAccess()) return;
     this.selectedModalityId = modalityId;
   }
 
   goHome(): void {
     this.router.navigate(['/']);
+  }
+
+  private notifyMultiTrackRequiresAuth(): void {
+    alert('Solo los usuarios registrados pueden cargar más de un GPX a la vez. Ve a la pantalla principal para iniciar sesión o registrarte.');
+    this.router.navigate(['/']);
+  }
+
+  private showEventsAuthNotice(): void {
+    if (this.eventsNoticeShown) return;
+    this.eventsNoticeShown = true;
+    alert('La sección de eventos y rankings es exclusiva para usuarios registrados. Inicia sesión o regístrate desde la pantalla principal.');
+    this.router.navigate(['/']);
+  }
+
+  private ensureEventsAccess(): boolean {
+    if (this.isAuthenticated) return true;
+    this.showEventsAuthNotice();
+    return false;
   }
 
   getEventLocation(event: RaceEvent): string {
@@ -182,6 +229,7 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
   }
 
   handleCarouselSelection(eventId: string): void {
+    if (!this.ensureEventsAccess()) return;
     this.selectEvent(eventId);
   }
 
@@ -212,6 +260,7 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
   }
 
   openEventSearch(): void {
+    if (!this.ensureEventsAccess()) return;
     const dialogRef = this.dialog.open<EventSearchDialogComponent, EventSearchDialogData, EventSearchDialogResult>(
       EventSearchDialogComponent,
       {
@@ -234,6 +283,7 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
   }
 
   openCreateEventDialog(): void {
+    if (!this.ensureEventsAccess()) return;
     const dialogRef = this.dialog.open<EventCreateDialogComponent, undefined, EventCreateDialogResult>(
       EventCreateDialogComponent,
       {
@@ -290,13 +340,29 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
   private handleFiles(fileList: FileList | null): void {
     if (!fileList || fileList.length === 0) return;
 
-    const availableSlots = this.maxTracks - this.tracks.length;
+    const gpxFiles = Array.from(fileList).filter(f => f.name.toLowerCase().endsWith('.gpx'));
+    if (!gpxFiles.length) return;
+
+    if (!this.isAuthenticated) {
+      const incomingCount = gpxFiles.length;
+      if (incomingCount > 1 || this.tracks.length >= 1 || this.tracks.length + incomingCount > 1) {
+        this.notifyMultiTrackRequiresAuth();
+        return;
+      }
+    }
+
+    const maxAllowed = this.isAuthenticated ? this.maxTracks : 1;
+    const availableSlots = maxAllowed - this.tracks.length;
     if (availableSlots <= 0) {
-      alert(`Puedes cargar como máximo ${this.maxTracks} archivos GPX a la vez.`);
+      if (!this.isAuthenticated) {
+        this.notifyMultiTrackRequiresAuth();
+      } else {
+        alert(`Puedes cargar como máximo ${this.maxTracks} archivos GPX a la vez.`);
+      }
       return;
     }
 
-    const files = Array.from(fileList).filter(f => f.name.toLowerCase().endsWith('.gpx')).slice(0, availableSlots);
+    const files = gpxFiles.slice(0, availableSlots);
     if (!files.length) return;
 
     files.forEach(file => this.onFileSelected(file));
@@ -709,6 +775,7 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
   }
 
   async uploadTrackToEvent(): Promise<void> {
+    if (!this.ensureEventsAccess()) return;
     if (!this.selectedEventId) {
       alert('Elige un evento primero.');
       return;
@@ -755,6 +822,7 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
 
   canUploadToEvent(): boolean {
     return Boolean(
+      this.isAuthenticated &&
       this.selectedEvent &&
       this.eventUpload.file &&
       this.eventUpload.nickname.trim() &&
@@ -763,6 +831,7 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
   }
 
   async animateSelectedTracks(): Promise<void> {
+    if (!this.ensureEventsAccess()) return;
     const event = this.selectedEvent;
     if (!event) return;
 
@@ -796,6 +865,7 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
   }
 
   toggleComparisonSelection(trackId: string): void {
+    if (!this.ensureEventsAccess()) return;
     if (this.selectedComparisonIds.has(trackId)) {
       this.selectedComparisonIds.delete(trackId);
       return;
@@ -810,6 +880,7 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
   }
 
   deleteTrack(trackId: string, eventId?: string): void {
+    if (!this.ensureEventsAccess()) return;
     const targetEventId = eventId ?? this.selectedEventId;
     if (!targetEventId) return;
     const event = this.events.find(e => e.id === targetEventId);
@@ -893,6 +964,7 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
   }
 
   deleteSelectedEvent(): void {
+    if (!this.ensureEventsAccess()) return;
     const eventId = this.selectedEventId;
     if (!eventId || !this.selectedEvent) return;
     if (!this.canDeleteSelectedEvent()) return;
@@ -904,6 +976,7 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
   }
 
   onEventFileChange(event: Event): void {
+    if (!this.ensureEventsAccess()) return;
     const input = event.target as HTMLInputElement;
     this.eventUpload.file = input.files?.[0] ?? null;
   }

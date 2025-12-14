@@ -76,6 +76,13 @@
   font-size: 20px;
 }
 
+.guest-note {
+  color: #fef3c7;
+  font-size: 15px;
+  margin-top: 6px;
+  font-weight: 700;
+}
+
 .events-hero h1 {
   color: #0f172a;
 }
@@ -90,6 +97,24 @@
   gap: 16px;
   align-items: flex-start;
   flex-wrap: wrap;
+}
+
+.events-locked {
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid #e2e8f0;
+  padding: 18px 20px;
+  border-radius: 14px;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+  display: grid;
+  gap: 6px;
+  max-width: 680px;
+}
+
+.events-locked__title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 800;
+  color: #0f172a;
 }
 
 .events-actions {

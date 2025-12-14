@@ -59,6 +59,38 @@ export class AuthService {
   }
 
   isAuthenticated(): boolean {
-    return !!this.getSession()?.token;
+    const session = this.getSession();
+    if (!session) return false;
+
+    const isValid = this.isTokenValid(session.token);
+    if (!isValid) {
+      this.clearSession();
+    }
+
+    return isValid;
+  }
+
+  private isTokenValid(token: string): boolean {
+    const payload = this.decodeTokenPayload(token);
+    if (!payload || typeof payload.exp !== 'number') {
+      return false;
+    }
+
+    const expirationDate = payload.exp * 1000;
+    return Date.now() < expirationDate;
+  }
+
+  private decodeTokenPayload(token: string): { exp?: number } | null {
+    const [, payload] = token.split('.');
+    if (!payload) return null;
+
+    try {
+      const normalizedPayload = payload.replace(/-/g, '+').replace(/_/g, '/');
+      const paddedPayload = normalizedPayload.padEnd(normalizedPayload.length + (4 - (normalizedPayload.length % 4)) % 4, '=');
+      const decodedPayload = atob(paddedPayload);
+      return JSON.parse(decodedPayload) as { exp?: number };
+    } catch {
+      return null;
+    }
   }
 }

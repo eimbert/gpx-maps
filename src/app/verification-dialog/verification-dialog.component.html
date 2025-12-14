@@ -1,0 +1,14 @@
+<h2 mat-dialog-title>Cuenta no verificada</h2>
+<mat-dialog-content>
+  <p>La cuenta asociada al correo <strong>{{ data.email }}</strong> todavía no está verificada.</p>
+  <p>¿Quieres que te reenviemos el correo de confirmación para completar el registro?</p>
+
+  <p *ngIf="successMessage" class="success">{{ successMessage }}</p>
+  <p *ngIf="errorMessage" class="error">{{ errorMessage }}</p>
+</mat-dialog-content>
+<mat-dialog-actions align="end">
+  <button mat-button type="button" (click)="close()">Cerrar</button>
+  <button mat-flat-button color="primary" type="button" (click)="resendVerification()" [disabled]="loading">
+    {{ loading ? 'Enviando...' : 'Reenviar correo' }}
+  </button>
+</mat-dialog-actions>

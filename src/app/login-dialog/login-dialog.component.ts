@@ -43,7 +43,9 @@ export class LoginDialogComponent {
           return;
         }
 
-        this.dialogRef.close(response as LoginSuccessResponse);
+        const successResponse = response as LoginSuccessResponse;
+        this.authService.saveSession(successResponse);
+        this.dialogRef.close(successResponse);
       },
       error: (error: HttpErrorResponse) => {
         this.loading = false;

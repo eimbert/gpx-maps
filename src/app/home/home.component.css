@@ -62,6 +62,18 @@
   cursor: pointer;
 }
 
+.auth-button--logout {
+  color: #fbbf24;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.auth-button--logout::before {
+  content: '\21AA';
+  font-size: 14px;
+}
+
 .auth-link:hover {
   color: #f8fafc;
   text-decoration-color: rgba(255, 255, 255, 0.75);

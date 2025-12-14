@@ -3,6 +3,7 @@ import { NgForm } from '@angular/forms';
 import { MatDialogRef } from '@angular/material/dialog';
 import { AuthService } from '../services/auth.service';
 import { LoginErrorResponse, LoginSuccessResponse } from '../interfaces/auth';
+import { environment } from 'src/environments/environment';
 
 @Component({
   selector: 'app-login-dialog',
@@ -30,6 +31,8 @@ export class LoginDialogComponent {
 
     this.authService.login(this.email, this.password).subscribe({
       next: response => {
+        if(!environment.production)
+          console.log(response)
         this.loading = false;
         if ((response as LoginErrorResponse).exitCode !== 0) {
           this.errorMessage = (response as LoginErrorResponse).message || 'Usuario o contraseña erróneos';

@@ -36,16 +36,23 @@ export class AuthService {
   }
 
   getSession(): LoginSuccessResponse | null {
-    if (this.cachedSession) return this.cachedSession;
-    if (typeof localStorage === 'undefined') return null;
-    try {
-      const stored = localStorage.getItem(this.storageKey);
-      if (!stored) return null;
-      this.cachedSession = JSON.parse(stored) as LoginSuccessResponse;
-      return this.cachedSession;
-    } catch {
-      return null;
+    if (typeof localStorage !== 'undefined') {
+      try {
+        const stored = localStorage.getItem(this.storageKey);
+
+        if (!stored) {
+          this.cachedSession = null;
+          return null;
+        }
+
+        this.cachedSession = JSON.parse(stored) as LoginSuccessResponse;
+      } catch {
+        this.cachedSession = null;
+        return null;
+      }
     }
+
+    return this.cachedSession;
   }
 
   clearSession(): void {

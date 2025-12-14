@@ -19,6 +19,7 @@ import { RouteMismatchDialogComponent } from './route-mismatch-dialog/route-mism
 import { EventSearchDialogComponent } from './event-search-dialog/event-search-dialog.component';
 import { EventCreateDialogComponent } from './event-create-dialog/event-create-dialog.component';
 import { HomeComponent } from './home/home.component';
+import { LoginDialogComponent } from './login-dialog/login-dialog.component';
 
 @NgModule({
   declarations: [
@@ -30,7 +31,8 @@ import { HomeComponent } from './home/home.component';
     RouteMismatchDialogComponent,
     EventSearchDialogComponent,
     EventCreateDialogComponent,
-    HomeComponent
+    HomeComponent,
+    LoginDialogComponent
   ],
   imports: [
     MatCheckboxModule,

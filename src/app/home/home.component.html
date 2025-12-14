@@ -26,9 +26,13 @@
     </div>
 
     <div class="home__auth">
-      <a class="auth-link" href="#login">Iniciar sesión</a>
+      <button class="auth-link auth-button" type="button" (click)="openLoginDialog()">Iniciar sesión</button>
       <span aria-hidden="true">·</span>
       <a class="auth-link" href="#register">Registrarse</a>
     </div>
+
+    <p *ngIf="loggedUser" class="home__user-info">
+      Sesión iniciada como <strong>{{ loggedUser.name || loggedUser.email }}</strong>.
+    </p>
   </main>
 </div>

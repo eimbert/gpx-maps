@@ -54,6 +54,14 @@
   transition: color 0.2s ease, text-decoration-color 0.2s ease;
 }
 
+.auth-button {
+  background: transparent;
+  border: none;
+  padding: 0;
+  font: inherit;
+  cursor: pointer;
+}
+
 .auth-link:hover {
   color: #f8fafc;
   text-decoration-color: rgba(255, 255, 255, 0.75);
@@ -81,6 +89,11 @@
   font-size: 16px;
   max-width: 720px;
   align-self: center;
+}
+
+.home__user-info {
+  color: #e2e8f0;
+  margin: 4px 0 0;
 }
 
 .home__actions {

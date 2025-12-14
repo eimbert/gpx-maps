@@ -16,7 +16,10 @@ export class HomeComponent implements OnInit {
   constructor(private dialog: MatDialog, private authService: AuthService) {}
 
   ngOnInit(): void {
-    this.loggedUser = this.authService.isAuthenticated() ? this.authService.getSession() : null;
+    this.loggedUser = this.authService.getSession();
+    this.authService.validateSessionWithBackend().subscribe(session => {
+      this.loggedUser = session;
+    });
   }
 
   openLoginDialog(): void {

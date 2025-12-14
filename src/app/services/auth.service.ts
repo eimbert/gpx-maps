@@ -1,9 +1,17 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { Observable, of } from 'rxjs';
+import { catchError, map } from 'rxjs/operators';
 import { LoginResponse, RegisterResponse } from '../interfaces/auth';
 import { environment } from '../../environments/environment';
 import { LoginSuccessResponse } from '../interfaces/auth';
+
+interface UserInfoResponse {
+  userId?: number;
+  nom?: string;
+  nickname?: string;
+  rol?: string | null;
+}
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
@@ -75,6 +83,35 @@ export class AuthService {
     }
 
     return isValid;
+  }
+
+  validateSessionWithBackend(): Observable<LoginSuccessResponse | null> {
+    const session = this.getSession();
+    if (!session || !this.isTokenValid(session.token)) {
+      this.clearSession();
+      return of(null);
+    }
+
+    const headers = new HttpHeaders({ Authorization: `Bearer ${session.token}` });
+
+    return this.http.get<UserInfoResponse>(environment.meUrl, { headers }).pipe(
+      map(userInfo => {
+        const updatedSession: LoginSuccessResponse = {
+          ...session,
+          id: userInfo.userId ?? session.id,
+          name: userInfo.nom ?? session.name,
+          nickname: userInfo.nickname ?? session.nickname,
+          rol: userInfo.rol ?? session.rol
+        };
+
+        this.saveSession(updatedSession);
+        return updatedSession;
+      }),
+      catchError(() => {
+        this.clearSession();
+        return of(null);
+      })
+    );
   }
 
   private isTokenValid(token: string): boolean {

@@ -8,17 +8,19 @@ export type RaceCategory =
 export type BikeType = 'MTB' | 'Carretera' | 'Gravel' | 'Eléctrica';
 
 export interface EventModality {
-  id: string;
+  id: number;
+  routeId?: number;
   name: string;
   distanceKm: number;
 }
 
 export interface EventTrack {
-  id: string;
+  id: number;
+  routeId?: number;
   nickname: string;
   category: RaceCategory;
   bikeType: BikeType;
-  modalityId: string;
+  modalityId?: number | null;
   timeSeconds: number;
   distanceKm: number;
   ascent?: number;
@@ -26,17 +28,18 @@ export interface EventTrack {
   gpxData?: string;
   fileName?: string;
   uploadedAt: string;
-  createdBy?: string;
+  createdBy?: number;
 }
 
 export interface RaceEvent {
-  id: string;
+  id: number;
   name: string;
-  population: string;
-  autonomousCommunity: string;
+  population?: string | null;
+  autonomousCommunity?: string | null;
   year: number;
   logo?: string;
+  logoMime?: string;
   modalities: EventModality[];
   tracks: EventTrack[];
-  createdBy?: string;
+  createdBy?: number;
 }

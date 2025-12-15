@@ -179,7 +179,7 @@
             <label>
               <span>Evento</span>
               <select [ngModel]="selectedEventId" (ngModelChange)="handleEventSelection($event)">
-                <option value="">Selecciona un evento</option>
+                <option [ngValue]="null">Selecciona un evento</option>
                 <option *ngFor="let event of events" [ngValue]="event.id">{{ event.name }} ({{ event.year }})</option>
               </select>
             </label>
@@ -200,7 +200,7 @@
                 (ngModelChange)="onModalityChange($event)"
                 [disabled]="!selectedEvent"
               >
-                <option value="" disabled>Selecciona un recorrido</option>
+                <option [ngValue]="null" disabled>Selecciona un recorrido</option>
                 <option *ngFor="let modality of selectedEvent?.modalities || []" [ngValue]="modality.id">{{ modality.name }}</option>
               </select>
             </label>

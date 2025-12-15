@@ -58,12 +58,12 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
 
   mode: 'routes' | 'events' = 'routes';
   events: RaceEvent[] = [];
-  selectedEventId: string | null = null;
-  selectedModalityId: string | null = null;
+  selectedEventId: number | null = null;
+  selectedModalityId: number | null = null;
   carouselIndex = 0;
   private carouselTimer?: ReturnType<typeof setInterval>;
-  selectedComparisonIds = new Set<string>();
-  latestUploadedTrackId: string | null = null;
+  selectedComparisonIds = new Set<number>();
+  latestUploadedTrackId: number | null = null;
   personalNickname = '';
   personalHistory: EventTrack[] = [];
 
@@ -71,13 +71,13 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
     nickname: '',
     category: 'Senior M' as RaceCategory,
     bikeType: 'MTB' as BikeType,
-    modalityId: '',
+    modalityId: null as number | null,
     file: null as File | null
   };
 
   categories: RaceCategory[] = ['Sub 23M', 'Sub 23F', 'Senior M', 'Senior F', 'Master 40M', 'Master 40F', 'Master 50M', 'Master 50F', 'Master 60M', 'Master 60F'];
   bikeTypes: BikeType[] = ['MTB', 'Carretera', 'Gravel', 'Eléctrica'];
-  private readonly userId: string;
+  private readonly userId: number;
 
   constructor(
     public dialog: MatDialog,
@@ -159,7 +159,7 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
     }
   }
 
-  selectEvent(eventId: string, modalityId?: string): void {
+  selectEvent(eventId: number, modalityId?: number): void {
     if (!this.ensureEventsAccess()) return;
     this.selectedEventId = eventId;
     const event = this.selectedEvent;
@@ -169,19 +169,19 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
       event.tracks.slice(0, 3).forEach(track => this.selectedComparisonIds.add(track.id));
     }
     this.selectedModalityId = modalityId ?? event?.modalities?.[0]?.id ?? null;
-    this.eventUpload = { ...this.eventUpload, modalityId: this.selectedModalityId || '' };
+    this.eventUpload = { ...this.eventUpload, modalityId: this.selectedModalityId };
     if (this.personalNickname) {
       this.refreshPersonalHistory();
     }
   }
 
-  handleEventSelection(eventId: string): void {
+  handleEventSelection(eventId: number | null): void {
     if (!eventId) {
       this.selectedEventId = null;
       this.selectedModalityId = null;
       this.selectedComparisonIds.clear();
       this.personalHistory = [];
-      this.eventUpload = { ...this.eventUpload, modalityId: '', file: null };
+      this.eventUpload = { ...this.eventUpload, modalityId: null, file: null };
       if (this.eventFileInputRef?.nativeElement) {
         this.eventFileInputRef.nativeElement.value = '';
       }
@@ -191,7 +191,7 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
     this.selectEvent(eventId);
   }
 
-  onModalityChange(modalityId: string): void {
+  onModalityChange(modalityId: number | null): void {
     if (!this.ensureEventsAccess()) return;
     this.selectedModalityId = modalityId;
   }
@@ -257,7 +257,7 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
     this.restartCarouselTimer();
   }
 
-  handleCarouselSelection(eventId: string): void {
+  handleCarouselSelection(eventId: number): void {
     if (!this.ensureEventsAccess()) return;
     this.selectEvent(eventId);
   }
@@ -820,11 +820,11 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
     }
 
     const gpxData = await this.readFileAsText(this.eventUpload.file);
-    const modalityId = this.eventUpload.modalityId || this.selectedModalityId || this.selectedEvent?.modalities?.[0]?.id || '';
+    const modalityId = this.eventUpload.modalityId ?? this.selectedModalityId ?? this.selectedEvent?.modalities?.[0]?.id ?? null;
     const { track, durationSeconds } = this.parseGpxData(gpxData, this.eventUpload.file.name, 0);
 
     const newTrack: EventTrack = {
-      id: `evt-${Date.now()}`,
+      id: Date.now(),
       nickname,
       category: this.eventUpload.category,
       bikeType: this.eventUpload.bikeType,
@@ -893,7 +893,7 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
     this.iniciarVisualizacion();
   }
 
-  toggleComparisonSelection(trackId: string): void {
+  toggleComparisonSelection(trackId: number): void {
     if (!this.ensureEventsAccess()) return;
     if (this.selectedComparisonIds.has(trackId)) {
       this.selectedComparisonIds.delete(trackId);
@@ -908,7 +908,7 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
     return Boolean(!track.createdBy && this.personalNickname && track.nickname === this.personalNickname);
   }
 
-  deleteTrack(trackId: string, eventId?: string): void {
+  deleteTrack(trackId: number, eventId?: number): void {
     if (!this.ensureEventsAccess()) return;
     const targetEventId = eventId ?? this.selectedEventId;
     if (!targetEventId) return;
@@ -979,11 +979,11 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
     return `${hh}${mm}:${String(secs).padStart(2, '0')}`;
   }
 
-  findModalityName(modalityId: string): string {
+  findModalityName(modalityId: number | null | undefined): string {
     return this.selectedEvent?.modalities.find(m => m.id === modalityId)?.name || 'Recorrido';
   }
 
-  findModalityNameForEvent(event: RaceEvent, modalityId: string): string {
+  findModalityNameForEvent(event: RaceEvent, modalityId: number | null | undefined): string {
     return event.modalities.find(m => m.id === modalityId)?.name || 'Recorrido';
   }
 
@@ -1000,7 +1000,7 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
 
     const removed = this.eventService.removeEvent(eventId, this.userId);
     if (removed) {
-      this.handleEventSelection('');
+      this.handleEventSelection(null);
     }
   }
 

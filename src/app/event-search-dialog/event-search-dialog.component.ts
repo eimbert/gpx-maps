@@ -4,21 +4,21 @@ import { RaceEvent } from '../interfaces/events';
 
 export interface EventSearchDialogData {
   events: RaceEvent[];
-  selectedEventId: string | null;
-  selectedModalityId: string | null;
+  selectedEventId: number | null;
+  selectedModalityId: number | null;
 }
 
 export interface EventSearchDialogResult {
-  eventId: string;
-  modalityId?: string;
+  eventId: number;
+  modalityId?: number;
 }
 
 interface EventSearchRow {
-  eventId: string;
+  eventId: number;
   name: string;
   year: number;
-  population: string;
-  autonomousCommunity: string;
+  population: string | null | undefined;
+  autonomousCommunity: string | null | undefined;
   distancesKm: number[];
   logo?: string;
 }

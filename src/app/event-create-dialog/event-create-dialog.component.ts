@@ -48,7 +48,7 @@ export class EventCreateDialogComponent {
       return;
     }
 
-    const newId = `${this.newEvent.name.toLowerCase().replace(/\s+/g, '-')}-${this.newEvent.year}`;
+    const newId = Date.now();
     const event: RaceEvent = {
       id: newId,
       name: this.newEvent.name.trim(),
@@ -58,7 +58,7 @@ export class EventCreateDialogComponent {
       logo: this.newEvent.logo,
       modalities: [
         {
-          id: `${newId}-modalidad-1`,
+          id: Number(`${newId}1`),
           name: this.newEvent.modalityName || 'Recorrido principal',
           distanceKm: this.newEvent.distanceKm || 0
         }

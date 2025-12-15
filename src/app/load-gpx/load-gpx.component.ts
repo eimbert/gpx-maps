@@ -8,7 +8,7 @@ import { DialogoConfiguracionData } from '../interfaces/estructuras';
 import { TrackMetadataDialogComponent, TrackMetadataDialogResult } from '../track-metadata-dialog/track-metadata-dialog.component';
 import { RouteMismatchDialogComponent } from '../route-mismatch-dialog/route-mismatch-dialog.component';
 import { EventSearchDialogComponent, EventSearchDialogData, EventSearchDialogResult } from '../event-search-dialog/event-search-dialog.component';
-import { BikeType, EventTrack, RaceCategory, RaceEvent } from '../interfaces/events';
+import { BikeType, CreateEventPayload, CreateTrackPayload, EventTrack, RaceCategory, RaceEvent } from '../interfaces/events';
 import { EventService } from '../services/event.service';
 import { EventCreateDialogComponent, EventCreateDialogResult } from '../event-create-dialog/event-create-dialog.component';
 import { UserIdentityService } from '../services/user-identity.service';
@@ -321,12 +321,15 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
     );
 
     dialogRef.afterClosed().subscribe(result => {
-      if (result?.event) {
-        result.event.createdBy = this.userId;
-        this.eventService.addEvent(result.event);
-        this.selectMode('events');
-        this.selectEvent(result.event.id);
-      }
+      if (!result?.event) return;
+      const payload: CreateEventPayload = { ...result.event, createdBy: this.userId };
+      this.eventService.createEvent(payload).subscribe({
+        next: created => {
+          this.selectMode('events');
+          this.selectEvent(created.id);
+        },
+        error: () => this.showMessage('No se pudo crear el evento en el servidor.')
+      });
     });
   }
 
@@ -823,8 +826,7 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
     const modalityId = this.eventUpload.modalityId ?? this.selectedModalityId ?? this.selectedEvent?.modalities?.[0]?.id ?? null;
     const { track, durationSeconds } = this.parseGpxData(gpxData, this.eventUpload.file.name, 0);
 
-    const newTrack: EventTrack = {
-      id: Date.now(),
+    const newTrack: CreateTrackPayload = {
       nickname,
       category: this.eventUpload.category,
       bikeType: this.eventUpload.bikeType,
@@ -838,15 +840,19 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
       createdBy: this.userId
     };
 
-    this.eventService.addTrack(this.selectedEventId, newTrack);
-    this.latestUploadedTrackId = newTrack.id;
-    this.personalNickname = nickname;
-    this.refreshPersonalHistory();
-    this.selectedComparisonIds.add(newTrack.id);
-    this.eventUpload = { ...this.eventUpload, file: null };
-    if (this.eventFileInputRef?.nativeElement) {
-      this.eventFileInputRef.nativeElement.value = '';
-    }
+    this.eventService.addTrack(this.selectedEventId, newTrack).subscribe({
+      next: created => {
+        this.latestUploadedTrackId = created.id;
+        this.personalNickname = nickname;
+        this.refreshPersonalHistory();
+        this.selectedComparisonIds.add(created.id);
+        this.eventUpload = { ...this.eventUpload, file: null };
+        if (this.eventFileInputRef?.nativeElement) {
+          this.eventFileInputRef.nativeElement.value = '';
+        }
+      },
+      error: () => this.showMessage('No se pudo subir el track al evento.')
+    });
   }
 
   canUploadToEvent(): boolean {
@@ -916,14 +922,14 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
     const track = event?.tracks.find(t => t.id === trackId);
     if (!track || !this.canDeleteTrack(track)) return;
 
-    const removed = this.eventService.removeTrack(targetEventId, trackId, this.userId);
-    if (!removed) return;
-
-    this.selectedComparisonIds.delete(trackId);
-    if (this.latestUploadedTrackId === trackId) {
-      this.latestUploadedTrackId = null;
-    }
-    this.refreshPersonalHistory();
+    this.eventService.removeTrack(targetEventId, trackId, this.userId).subscribe(removed => {
+      if (!removed) return;
+      this.selectedComparisonIds.delete(trackId);
+      if (this.latestUploadedTrackId === trackId) {
+        this.latestUploadedTrackId = null;
+      }
+      this.refreshPersonalHistory();
+    });
   }
 
   get ranking(): EventTrack[] {
@@ -998,10 +1004,11 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
     if (!eventId || !this.selectedEvent) return;
     if (!this.canDeleteSelectedEvent()) return;
 
-    const removed = this.eventService.removeEvent(eventId, this.userId);
-    if (removed) {
-      this.handleEventSelection(null);
-    }
+    this.eventService.removeEvent(eventId, this.userId).subscribe(removed => {
+      if (removed) {
+        this.handleEventSelection(null);
+      }
+    });
   }
 
   onEventFileChange(event: Event): void {

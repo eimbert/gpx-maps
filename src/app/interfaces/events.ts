@@ -31,6 +31,32 @@ export interface EventTrack {
   createdBy?: number;
 }
 
+export interface CreateEventPayload {
+  name: string;
+  population?: string | null;
+  autonomousCommunity?: string | null;
+  year: number;
+  logo?: string;
+  logoMime?: string;
+  modalities: Array<Pick<EventModality, 'name' | 'distanceKm'>>;
+  createdBy?: number;
+}
+
+export interface CreateTrackPayload {
+  nickname: string;
+  category: RaceCategory;
+  bikeType: BikeType;
+  modalityId?: number | null;
+  timeSeconds: number;
+  distanceKm: number;
+  ascent?: number;
+  gpxAsset?: string;
+  gpxData?: string;
+  fileName?: string;
+  uploadedAt: string;
+  createdBy?: number;
+}
+
 export interface RaceEvent {
   id: number;
   name: string;

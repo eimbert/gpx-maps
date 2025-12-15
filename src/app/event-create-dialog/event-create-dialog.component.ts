@@ -1,10 +1,10 @@
 import { Component } from '@angular/core';
 import { MatDialog, MatDialogRef } from '@angular/material/dialog';
-import { RaceEvent } from '../interfaces/events';
+import { CreateEventPayload } from '../interfaces/events';
 import { InfoDialogComponent } from '../info-dialog/info-dialog.component';
 
 export interface EventCreateDialogResult {
-  event: RaceEvent;
+  event: CreateEventPayload;
 }
 
 @Component({
@@ -48,9 +48,7 @@ export class EventCreateDialogComponent {
       return;
     }
 
-    const newId = `${this.newEvent.name.toLowerCase().replace(/\s+/g, '-')}-${this.newEvent.year}`;
-    const event: RaceEvent = {
-      id: newId,
+    const event: CreateEventPayload = {
       name: this.newEvent.name.trim(),
       population: this.newEvent.population.trim(),
       autonomousCommunity: this.newEvent.autonomousCommunity.trim(),
@@ -58,12 +56,10 @@ export class EventCreateDialogComponent {
       logo: this.newEvent.logo,
       modalities: [
         {
-          id: `${newId}-modalidad-1`,
           name: this.newEvent.modalityName || 'Recorrido principal',
           distanceKm: this.newEvent.distanceKm || 0
         }
-      ],
-      tracks: []
+      ]
     };
 
     this.dialogRef.close({ event });

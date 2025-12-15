@@ -1,22 +1,23 @@
 [
   {
-    "id": "pota-roja-2024",
+    "id": 1,
     "name": "La Pota Roja",
     "population": "Cervelló",
     "autonomousCommunity": "Catalunya",
     "year": 2025,
     "logo": "assets/lapota.png",
     "modalities": [
-      { "id": "pota-20k", "name": "Recorrido 20 km", "distanceKm": 20 },
-      { "id": "pota-60k", "name": "Recorrido 60 km", "distanceKm": 60 }
+      { "id": 101, "routeId": 1, "name": "Recorrido 20 km", "distanceKm": 20 },
+      { "id": 102, "routeId": 1, "name": "Recorrido 60 km", "distanceKm": 60 }
     ],
     "tracks": [
       {
-        "id": "trk-01",
+        "id": 1001,
+        "routeId": 1,
         "nickname": "María S.",
         "category": "Senior F",
         "bikeType": "MTB",
-        "modalityId": "pota-20k",
+        "modalityId": 101,
         "timeSeconds": 4200,
         "distanceKm": 20,
         "ascent": 560,
@@ -24,11 +25,12 @@
         "uploadedAt": "2024-06-01T10:00:00Z"
       },
       {
-        "id": "trk-02",
+        "id": 1002,
+        "routeId": 1,
         "nickname": "Iker",
         "category": "Sub 23M",
         "bikeType": "Carretera",
-        "modalityId": "pota-20k",
+        "modalityId": 101,
         "timeSeconds": 4050,
         "distanceKm": 20,
         "ascent": 560,
@@ -36,11 +38,12 @@
         "uploadedAt": "2024-06-10T08:00:00Z"
       },
       {
-        "id": "trk-03",
+        "id": 1003,
+        "routeId": 1,
         "nickname": "Lucía",
         "category": "Master 40F",
         "bikeType": "Gravel",
-        "modalityId": "pota-60k",
+        "modalityId": 102,
         "timeSeconds": 10500,
         "distanceKm": 60,
         "ascent": 1800,
@@ -50,24 +53,25 @@
     ]
   },
   {
-    "id": "open-natura-2025",
+    "id": 2,
     "name": "Open Maxxis Sant Vicenç dels Horts",
     "population": "Sant Vicenç dels Horts",
     "autonomousCommunity": "Catalunya",
     "year": 2025,
     "logo": "assets/maxxis_open_natura.png",
     "modalities": [
-      { "id": "maxxis-21k", "name": "Circuito 21 km", "distanceKm": 21 },
-      { "id": "maxxis-35k", "name": "Circuito 35 km", "distanceKm": 35 },
-      { "id": "maxxis-48k", "name": "Circuito 48 km", "distanceKm": 48 }
+      { "id": 201, "routeId": 2, "name": "Circuito 21 km", "distanceKm": 21 },
+      { "id": 202, "routeId": 2, "name": "Circuito 35 km", "distanceKm": 35 },
+      { "id": 203, "routeId": 2, "name": "Circuito 48 km", "distanceKm": 48 }
     ],
     "tracks": [
       {
-        "id": "trk-04",
+        "id": 2001,
+        "routeId": 2,
         "nickname": "Carlos",
         "category": "Senior M",
         "bikeType": "MTB",
-        "modalityId": "verde-30k",
+        "modalityId": 202,
         "timeSeconds": 5400,
         "distanceKm": 30,
         "ascent": 720,

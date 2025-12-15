@@ -3,9 +3,9 @@ import { Injectable } from '@angular/core';
 @Injectable({ providedIn: 'root' })
 export class UserIdentityService {
   private readonly storageKey = 'gpxUserId';
-  private cachedId: string | null = null;
+  private cachedId: number | null = null;
 
-  getUserId(): string {
+  getUserId(): number {
     if (this.cachedId) return this.cachedId;
 
     const stored = this.readPersistedId();
@@ -14,25 +14,28 @@ export class UserIdentityService {
       return stored;
     }
 
-    const generated = `user-${Date.now()}-${Math.floor(Math.random() * 1e6)}`;
+    const generated = Date.now();
     this.cachedId = generated;
     this.persistId(generated);
     return generated;
   }
 
-  private readPersistedId(): string | null {
+  private readPersistedId(): number | null {
     if (typeof localStorage === 'undefined') return null;
     try {
-      return localStorage.getItem(this.storageKey);
+      const stored = localStorage.getItem(this.storageKey);
+      if (!stored) return null;
+      const parsed = Number(stored);
+      return Number.isFinite(parsed) ? parsed : null;
     } catch {
       return null;
     }
   }
 
-  private persistId(id: string): void {
+  private persistId(id: number): void {
     if (typeof localStorage === 'undefined') return;
     try {
-      localStorage.setItem(this.storageKey, id);
+      localStorage.setItem(this.storageKey, String(id));
     } catch {
       // Ignore persistence errors to avoid breaking the flow.
     }

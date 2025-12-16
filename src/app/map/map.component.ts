@@ -1,8 +1,12 @@
 import { Component, OnInit, AfterViewInit } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
+import { HttpClient } from '@angular/common/http';
+import { firstValueFrom } from 'rxjs';
 
 import * as L from 'leaflet';
 import { RecorderService } from '../recording/recorder.service';
+import { EventTrack, RaceEvent } from '../interfaces/events';
+import { environment } from '../../environments/environment';
 
 interface TrackPoint { lat: number; lon: number; ele: number; time: string; }
 interface TPx extends TrackPoint { t: number; }
@@ -73,6 +77,7 @@ export class MapComponent implements OnInit, AfterViewInit {
   private readonly zoomPlaybackFactor = 0.3;
   private readonly zoomPanSlowdownFactor = 2;
   private readonly fallbackUniformSpeedMs = 5; // velocidad constante para tracks sin tiempo
+  private readonly defaultColors = ['#3b82f6', '#ef4444', '#22c55e', '#f59e0b', '#8b5cf6'];
   private lastLeaderTarget: L.LatLng | null = null;
   private allTracksBounds: L.LatLngBounds | null = null;
   private readonly maxReasonableSpeedMs = 45; // ~162 km/h, evita descartar puntos válidos en coche
@@ -96,7 +101,8 @@ export class MapComponent implements OnInit, AfterViewInit {
 
   constructor(
     private route: ActivatedRoute,
-    public rec: RecorderService) { }
+    public rec: RecorderService,
+    private http: HttpClient) { }
 
   // ---------- util ----------
   private getVideoDimensions(): { width: number; height: number } {
@@ -192,6 +198,154 @@ export class MapComponent implements OnInit, AfterViewInit {
     return uniform;
   }
 
+  private parseTrackPointsFromGpx(gpxData: string): TrackPoint[] {
+    try {
+      const parser = new DOMParser();
+      const gpx = parser.parseFromString(gpxData, 'application/xml');
+      const trkpts = Array.from(gpx.getElementsByTagName('trkpt'));
+
+      return trkpts
+        .map(trkpt => ({
+          lat: parseFloat(trkpt.getAttribute('lat') || '0'),
+          lon: parseFloat(trkpt.getAttribute('lon') || '0'),
+          ele: parseFloat(trkpt.getElementsByTagName('ele')[0]?.textContent || '0'),
+          time: trkpt.getElementsByTagName('time')[0]?.textContent || ''
+        }))
+        .filter(p => Number.isFinite(p.lat) && Number.isFinite(p.lon));
+    } catch {
+      return [];
+    }
+  }
+
+  private buildMetas(names: string[], colors: string[], tracks: any[]): TrackMeta[] {
+    return tracks.map((track, index) => ({
+      name: names[index] ?? `Track ${index + 1}`,
+      color: colors[index] ?? this.defaultColors[index % this.defaultColors.length],
+      raw: (track?.trkpts ?? []) as TrackPoint[],
+      sanitized: [],
+      cursor: 0,
+      nextTickRel: this.TICK_STEP_MS,
+      finalAdded: false,
+      has: false,
+    }));
+  }
+
+  private applySanitization(): void {
+    this.trackMetas = this.trackMetas.map((meta) => {
+      let sanitized = this.sanitize(meta.raw);
+      if (this.removeStops) {
+        sanitized = this.removeStopsAdaptive(sanitized);
+      }
+      return { ...meta, sanitized };
+    });
+
+    if (this.map) {
+      this.attachTrackLayers();
+      this.hasTracksReady = this.startIfReady();
+    }
+  }
+
+  private loadTracksFromSessionOrQuery(): void {
+    let payload: any = null;
+    try { payload = JSON.parse(sessionStorage.getItem('gpxViewerPayload') || 'null'); } catch { payload = null; }
+
+    if (payload) {
+      this.names = Array.isArray(payload.names) ? payload.names : [];
+      this.colors = Array.isArray(payload.colors) ? payload.colors : [];
+      const trks = Array.isArray(payload.tracks) ? payload.tracks : [];
+      this.trackMetas = this.buildMetas(this.names, this.colors, trks);
+      this.logoDataUrl = payload.logo ?? null;
+      this.removeStops = !!payload.rmstops;
+      this.musicEnabled = payload.activarMusica ?? true;
+      this.recordingEnabled = !!payload.grabarAnimacion;
+      if (payload.relacionAspectoGrabacion === '9:16') {
+        this.recordingAspect = '9:16';
+      }
+      this.visualizationMode = payload.modoVisualizacion === 'zoomCabeza' ? 'zoomCabeza' : 'general';
+      this.isVerticalViewport = this.recordingAspect === '9:16';
+      this.applySanitization();
+      return;
+    }
+
+    // Fallback (por si alguien entra directo a /map sin pasar por /load)
+    this.route.queryParams.subscribe(params => {
+      try { this.names = JSON.parse(params['names'] ?? '[]'); } catch { this.names = []; }
+      try { this.colors = JSON.parse(params['colors'] ?? '[]'); } catch { this.colors = []; }
+      let trks: any[] = [];
+      try { trks = JSON.parse(params['tracks'] ?? '[]'); } catch { trks = []; }
+      this.trackMetas = this.buildMetas(this.names, this.colors, trks);
+      this.logoDataUrl = (params['logo'] ?? null) as string | null;
+      this.removeStops = (params['rmstops'] === '1' || params['rmstops'] === 'true');
+      this.applySanitization();
+    });
+  }
+
+  private loadTracksFromBackend(routeId: number): void {
+    this.http.get<RaceEvent>(`${environment.routesApiBase}/${routeId}`).subscribe({
+      next: async (event) => {
+        await this.buildTrackMetasFromEvent(event);
+      },
+      error: () => this.loadTracksFromSessionOrQuery()
+    });
+  }
+
+  private async buildTrackMetasFromEvent(event: RaceEvent): Promise<void> {
+    const metas: TrackMeta[] = [];
+    const names: string[] = [];
+    const colors: string[] = [];
+
+    for (let i = 0; i < event.tracks.length; i++) {
+      const track = event.tracks[i];
+      const raw = await this.resolveTrackPoints(track);
+      if (!raw.length) continue;
+
+      const color = this.defaultColors[i % this.defaultColors.length];
+      const name = `${track.nickname}${track.category ? ` (${track.category})` : ''}`;
+
+      metas.push({
+        name,
+        color,
+        raw,
+        sanitized: [],
+        cursor: 0,
+        nextTickRel: this.TICK_STEP_MS,
+        finalAdded: false,
+        has: false,
+      });
+      names.push(name);
+      colors.push(color);
+    }
+
+    this.names = names;
+    this.colors = colors;
+    this.trackMetas = metas;
+    this.logoDataUrl = event.logo || this.buildLogoDataUrl(event.logoBase64, event.logoMime) || null;
+    this.applySanitization();
+  }
+
+  private async resolveTrackPoints(track: EventTrack): Promise<TrackPoint[]> {
+    const gpxData = await this.getGpxData(track);
+    if (!gpxData) return [];
+    return this.parseTrackPointsFromGpx(gpxData);
+  }
+
+  private async getGpxData(track: EventTrack): Promise<string | null> {
+    if (track.gpxData) return track.gpxData;
+    if (track.gpxAsset) {
+      try {
+        return await firstValueFrom(this.http.get(track.gpxAsset, { responseType: 'text' }));
+      } catch {
+        return null;
+      }
+    }
+    return null;
+  }
+
+  private buildLogoDataUrl(logoBase64?: string | null, logoMime?: string | null): string | undefined {
+    if (!logoBase64 || !logoMime) return undefined;
+    return `data:${logoMime};base64,${logoBase64}`;
+  }
+
   // Formatea duración (ms) como "X h Y min" (o "Y min", o "X h")
   private fmtHMin(ms: number): string {
     const totalMin = Math.round(ms / 60000);
@@ -248,60 +402,13 @@ export class MapComponent implements OnInit, AfterViewInit {
 
   // ---------- lifecycle ----------
   ngOnInit(): void {
-    // 1) Intentamos cargar el payload desde sessionStorage
-    let payload: any = null;
-    try { payload = JSON.parse(sessionStorage.getItem('gpxViewerPayload') || 'null'); } catch { payload = null; }
-
-    const defaultColors = ['#3b82f6', '#ef4444', '#22c55e', '#f59e0b', '#8b5cf6'];
-
-    const buildMetas = (names: string[], colors: string[], tracks: any[]) => {
-      this.trackMetas = tracks.map((track, index) => ({
-        name: names[index] ?? `Track ${index + 1}`,
-        color: colors[index] ?? defaultColors[index % defaultColors.length],
-        raw: (track?.trkpts ?? []) as TrackPoint[],
-        sanitized: [],
-        cursor: 0,
-        nextTickRel: this.TICK_STEP_MS,
-        finalAdded: false,
-        has: false,
-      }));
-    };
-
-    if (payload) {
-      this.names = Array.isArray(payload.names) ? payload.names : [];
-      this.colors = Array.isArray(payload.colors) ? payload.colors : [];
-      const trks = Array.isArray(payload.tracks) ? payload.tracks : [];
-      buildMetas(this.names, this.colors, trks);
-      this.logoDataUrl = payload.logo ?? null;
-      this.removeStops = !!payload.rmstops;
-      this.musicEnabled = payload.activarMusica ?? true;
-      this.recordingEnabled = !!payload.grabarAnimacion;
-      if (payload.relacionAspectoGrabacion === '9:16') {
-        this.recordingAspect = '9:16';
-      }
-      this.visualizationMode = payload.modoVisualizacion === 'zoomCabeza' ? 'zoomCabeza' : 'general';
-      this.isVerticalViewport = this.recordingAspect === '9:16';
-    } else {
-      // Fallback (por si alguien entra directo a /map sin pasar por /load)
-      this.route.queryParams.subscribe(params => {
-        try { this.names = JSON.parse(params['names'] ?? '[]'); } catch { this.names = []; }
-        try { this.colors = JSON.parse(params['colors'] ?? '[]'); } catch { this.colors = []; }
-        let trks: any[] = [];
-        try { trks = JSON.parse(params['tracks'] ?? '[]'); } catch { trks = []; }
-        buildMetas(this.names, this.colors, trks);
-        this.logoDataUrl = (params['logo'] ?? null) as string | null;
-        this.removeStops = (params['rmstops'] === '1' || params['rmstops'] === 'true');
-      });
+    const backendRouteId = Number(this.route.snapshot.queryParamMap.get('routeId'));
+    if (Number.isFinite(backendRouteId)) {
+      this.loadTracksFromBackend(backendRouteId);
+      return;
     }
 
-    // 2) Sanitizar y aplicar compresión de paradas si procede
-    this.trackMetas = this.trackMetas.map((meta) => {
-      let sanitized = this.sanitize(meta.raw);
-      if (this.removeStops) {
-        sanitized = this.removeStopsAdaptive(sanitized);
-      }
-      return { ...meta, sanitized };
-    });
+    this.loadTracksFromSessionOrQuery();
   }
 
 
@@ -310,6 +417,7 @@ export class MapComponent implements OnInit, AfterViewInit {
     this.initMap();
     setTimeout(() => {
       this.applyAspectViewport().then(() => {
+        this.attachTrackLayers();
         this.hasTracksReady = this.startIfReady();
       });
     }, 0);
@@ -413,6 +521,11 @@ export class MapComponent implements OnInit, AfterViewInit {
     this.map = L.map('map', { preferCanvas: true, zoomSnap: 0.1 }).setView([40.4168, -3.7038], 6);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '© OpenStreetMap' }).addTo(this.map);
     this.renderer = L.canvas({ padding: 0.25 }).addTo(this.map);
+    this.attachTrackLayers();
+  }
+
+  private attachTrackLayers(): void {
+    if (!this.map || !this.renderer) return;
 
     const ghost = (color: string): L.PolylineOptions => ({
       color, weight: this.ghostWeight, opacity: this.ghostOpacity, renderer: this.renderer, interactive: false, fill: false, stroke: true
@@ -428,10 +541,10 @@ export class MapComponent implements OnInit, AfterViewInit {
 
     this.trackMetas = this.trackMetas.map((meta) => ({
       ...meta,
-      full: L.polyline([], ghost(meta.color)).addTo(this.map),
-      prog: L.polyline([], prog(meta.color)).addTo(this.map),
-      mark: L.marker([0, 0], { icon: mk(meta.color) }),
-      ticks: L.layerGroup().addTo(this.map)
+      full: meta.full ?? L.polyline([], ghost(meta.color)).addTo(this.map),
+      prog: meta.prog ?? L.polyline([], prog(meta.color)).addTo(this.map),
+      mark: meta.mark ?? L.marker([0, 0], { icon: mk(meta.color) }),
+      ticks: meta.ticks ?? L.layerGroup().addTo(this.map)
     }));
   }
 

@@ -81,6 +81,19 @@ export class AuthService {
     return this.sessionSubject.asObservable();
   }
 
+  getValidToken(): string | null {
+    const session = this.getSession();
+    if (!session) return null;
+
+    const isValid = this.isTokenValid(session.token);
+    if (!isValid) {
+      this.clearSession();
+      return null;
+    }
+
+    return session.token;
+  }
+
   isAuthenticated(): boolean {
     const session = this.getSession();
     if (!session) return false;

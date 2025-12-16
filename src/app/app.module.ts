@@ -4,7 +4,7 @@ import { BrowserModule } from '@angular/platform-browser';
 import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
 import { MapComponent } from './map/map.component';
-import { HttpClientModule } from '@angular/common/http';
+import { HTTP_INTERCEPTORS, HttpClientModule } from '@angular/common/http';
 import { LoadGpxComponent } from './load-gpx/load-gpx.component';
 import { FormsModule } from '@angular/forms';
 import { DialogoConfiguracionComponent } from './dialogo-configuracion/dialogo-configuracion.component';
@@ -23,6 +23,7 @@ import { LoginDialogComponent } from './login-dialog/login-dialog.component';
 import { RegisterDialogComponent } from './register-dialog/register-dialog.component';
 import { InfoDialogComponent } from './info-dialog/info-dialog.component';
 import { VerificationDialogComponent } from './verification-dialog/verification-dialog.component';
+import { AuthInterceptor } from './services/auth.interceptor';
 
 @NgModule({
   declarations: [
@@ -51,7 +52,13 @@ import { VerificationDialogComponent } from './verification-dialog/verification-
     HttpClientModule, // Asegúrate de incluir HttpClientModule aquí
     FormsModule, BrowserAnimationsModule
   ],
-  providers: [],
+  providers: [
+    {
+      provide: HTTP_INTERCEPTORS,
+      useClass: AuthInterceptor,
+      multi: true
+    }
+  ],
   bootstrap: [AppComponent]
 })
 export class AppModule { }

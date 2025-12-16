@@ -18,8 +18,6 @@ export class EventCreateDialogComponent {
     population: '',
     autonomousCommunity: '',
     year: new Date().getFullYear(),
-    modalityName: 'Recorrido 20 km',
-    distanceKm: 20,
     logoBase64: '',
     logoMime: ''
   };
@@ -61,12 +59,7 @@ export class EventCreateDialogComponent {
       year: this.newEvent.year,
       logoBase64: this.newEvent.logoBase64 || null,
       logoMime: this.newEvent.logoMime || null,
-      modalities: [
-        {
-          name: this.newEvent.modalityName || 'Recorrido principal',
-          distanceKm: this.newEvent.distanceKm || 0
-        }
-      ]
+      modalities: []
     };
 
     this.dialogRef.close({ event });

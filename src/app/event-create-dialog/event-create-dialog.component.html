@@ -2,7 +2,7 @@
   <header class="create-dialog__header">
     <div>
       <p class="eyebrow">Nuevo evento</p>
-      <h2>Crea un evento con su primera modalidad</h2>
+      <h2>Crea un evento</h2>
       <p class="muted">Estos datos podrán editarse más adelante desde tu almacenamiento local.</p>
     </div>
   </header>
@@ -23,14 +23,6 @@
     <label>
       <span>Año</span>
       <input type="number" [(ngModel)]="newEvent.year" />
-    </label>
-    <label>
-      <span>Modalidad</span>
-      <input type="text" [(ngModel)]="newEvent.modalityName" placeholder="Recorrido 20 km" />
-    </label>
-    <label>
-      <span>Distancia (km)</span>
-      <input type="number" [(ngModel)]="newEvent.distanceKm" />
     </label>
     <label>
       <span>Logo (opcional)</span>

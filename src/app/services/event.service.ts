@@ -96,6 +96,9 @@ export class EventService {
     const location = (event as any).location as string | undefined;
     let population = event.population || '';
     let autonomousCommunity = event.autonomousCommunity || '';
+    const logoBase64 = (event as any).logoBase64 ?? null;
+    const logoMime = (event as any).logoMime ?? null;
+    const logo = event.logo || this.buildLogoDataUrl(logoBase64, logoMime);
 
     const routeId = Number(event.id);
     const modalities = (event.modalities || []).map(modality => ({
@@ -117,6 +120,9 @@ export class EventService {
       id: routeId,
       population,
       autonomousCommunity,
+      logo,
+      logoBase64,
+      logoMime,
       modalities,
       tracks
     };
@@ -129,10 +135,15 @@ export class EventService {
       routeId: track.routeId ?? routeId,
       modalityId: track.modalityId === null || track.modalityId === undefined
         ? null
-        : Number(track.modalityId),
+      : Number(track.modalityId),
       createdBy: track.createdBy === undefined || track.createdBy === null
         ? track.createdBy ?? undefined
         : Number(track.createdBy)
     };
+  }
+
+  private buildLogoDataUrl(logoBase64?: string | null, logoMime?: string | null): string | undefined {
+    if (!logoBase64 || !logoMime) return undefined;
+    return `data:${logoMime};base64,${logoBase64}`;
   }
 }

@@ -36,8 +36,8 @@ export interface CreateEventPayload {
   population?: string | null;
   autonomousCommunity?: string | null;
   year: number;
-  logo?: string;
-  logoMime?: string;
+  logoBase64?: string | null;
+  logoMime?: string | null;
   modalities: Array<Pick<EventModality, 'name' | 'distanceKm'>>;
   createdBy?: number;
 }
@@ -64,7 +64,8 @@ export interface RaceEvent {
   autonomousCommunity?: string | null;
   year: number;
   logo?: string;
-  logoMime?: string;
+  logoBase64?: string | null;
+  logoMime?: string | null;
   modalities: EventModality[];
   tracks: EventTrack[];
   createdBy?: number;

@@ -342,8 +342,9 @@ export class MapComponent implements OnInit, AfterViewInit {
   }
 
   private buildLogoDataUrl(logoBase64?: string | null, logoMime?: string | null): string | undefined {
-    if (!logoBase64 || !logoMime) return undefined;
-    return `data:${logoMime};base64,${logoBase64}`;
+    if (!logoBase64) return undefined;
+    const mime = (logoMime || 'image/png').trim();
+    return `data:${mime};base64,${logoBase64}`;
   }
 
   // Formatea duración (ms) como "X h Y min" (o "Y min", o "X h")

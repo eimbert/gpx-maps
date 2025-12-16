@@ -20,7 +20,8 @@ export class EventCreateDialogComponent {
     year: new Date().getFullYear(),
     modalityName: 'Recorrido 20 km',
     distanceKm: 20,
-    logo: ''
+    logoBase64: '',
+    logoMime: ''
   };
 
   constructor(
@@ -48,12 +49,18 @@ export class EventCreateDialogComponent {
       return;
     }
 
+    if (!this.newEvent.year || this.newEvent.year <= 0) {
+      this.showMessage('Introduce un año válido (número entero positivo).');
+      return;
+    }
+
     const event: CreateEventPayload = {
       name: this.newEvent.name.trim(),
       population: this.newEvent.population.trim(),
       autonomousCommunity: this.newEvent.autonomousCommunity.trim(),
       year: this.newEvent.year,
-      logo: this.newEvent.logo,
+      logoBase64: this.newEvent.logoBase64 || null,
+      logoMime: this.newEvent.logoMime || null,
       modalities: [
         {
           name: this.newEvent.modalityName || 'Recorrido principal',
@@ -71,7 +78,11 @@ export class EventCreateDialogComponent {
     if (!file) return;
     const reader = new FileReader();
     reader.onload = () => {
-      this.newEvent.logo = reader.result as string;
+      const dataUrl = reader.result as string;
+      const [mimePart, base64Part] = dataUrl.split(';base64,');
+      const mime = mimePart?.replace('data:', '') || '';
+      this.newEvent.logoMime = mime;
+      this.newEvent.logoBase64 = base64Part || '';
     };
     reader.readAsDataURL(file);
   }

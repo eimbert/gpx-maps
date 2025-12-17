@@ -5,7 +5,7 @@ export type RaceCategory =
   | 'Master 50M' | 'Master 50F'
   | 'Master 60M' | 'Master 60F';
 
-export type BikeType = 'MTB' | 'Carretera' | 'Gravel' | 'Eléctrica';
+export type BikeType = 'MTB' | 'Carretera' | 'Gravel' | 'e-Bike';
 
 export interface EventModality {
   id: number;
@@ -63,7 +63,7 @@ export interface RaceEvent {
   population?: string | null;
   autonomousCommunity?: string | null;
   year: number;
-  logo?: string;
+  //logo?: string;
   logoBase64?: string | null;
   logoMime?: string | null;
   modalities: EventModality[];

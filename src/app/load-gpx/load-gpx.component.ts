@@ -76,7 +76,7 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
   };
 
   categories: RaceCategory[] = ['Sub 23M', 'Sub 23F', 'Senior M', 'Senior F', 'Master 40M', 'Master 40F', 'Master 50M', 'Master 50F', 'Master 60M', 'Master 60F'];
-  bikeTypes: BikeType[] = ['MTB', 'Carretera', 'Gravel', 'Eléctrica'];
+  bikeTypes: BikeType[] = ['MTB', 'Carretera', 'Gravel', 'e-Bike'];
   private readonly userId: number;
 
   constructor(
@@ -236,7 +236,7 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
   }
 
   getEventLogo(event: RaceEvent): string {
-    return event.logo || 'assets/no-image.svg';
+    return event.logoBase64 || 'assets/no-image.svg';
   }
 
   nextEvent(manual = false): void {

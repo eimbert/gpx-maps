@@ -124,6 +124,10 @@
   flex-wrap: wrap;
 }
 
+.events-actions__home {
+  margin-left: auto;
+}
+
 .dropzone {
   border: 2px dashed #cbd5e1;
   border-radius: 18px;

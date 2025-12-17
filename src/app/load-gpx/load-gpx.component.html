@@ -1,5 +1,5 @@
 <div class="container">
-  <div class="page-actions">
+  <div class="page-actions" *ngIf="mode === 'routes'">
     <button type="button" class="home-button" (click)="goHome()">
       <span class="home-button__icon">🏠</span>
       <span class="home-button__label">Volver al inicio</span>
@@ -89,6 +89,10 @@
           (click)="deleteSelectedEvent()"
         >
           🗑️ Eliminar evento
+        </button>
+        <button type="button" class="home-button events-actions__home" (click)="goHome()">
+          <span class="home-button__icon">🏠</span>
+          <span class="home-button__label">Volver al inicio</span>
         </button>
       </div>
 

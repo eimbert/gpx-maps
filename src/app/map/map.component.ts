@@ -319,7 +319,7 @@ export class MapComponent implements OnInit, AfterViewInit {
     this.names = names;
     this.colors = colors;
     this.trackMetas = metas;
-    this.logoDataUrl = event.logo || this.buildLogoDataUrl(event.logoBase64, event.logoMime) || null;
+    this.logoDataUrl = event.logoBlob || this.buildLogoDataUrl(event.logoBlob, event.logoMime) || null;
     this.applySanitization();
   }
 
@@ -341,10 +341,10 @@ export class MapComponent implements OnInit, AfterViewInit {
     return null;
   }
 
-  private buildLogoDataUrl(logoBase64?: string | null, logoMime?: string | null): string | undefined {
-    if (!logoBase64) return undefined;
+  private buildLogoDataUrl(logoBlob?: string | null, logoMime?: string | null): string | undefined {
+    if (!logoBlob) return undefined;
     const mime = (logoMime || 'image/png').trim();
-    return `data:${mime};base64,${logoBase64}`;
+    return `data:${mime};base64,${logoBlob}`;
   }
 
   // Formatea duración (ms) como "X h Y min" (o "Y min", o "X h")

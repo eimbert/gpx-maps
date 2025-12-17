@@ -26,8 +26,8 @@
           [class.is-selected]="isSelected(row)"
         >
           <td class="logo-col">
-            <div class="logo-wrapper" [class.logo-wrapper--placeholder]="!row.logo">
-              <img [src]="getLogo(row)" [alt]="row.logo ? row.name : 'Imagen no disponible'" />
+            <div class="logo-wrapper" [class.logo-wrapper--placeholder]="!row.logoBlob">
+              <img [src]="getLogo(row)" [alt]="row.logoBlob ? row.name : 'Imagen no disponible'" />
             </div>
           </td>
           <td>

@@ -122,6 +122,7 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
       }
     });
     this.eventService.getEvents().subscribe(events => {
+      console.log("Events: ", events )
       this.events = events;
       this.syncCarouselIndex();
       this.restartCarouselTimer();
@@ -235,8 +236,20 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
     return parts.join(' • ');
   }
 
+  getEventLogoBg(event: any): string {
+    const raw = event?.logoBlob; // ajusta el campo
+    if (!raw) return 'none';
+
+    // Si ya viene como data URL completa, úsala tal cual
+    const dataUrl = raw.startsWith('data:image/')
+      ? raw
+      : `data:image/png;base64,${raw.replace(/\s/g, '')}`;
+
+    return `url("${dataUrl}")`;
+}
+
   getEventLogo(event: RaceEvent): string {
-    return event.logoBase64 || 'assets/no-image.svg';
+    return `data:image/jpeg;base64,${event.logoBlob}` || 'assets/no-image.svg';
   }
 
   nextEvent(manual = false): void {
@@ -323,6 +336,7 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
     dialogRef.afterClosed().subscribe(result => {
       if (!result?.event) return;
       const payload: CreateEventPayload = { ...result.event, createdBy: this.userId };
+      //console.log("CreateEventPayload: ", payload)
       this.eventService.createEvent(payload).subscribe({
         next: created => {
           this.selectMode('events');

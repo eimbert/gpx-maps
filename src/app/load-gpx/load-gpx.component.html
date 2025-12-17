@@ -96,14 +96,15 @@
         <div class="events-carousel">
           <div class="carousel-window">
             <div class="carousel-track">
-              <article
-                *ngFor="let event of events; index as i"
-                class="event-card event-card--carousel"
-                [ngStyle]="{ '--event-logo-url': 'url(' + getEventLogo(event) + ')' }"
-                [class.event-card--active]="event.id === selectedEventId"
-                [class.event-card--current]="i === carouselIndex"
-                (click)="handleCarouselSelection(event.id)"
-              >
+              
+            <article
+              *ngFor="let event of events; index as i"
+              class="event-card event-card--carousel"
+              [class.event-card--active]="event.id === selectedEventId"
+              [class.event-card--current]="i === carouselIndex"
+              [ngStyle]="{ 'background-image': getEventLogoBg(event) }"
+              (click)="handleCarouselSelection(event.id)"
+            >
                 <div class="event-card__header">
                   <div>
                     <p class="eyebrow">{{ event.year }}</p>

@@ -20,7 +20,7 @@ interface EventSearchRow {
   population: string | null | undefined;
   autonomousCommunity: string | null | undefined;
   distancesKm: number[];
-  logo?: string;
+  logoBlob?: string;
 }
 
 @Component({
@@ -40,7 +40,7 @@ export class EventSearchDialogComponent {
   }
 
   getLogo(row: EventSearchRow): string {
-    return row.logo || this.placeholderLogo;
+    return row.logoBlob || this.placeholderLogo;
   }
 
   isSelected(row: EventSearchRow): boolean {
@@ -63,7 +63,7 @@ export class EventSearchDialogComponent {
       population: event.population,
       autonomousCommunity: event.autonomousCommunity,
       distancesKm: event.modalities.map(modality => modality.distanceKm),
-      logo: event.logo
+      logo: event.logoBlob
     }));
   }
 }

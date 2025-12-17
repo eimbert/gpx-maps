@@ -4,8 +4,16 @@ import { BehaviorSubject, Observable, catchError, map, of, tap } from 'rxjs';
 import { CreateEventPayload, CreateTrackPayload, EventTrack, RaceEvent } from '../interfaces/events';
 import { environment } from '../../environments/environment';
 
+type CreateEventResponse = {
+  exitCode: number;
+  id: number;
+  message?: string | null;
+};
+
+
 @Injectable({ providedIn: 'root' })
 export class EventService {
+  
   private readonly events$ = new BehaviorSubject<RaceEvent[]>([]);
   private readonly routesApiBase = environment.routesApiBase;
 
@@ -30,11 +38,24 @@ export class EventService {
   }
 
   createEvent(payload: CreateEventPayload): Observable<RaceEvent> {
-    return this.http.post<RaceEvent>(this.routesApiBase, payload).pipe(
-      map(event => this.normalizeEvent(event)),
+    return this.http.post<CreateEventResponse>(this.routesApiBase, payload).pipe(
+      map(res => {
+        if (res.exitCode !== 0) {
+          throw new Error(res.message ?? 'Error creando el evento');
+        }
+
+        // Construye el evento a partir del payload (lo que acabas de enviar)
+        const event: RaceEvent = {
+          ...(payload as any),
+          id: res.id
+        };
+
+        return this.normalizeEvent(event);
+      }),
       tap(event => this.events$.next([...this.events$.value, event]))
     );
   }
+
 
   addTrack(eventId: number, track: CreateTrackPayload): Observable<EventTrack> {
     return this.http.post<EventTrack>(`${this.routesApiBase}/${eventId}/tracks`, track).pipe(
@@ -93,12 +114,16 @@ export class EventService {
   }
 
   private normalizeEvent(event: RaceEvent): RaceEvent {
+    console.log("EVENT: ", event)
     const location = (event as any).location as string | undefined;
     let population = event.population || '';
     let autonomousCommunity = event.autonomousCommunity || '';
-    const logoBase64 = (event as any).logoBase64 ?? null;
+    const logoBlob = event.logoBlob ?? null;
+    console.log("LOGOBLOB: ", logoBlob)
+    console.log("event. LOGOBLOB: ", event.logoBlob)
     const logoMime = (event as any).logoMime ?? null;
-    const logo = event.logo || this.buildLogoDataUrl(logoBase64, logoMime);
+    const logo = event.logoBlob || this.buildLogoDataUrl(logoBlob, logoMime);
+    console.log("LOGO: ", logo)
 
     const routeId = Number(event.id);
     const modalities = (event.modalities || []).map(modality => ({
@@ -120,11 +145,11 @@ export class EventService {
       id: routeId,
       population,
       autonomousCommunity,
-      logo,
-      logoBase64,
+      logoBlob,
       logoMime,
       modalities,
-      tracks
+      tracks,
+      
     };
   }
 
@@ -142,9 +167,9 @@ export class EventService {
     };
   }
 
-  private buildLogoDataUrl(logoBase64?: string | null, logoMime?: string | null): string | undefined {
-    if (!logoBase64) return undefined;
+  private buildLogoDataUrl(logoBlob?: string | null, logoMime?: string | null): string | undefined {
+    if (!logoBlob) return undefined;
     const mime = (logoMime || 'image/png').trim();
-    return `data:${mime};base64,${logoBase64}`;
+    return `data:${mime};base64,${logoBlob}`;
   }
 }

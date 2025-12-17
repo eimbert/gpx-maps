@@ -18,7 +18,7 @@ export class EventCreateDialogComponent {
     population: '',
     autonomousCommunity: '',
     year: new Date().getFullYear(),
-    logoBase64: '',
+    logoBlob: '',
     logoMime: ''
   };
 
@@ -57,9 +57,8 @@ export class EventCreateDialogComponent {
       population: this.newEvent.population.trim(),
       autonomousCommunity: this.newEvent.autonomousCommunity.trim(),
       year: this.newEvent.year,
-      logoBase64: this.newEvent.logoBase64 || null,
+      logoBlob: this.newEvent.logoBlob || null,
       logoMime: this.newEvent.logoMime || null,
-      modalities: []
     };
 
     this.dialogRef.close({ event });
@@ -72,10 +71,10 @@ export class EventCreateDialogComponent {
     const reader = new FileReader();
     reader.onload = () => {
       const dataUrl = reader.result as string;
-      const [mimePart, base64Part] = dataUrl.split(';base64,');
+      const [mimePart, logoBlob] = dataUrl.split(';base64,');
       const mime = mimePart?.replace('data:', '') || '';
       this.newEvent.logoMime = mime;
-      this.newEvent.logoBase64 = base64Part || '';
+      this.newEvent.logoBlob = logoBlob || '';
     };
     reader.readAsDataURL(file);
   }

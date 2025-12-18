@@ -152,7 +152,7 @@
             <div class="panel__header panel__header--stacked">
             <div>
               <h3>Sube tu track</h3>
-              <p class="muted">Nick, categoría, bici y GPX para entrar al ranking automático.</p>
+              <p class="muted">Categoría, distancia, bici y GPX para entrar al ranking automático.</p>
             </div>
             <div class="event-selection">
               <div class="event-status" [class.event-status--empty]="!selectedEvent">
@@ -189,26 +189,21 @@
               </select>
             </label>
             <label>
-              <span>Nick name</span>
-              <input type="text" [(ngModel)]="eventUpload.nickname" placeholder="Tu alias" required />
-            </label>
-            <label>
               <span>Categoría</span>
               <select [(ngModel)]="eventUpload.category" required>
                 <option *ngFor="let category of categories" [ngValue]="category">{{ category }}</option>
               </select>
             </label>
             <label>
-              <span>Modalidad</span>
-              <select
-                [(ngModel)]="eventUpload.modalityId"
-                (ngModelChange)="onModalityChange($event)"
-                [disabled]="!selectedEvent"
+              <span>Distancia (km)</span>
+              <input
+                type="number"
+                min="0"
+                step="0.1"
+                [(ngModel)]="eventUpload.distanceKm"
+                placeholder="Distancia del recorrido"
                 required
-              >
-                <option [ngValue]="null" disabled>Selecciona un recorrido</option>
-                <option *ngFor="let modality of selectedEvent?.modalities || []" [ngValue]="modality.id">{{ modality.name }}</option>
-              </select>
+              />
             </label>
             <label>
               <span>Tipo de bicicleta</span>

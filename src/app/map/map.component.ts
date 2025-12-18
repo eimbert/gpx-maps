@@ -48,6 +48,8 @@ export class MapComponent implements OnInit, AfterViewInit {
 
   showStartOverlay = true;
   private startArmed = false;
+  private autoStartRequested = false;
+  private autoStartDone = false;
   private audio!: HTMLAudioElement;
   private hasTracksReady = false;
   private musicEnabled = true;
@@ -242,6 +244,7 @@ export class MapComponent implements OnInit, AfterViewInit {
     if (this.map) {
       this.attachTrackLayers();
       this.hasTracksReady = this.startIfReady();
+      void this.autoStartIfRequested();
     }
   }
 
@@ -403,6 +406,9 @@ export class MapComponent implements OnInit, AfterViewInit {
 
   // ---------- lifecycle ----------
   ngOnInit(): void {
+    const startFlag = this.route.snapshot.queryParamMap.get('s');
+    this.autoStartRequested = (startFlag === '1' || startFlag === 'true');
+
     const backendRouteId = Number(this.route.snapshot.queryParamMap.get('routeId'));
     if (Number.isFinite(backendRouteId)) {
       this.loadTracksFromBackend(backendRouteId);
@@ -420,10 +426,11 @@ export class MapComponent implements OnInit, AfterViewInit {
       this.applyAspectViewport().then(() => {
         this.attachTrackLayers();
         this.hasTracksReady = this.startIfReady();
+        void this.autoStartIfRequested();
       });
     }, 0);
 
-     this.audio = document.getElementById('background-music-carrera') as HTMLAudioElement;
+    this.audio = document.getElementById('background-music-carrera') as HTMLAudioElement;
 
     // Desbloquear audio en el primer gesto del usuario (click/tap/tecla)
     // const unlock = () => {
@@ -441,6 +448,8 @@ export class MapComponent implements OnInit, AfterViewInit {
     try {
       this.showRanking = false;
       this.ranking = [];
+      this.autoStartDone = true;
+      this.autoStartRequested = false;
       this.startArmed = true;
       await this.applyAspectViewport();
 
@@ -477,6 +486,24 @@ export class MapComponent implements OnInit, AfterViewInit {
         this.afterInicio();
       }
     }
+  }
+
+  private async autoStartIfRequested(): Promise<void> {
+    if (!this.autoStartRequested || this.autoStartDone || this.recordingEnabled || !this.hasTracksReady) {
+      return;
+    }
+
+    this.autoStartDone = true;
+    this.startArmed = true;
+    this.showStartOverlay = false;
+
+    await this.applyAspectViewport();
+
+    if (this.musicEnabled && this.audio) {
+      await this.audio.play().catch(() => { /* autoplay may fail silently */ });
+    }
+
+    this.afterInicio();
   }
 
   private applyAspectViewport(): Promise<void> {

@@ -8,7 +8,8 @@ export const environment = {
   registerUrl: 'http://localhost:8080/api/auth/register',
   resendVerificationUrl: 'http://localhost:8080/api/auth/resend-verification',
   meUrl: 'http://localhost:8080/api/auth/me?authorizationHeader',
-  routesApiBase: 'http://localhost:8080/api/routes'
+  routesApiBase: 'http://localhost:8080/api/routes',
+  tracksApiBase: 'http://localhost:8080/api/tracks'
 };
 
 /*

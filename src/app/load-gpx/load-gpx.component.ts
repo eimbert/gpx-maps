@@ -182,10 +182,8 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
       this.selectedModalityId = null;
       this.selectedComparisonIds.clear();
       this.personalHistory = [];
-      this.eventUpload = { ...this.eventUpload, modalityId: null, file: null };
-      if (this.eventFileInputRef?.nativeElement) {
-        this.eventFileInputRef.nativeElement.value = '';
-      }
+      this.eventUpload = { ...this.eventUpload, modalityId: null };
+      this.resetEventFileInput();
       return;
     }
 
@@ -428,6 +426,10 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
     const gpx = parser.parseFromString(gpxData, 'application/xml');
     const trkpts = gpx.getElementsByTagName('trkpt');
 
+    if (gpx.getElementsByTagName('parsererror').length || trkpts.length === 0) {
+      throw new Error('GPX inválido');
+    }
+
     let totalAscent = 0;
     let previousElevation: number | null = null;
     const elevations: number[] = [];
@@ -484,8 +486,58 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
     return { track, durationSeconds };
   }
 
+  private isValidGpxData(gpxData: string): boolean {
+    try {
+      const parser = new DOMParser();
+      const gpx = parser.parseFromString(gpxData, 'application/xml');
+      return !gpx.getElementsByTagName('parsererror').length && gpx.getElementsByTagName('trkpt').length > 0;
+    } catch {
+      return false;
+    }
+  }
+
+  private calculateActiveDurationSeconds(trkpts: TrackPoint[], pauseThresholdMs = 30_000): number {
+    if (!trkpts?.length) return 0;
+    const times = trkpts
+      .map(p => new Date(p.time).getTime())
+      .filter(t => Number.isFinite(t))
+      .sort((a, b) => a - b);
+
+    if (times.length < 2) return 0;
+
+    let paused = 0;
+    let last = times[0];
+    for (let i = 1; i < times.length; i++) {
+      const current = times[i];
+      const dt = current - last;
+      if (dt > pauseThresholdMs) {
+        paused += dt;
+      }
+      last = current;
+    }
+
+    const total = times[times.length - 1] - times[0];
+    return Math.max(0, (total - paused) / 1000);
+  }
+
+  private formatDurationAsLocalTime(totalSeconds: number): string {
+    const total = Math.max(0, Math.round(totalSeconds));
+    const hours = Math.floor(total / 3600);
+    const minutes = Math.floor((total % 3600) / 60);
+    const seconds = total % 60;
+    return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+  }
+
   async parseGPX(gpxData: string, file: File): Promise<void> {
-    const { track } = this.parseGpxData(gpxData, file.name, this.tracks.length);
+    let parsed: ParsedTrackResult;
+    try {
+      parsed = this.parseGpxData(gpxData, file.name, this.tracks.length);
+    } catch {
+      this.showMessage('El archivo no es un GPX válido.');
+      return;
+    }
+
+    const { track } = parsed;
 
     const updatedTracks = [...this.tracks, track];
     if (await this.shouldAbortBecauseOfRouteMismatch(updatedTracks)) {
@@ -820,63 +872,101 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
     return { trkpts: nuevosPuntos };
   }
 
-  async uploadTrackToEvent(): Promise<void> {
-    if (!this.ensureEventsAccess()) return;
-    if (!this.selectedEventId) {
-      this.showMessage('Elige un evento primero.');
-      return;
+  private validateEventUpload(): string | null {
+    if (!this.selectedEventId || !this.selectedEvent) {
+      return 'Elige un evento primero.';
+    }
+    if (!this.eventUpload.nickname.trim()) {
+      return 'Añade tu nick para entrar en el ranking.';
+    }
+    if (!this.eventUpload.category) {
+      return 'Selecciona tu categoría.';
+    }
+    if (!this.eventUpload.bikeType) {
+      return 'Selecciona tu tipo de bicicleta.';
+    }
+    if (!(this.eventUpload.modalityId || this.selectedModalityId)) {
+      return 'Selecciona un recorrido.';
     }
     if (!this.eventUpload.file) {
-      this.showMessage('Selecciona un archivo GPX.');
-      return;
+      return 'Selecciona un archivo GPX.';
     }
-    const nickname = this.eventUpload.nickname.trim();
-    if (!nickname) {
-      this.showMessage('Añade tu nick para entrar en el ranking.');
+    return null;
+  }
+
+  private resetEventFileInput(): void {
+    this.eventUpload = { ...this.eventUpload, file: null };
+    if (this.eventFileInputRef?.nativeElement) {
+      this.eventFileInputRef.nativeElement.value = '';
+    }
+  }
+
+  async uploadTrackToEvent(): Promise<void> {
+    if (!this.ensureEventsAccess()) return;
+    const validationError = this.validateEventUpload();
+    if (validationError) {
+      this.showMessage(validationError);
       return;
     }
 
-    const gpxData = await this.readFileAsText(this.eventUpload.file);
+    const nickname = this.eventUpload.nickname.trim();
+    const routeId = this.selectedEventId!;
     const modalityId = this.eventUpload.modalityId ?? this.selectedModalityId ?? this.selectedEvent?.modalities?.[0]?.id ?? null;
-    const { track, durationSeconds } = this.parseGpxData(gpxData, this.eventUpload.file.name, 0);
+    const gpxData = await this.readFileAsText(this.eventUpload.file!);
+
+    if (!this.isValidGpxData(gpxData)) {
+      this.showMessage('El archivo no es un GPX válido.');
+      this.resetEventFileInput();
+      return;
+    }
+
+    let parsed: ParsedTrackResult;
+    try {
+      parsed = this.parseGpxData(gpxData, this.eventUpload.file!.name, 0);
+    } catch (error) {
+      this.showMessage('El archivo no es un GPX válido.');
+      this.resetEventFileInput();
+      return;
+    }
+
+    const { track, durationSeconds } = parsed;
+    const activeDurationSeconds = this.calculateActiveDurationSeconds(track.data.trkpts) || durationSeconds;
+    if (!activeDurationSeconds) {
+      this.showMessage('No se pudo calcular la duración del track.');
+      return;
+    }
+    const timeSeconds = Math.max(1, Math.round(activeDurationSeconds));
 
     const newTrack: CreateTrackPayload = {
+      routeId,
       nickname,
       category: this.eventUpload.category,
       bikeType: this.eventUpload.bikeType,
       modalityId,
-      timeSeconds: Math.max(1, Math.round(durationSeconds)),
+      timeSeconds,
       distanceKm: track.details.distance,
       ascent: track.details.ascent,
       gpxData,
-      fileName: this.eventUpload.file.name,
+      fileName: this.eventUpload.file!.name,
+      duracionRecorrido: this.formatDurationAsLocalTime(timeSeconds),
       uploadedAt: new Date().toISOString(),
       createdBy: this.userId
     };
 
-    this.eventService.addTrack(this.selectedEventId, newTrack).subscribe({
+    this.eventService.addTrack(newTrack).subscribe({
       next: created => {
         this.latestUploadedTrackId = created.id;
         this.personalNickname = nickname;
         this.refreshPersonalHistory();
         this.selectedComparisonIds.add(created.id);
-        this.eventUpload = { ...this.eventUpload, file: null };
-        if (this.eventFileInputRef?.nativeElement) {
-          this.eventFileInputRef.nativeElement.value = '';
-        }
+        this.resetEventFileInput();
       },
       error: () => this.showMessage('No se pudo subir el track al evento.')
     });
   }
 
   canUploadToEvent(): boolean {
-    return Boolean(
-      this.isAuthenticated &&
-      this.selectedEvent &&
-      this.eventUpload.file &&
-      this.eventUpload.nickname.trim() &&
-      (this.eventUpload.modalityId || this.selectedModalityId)
-    );
+    return this.isAuthenticated && !this.validateEventUpload();
   }
 
   async animateSelectedTracks(): Promise<void> {
@@ -1028,7 +1118,14 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
   onEventFileChange(event: Event): void {
     if (!this.ensureEventsAccess()) return;
     const input = event.target as HTMLInputElement;
-    this.eventUpload.file = input.files?.[0] ?? null;
+    const file = input.files?.[0] ?? null;
+    if (file && !file.name.toLowerCase().endsWith('.gpx')) {
+      this.showMessage('Selecciona un archivo GPX válido.');
+      this.resetEventFileInput();
+      return;
+    }
+
+    this.eventUpload.file = file;
   }
 
   private async ensureLoadedTrackFromEventTrack(track: EventTrack, colorIndex: number): Promise<LoadedTrack | null> {

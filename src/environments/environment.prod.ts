@@ -4,5 +4,6 @@ export const environment = {
   registerUrl: '/api/auth/register',
   resendVerificationUrl: '/api/auth/resend-verification',
   meUrl: '/api/auth/me',
-  routesApiBase: '/api/routes'
+  routesApiBase: '/api/routes',
+  tracksApiBase: '/api/tracks'
 };

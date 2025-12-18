@@ -68,10 +68,10 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
   personalHistory: EventTrack[] = [];
 
   eventUpload = {
-    nickname: '',
     category: 'Senior M' as RaceCategory,
     bikeType: 'MTB' as BikeType,
     modalityId: null as number | null,
+    distanceKm: null as number | null,
     file: null as File | null
   };
 
@@ -109,14 +109,17 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
   ngOnInit() {
     this.applyInitialMode();
     this.isAuthenticated = this.authService.isAuthenticated();
+    this.personalNickname = this.authService.getSession()?.nickname ?? '';
     this.sessionSub = this.authService.sessionChanges$.subscribe(session => {
       this.isAuthenticated = !!session;
+      this.personalNickname = session?.nickname ?? '';
       if (!this.isAuthenticated && this.mode === 'events') {
         this.showEventsAuthNotice();
       }
     });
     this.authService.validateSessionWithBackend().subscribe(session => {
       this.isAuthenticated = !!session;
+      this.personalNickname = session?.nickname ?? '';
       if (!this.isAuthenticated && this.mode === 'events') {
         this.showEventsAuthNotice();
       }
@@ -170,7 +173,12 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
       event.tracks.slice(0, 3).forEach(track => this.selectedComparisonIds.add(track.id));
     }
     this.selectedModalityId = modalityId ?? event?.modalities?.[0]?.id ?? null;
-    this.eventUpload = { ...this.eventUpload, modalityId: this.selectedModalityId };
+    const selectedModality = event?.modalities?.find(m => m.id === this.selectedModalityId) ?? event?.modalities?.[0];
+    this.eventUpload = {
+      ...this.eventUpload,
+      modalityId: this.selectedModalityId,
+      distanceKm: selectedModality?.distanceKm ?? null
+    };
     if (this.personalNickname) {
       this.refreshPersonalHistory();
     }
@@ -182,7 +190,7 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
       this.selectedModalityId = null;
       this.selectedComparisonIds.clear();
       this.personalHistory = [];
-      this.eventUpload = { ...this.eventUpload, modalityId: null };
+      this.eventUpload = { ...this.eventUpload, modalityId: null, distanceKm: null };
       this.resetEventFileInput();
       return;
     }
@@ -193,6 +201,10 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
   onModalityChange(modalityId: number | null): void {
     if (!this.ensureEventsAccess()) return;
     this.selectedModalityId = modalityId;
+    const modality = this.selectedEvent?.modalities?.find(m => m.id === modalityId);
+    if (modality) {
+      this.eventUpload.distanceKm = modality.distanceKm;
+    }
   }
 
   goHome(): void {
@@ -876,8 +888,9 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
     if (!this.selectedEventId || !this.selectedEvent) {
       return 'Elige un evento primero.';
     }
-    if (!this.eventUpload.nickname.trim()) {
-      return 'Añade tu nick para entrar en el ranking.';
+    const nickname = this.personalNickname || this.authService.getSession()?.nickname || '';
+    if (!nickname.trim()) {
+      return 'No se pudo obtener tu nick para el ranking.';
     }
     if (!this.eventUpload.category) {
       return 'Selecciona tu categoría.';
@@ -885,8 +898,9 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
     if (!this.eventUpload.bikeType) {
       return 'Selecciona tu tipo de bicicleta.';
     }
-    if (!(this.eventUpload.modalityId || this.selectedModalityId)) {
-      return 'Selecciona un recorrido.';
+    const distanceKm = Number(this.eventUpload.distanceKm);
+    if (!Number.isFinite(distanceKm) || distanceKm <= 0) {
+      return 'Añade la distancia en kilómetros del recorrido.';
     }
     if (!this.eventUpload.file) {
       return 'Selecciona un archivo GPX.';
@@ -909,9 +923,14 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
       return;
     }
 
-    const nickname = this.eventUpload.nickname.trim();
+    const nickname = (this.personalNickname || this.authService.getSession()?.nickname || '').trim();
+    if (!nickname) {
+      this.showMessage('No se pudo obtener tu nick para el ranking.');
+      return;
+    }
     const routeId = this.selectedEventId!;
     const modalityId = this.eventUpload.modalityId ?? this.selectedModalityId ?? this.selectedEvent?.modalities?.[0]?.id ?? null;
+    const distanceKm = Number(this.eventUpload.distanceKm);
     const gpxData = await this.readFileAsText(this.eventUpload.file!);
 
     if (!this.isValidGpxData(gpxData)) {
@@ -944,7 +963,7 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
       bikeType: this.eventUpload.bikeType,
       modalityId,
       timeSeconds,
-      distanceKm: track.details.distance,
+      distanceKm: Number.isFinite(distanceKm) && distanceKm > 0 ? distanceKm : track.details.distance,
       ascent: track.details.ascent,
       gpxData,
       fileName: this.eventUpload.file!.name,

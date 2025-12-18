@@ -63,6 +63,18 @@
   gap: 24px;
 }
 
+.action-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.home-button--inline {
+  margin-left: auto;
+}
+
 .hero h1 {
   margin: 0 0 6px;
   font-size: clamp(28px, 4vw, 40px);

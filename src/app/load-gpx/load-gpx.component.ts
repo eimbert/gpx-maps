@@ -753,7 +753,7 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
           };
           sessionStorage.setItem('gpxViewerPayload', JSON.stringify(payload));
 
-          this.router.navigate(['/map']);
+          this.router.navigate(['/map'], { queryParams: { s: '1' } });
         };
 
         if (result.anadirLogoTitulos) {

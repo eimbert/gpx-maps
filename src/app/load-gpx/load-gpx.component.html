@@ -1,11 +1,4 @@
 <div class="container">
-  <div class="page-actions" *ngIf="mode === 'routes'">
-    <button type="button" class="home-button" (click)="goHome()">
-      <span class="home-button__icon">🏠</span>
-      <span class="home-button__label">Volver al inicio</span>
-    </button>
-  </div>
-
   <section *ngIf="mode === 'routes'" class="load-wrapper">
     <header class="hero">
       <div>
@@ -54,12 +47,19 @@
       </ul>
     </section>
 
-    <button (click)="iniciarVisualizacion()" [disabled]="!tracksCargados()" class="btn-start">
-      <span>Iniciar</span>
-      <svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" class="btn-start__icon">
-        <path d="M5 3l14 9-14 9V3z" fill="currentColor" />
-      </svg>
-    </button>
+    <div class="action-row">
+      <button (click)="iniciarVisualizacion()" [disabled]="!tracksCargados()" class="btn-start">
+        <span>Iniciar</span>
+        <svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" class="btn-start__icon">
+          <path d="M5 3l14 9-14 9V3z" fill="currentColor" />
+        </svg>
+      </button>
+
+      <button type="button" class="home-button home-button--inline" (click)="goHome()">
+        <span class="home-button__icon">🏠</span>
+        <span class="home-button__label">Volver al inicio</span>
+      </button>
+    </div>
   </section>
 
   <section *ngIf="mode === 'events'" class="events-wrapper">

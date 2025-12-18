@@ -8,6 +8,13 @@
       </div>
     </header>
 
+    <div class="home-button-bar">
+      <button type="button" class="home-button" (click)="goHome()">
+        <span class="home-button__icon">🏠</span>
+        <span class="home-button__label">Volver al inicio</span>
+      </button>
+    </div>
+
     <div
       class="dropzone"
       [class.dropzone--active]="isDragOver"
@@ -53,11 +60,6 @@
         <svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" class="btn-start__icon">
           <path d="M5 3l14 9-14 9V3z" fill="currentColor" />
         </svg>
-      </button>
-
-      <button type="button" class="home-button home-button--inline" (click)="goHome()">
-        <span class="home-button__icon">🏠</span>
-        <span class="home-button__label">Volver al inicio</span>
       </button>
     </div>
   </section>

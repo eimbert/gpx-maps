@@ -21,6 +21,12 @@
   margin-bottom: 28px;
 }
 
+.home-button-bar {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 8px;
+}
+
 .home-button {
   display: inline-flex;
   align-items: center;
@@ -69,10 +75,6 @@
   justify-content: space-between;
   flex-wrap: wrap;
   gap: 12px;
-}
-
-.home-button--inline {
-  margin-left: auto;
 }
 
 .hero h1 {

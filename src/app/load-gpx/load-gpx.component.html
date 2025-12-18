@@ -6,8 +6,8 @@
         <p>Arrastra y suelta hasta {{ maxTracks }} recorridos o pulsa para seleccionarlos.</p>
         <p *ngIf="!isAuthenticated" class="guest-note">Sin sesión iniciada solo puedes cargar un archivo GPX a la vez.</p>
       </div>
-
-      <button type="button" class="home-button hero__home" (click)="goHome()">
+      
+      <button type="button" class="home-button hero__home" style="cursor: pointer;" (click)="goHome()">
         <span class="home-button__icon">🏠</span>
         <span class="home-button__label">Volver al inicio</span>
       </button>

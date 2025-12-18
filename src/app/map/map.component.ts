@@ -407,7 +407,7 @@ export class MapComponent implements OnInit, AfterViewInit {
   // ---------- lifecycle ----------
   ngOnInit(): void {
     const startFlag = this.route.snapshot.queryParamMap.get('s');
-    this.autoStartRequested = (startFlag === '1' || startFlag === 'true');
+    this.autoStartRequested = false // (startFlag === '1' || startFlag === 'true');
 
     const backendRouteId = Number(this.route.snapshot.queryParamMap.get('routeId'));
     if (Number.isFinite(backendRouteId)) {

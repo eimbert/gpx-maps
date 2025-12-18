@@ -441,6 +441,7 @@ export class MapComponent implements OnInit, AfterViewInit {
     try {
       this.showRanking = false;
       this.ranking = [];
+      this.startArmed = true;
       await this.applyAspectViewport();
 
       // 1) Empieza la grabación (elige “Pestaña” y marca audio de la pestaña)
@@ -471,6 +472,7 @@ export class MapComponent implements OnInit, AfterViewInit {
       console.error('No se pudo iniciar la captura:', e);
       // Puedes seguir sin grabar si quieres:
       this.showStartOverlay = false;
+      this.startArmed = true;
       if (this.hasTracksReady) {
         this.afterInicio();
       }
@@ -621,6 +623,12 @@ export class MapComponent implements OnInit, AfterViewInit {
 
     this.relMs = 0;
     this.started = true;
+
+    // Si el usuario ya pulsó "Start" antes de que los tracks estuvieran listos,
+    // arranca la animación en cuanto terminemos de preparar todo.
+    if (this.startArmed && !this.showStartOverlay) {
+      this.afterInicio();
+    }
 
     return true;
   }

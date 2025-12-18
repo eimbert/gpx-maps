@@ -16,6 +16,7 @@ export class EventService {
   
   private readonly events$ = new BehaviorSubject<RaceEvent[]>([]);
   private readonly routesApiBase = environment.routesApiBase;
+  private readonly tracksApiBase = environment.tracksApiBase;
 
   constructor(private http: HttpClient) {
     this.refreshEvents().subscribe();
@@ -57,12 +58,13 @@ export class EventService {
   }
 
 
-  addTrack(eventId: number, track: CreateTrackPayload): Observable<EventTrack> {
-    return this.http.post<EventTrack>(`${this.routesApiBase}/${eventId}/tracks`, track).pipe(
-      map(created => this.normalizeTrack(created, eventId)),
+  addTrack(track: CreateTrackPayload): Observable<EventTrack> {
+    const routeId = track.routeId;
+    return this.http.post<EventTrack>(`${this.tracksApiBase}`, track).pipe(
+      map(created => this.normalizeTrack(created, routeId)),
       tap(created => {
         const updated = this.events$.value.map(event =>
-          event.id === eventId ? { ...event, tracks: [...event.tracks, created] } : event
+          event.id === routeId ? { ...event, tracks: [...event.tracks, created] } : event
         );
         this.events$.next(updated);
       })

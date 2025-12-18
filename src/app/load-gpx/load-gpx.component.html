@@ -183,18 +183,18 @@
           <div class="form-grid">
             <label>
               <span>Evento</span>
-              <select [ngModel]="selectedEventId" (ngModelChange)="handleEventSelection($event)">
+              <select [ngModel]="selectedEventId" (ngModelChange)="handleEventSelection($event)" required>
                 <option [ngValue]="null">Selecciona un evento</option>
                 <option *ngFor="let event of events" [ngValue]="event.id">{{ event.name }} ({{ event.year }})</option>
               </select>
             </label>
             <label>
               <span>Nick name</span>
-              <input type="text" [(ngModel)]="eventUpload.nickname" placeholder="Tu alias" />
+              <input type="text" [(ngModel)]="eventUpload.nickname" placeholder="Tu alias" required />
             </label>
             <label>
               <span>Categoría</span>
-              <select [(ngModel)]="eventUpload.category">
+              <select [(ngModel)]="eventUpload.category" required>
                 <option *ngFor="let category of categories" [ngValue]="category">{{ category }}</option>
               </select>
             </label>
@@ -204,6 +204,7 @@
                 [(ngModel)]="eventUpload.modalityId"
                 (ngModelChange)="onModalityChange($event)"
                 [disabled]="!selectedEvent"
+                required
               >
                 <option [ngValue]="null" disabled>Selecciona un recorrido</option>
                 <option *ngFor="let modality of selectedEvent?.modalities || []" [ngValue]="modality.id">{{ modality.name }}</option>
@@ -211,13 +212,13 @@
             </label>
             <label>
               <span>Tipo de bicicleta</span>
-              <select [(ngModel)]="eventUpload.bikeType">
+              <select [(ngModel)]="eventUpload.bikeType" required>
                 <option *ngFor="let bike of bikeTypes" [ngValue]="bike">{{ bike }}</option>
               </select>
             </label>
             <label class="file-input">
               <span>Track GPX</span>
-              <input #eventFileInput type="file" accept=".gpx" (change)="onEventFileChange($event)" [disabled]="!selectedEvent" />
+              <input #eventFileInput type="file" accept=".gpx" (change)="onEventFileChange($event)" [disabled]="!selectedEvent" required />
             </label>
           </div>
           <button class="btn-start" type="button" (click)="uploadTrackToEvent()" [disabled]="!canUploadToEvent()">

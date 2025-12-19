@@ -22,6 +22,7 @@ export interface EventTrack {
   bikeType: BikeType;
   modalityId?: number | null;
   timeSeconds: number;
+  tiempoReal?: number;
   distanceKm: number;
   ascent?: number;
   gpxAsset?: string;
@@ -49,6 +50,7 @@ export interface CreateTrackPayload {
   bikeType: BikeType;
   modalityId?: number | null;
   timeSeconds: number;
+  tiempoReal?: number;
   distanceKm: number;
   ascent?: number;
   gpxAsset?: string;
@@ -72,5 +74,4 @@ export interface RaceEvent {
   tracks: EventTrack[];
   createdBy?: number;
 }
-
 

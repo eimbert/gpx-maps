@@ -8,7 +8,7 @@ import { DialogoConfiguracionData } from '../interfaces/estructuras';
 import { TrackMetadataDialogComponent, TrackMetadataDialogResult } from '../track-metadata-dialog/track-metadata-dialog.component';
 import { RouteMismatchDialogComponent } from '../route-mismatch-dialog/route-mismatch-dialog.component';
 import { EventSearchDialogComponent, EventSearchDialogData, EventSearchDialogResult } from '../event-search-dialog/event-search-dialog.component';
-import { BikeType, CreateEventPayload, CreateTrackPayload, EventTrack, RaceCategory, RaceEvent } from '../interfaces/events';
+import { BikeType, CreateEventPayload, CreateTrackPayload, EventTrack, RaceCategory, RaceEvent, RouteTrackTime } from '../interfaces/events';
 import { EventService } from '../services/event.service';
 import { EventCreateDialogComponent, EventCreateDialogResult } from '../event-create-dialog/event-create-dialog.component';
 import { UserIdentityService } from '../services/user-identity.service';
@@ -66,6 +66,7 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
   latestUploadedTrackId: number | null = null;
   personalNickname = '';
   personalHistory: EventTrack[] = [];
+  routeTrackTimes: RouteTrackTime[] = [];
 
   eventUpload = {
     category: 'Senior M' as RaceCategory,
@@ -182,6 +183,7 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
     if (this.personalNickname) {
       this.refreshPersonalHistory();
     }
+    this.loadRouteTrackTimes(eventId);
   }
 
   handleEventSelection(eventId: number | null): void {
@@ -190,6 +192,7 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
       this.selectedModalityId = null;
       this.selectedComparisonIds.clear();
       this.personalHistory = [];
+      this.routeTrackTimes = [];
       this.eventUpload = { ...this.eventUpload, modalityId: null, distanceKm: null };
       this.resetEventFileInput();
       return;
@@ -1119,6 +1122,12 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
     this.personalHistory = event.tracks
       .filter(t => t.nickname === nickname)
       .sort((a, b) => new Date(b.uploadedAt).getTime() - new Date(a.uploadedAt).getTime());
+  }
+
+  private loadRouteTrackTimes(routeId: number): void {
+    this.eventService.getRouteTrackTimes(routeId).subscribe(times => {
+      this.routeTrackTimes = (times || []).slice().sort((a, b) => a.tiempoReal - b.tiempoReal);
+    });
   }
 
   formatTime(seconds: number): string {

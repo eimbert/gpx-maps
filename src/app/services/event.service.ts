@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { BehaviorSubject, Observable, catchError, map, of, tap } from 'rxjs';
-import { CreateEventPayload, CreateTrackPayload, EventTrack, RaceEvent } from '../interfaces/events';
+import { CreateEventPayload, CreateTrackPayload, EventTrack, RaceEvent, RouteTrackTime } from '../interfaces/events';
 import { environment } from '../../environments/environment';
 
 type CreateEventResponse = {
@@ -100,6 +100,18 @@ export class EventService {
       }),
       map(() => true),
       catchError(() => of(false))
+    );
+  }
+
+  getRouteTrackTimes(routeId: number): Observable<RouteTrackTime[]> {
+    return this.http.get<RouteTrackTime[]>(`${this.tracksApiBase}/route/${routeId}`).pipe(
+      map(list => list.map(item => ({
+        ...item,
+        id: Number(item.id),
+        distanceKm: Number(item.distanceKm),
+        tiempoReal: Number(item.tiempoReal)
+      }))),
+      catchError(() => of([]))
     );
   }
 

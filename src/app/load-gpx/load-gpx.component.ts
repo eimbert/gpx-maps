@@ -532,6 +532,26 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
     return Math.max(0, (total - paused) / 1000);
   }
 
+  private calculateTotalDurationSeconds(trkpts: TrackPoint[]): number {
+    if (!trkpts?.length) return 0;
+    const times = trkpts
+      .map(p => new Date(p.time).getTime())
+      .filter(t => Number.isFinite(t));
+
+    if (times.length < 2) return 0;
+
+    let min = times[0];
+    let max = times[0];
+
+    for (let i = 1; i < times.length; i++) {
+      const current = times[i];
+      if (current < min) min = current;
+      if (current > max) max = current;
+    }
+
+    return Math.max(0, (max - min) / 1000);
+  }
+
   private formatDurationAsLocalTime(totalSeconds: number): string {
     const total = Math.max(0, Math.round(totalSeconds));
     const hours = Math.floor(total / 3600);
@@ -950,11 +970,13 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
 
     const { track, durationSeconds } = parsed;
     const activeDurationSeconds = this.calculateActiveDurationSeconds(track.data.trkpts) || durationSeconds;
+    const totalDurationSeconds = this.calculateTotalDurationSeconds(track.data.trkpts) || durationSeconds;
     if (!activeDurationSeconds) {
       this.showMessage('No se pudo calcular la duración del track.');
       return;
     }
     const timeSeconds = Math.max(1, Math.round(activeDurationSeconds));
+    const tiempoReal = Math.max(1, Math.round(totalDurationSeconds || timeSeconds));
 
     const newTrack: CreateTrackPayload = {
       routeId,
@@ -963,6 +985,7 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
       bikeType: this.eventUpload.bikeType,
       modalityId,
       timeSeconds,
+      tiempoReal,
       distanceKm: Number.isFinite(distanceKm) && distanceKm > 0 ? distanceKm : track.details.distance,
       ascent: track.details.ascent,
       routeXml: gpxData,

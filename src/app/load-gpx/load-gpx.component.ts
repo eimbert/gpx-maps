@@ -965,7 +965,7 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
       timeSeconds,
       distanceKm: Number.isFinite(distanceKm) && distanceKm > 0 ? distanceKm : track.details.distance,
       ascent: track.details.ascent,
-      gpxData,
+      routeXml: gpxData,
       fileName: this.eventUpload.file!.name,
       duracionRecorrido: this.formatDurationAsLocalTime(timeSeconds),
       uploadedAt: new Date().toISOString(),

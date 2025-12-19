@@ -52,7 +52,7 @@ export interface CreateTrackPayload {
   distanceKm: number;
   ascent?: number;
   gpxAsset?: string;
-  gpxData?: string;
+  routeXml?: string;
   fileName?: string;
   uploadedAt: string;
   duracionRecorrido?: string;

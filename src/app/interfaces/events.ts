@@ -33,6 +33,15 @@ export interface EventTrack {
   createdBy?: number;
 }
 
+export interface RouteTrackTime {
+  id: number;
+  nickname: string;
+  category: RaceCategory;
+  bikeType: BikeType;
+  distanceKm: number;
+  tiempoReal: number;
+}
+
 export interface CreateEventPayload {
   name: string;
   population?: string | null;
@@ -74,4 +83,3 @@ export interface RaceEvent {
   tracks: EventTrack[];
   createdBy?: number;
 }
-

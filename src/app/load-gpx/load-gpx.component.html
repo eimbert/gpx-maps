@@ -254,6 +254,39 @@
             </div>
           </ng-template>
         </article>
+
+        <article class="panel">
+          <ng-container *ngIf="selectedEvent; else routeTimesPlaceholder">
+            <div class="panel__header">
+              <h3>Tiempos de la ruta</h3>
+              <p class="muted">Datos obtenidos al seleccionar el recorrido en el carrusel.</p>
+            </div>
+            <ng-container *ngIf="routeTrackTimes.length; else emptyRouteTimes">
+              <ol class="ranking">
+                <li *ngFor="let track of routeTrackTimes; index as i">
+                  <span class="position">#{{ i + 1 }}</span>
+                  <div>
+                    <p class="strong">{{ track.nickname }}</p>
+                    <p class="muted">{{ track.category }}</p>
+                  </div>
+                  <div class="ranking__actions">
+                    <span class="pill">{{ track.distanceKm | number:'1.0-1' }} km</span>
+                    <span class="time">{{ formatTime(track.tiempoReal) }}</span>
+                  </div>
+                </li>
+              </ol>
+            </ng-container>
+            <ng-template #emptyRouteTimes>
+              <p class="muted">No hay tiempos registrados para este recorrido aún.</p>
+            </ng-template>
+          </ng-container>
+          <ng-template #routeTimesPlaceholder>
+            <div class="panel__header">
+              <h3>Tiempos de la ruta</h3>
+              <p class="muted">Selecciona un evento para cargar los tiempos.</p>
+            </div>
+          </ng-template>
+        </article>
       </div>
 
       <article class="panel">

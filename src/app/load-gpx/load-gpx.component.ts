@@ -383,6 +383,8 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
 
     const elevations = points.map(p => p.ele ?? 0);
     const distances = this.buildCumulativeDistances(points);
+    const initialEle = elevations[0];
+    const averageEle = elevations.reduce((sum, ele) => sum + ele, 0) / elevations.length;
     const minEle = Math.min(...elevations);
     const maxEle = Math.max(...elevations);
     const eleRange = Math.max(1, maxEle - minEle);
@@ -396,8 +398,8 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
       return `${x.toFixed(1)},${y.toFixed(1)}`;
     }).join(' ');
 
-    const yTicks = this.buildAxisTicks(minEle, maxEle, 3);
-    const xTicks = this.buildDistanceTicks(totalDistance, 4);
+    const yTicks = this.buildElevationTicks(initialEle, averageEle, maxEle, minEle, eleRange);
+    const xTicks = this.buildDistanceTicks(totalDistance);
     const gridLinesY = yTicks.map(tick => safeHeight - ((tick.value - minEle) / eleRange) * safeHeight);
 
     return { points: pointsStr, xTicks, yTicks, gridLinesY };
@@ -414,43 +416,58 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
     return distances;
   }
 
-  private buildAxisTicks(min: number, max: number, maxTicks: number): AxisTick[] {
-    if (maxTicks <= 0) return [];
-    const range = Math.max(1, max - min);
-    const step = range / maxTicks;
-    const ticks: AxisTick[] = [];
-    for (let i = 0; i <= maxTicks; i++) {
-      const value = min + step * i;
-      ticks.push({
-        label: `${Math.round(value)}`,
-        positionPct: (i / maxTicks) * 100,
-        value
-      });
-    }
-    return ticks;
+  private buildElevationTicks(initialEle: number, averageEle: number, maxEle: number, minEle: number, eleRange: number): AxisTick[] {
+    const ticks = [
+      { value: initialEle, label: `${Math.round(initialEle)}` },
+      { value: averageEle, label: `${Math.round(averageEle)}` },
+      { value: maxEle, label: `${Math.round(maxEle)}` }
+    ];
+
+    const seen = new Set<string>();
+    return ticks
+      .filter(tick => {
+        const key = tick.value.toFixed(2);
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      })
+      .sort((a, b) => a.value - b.value)
+      .map(tick => ({
+        ...tick,
+        positionPct: ((tick.value - minEle) / Math.max(1, eleRange)) * 100
+      }));
   }
 
-  private buildDistanceTicks(totalDistanceMeters: number, maxTicks: number): AxisTick[] {
-    if (totalDistanceMeters <= 0 || maxTicks <= 0) return [];
-    const totalKm = totalDistanceMeters / 1000;
-    const stepKm = this.pickNiceStep(totalKm / maxTicks);
-    const ticks: AxisTick[] = [];
-    for (let km = 0; km <= totalKm + 1e-6; km += stepKm) {
-      ticks.push({
-        label: `${km.toFixed(0)} km`,
-        positionPct: (km / totalKm) * 100,
-        value: km
-      });
-    }
-    return ticks;
+  private buildDistanceTicks(totalDistanceMeters: number): AxisTick[] {
+    if (totalDistanceMeters <= 0) return [];
+
+    const middle = totalDistanceMeters / 2;
+    const ticks = [
+      { value: 0, label: this.formatDistanceLabel(0) },
+      { value: middle, label: this.formatDistanceLabel(middle) },
+      { value: totalDistanceMeters, label: this.formatDistanceLabel(totalDistanceMeters) }
+    ];
+
+    const seen = new Set<string>();
+    return ticks
+      .filter(tick => {
+        const key = tick.value.toFixed(2);
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      })
+      .sort((a, b) => a.value - b.value)
+      .map(tick => ({
+        ...tick,
+        positionPct: totalDistanceMeters ? (tick.value / totalDistanceMeters) * 100 : 0
+      }));
   }
 
-  private pickNiceStep(approx: number): number {
-    const steps = [0.5, 1, 2, 5, 10, 20, 50, 100];
-    for (const step of steps) {
-      if (step >= approx) return step;
-    }
-    return steps[steps.length - 1];
+  private formatDistanceLabel(distanceMeters: number): string {
+    if (distanceMeters === 0) return '0 km';
+    const km = distanceMeters / 1000;
+    const decimals = km >= 10 ? 0 : 1;
+    return `${km.toFixed(decimals)} km`;
   }
 
   private buildTrackPolyline(points: TrackPoint[], width = 320, height = 240): string | null {

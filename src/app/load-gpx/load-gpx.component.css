@@ -488,9 +488,9 @@
 }
 
 .grid-lines line {
-  stroke: #e2e8f0;
+  stroke: #cbd5e1;
   stroke-width: 1;
-  opacity: 0.8;
+  opacity: 1;
 }
 
 .profile-chart polyline {

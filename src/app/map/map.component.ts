@@ -549,7 +549,13 @@ export class MapComponent implements OnInit, AfterViewInit {
   // ---------- mapa ----------
   private initMap(): void {
     this.map = L.map('map', { preferCanvas: true, zoomSnap: 0.1 }).setView([40.4168, -3.7038], 6);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '© OpenStreetMap' }).addTo(this.map);
+    L.tileLayer(
+      'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+      {
+        maxZoom: 19,
+        attribution: 'Tiles © Esri — Source: Esri, Maxar, Earthstar Geographics, and the GIS User Community'
+      }
+    ).addTo(this.map);
     this.renderer = L.canvas({ padding: 0.25 }).addTo(this.map);
     this.attachTrackLayers();
   }

@@ -1522,10 +1522,10 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
     }
   }
 
-  openMyTracksDialog(): void {
+  async openMyTracksDialog(): Promise<void> {
     if (!this.ensureEventsAccess()) return;
     this.closeEventMenu();
-    const rows = this.buildMyTrackRows();
+    const rows = await this.buildMyTrackRows();
     this.dialog.open<MyTracksDialogComponent, any>(MyTracksDialogComponent, {
       width: '1080px',
       data: {
@@ -1536,25 +1536,82 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
     });
   }
 
-  private buildMyTrackRows(): MyTrackRow[] {
-    const nickname = this.personalNickname;
-    return this.events.flatMap(event =>
-      (event.tracks || [])
-        .filter(track => track.createdBy === this.userId || (!!nickname && track.nickname === nickname))
-        .map(track => ({
-          eventId: event.id,
+  private async buildMyTrackRows(): Promise<MyTrackRow[]> {
+    try {
+      const tracks = await firstValueFrom(this.eventService.getMyTracks());
+      const eventsById = new Map<number, RaceEvent>(this.events.map(event => [event.id, event]));
+
+      return tracks.map(track => {
+        const event = track.routeId ? eventsById.get(track.routeId) : undefined;
+        return {
+          eventId: track.routeId ?? 0,
           trackId: track.id,
-          eventName: event.name,
-          year: event.year,
-          population: event.population,
-          distanceKm: Number(track.distanceKm),
-          timeSeconds: Number(track.timeSeconds),
-          totalTimeSeconds: Number(track.tiempoReal ?? track.timeSeconds),
+          eventName: event?.name ?? '—',
+          year: this.resolveTrackYear(track, event),
+          population: event?.population ?? null,
+          distanceKm: this.toNumber(track.distanceKm),
+          timeSeconds: this.toNumber(track.timeSeconds),
+          totalTimeSeconds: this.resolveTotalTimeSeconds(track),
           gpxData: track.gpxData,
           gpxAsset: track.gpxAsset,
           fileName: track.fileName,
           canDelete: this.canDeleteTrack(track)
-        }))
-    );
+        };
+      });
+    } catch {
+      this.showMessage('No se pudieron cargar tus tracks. Inténtalo de nuevo más tarde.');
+      return [];
+    }
+  }
+
+  private resolveTotalTimeSeconds(track: EventTrack): number {
+    const tiempoReal = track.tiempoReal;
+    if (tiempoReal !== undefined && tiempoReal !== null) {
+      const parsed = Number(tiempoReal);
+      if (Number.isFinite(parsed)) {
+        return parsed;
+      }
+    }
+
+    const parsedDuration = this.parseLocalTimeToSeconds(track.duracionRecorrido);
+    if (parsedDuration !== null) {
+      return parsedDuration;
+    }
+
+    return this.toNumber(track.timeSeconds);
+  }
+
+  private resolveTrackYear(track: EventTrack, event?: RaceEvent): number {
+    if (event?.year) {
+      return event.year;
+    }
+    const uploadedAt = track.uploadedAt;
+    if (uploadedAt) {
+      const parsed = new Date(uploadedAt);
+      if (!Number.isNaN(parsed.getTime())) {
+        return parsed.getFullYear();
+      }
+    }
+    return 0;
+  }
+
+  private parseLocalTimeToSeconds(duration?: string | null): number | null {
+    if (!duration) return null;
+    const parts = duration.split(':').map(part => Number(part));
+    if (parts.some(part => Number.isNaN(part))) return null;
+    if (parts.length === 3) {
+      const [hours, minutes, seconds] = parts;
+      return (hours * 3600) + (minutes * 60) + seconds;
+    }
+    if (parts.length === 2) {
+      const [minutes, seconds] = parts;
+      return (minutes * 60) + seconds;
+    }
+    return null;
+  }
+
+  private toNumber(value: any, fallback = 0): number {
+    const num = Number(value);
+    return Number.isFinite(num) ? num : fallback;
   }
 }

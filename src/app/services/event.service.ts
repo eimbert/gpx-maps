@@ -43,6 +43,7 @@ export class EventService {
   }
 
   createEvent(payload: CreateEventPayload): Observable<RaceEvent> {
+    console.log("antes del post: ", payload)
     return this.http.post<CreateEventResponse>(this.routesApiBase, payload).pipe(
       map(res => {
         if (res.exitCode !== 0) {

@@ -132,8 +132,8 @@
                     <div class="event-profile">
                       <ng-container *ngIf="eventVisuals[event.id]?.profile?.points; else noProfile">
                         <div class="profile-chart-wrapper">
-                          <span class="axis-label axis-label--y">Altura</span>
-                          <span class="axis-label axis-label--x">Distancia</span>
+                          <!-- <span class="axis-label axis-label--y">Altura</span>
+                          <span class="axis-label axis-label--x">Distancia</span> -->
                           <svg [attr.viewBox]="'0 0 ' + profileWidth + ' ' + profileHeight" preserveAspectRatio="none" class="profile-chart">
                             <g class="grid-lines">
                               <line

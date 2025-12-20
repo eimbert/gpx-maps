@@ -152,7 +152,9 @@
                             </g>
                             <g class="axis-ticks axis-ticks--x">
                               <ng-container *ngFor="let tick of eventVisuals[event.id].profile?.xTicks">
-                                <text [attr.x]="(tick.positionPct / 100) * profileWidth" [attr.y]="profileHeight">
+                                <text
+                                  [attr.x]="(tick.positionPct / 100) * profileWidth"
+                                  [attr.y]="profileHeight - 2">
                                   {{ tick.label }}
                                 </text>
                               </ng-container>

@@ -1,0 +1,53 @@
+<h2 mat-dialog-title>Mis tracks</h2>
+<div mat-dialog-content class="table-wrapper">
+  <table class="tracks-table">
+    <thead>
+      <tr>
+        <th>Año</th>
+        <th>Evento</th>
+        <th>Población</th>
+        <th>Distancia (km)</th>
+        <th>Tiempo en movimiento</th>
+        <th>Tiempo total</th>
+        <th class="icon-col">Descargar</th>
+        <th class="icon-col">Eliminar</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let row of rows">
+        <td>{{ row.year }}</td>
+        <td>{{ row.eventName }}</td>
+        <td>{{ row.population || '—' }}</td>
+        <td>{{ row.distanceKm | number:'1.1-1' }}</td>
+        <td>{{ formatDuration(row.timeSeconds) }}</td>
+        <td>{{ formatDuration(row.totalTimeSeconds) }}</td>
+        <td class="icon-col">
+          <button
+            type="button"
+            class="icon-button"
+            [disabled]="isDownloading(row)"
+            (click)="downloadTrack(row)">
+            <span aria-hidden="true">⬇️</span>
+            <span class="sr-only">Descargar</span>
+          </button>
+        </td>
+        <td class="icon-col">
+          <button
+            type="button"
+            class="icon-button danger"
+            [disabled]="isDeleting(row) || !row.canDelete"
+            (click)="confirmDelete(row)">
+            <span aria-hidden="true">🗑️</span>
+            <span class="sr-only">Eliminar</span>
+          </button>
+        </td>
+      </tr>
+      <tr *ngIf="!rows.length">
+        <td colspan="8" class="empty">Sin tracks para mostrar.</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+<div mat-dialog-actions align="end">
+  <button mat-button (click)="close()">Cerrar</button>
+</div>

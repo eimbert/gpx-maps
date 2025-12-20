@@ -15,6 +15,7 @@ import { UserIdentityService } from '../services/user-identity.service';
 import { AuthService } from '../services/auth.service';
 import { Subscription } from 'rxjs';
 import { InfoDialogComponent, InfoDialogData, InfoDialogResult } from '../info-dialog/info-dialog.component';
+import { MyTrackRow, MyTracksDialogComponent } from '../my-tracks-dialog/my-tracks-dialog.component';
 
 interface TrackPoint {
   lat: number;
@@ -62,6 +63,7 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
   @ViewChild('fileInput') fileInputRef!: ElementRef<HTMLInputElement>;
   @ViewChild('eventFileInput') eventFileInputRef!: ElementRef<HTMLInputElement>;
   @ViewChild('masterGpxInput') masterGpxInputRef!: ElementRef<HTMLInputElement>;
+  @ViewChild('uploadSection') uploadSectionRef?: ElementRef<HTMLElement>;
 
   readonly maxTracks = 5;
   readonly maxComparison = 4;
@@ -89,6 +91,7 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
   readonly profileWidth = 240;
   readonly profileHeight = 80;
   private pendingMasterUploadEventId: number | null = null;
+  eventMenuOpen = false;
 
   eventUpload = {
     category: 'Senior M' as RaceCategory,
@@ -620,6 +623,7 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
 
   openEventSearch(): void {
     if (!this.ensureEventsAccess()) return;
+    this.closeEventMenu();
     const dialogRef = this.dialog.open<EventSearchDialogComponent, EventSearchDialogData, EventSearchDialogResult>(
       EventSearchDialogComponent,
       {
@@ -643,6 +647,7 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
 
   openCreateEventDialog(): void {
     if (!this.ensureEventsAccess()) return;
+    this.closeEventMenu();
     const dialogRef = this.dialog.open<EventCreateDialogComponent, undefined, EventCreateDialogResult>(
       EventCreateDialogComponent,
       {
@@ -1459,9 +1464,13 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
 
   deleteSelectedEvent(): void {
     if (!this.ensureEventsAccess()) return;
+    this.closeEventMenu();
     const eventId = this.selectedEventId;
     if (!eventId || !this.selectedEvent) return;
-    if (!this.canDeleteSelectedEvent()) return;
+    if (!this.canDeleteSelectedEvent()) {
+      this.showMessage('Solo puedes eliminar eventos que hayas creado y que no tengan tracks asociados.');
+      return;
+    }
 
     this.eventService.removeEvent(eventId, this.userId).subscribe(removed => {
       if (removed) {
@@ -1495,5 +1504,57 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
     } catch {
       return null;
     }
+  }
+
+  toggleEventMenu(): void {
+    this.eventMenuOpen = !this.eventMenuOpen;
+  }
+
+  closeEventMenu(): void {
+    this.eventMenuOpen = false;
+  }
+
+  scrollToUploadSection(): void {
+    this.closeEventMenu();
+    if (!this.ensureEventsAccess()) return;
+    if (this.uploadSectionRef?.nativeElement) {
+      this.uploadSectionRef.nativeElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }
+
+  openMyTracksDialog(): void {
+    if (!this.ensureEventsAccess()) return;
+    this.closeEventMenu();
+    const rows = this.buildMyTrackRows();
+    this.dialog.open<MyTracksDialogComponent, any>(MyTracksDialogComponent, {
+      width: '1080px',
+      data: {
+        tracks: rows,
+        userId: this.userId,
+        personalNickname: this.personalNickname
+      }
+    });
+  }
+
+  private buildMyTrackRows(): MyTrackRow[] {
+    const nickname = this.personalNickname;
+    return this.events.flatMap(event =>
+      (event.tracks || [])
+        .filter(track => track.createdBy === this.userId || (!!nickname && track.nickname === nickname))
+        .map(track => ({
+          eventId: event.id,
+          trackId: track.id,
+          eventName: event.name,
+          year: event.year,
+          population: event.population,
+          distanceKm: Number(track.distanceKm),
+          timeSeconds: Number(track.timeSeconds),
+          totalTimeSeconds: Number(track.tiempoReal ?? track.timeSeconds),
+          gpxData: track.gpxData,
+          gpxAsset: track.gpxAsset,
+          fileName: track.fileName,
+          canDelete: this.canDeleteTrack(track)
+        }))
+    );
   }
 }

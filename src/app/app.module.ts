@@ -24,6 +24,7 @@ import { RegisterDialogComponent } from './register-dialog/register-dialog.compo
 import { InfoDialogComponent } from './info-dialog/info-dialog.component';
 import { VerificationDialogComponent } from './verification-dialog/verification-dialog.component';
 import { AuthInterceptor } from './services/auth.interceptor';
+import { MyTracksDialogComponent } from './my-tracks-dialog/my-tracks-dialog.component';
 
 @NgModule({
   declarations: [
@@ -39,7 +40,8 @@ import { AuthInterceptor } from './services/auth.interceptor';
     LoginDialogComponent,
     RegisterDialogComponent,
     InfoDialogComponent,
-    VerificationDialogComponent
+    VerificationDialogComponent,
+    MyTracksDialogComponent
   ],
   imports: [
     MatCheckboxModule,

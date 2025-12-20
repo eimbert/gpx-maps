@@ -27,15 +27,6 @@
           {{ option.name }}
         </option>
       </select>
-      <button
-        type="button"
-        class="toggle-3d-btn"
-        (click)="toggle3D()"
-        [attr.aria-pressed]="is3DEnabled"
-        aria-label="Alternar vista 3D"
-      >
-        {{ is3DEnabled ? 'Vista 3D activada' : 'Activar vista 3D' }}
-      </button>
     </div>
 
     <a class="start-btn" routerLink="/">Volver al inicio</a>

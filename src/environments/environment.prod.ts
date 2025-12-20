@@ -5,5 +5,6 @@ export const environment = {
   resendVerificationUrl: '/api/auth/resend-verification',
   meUrl: '/api/auth/me',
   routesApiBase: '/api/routes',
-  tracksApiBase: '/api/tracks'
+  tracksApiBase: '/api/tracks',
+  mapTilerKey: 'ketqFEpljkeNWsZH7lME'
 };

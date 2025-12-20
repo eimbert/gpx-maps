@@ -4,6 +4,7 @@ import { HttpClient } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 
 import * as L from 'leaflet';
+import '@maplibre/maplibre-gl-leaflet';
 import { RecorderService } from '../recording/recorder.service';
 import { EventTrack, RaceEvent } from '../interfaces/events';
 import { environment } from '../../environments/environment';
@@ -140,6 +141,10 @@ export class MapComponent implements OnInit, AfterViewInit {
   ];
   selectedBaseLayerId = this.baseLayerOptions.find((option) => option.id === 'street')?.id ?? this.baseLayerOptions[0]?.id ?? '';
   private baseLayer: L.TileLayer | null = null;
+  is3DEnabled = false;
+  private mapLibreLayer: L.MaplibreGL | null = null;
+  private readonly mapLibrePitch = 55;
+  private readonly mapLibreBearing = -17;
 
   constructor(
     private route: ActivatedRoute,
@@ -627,11 +632,22 @@ export class MapComponent implements OnInit, AfterViewInit {
 
   onBaseLayerChange(baseLayerId: string): void {
     this.selectedBaseLayerId = baseLayerId;
+    if (this.is3DEnabled) {
+      this.disable3DLayer();
+    }
     this.applyBaseLayer();
   }
 
+  toggle3D(): void {
+    if (this.is3DEnabled) {
+      this.disable3DLayer();
+    } else {
+      this.enable3DLayer();
+    }
+  }
+
   private applyBaseLayer(): void {
-    if (!this.map) return;
+    if (!this.map || this.is3DEnabled) return;
 
     const option = this.baseLayerOptions.find((o) => o.id === this.selectedBaseLayerId) ?? this.baseLayerOptions[0];
     if (!option) return;
@@ -644,6 +660,54 @@ export class MapComponent implements OnInit, AfterViewInit {
       maxZoom: option.maxZoom ?? 19,
       attribution: option.attribution
     }).addTo(this.map);
+  }
+
+  private buildTerrainStyleUrl(): string {
+    return `https://api.maptiler.com/maps/terrain/style.json?key=${environment.mapTilerKey}`;
+  }
+
+  private enable3DLayer(): void {
+    if (!this.map) return;
+
+    try {
+      if (this.baseLayer) {
+        this.map.removeLayer(this.baseLayer);
+        this.baseLayer = null;
+      }
+      if (this.mapLibreLayer) {
+        this.map.removeLayer(this.mapLibreLayer);
+      }
+
+      this.mapLibreLayer = L.maplibreGL({
+        style: this.buildTerrainStyleUrl(),
+        pitch: this.mapLibrePitch,
+        bearing: this.mapLibreBearing,
+        maxPitch: 85,
+        attributionControl: {
+          compact: true
+        },
+        interactive: false
+      });
+
+      this.mapLibreLayer.addTo(this.map);
+      this.is3DEnabled = true;
+    } catch (err) {
+      console.error('No se pudo habilitar la vista 3D:', err);
+      this.mapLibreLayer = null;
+      this.is3DEnabled = false;
+      this.applyBaseLayer();
+    }
+  }
+
+  private disable3DLayer(): void {
+    if (!this.map) return;
+
+    if (this.mapLibreLayer) {
+      this.map.removeLayer(this.mapLibreLayer);
+      this.mapLibreLayer = null;
+    }
+    this.is3DEnabled = false;
+    this.applyBaseLayer();
   }
 
   private attachTrackLayers(): void {

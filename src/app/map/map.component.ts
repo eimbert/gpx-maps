@@ -132,7 +132,7 @@ export class MapComponent implements OnInit, AfterViewInit {
       attribution: '© OpenStreetMap contributors'
     }
   ];
-  selectedBaseLayerId = this.baseLayerOptions[0]?.id ?? '';
+  selectedBaseLayerId = this.baseLayerOptions.find((option) => option.id === 'street')?.id ?? this.baseLayerOptions[0]?.id ?? '';
   private baseLayer: L.TileLayer | null = null;
 
   constructor(

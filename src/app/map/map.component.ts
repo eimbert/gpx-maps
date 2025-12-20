@@ -55,6 +55,7 @@ export class MapComponent implements OnInit, AfterViewInit {
   removeStops = false;  // quitar paradas largas
 
   showStartOverlay = true;
+  countdownValue: string | null = null;
   private startArmed = false;
   private autoStartRequested = false;
   private autoStartDone = false;
@@ -63,6 +64,9 @@ export class MapComponent implements OnInit, AfterViewInit {
   private musicEnabled = true;
   private recordingEnabled = false;
   private recordingAspect: '16:9' | '9:16' = '16:9';
+  private countdownTimer: number | null = null;
+  private countdownInProgress = false;
+  private startSequenceLaunched = false;
   isVerticalViewport = false;
   showRanking = false;
   ranking: RankingEntry[] = [];
@@ -278,6 +282,7 @@ export class MapComponent implements OnInit, AfterViewInit {
     if (this.map) {
       this.attachTrackLayers();
       this.hasTracksReady = this.startIfReady();
+      this.startCountdown();
       void this.autoStartIfRequested();
     }
   }
@@ -460,6 +465,7 @@ export class MapComponent implements OnInit, AfterViewInit {
       this.applyAspectViewport().then(() => {
         this.attachTrackLayers();
         this.hasTracksReady = this.startIfReady();
+        this.startCountdown();
         void this.autoStartIfRequested();
       });
     }, 0);
@@ -478,16 +484,53 @@ export class MapComponent implements OnInit, AfterViewInit {
     // window.addEventListener('keydown', unlock, { once: true });
   }
 
-  async onStartClick(): Promise<void> {
+  private startCountdown(): void {
+    if (this.countdownInProgress || this.startSequenceLaunched || !this.hasTracksReady) {
+      return;
+    }
+
+    this.showStartOverlay = true;
+    this.startArmed = true;
+    this.countdownInProgress = true;
+    this.countdownValue = '5';
+
+    let current = 5;
+    this.clearCountdownTimer();
+    this.countdownTimer = window.setInterval(() => {
+      current -= 1;
+      if (current > 0) {
+        this.countdownValue = current.toString();
+        return;
+      }
+
+      this.clearCountdownTimer();
+      this.countdownValue = 'GO';
+      setTimeout(() => {
+        void this.startRaceFlow();
+      }, 750);
+    }, 1000);
+  }
+
+  private clearCountdownTimer(): void {
+    if (this.countdownTimer !== null) {
+      window.clearInterval(this.countdownTimer);
+      this.countdownTimer = null;
+    }
+  }
+
+  private async startRaceFlow(): Promise<void> {
+    if (this.startSequenceLaunched) return;
+
+    this.startSequenceLaunched = true;
+    this.showRanking = false;
+    this.ranking = [];
+    this.autoStartDone = true;
+    this.autoStartRequested = false;
+    this.startArmed = true;
+
     try {
-      this.showRanking = false;
-      this.ranking = [];
-      this.autoStartDone = true;
-      this.autoStartRequested = false;
-      this.startArmed = true;
       await this.applyAspectViewport();
 
-      // 1) Empieza la grabación (elige “Pestaña” y marca audio de la pestaña)
       if (this.recordingEnabled) {
         const { width, height } = this.getVideoDimensions();
         await this.rec.startCapture({
@@ -500,22 +543,16 @@ export class MapComponent implements OnInit, AfterViewInit {
         });
       }
 
-      // 2) Arranca música (ya hay interacción del usuario)
       if (this.musicEnabled) {
         await this.audio.play().catch(() => { /* ignore */ });
       }
-
-      // 3) Lanza tu animación normal
-      this.showStartOverlay = false;
-      // arrancar animación si ya están los datos
-      if (this.hasTracksReady) {
-        this.afterInicio();
-      }
     } catch (e) {
       console.error('No se pudo iniciar la captura:', e);
-      // Puedes seguir sin grabar si quieres:
+    } finally {
       this.showStartOverlay = false;
-      this.startArmed = true;
+      this.countdownInProgress = false;
+      this.countdownValue = null;
+
       if (this.hasTracksReady) {
         this.afterInicio();
       }
@@ -529,15 +566,7 @@ export class MapComponent implements OnInit, AfterViewInit {
 
     this.autoStartDone = true;
     this.startArmed = true;
-    this.showStartOverlay = false;
-
-    await this.applyAspectViewport();
-
-    if (this.musicEnabled && this.audio) {
-      await this.audio.play().catch(() => { /* autoplay may fail silently */ });
-    }
-
-    this.afterInicio();
+    this.startCountdown();
   }
 
   private applyAspectViewport(): Promise<void> {

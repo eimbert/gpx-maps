@@ -10,7 +10,11 @@ export const environment = {
   meUrl: 'http://localhost:8080/api/auth/me?authorizationHeader',
   routesApiBase: 'http://localhost:8080/api/routes',
   tracksApiBase: 'http://localhost:8080/api/tracks',
-  mapLibreStyleUrl: 'https://maps.geoapify.com/v1/styles/osm-carto/style.json?apiKey=8aecae69e4a741e3999b70dd20dcc7b7'
+  mapLibreStyleUrl: 'https://maps.geoapify.com/v1/styles/osm-carto/style.json?apiKey=8aecae69e4a741e3999b70dd20dcc7b7',
+  mapLibreTerrainSourceUrl: 'https://demotiles.maplibre.org/terrain-tiles/tiles.json',
+  mapLibreTerrainExaggeration: 1.25,
+  mapLibreRasterTiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],
+  mapLibreRasterAttribution: '© OpenStreetMap contributors'
 };
 
 /*

@@ -5,9 +5,13 @@ import { firstValueFrom } from 'rxjs';
 
 import * as L from 'leaflet';
 import '@maplibre/maplibre-gl-leaflet';
+import { StyleSpecification } from 'maplibre-gl';
 import { RecorderService } from '../recording/recorder.service';
 import { EventTrack, RaceEvent } from '../interfaces/events';
 import { environment } from '../../environments/environment';
+
+type MapLibreLayer = NonNullable<StyleSpecification['layers']>[number];
+type TerrainStyle = Omit<StyleSpecification, 'layers'> & { layers: MapLibreLayer[] };
 
 interface TrackPoint { lat: number; lon: number; ele: number; time: string; }
 interface TPx extends TrackPoint { t: number; }
@@ -145,6 +149,26 @@ export class MapComponent implements OnInit, AfterViewInit {
   private mapLibreLayer: L.MaplibreGL | null = null;
   private readonly mapLibrePitch = 55;
   private readonly mapLibreBearing = -17;
+  private readonly mapLibreTerrainSourceUrl = environment.mapLibreTerrainSourceUrl || 'https://demotiles.maplibre.org/terrain-tiles/tiles.json';
+  private readonly mapLibreTerrainExaggeration = Number.isFinite(environment.mapLibreTerrainExaggeration)
+    ? environment.mapLibreTerrainExaggeration
+    : 1.25;
+  private readonly mapLibreRasterTiles = Array.isArray(environment.mapLibreRasterTiles) && environment.mapLibreRasterTiles.length
+    ? environment.mapLibreRasterTiles
+    : ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'];
+  private readonly mapLibreRasterAttribution = environment.mapLibreRasterAttribution || '© OpenStreetMap contributors';
+
+  // MapLibre types no incluyen capa "sky" en la especificación del estilo, así que ampliamos el tipo
+  // para evitar errores de compilación sin perder el tipado principal del estilo.
+  private static readonly skyLayer: { id: string; type: 'sky'; paint: Record<string, unknown> } = {
+    id: 'sky',
+    type: 'sky',
+    paint: {
+      'sky-type': 'atmosphere',
+      'sky-atmosphere-sun-intensity': 12,
+      'sky-opacity': ['interpolate', ['linear'], ['zoom'], 4, 0, 5, 1]
+    }
+  };
 
   constructor(
     private route: ActivatedRoute,
@@ -662,8 +686,46 @@ export class MapComponent implements OnInit, AfterViewInit {
     }).addTo(this.map);
   }
 
-  private buildTerrainStyleUrl(): string {
-    return environment.mapLibreStyleUrl;
+  private buildTerrainStyle(): TerrainStyle {
+    const baseStyle: TerrainStyle = {
+      version: 8,
+      sources: {
+        'raster-base': {
+          type: 'raster',
+          tiles: this.mapLibreRasterTiles,
+          tileSize: 256,
+          attribution: this.mapLibreRasterAttribution
+        },
+        'terrain-dem': {
+          type: 'raster-dem',
+          url: this.mapLibreTerrainSourceUrl,
+          tileSize: 256
+        }
+      },
+      layers: [
+        {
+          id: 'background',
+          type: 'background',
+          paint: { 'background-color': '#d9e8ff' }
+        },
+        {
+          id: 'raster-base',
+          type: 'raster',
+          source: 'raster-base',
+          minzoom: 0,
+          maxzoom: 19
+        }
+      ],
+      terrain: {
+        source: 'terrain-dem',
+        exaggeration: this.mapLibreTerrainExaggeration
+      }
+    };
+
+    // Insertamos la capa de cielo usando un tipo ampliado para evitar errores de typing.
+    baseStyle.layers.push(MapComponent.skyLayer as unknown as MapLibreLayer);
+
+    return baseStyle;
   }
 
   private enable3DLayer(): void {
@@ -679,7 +741,7 @@ export class MapComponent implements OnInit, AfterViewInit {
       }
 
       this.mapLibreLayer = L.maplibreGL({
-        style: this.buildTerrainStyleUrl(),
+        style: this.buildTerrainStyle(),
         pitch: this.mapLibrePitch,
         bearing: this.mapLibreBearing,
         maxPitch: 85,

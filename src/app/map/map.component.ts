@@ -663,7 +663,7 @@ export class MapComponent implements OnInit, AfterViewInit {
   }
 
   private startIfReady(): boolean {
-    if (this.started) return false;
+    if (this.started) return true;
 
     this.showRanking = false;
     this.ranking = [];

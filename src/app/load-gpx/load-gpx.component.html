@@ -132,8 +132,6 @@
                     <div class="event-profile">
                       <ng-container *ngIf="eventVisuals[event.id]?.profile?.points; else noProfile">
                         <div class="profile-chart-wrapper">
-                          <!-- <span class="axis-label axis-label--y">Altura</span>
-                          <span class="axis-label axis-label--x">Distancia</span> -->
                           <svg [attr.viewBox]="'0 0 ' + profileWidth + ' ' + profileHeight" preserveAspectRatio="none" class="profile-chart">
                             <g class="grid-lines">
                               <line
@@ -143,31 +141,32 @@
                                 [attr.y2]="y"
                                 [attr.x2]="profileWidth" />
                             </g>
-                            <g class="axis-ticks axis-ticks--y">
-                              <ng-container *ngFor="let tick of eventVisuals[event.id].profile?.yTicks">
-                                <text [attr.x]="0" [attr.y]="profileHeight - (tick.positionPct / 100) * profileHeight">
-                                  {{ tick.label }}
-                                </text>
-                              </ng-container>
-                            </g>
-                            <g class="axis-ticks axis-ticks--x">
-                              <ng-container *ngFor="let tick of eventVisuals[event.id].profile?.xTicks">
-                                <text
-                                  [attr.x]="(tick.positionPct / 100) * profileWidth"
-                                  [attr.y]="profileHeight - 2">
-                                  {{ tick.label }}
-                                </text>
-                              </ng-container>
-                            </g>
                             <polyline [attr.points]="eventVisuals[event.id].profile?.points"></polyline>
                           </svg>
+                          <div class="profile-legend" *ngIf="eventVisuals[event.id].profile as profile">
+                            <div class="legend-row">
+                              <span>Altura inicial:</span>
+                              <strong>{{ profile.stats.initialElevation | number: '1.0-0' }} m</strong>
+                            </div>
+                            <div class="legend-row">
+                              <span>Altura máxima:</span>
+                              <strong>{{ profile.stats.maxElevation | number: '1.0-0' }} m</strong>
+                            </div>
+                            <div class="legend-row">
+                              <span>Distancia:</span>
+                              <strong>{{ profile.stats.distanceKm | number: '1.0-1' }} km</strong>
+                            </div>
+                            <div class="legend-row">
+                              <span>Tracks subidos:</span>
+                              <strong>{{ event.tracks.length }}</strong>
+                            </div>
+                          </div>
                         </div>
                       </ng-container>
                       <ng-template #noProfile>
                         <p class="muted profile-empty">Perfil no disponible</p>
                       </ng-template>
                     </div>
-                    <p class="event-meta"><strong>Tracks:</strong> {{ event.tracks.length }}</p>
                   </div>
                   <div class="event-card__map">
                     <ng-container *ngIf="eventVisuals[event.id]?.trackPath; else missingTrack">

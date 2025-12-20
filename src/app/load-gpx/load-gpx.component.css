@@ -506,42 +506,27 @@
   height: 80px;
 }
 
-.axis-label {
-  position: absolute;
-  font-size: 10px;
-  color: #475569;
-  letter-spacing: 0.03em;
-}
-
-.axis-label--y {
-  top: 0;
-  left: 0;
-}
-
-.axis-label--x {
-  bottom: 0;
-  right: 0;
-}
-
-.axis-ticks text {
-  fill: #475569;
-  font-size: 9px;
-  dominant-baseline: hanging;
-}
-
-.axis-ticks--y text {
-  text-anchor: start;
-}
-
-.axis-ticks--x text {
-  text-anchor: middle;
-  font-size: 7px;
-  dominant-baseline: baseline;
-  transform: translateY(-1px);
-}
-
 .profile-empty {
   margin: 4px 0 0;
+}
+
+.profile-legend {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 6px 12px;
+  margin-top: 8px;
+  font-size: 12px;
+}
+
+.legend-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 8px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #fff;
+  color: #0f172a;
 }
 
 .event-card__map {

@@ -107,7 +107,7 @@
               class="event-card event-card--carousel"
               [class.event-card--active]="event.id === selectedEventId"
               [class.event-card--current]="i === carouselIndex"
-              [ngStyle]="{ 'background-image': getEventLogoBg(event) }"
+              
               (click)="handleCarouselSelection(event.id)"
             >
                 <div class="event-card__content">

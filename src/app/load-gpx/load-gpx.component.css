@@ -553,15 +553,15 @@
 }
 
 .event-logo img {
-  width: 140px;
-  height: 70px;
+  width: 183px;
+  height: 81px;
   object-fit: contain;
   border-radius: 8px;
   background-color: transparent;
 }
 .event-logo--badge {
-  width: 64px;
-  height: 64px;
+  width: 183px;
+  height: 81px;
 }
 
 .pill-group {

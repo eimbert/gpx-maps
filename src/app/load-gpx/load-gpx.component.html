@@ -168,7 +168,7 @@
                       </ng-template>
                     </div>
                   </div>
-                  <div class="event-card__map">
+                  <div class="event-card__map" [ngStyle]="getMapBackgroundStyle(event.id)">
                     <ng-container *ngIf="eventVisuals[event.id]?.trackPath; else missingTrack">
                       <svg viewBox="0 0 320 240" preserveAspectRatio="none" class="track-drawing">
                         <polyline [attr.points]="eventVisuals[event.id].trackPath"></polyline>

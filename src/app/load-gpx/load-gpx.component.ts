@@ -50,6 +50,7 @@ interface ProfileVisual {
 interface EventVisuals {
   profile: ProfileVisual | null;
   trackPath: string | null;
+  mapTileUrl: string | null;
 }
 
 @Component({
@@ -307,19 +308,20 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
   private async prepareEventVisuals(event: RaceEvent): Promise<void> {
     const gpxData = await this.resolveMasterGpxContent(event);
     if (!gpxData) {
-      this.updateEventVisuals(event.id, { profile: null, trackPath: null });
+      this.updateEventVisuals(event.id, { profile: null, trackPath: null, mapTileUrl: null });
       return;
     }
 
     const points = this.parseTrackPointsFromString(gpxData);
     if (!points.length) {
-      this.updateEventVisuals(event.id, { profile: null, trackPath: null });
+      this.updateEventVisuals(event.id, { profile: null, trackPath: null, mapTileUrl: null });
       return;
     }
 
     const profile = this.buildProfileVisual(points);
     const trackPath = this.buildTrackPolyline(points);
-    this.updateEventVisuals(event.id, { profile, trackPath });
+    const mapTileUrl = this.buildStaticTileUrl(points);
+    this.updateEventVisuals(event.id, { profile, trackPath, mapTileUrl });
   }
 
   private async resolveMasterGpxContent(event: RaceEvent): Promise<string | null> {
@@ -437,6 +439,51 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
       const y = innerHeight - ((point.lat - minLat) / latRange) * innerHeight + padding;
       return `${x.toFixed(1)},${y.toFixed(1)}`;
     }).join(' ');
+  }
+
+  private buildStaticTileUrl(points: TrackPoint[], zoomHint = 13): string | null {
+    if (!points.length) return null;
+
+    const lats = points.map(p => p.lat);
+    const lons = points.map(p => p.lon);
+    const minLat = Math.min(...lats);
+    const maxLat = Math.max(...lats);
+    const minLon = Math.min(...lons);
+    const maxLon = Math.max(...lons);
+    const latRange = maxLat - minLat;
+    const lonRange = maxLon - minLon;
+
+    const maxRange = Math.max(latRange, lonRange);
+    let zoom = zoomHint;
+    if (maxRange > 1) zoom = 8;
+    else if (maxRange > 0.5) zoom = 10;
+    else if (maxRange > 0.2) zoom = 11;
+    else if (maxRange > 0.1) zoom = 12;
+    else if (maxRange > 0.05) zoom = 13;
+    else if (maxRange > 0.02) zoom = 14;
+    else zoom = 15;
+
+    const centerLat = (minLat + maxLat) / 2;
+    const centerLon = (minLon + maxLon) / 2;
+    const tileCoords = this.latLonToTile(centerLat, centerLon, zoom);
+
+    return `https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/${zoom}/${tileCoords.y}/${tileCoords.x}`;
+  }
+
+  private latLonToTile(lat: number, lon: number, zoom: number): { x: number; y: number } {
+    const latRad = (lat * Math.PI) / 180;
+    const n = 2 ** zoom;
+    const x = Math.floor(((lon + 180) / 360) * n);
+    const y = Math.floor(
+      (1 - Math.log(Math.tan(latRad) + 1 / Math.cos(latRad)) / Math.PI) / 2 * n
+    );
+    return { x, y };
+  }
+
+  getMapBackgroundStyle(eventId: number): Record<string, string> {
+    const tileUrl = this.eventVisuals[eventId]?.mapTileUrl;
+    if (!tileUrl) return {};
+    return { '--event-map-url': `url('${tileUrl}')` };
   }
 
   nextEvent(manual = false): void {

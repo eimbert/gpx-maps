@@ -111,6 +111,24 @@
   outline: 2px solid rgba(99,102,241,0.6);
   outline-offset: 2px;
 }
+.toggle-3d-btn{
+  padding: 8px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(255,255,255,0.22);
+  background: linear-gradient(180deg, rgba(52,211,153,0.92), rgba(16,185,129,0.9));
+  color: #0f172a;
+  font: 800 12px/1 system-ui,-apple-system,Segoe UI,Roboto,Arial;
+  box-shadow: 0 6px 14px rgba(16,185,129,0.28);
+  cursor: pointer;
+  transition: transform .08s ease, box-shadow .12s ease, filter .12s ease;
+}
+.toggle-3d-btn:hover{ transform: translateY(-1px); box-shadow: 0 8px 18px rgba(16,185,129,0.38); }
+.toggle-3d-btn:active{ transform: translateY(0); filter: brightness(.96); }
+.toggle-3d-btn[aria-pressed="true"]{
+  background: linear-gradient(180deg, rgba(59,130,246,0.95), rgba(37,99,235,0.95));
+  color: #e0f2fe;
+  box-shadow: 0 8px 18px rgba(59,130,246,0.35);
+}
 .start-btn{
   pointer-events: auto;
   display: inline-flex;

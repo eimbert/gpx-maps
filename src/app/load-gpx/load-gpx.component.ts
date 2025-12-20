@@ -461,13 +461,17 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
     else if (maxRange > 0.1) zoom = 12;
     else if (maxRange > 0.05) zoom = 13;
     else if (maxRange > 0.02) zoom = 14;
-    else zoom = 15;
+    else if (maxRange > 0.01) zoom = 15;
+    else zoom = 16;
 
     const centerLat = (minLat + maxLat) / 2;
     const centerLon = (minLon + maxLon) / 2;
     const tileCoords = this.latLonToTile(centerLat, centerLon, zoom);
+    const streetTile = `https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/${zoom}/${tileCoords.y}/${tileCoords.x}`;
+    const imageryTile = `https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/${zoom}/${tileCoords.y}/${tileCoords.x}`;
+    const prefersImagery = zoom >= 15 && maxRange <= 0.02;
 
-    return `https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/${zoom}/${tileCoords.y}/${tileCoords.x}`;
+    return prefersImagery ? imageryTile : streetTile;
   }
 
   private latLonToTile(lat: number, lon: number, zoom: number): { x: number; y: number } {

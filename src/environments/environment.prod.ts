@@ -6,5 +6,5 @@ export const environment = {
   meUrl: '/api/auth/me',
   routesApiBase: '/api/routes',
   tracksApiBase: '/api/tracks',
-  mapTilerKey: 'ketqFEpljkeNWsZH7lME'
+  mapLibreStyleUrl: 'https://maps.geoapify.com/v1/styles/osm-carto/style.json?apiKey=8aecae69e4a741e3999b70dd20dcc7b7'
 };

@@ -37,6 +37,11 @@ interface ParsedTrackResult {
   durationSeconds: number;
 }
 
+interface EventVisuals {
+  profilePoints: string | null;
+  trackPath: string | null;
+}
+
 @Component({
   selector: 'app-load-gpx',
   templateUrl: './load-gpx.component.html',
@@ -45,6 +50,7 @@ interface ParsedTrackResult {
 export class LoadGpxComponent implements OnInit, OnDestroy {
   @ViewChild('fileInput') fileInputRef!: ElementRef<HTMLInputElement>;
   @ViewChild('eventFileInput') eventFileInputRef!: ElementRef<HTMLInputElement>;
+  @ViewChild('masterGpxInput') masterGpxInputRef!: ElementRef<HTMLInputElement>;
 
   readonly maxTracks = 5;
   readonly maxComparison = 4;
@@ -67,6 +73,8 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
   personalNickname = '';
   personalHistory: EventTrack[] = [];
   routeTrackTimes: RouteTrackTime[] = [];
+  eventVisuals: Record<number, EventVisuals> = {};
+  private pendingMasterUploadEventId: number | null = null;
 
   eventUpload = {
     category: 'Senior M' as RaceCategory,
@@ -130,6 +138,7 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
       this.events = events;
       this.syncCarouselIndex();
       this.restartCarouselTimer();
+      this.buildEventVisuals(events);
     });
   }
 
@@ -262,7 +271,132 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
 }
 
   getEventLogo(event: RaceEvent): string {
-    return `data:image/jpeg;base64,${event.logoBlob}` || 'assets/no-image.svg';
+    if (event.logoBlob) {
+      if (event.logoBlob.startsWith('data:image/')) return event.logoBlob;
+      return this.buildDataUrl(event.logoBlob, event.logoMime || 'image/jpeg');
+    }
+    return 'assets/no-image.svg';
+  }
+
+  private buildDataUrl(content: string, mime = 'image/png'): string {
+    return `data:${mime};base64,${(content || '').replace(/\s/g, '')}`;
+  }
+
+  private async buildEventVisuals(events: RaceEvent[]): Promise<void> {
+    for (const event of events) {
+      await this.prepareEventVisuals(event);
+    }
+  }
+
+  private updateEventVisuals(eventId: number, visuals: EventVisuals): void {
+    this.eventVisuals = { ...this.eventVisuals, [eventId]: visuals };
+  }
+
+  private async prepareEventVisuals(event: RaceEvent): Promise<void> {
+    const gpxData = await this.resolveMasterGpxContent(event);
+    if (!gpxData) {
+      this.updateEventVisuals(event.id, { profilePoints: null, trackPath: null });
+      return;
+    }
+
+    const points = this.parseTrackPointsFromString(gpxData);
+    if (!points.length) {
+      this.updateEventVisuals(event.id, { profilePoints: null, trackPath: null });
+      return;
+    }
+
+    const profilePoints = this.buildProfilePolyline(points.map(p => p.ele ?? 0));
+    const trackPath = this.buildTrackPolyline(points);
+    this.updateEventVisuals(event.id, { profilePoints, trackPath });
+  }
+
+  private async resolveMasterGpxContent(event: RaceEvent): Promise<string | null> {
+    const decodedMaster = this.decodeGpxContent(event.gpxMaster);
+    if (decodedMaster && this.isValidGpxData(decodedMaster)) {
+      return decodedMaster;
+    }
+
+    const firstTrack = event.tracks?.[0];
+    if (firstTrack?.gpxData && this.isValidGpxData(firstTrack.gpxData)) {
+      return firstTrack.gpxData;
+    }
+    if (firstTrack?.gpxAsset) {
+      try {
+        const data = await firstValueFrom(this.http.get(firstTrack.gpxAsset, { responseType: 'text' }));
+        if (this.isValidGpxData(data)) return data;
+      } catch { /* ignore */ }
+    }
+    return null;
+  }
+
+  private decodeGpxContent(raw?: string | null): string | null {
+    if (!raw) return null;
+    const trimmed = raw.trim();
+    if (trimmed.includes('<')) return trimmed;
+    const base64 = trimmed.startsWith('data:') ? trimmed.split(',')[1] ?? '' : trimmed;
+    try {
+      return decodeURIComponent(escape(atob(base64.replace(/\s/g, ''))));
+    } catch {
+      try {
+        return atob(base64.replace(/\s/g, ''));
+      } catch {
+        return null;
+      }
+    }
+  }
+
+  private parseTrackPointsFromString(gpxData: string): TrackPoint[] {
+    try {
+      const parser = new DOMParser();
+      const gpx = parser.parseFromString(gpxData, 'application/xml');
+      const trkpts = Array.from(gpx.getElementsByTagName('trkpt'));
+      if (gpx.getElementsByTagName('parsererror').length || !trkpts.length) return [];
+      return trkpts.map(pt => ({
+        lat: parseFloat(pt.getAttribute('lat') || '0'),
+        lon: parseFloat(pt.getAttribute('lon') || '0'),
+        ele: parseFloat(pt.getElementsByTagName('ele')[0]?.textContent || '0'),
+        time: pt.getElementsByTagName('time')[0]?.textContent || '',
+        hr: pt.getElementsByTagName('ns3:hr')[0] ? parseInt(pt.getElementsByTagName('ns3:hr')[0].textContent || '0') : null
+      })).filter(p => Number.isFinite(p.lat) && Number.isFinite(p.lon));
+    } catch {
+      return [];
+    }
+  }
+
+  private buildProfilePolyline(elevations: number[], width = 240, height = 80): string | null {
+    if (!elevations.length) return null;
+    const min = Math.min(...elevations);
+    const max = Math.max(...elevations);
+    const range = Math.max(1, max - min);
+    const safeWidth = Math.max(1, width);
+    const safeHeight = Math.max(1, height);
+
+    return elevations.map((ele, idx) => {
+      const x = (idx / Math.max(1, elevations.length - 1)) * safeWidth;
+      const y = safeHeight - ((ele - min) / range) * safeHeight;
+      return `${x.toFixed(1)},${y.toFixed(1)}`;
+    }).join(' ');
+  }
+
+  private buildTrackPolyline(points: TrackPoint[], width = 320, height = 240): string | null {
+    if (!points.length) return null;
+    const lats = points.map(p => p.lat);
+    const lons = points.map(p => p.lon);
+    const minLat = Math.min(...lats);
+    const maxLat = Math.max(...lats);
+    const minLon = Math.min(...lons);
+    const maxLon = Math.max(...lons);
+    const latRange = Math.max(1e-6, maxLat - minLat);
+    const lonRange = Math.max(1e-6, maxLon - minLon);
+    const padding = 10;
+    const innerWidth = Math.max(1, width - padding * 2);
+    const innerHeight = Math.max(1, height - padding * 2);
+
+    return points.map(point => {
+      const x = ((point.lon - minLon) / lonRange) * innerWidth + padding;
+      const y = innerHeight - ((point.lat - minLat) / latRange) * innerHeight + padding;
+      return `${x.toFixed(1)},${y.toFixed(1)}`;
+    }).join(' ');
   }
 
   nextEvent(manual = false): void {
@@ -286,6 +420,73 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
   handleCarouselSelection(eventId: number): void {
     if (!this.ensureEventsAccess()) return;
     this.selectEvent(eventId);
+  }
+
+  canUploadMasterGpx(event: RaceEvent): boolean {
+    return this.isAuthenticated && event.createdBy === this.userId;
+  }
+
+  promptMasterGpxUpload(eventId: number): void {
+    if (!this.ensureEventsAccess()) return;
+    this.pendingMasterUploadEventId = eventId;
+    if (this.masterGpxInputRef?.nativeElement) {
+      this.masterGpxInputRef.nativeElement.click();
+    }
+  }
+
+  async onMasterGpxFileChange(event: Event): Promise<void> {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0] ?? null;
+    if (!file) return;
+
+    if (!file.name.toLowerCase().endsWith('.gpx')) {
+      this.showMessage('Selecciona un archivo GPX válido.');
+      this.resetMasterGpxInput();
+      return;
+    }
+
+    const gpxData = await this.readFileAsText(file);
+    if (!this.isValidGpxData(gpxData)) {
+      this.showMessage('El archivo no es un GPX válido.');
+      this.resetMasterGpxInput();
+      return;
+    }
+
+    const targetEventId = this.pendingMasterUploadEventId;
+    if (!targetEventId) {
+      this.resetMasterGpxInput();
+      return;
+    }
+
+    this.eventService.updateGpxMaster(targetEventId, {
+      gpxMaster: this.encodeGpxContent(gpxData),
+      gpxMasterFileName: file.name
+    }).subscribe({
+      next: updated => {
+        this.events = this.events.map(ev => ev.id === updated.id ? updated : ev);
+        void this.prepareEventVisuals(updated);
+        this.resetMasterGpxInput();
+      },
+      error: () => {
+        this.showMessage('No se pudo guardar el track maestro.');
+        this.resetMasterGpxInput();
+      }
+    });
+  }
+
+  private resetMasterGpxInput(): void {
+    this.pendingMasterUploadEventId = null;
+    if (this.masterGpxInputRef?.nativeElement) {
+      this.masterGpxInputRef.nativeElement.value = '';
+    }
+  }
+
+  private encodeGpxContent(content: string): string {
+    try {
+      return btoa(unescape(encodeURIComponent(content)));
+    } catch {
+      return btoa(content);
+    }
   }
 
   restartCarouselTimer(): void {

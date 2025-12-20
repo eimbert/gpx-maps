@@ -95,6 +95,7 @@
           <span class="home-button__label">Volver al inicio</span>
         </button>
       </div>
+      <input #masterGpxInput type="file" accept=".gpx" hidden (change)="onMasterGpxFileChange($event)" />
 
       <ng-container *ngIf="events.length; else emptyEvents">
         <div class="events-carousel">
@@ -109,29 +110,59 @@
               [ngStyle]="{ 'background-image': getEventLogoBg(event) }"
               (click)="handleCarouselSelection(event.id)"
             >
-                <div class="event-card__header">
-                  <div>
+                <div class="event-card__content">
+                  <div class="event-card__info">
                     <p class="eyebrow">{{ event.year }}</p>
-                    <h3>{{ event.name }}</h3>
-                    <p class="muted">{{ getEventLocation(event) }}</p>
-                  </div>
-                </div>
-                <div class="pill-group">
-                  <span class="pill" *ngFor="let modality of event.modalities">{{ modality.name }} · {{ modality.distanceKm }} km</span>
-                </div>
-                <p class="muted">{{ event.tracks.length }} tracks subidos</p>
-                <div class="event-card__ranking" *ngIf="getEventRanking(event, 5).length">
-                  <p class="eyebrow">Top tiempos</p>
-                  <ol>
-                    <li *ngFor="let track of getEventRanking(event, 5); index as i">
-                      <span class="position">#{{ i + 1 }}</span>
-                      <div class="event-card__runner">
-                        <p class="strong">{{ track.nickname }}</p>
-                        <p class="muted">{{track.category}} · {{ findModalityNameForEvent(event, track.modalityId) }}</p>
+                    <div class="event-card__title-row">
+                      <div class="event-logo event-logo--badge">
+                        <ng-container *ngIf="event.logoBlob; else logoPlaceholderSmall">
+                          <img [src]="getEventLogo(event)" [alt]="event.name + ' logo'" />
+                        </ng-container>
+                        <ng-template #logoPlaceholderSmall>
+                          <span class="muted">Logo</span>
+                        </ng-template>
                       </div>
-                      <span class="time">{{ formatTime(track.timeSeconds) }}</span>
-                    </li>
-                  </ol>
+                      <div>
+                        <p class="event-card__title">{{ event.name }}</p>
+                        <p class="muted event-card__subtitle">{{ getEventLocation(event) || 'Ubicación pendiente' }}</p>
+                      </div>
+                    </div>
+                    <p class="event-meta"><strong>Población:</strong> {{ event.population || 'Sin datos' }}</p>
+                    <p class="event-meta"><strong>Comunidad:</strong> {{ event.autonomousCommunity || 'Sin datos' }}</p>
+                    <div class="event-profile">
+                      <div class="event-profile__header">
+                        <span class="eyebrow">Perfil</span>
+                      </div>
+                      <ng-container *ngIf="eventVisuals[event.id]?.profilePoints; else noProfile">
+                        <svg viewBox="0 0 240 80" preserveAspectRatio="none" class="profile-chart">
+                          <polyline [attr.points]="eventVisuals[event.id].profilePoints"></polyline>
+                        </svg>
+                      </ng-container>
+                      <ng-template #noProfile>
+                        <p class="muted profile-empty">Perfil no disponible</p>
+                      </ng-template>
+                    </div>
+                    <p class="event-meta"><strong>Tracks:</strong> {{ event.tracks.length }}</p>
+                  </div>
+                  <div class="event-card__map">
+                    <ng-container *ngIf="eventVisuals[event.id]?.trackPath; else missingTrack">
+                      <svg viewBox="0 0 320 240" preserveAspectRatio="none" class="track-drawing">
+                        <polyline [attr.points]="eventVisuals[event.id].trackPath"></polyline>
+                      </svg>
+                    </ng-container>
+                    <ng-template #missingTrack>
+                      <div class="no-track">
+                        <p class="muted">No se dispone de track</p>
+                        <button
+                          *ngIf="canUploadMasterGpx(event)"
+                          type="button"
+                          class="secondary"
+                          (click)="promptMasterGpxUpload(event.id); $event.stopPropagation();">
+                          Subir track
+                        </button>
+                      </div>
+                    </ng-template>
+                  </div>
                 </div>
 
               </article>

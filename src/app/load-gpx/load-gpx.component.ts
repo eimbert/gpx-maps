@@ -37,17 +37,14 @@ interface ParsedTrackResult {
   durationSeconds: number;
 }
 
-interface AxisTick {
-  label: string;
-  positionPct: number;
-  value: number;
-}
-
 interface ProfileVisual {
   points: string;
-  xTicks: AxisTick[];
-  yTicks: AxisTick[];
   gridLinesY: number[];
+  stats: {
+    initialElevation: number;
+    maxElevation: number;
+    distanceKm: number;
+  };
 }
 
 interface EventVisuals {
@@ -384,7 +381,6 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
     const elevations = points.map(p => p.ele ?? 0);
     const distances = this.buildCumulativeDistances(points);
     const initialEle = elevations[0];
-    const averageEle = elevations.reduce((sum, ele) => sum + ele, 0) / elevations.length;
     const minEle = Math.min(...elevations);
     const maxEle = Math.max(...elevations);
     const eleRange = Math.max(1, maxEle - minEle);
@@ -398,11 +394,17 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
       return `${x.toFixed(1)},${y.toFixed(1)}`;
     }).join(' ');
 
-    const yTicks = this.buildElevationTicks(initialEle, averageEle, maxEle, minEle, eleRange);
-    const xTicks = this.buildDistanceTicks(totalDistance);
-    const gridLinesY = yTicks.map(tick => safeHeight - ((tick.value - minEle) / eleRange) * safeHeight);
+    const gridLinesY = [0.25, 0.5, 0.75].map(ratio => safeHeight - ratio * safeHeight);
 
-    return { points: pointsStr, xTicks, yTicks, gridLinesY };
+    return {
+      points: pointsStr,
+      gridLinesY,
+      stats: {
+        initialElevation: initialEle,
+        maxElevation: maxEle,
+        distanceKm: totalDistance / 1000
+      }
+    };
   }
 
   private buildCumulativeDistances(points: TrackPoint[]): number[] {
@@ -414,60 +416,6 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
       distances.push(distances[i - 1] + delta);
     }
     return distances;
-  }
-
-  private buildElevationTicks(initialEle: number, averageEle: number, maxEle: number, minEle: number, eleRange: number): AxisTick[] {
-    const ticks = [
-      { value: initialEle, label: `${Math.round(initialEle)}` },
-      { value: averageEle, label: `${Math.round(averageEle)}` },
-      { value: maxEle, label: `${Math.round(maxEle)}` }
-    ];
-
-    const seen = new Set<string>();
-    return ticks
-      .filter(tick => {
-        const key = tick.value.toFixed(2);
-        if (seen.has(key)) return false;
-        seen.add(key);
-        return true;
-      })
-      .sort((a, b) => a.value - b.value)
-      .map(tick => ({
-        ...tick,
-        positionPct: ((tick.value - minEle) / Math.max(1, eleRange)) * 100
-      }));
-  }
-
-  private buildDistanceTicks(totalDistanceMeters: number): AxisTick[] {
-    if (totalDistanceMeters <= 0) return [];
-
-    const middle = totalDistanceMeters / 2;
-    const ticks = [
-      { value: 0, label: this.formatDistanceLabel(0) },
-      { value: middle, label: this.formatDistanceLabel(middle) },
-      { value: totalDistanceMeters, label: this.formatDistanceLabel(totalDistanceMeters) }
-    ];
-
-    const seen = new Set<string>();
-    return ticks
-      .filter(tick => {
-        const key = tick.value.toFixed(2);
-        if (seen.has(key)) return false;
-        seen.add(key);
-        return true;
-      })
-      .sort((a, b) => a.value - b.value)
-      .map(tick => ({
-        ...tick,
-        positionPct: totalDistanceMeters ? (tick.value / totalDistanceMeters) * 100 : 0
-      }));
-  }
-
-  private formatDistanceLabel(distanceMeters: number): string {
-    if (distanceMeters === 0) return '0 km';
-    const km = distanceMeters / 1000;
-    const decimals = km >= 10 ? 0 : 1;
-    return `${km.toFixed(decimals)} km`;
   }
 
   private buildTrackPolyline(points: TrackPoint[], width = 320, height = 240): string | null {

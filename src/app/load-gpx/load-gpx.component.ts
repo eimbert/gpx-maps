@@ -550,7 +550,7 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
     dialogRef.afterClosed().subscribe(result => {
       if (!result?.event) return;
       const payload: CreateEventPayload = { ...result.event, createdBy: this.userId };
-      //console.log("CreateEventPayload: ", payload)
+      console.log("CreateEventPayload: ", payload)
       this.eventService.createEvent(payload).subscribe({
         next: created => {
           this.selectMode('events');

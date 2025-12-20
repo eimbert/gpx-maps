@@ -130,13 +130,14 @@
                     <p class="event-meta"><strong>Población:</strong> {{ event.population || 'Sin datos' }}</p>
                     <p class="event-meta"><strong>Comunidad:</strong> {{ event.autonomousCommunity || 'Sin datos' }}</p>
                     <div class="event-profile">
-                      <div class="event-profile__header">
-                        <span class="eyebrow">Perfil</span>
-                      </div>
                       <ng-container *ngIf="eventVisuals[event.id]?.profilePoints; else noProfile">
-                        <svg viewBox="0 0 240 80" preserveAspectRatio="none" class="profile-chart">
-                          <polyline [attr.points]="eventVisuals[event.id].profilePoints"></polyline>
-                        </svg>
+                        <div class="profile-chart-wrapper">
+                          <span class="axis-label axis-label--y">Altura</span>
+                          <span class="axis-label axis-label--x">Distancia</span>
+                          <svg viewBox="0 0 240 80" preserveAspectRatio="none" class="profile-chart">
+                            <polyline [attr.points]="eventVisuals[event.id].profilePoints"></polyline>
+                          </svg>
+                        </div>
                       </ng-container>
                       <ng-template #noProfile>
                         <p class="muted profile-empty">Perfil no disponible</p>

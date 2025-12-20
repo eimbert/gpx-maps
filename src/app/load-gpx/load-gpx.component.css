@@ -482,16 +482,9 @@
   border: 1px dashed #cbd5e1;
 }
 
-.event-profile__header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 6px;
-}
-
-.profile-chart {
-  width: 100%;
-  height: 80px;
+.profile-chart-wrapper {
+  position: relative;
+  padding: 6px 0 0 0;
 }
 
 .profile-chart polyline {
@@ -500,6 +493,28 @@
   stroke-width: 2;
   stroke-linecap: round;
   stroke-linejoin: round;
+}
+
+.profile-chart {
+  width: 100%;
+  height: 80px;
+}
+
+.axis-label {
+  position: absolute;
+  font-size: 10px;
+  color: #475569;
+  letter-spacing: 0.03em;
+}
+
+.axis-label--y {
+  top: 0;
+  left: 0;
+}
+
+.axis-label--x {
+  bottom: 0;
+  right: 0;
 }
 
 .profile-empty {

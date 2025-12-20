@@ -130,6 +130,15 @@ export class EventService {
     );
   }
 
+  getMyTracks(): Observable<EventTrack[]> {
+    return this.http.get<EventTrack[]>(`${this.tracksApiBase}/me`).pipe(
+      map(tracks => (tracks || []).map(track => {
+        const routeId = this.resolveTrackRouteId(track);
+        return this.normalizeTrack(track, routeId);
+      }))
+    );
+  }
+
   private loadFallbackEvents(): Observable<RaceEvent[]> {
     return this.http.get<RaceEvent[]>('assets/events.json').pipe(
       map(events => this.normalizeEvents(events)),
@@ -187,9 +196,18 @@ export class EventService {
   }
 
   private normalizeTrack(track: EventTrack, routeId: number): EventTrack {
+    const timeSeconds = Number(track.timeSeconds);
+    const tiempoReal = track.tiempoReal === undefined || track.tiempoReal === null
+      ? track.tiempoReal ?? undefined
+      : Number(track.tiempoReal);
+    const distanceKm = Number(track.distanceKm);
+
     return {
       ...track,
       id: Number(track.id),
+      timeSeconds: Number.isFinite(timeSeconds) ? timeSeconds : 0,
+      tiempoReal: tiempoReal === undefined || Number.isFinite(tiempoReal) ? tiempoReal : undefined,
+      distanceKm: Number.isFinite(distanceKm) ? distanceKm : 0,
       routeId: track.routeId ?? routeId,
       modalityId: track.modalityId === null || track.modalityId === undefined
         ? null
@@ -198,6 +216,12 @@ export class EventService {
         ? track.createdBy ?? undefined
         : Number(track.createdBy)
     };
+  }
+
+  private resolveTrackRouteId(track: EventTrack): number {
+    const routeId = (track as any).routeId ?? (track as any).route_id ?? 0;
+    const numericId = Number(routeId);
+    return Number.isFinite(numericId) ? numericId : 0;
   }
 
   private buildLogoDataUrl(logoBlob?: string | null, logoMime?: string | null): string | undefined {

@@ -19,7 +19,9 @@ export class EventCreateDialogComponent {
     autonomousCommunity: '',
     year: new Date().getFullYear(),
     logoBlob: '',
-    logoMime: ''
+    logoMime: '',
+    gpxMaster: '',
+    gpxMasterFileName: ''
   };
 
   constructor(
@@ -59,6 +61,8 @@ export class EventCreateDialogComponent {
       year: this.newEvent.year,
       logoBlob: this.newEvent.logoBlob || null,
       logoMime: this.newEvent.logoMime || null,
+      gpxMaster: this.newEvent.gpxMaster || null,
+      gpxMasterFileName: this.newEvent.gpxMasterFileName || null,
     };
 
     this.dialogRef.close({ event });
@@ -77,5 +81,45 @@ export class EventCreateDialogComponent {
       this.newEvent.logoBlob = logoBlob || '';
     };
     reader.readAsDataURL(file);
+  }
+
+  async handleGpxUpload(event: Event): Promise<void> {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (!file) return;
+
+    if (!file.name.toLowerCase().endsWith('.gpx')) {
+      this.showMessage('Selecciona un archivo GPX válido.');
+      input.value = '';
+      return;
+    }
+
+    const text = await file.text();
+    if (!this.isValidGpx(text)) {
+      this.showMessage('El archivo GPX no parece válido.');
+      input.value = '';
+      return;
+    }
+
+    this.newEvent.gpxMaster = this.encodeBase64(text);
+    this.newEvent.gpxMasterFileName = file.name;
+  }
+
+  private isValidGpx(content: string): boolean {
+    try {
+      const parser = new DOMParser();
+      const gpx = parser.parseFromString(content, 'application/xml');
+      return !gpx.getElementsByTagName('parsererror').length && gpx.getElementsByTagName('trkpt').length > 0;
+    } catch {
+      return false;
+    }
+  }
+
+  private encodeBase64(content: string): string {
+    try {
+      return btoa(unescape(encodeURIComponent(content)));
+    } catch {
+      return btoa(content);
+    }
   }
 }

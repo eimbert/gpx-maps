@@ -25,6 +25,10 @@
       <input type="number" [(ngModel)]="newEvent.year" />
     </label>
     <label>
+      <span>Track GPX maestro (opcional)</span>
+      <input type="file" accept=".gpx" (change)="handleGpxUpload($event)" />
+    </label>
+    <label>
       <span>Logo (opcional)</span>
       <input type="file" accept="image/*" (change)="handleLogoUpload($event)" />
     </label>

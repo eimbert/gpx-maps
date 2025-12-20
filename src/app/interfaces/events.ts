@@ -49,6 +49,8 @@ export interface CreateEventPayload {
   year: number;
   logoBlob?: string | null;
   logoMime?: string | null;
+  gpxMaster?: string | null;
+  gpxMasterFileName?: string | null;
   createdBy?: number;
 }
 
@@ -79,6 +81,8 @@ export interface RaceEvent {
   //logo?: string;
   logoBlob?: string | null;
   logoMime?: string | null;
+  gpxMaster?: string | null;
+  gpxMasterFileName?: string | null;
   modalities: EventModality[];
   tracks: EventTrack[];
   createdBy?: number;

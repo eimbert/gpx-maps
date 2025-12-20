@@ -9,6 +9,10 @@ type CreateEventResponse = {
   id: number;
   message?: string | null;
 };
+type UpdateGpxMasterPayload = {
+  gpxMaster: string;
+  gpxMasterFileName?: string | null;
+};
 
 
 @Injectable({ providedIn: 'root' })
@@ -54,6 +58,16 @@ export class EventService {
         return this.normalizeEvent(event);
       }),
       tap(event => this.events$.next([...this.events$.value, event]))
+    );
+  }
+
+  updateGpxMaster(routeId: number, payload: UpdateGpxMasterPayload): Observable<RaceEvent> {
+    return this.http.put<RaceEvent>(`${this.routesApiBase}/${routeId}/gpx-master`, payload).pipe(
+      map(event => this.normalizeEvent(event)),
+      tap(event => {
+        const updated = this.events$.value.map(current => current.id === event.id ? event : current);
+        this.events$.next(updated);
+      })
     );
   }
 
@@ -138,6 +152,8 @@ export class EventService {
     const logoMime = (event as any).logoMime ?? null;
     const logo = event.logoBlob || this.buildLogoDataUrl(logoBlob, logoMime);
     console.log("LOGO: ", logo)
+    const gpxMaster = (event as any).gpxMaster ?? (event as any).gpx_master ?? null;
+    const gpxMasterFileName = (event as any).gpxMasterFileName ?? (event as any).gpx_master_file_name ?? null;
 
     const routeId = Number(event.id);
     const modalities = (event.modalities || []).map(modality => ({
@@ -161,6 +177,8 @@ export class EventService {
       autonomousCommunity,
       logoBlob,
       logoMime,
+      gpxMaster,
+      gpxMasterFileName,
       modalities,
       tracks,
       

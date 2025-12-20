@@ -437,6 +437,105 @@
   align-items: center;
   width: fit-content;
 }
+.event-card__content {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 14px;
+  align-items: stretch;
+}
+
+.event-card__info {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.event-card__title-row {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 10px;
+}
+
+.event-card__title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 900;
+  color: #0f172a;
+}
+
+.event-card__subtitle {
+  margin: 0;
+  font-size: 14px;
+}
+
+.event-meta {
+  margin: 0;
+  color: #0f172a;
+  font-weight: 600;
+}
+
+.event-profile {
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: #f8fafc;
+  border: 1px dashed #cbd5e1;
+}
+
+.event-profile__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.profile-chart {
+  width: 100%;
+  height: 80px;
+}
+
+.profile-chart polyline {
+  fill: none;
+  stroke: #0f172a;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.profile-empty {
+  margin: 4px 0 0;
+}
+
+.event-card__map {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  min-height: 220px;
+  display: grid;
+  place-items: center;
+  padding: 10px;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.5);
+}
+
+.track-drawing {
+  width: 100%;
+  height: 100%;
+}
+
+.track-drawing polyline {
+  fill: none;
+  stroke: #2563eb;
+  stroke-width: 3;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+.no-track {
+  text-align: center;
+  display: grid;
+  gap: 8px;
+  align-content: center;
+}
 
 .event-logo {
   width: 96px;
@@ -459,6 +558,10 @@
   object-fit: contain;
   border-radius: 8px;
   background-color: transparent;
+}
+.event-logo--badge {
+  width: 64px;
+  height: 64px;
 }
 
 .pill-group {

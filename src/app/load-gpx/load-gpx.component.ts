@@ -79,6 +79,7 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
   selectedModalityId: number | null = null;
   carouselIndex = 0;
   private carouselTimer?: ReturnType<typeof setInterval>;
+  private readonly carouselIntervalMs = 9000;
   selectedComparisonIds = new Set<number>();
   latestUploadedTrackId: number | null = null;
   personalNickname = '';
@@ -150,6 +151,7 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
       console.log("Events: ", events )
       this.events = events;
       this.syncCarouselIndex();
+      this.syncSelectionWithCarousel();
       this.restartCarouselTimer();
       this.buildEventVisuals(events);
     });
@@ -493,18 +495,21 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
   nextEvent(manual = false): void {
     if (!this.events.length) return;
     this.carouselIndex = (this.carouselIndex + 1) % this.events.length;
+    this.syncSelectionWithCarousel();
     if (manual) this.restartCarouselTimer();
   }
 
   prevEvent(manual = false): void {
     if (!this.events.length) return;
     this.carouselIndex = (this.carouselIndex - 1 + this.events.length) % this.events.length;
+    this.syncSelectionWithCarousel();
     if (manual) this.restartCarouselTimer();
   }
 
   goToEvent(index: number): void {
     if (index < 0 || index >= this.events.length) return;
     this.carouselIndex = index;
+    this.syncSelectionWithCarousel();
     this.restartCarouselTimer();
   }
 
@@ -583,7 +588,7 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
   restartCarouselTimer(): void {
     this.clearCarouselTimer();
     if (!this.events.length) return;
-    this.carouselTimer = setInterval(() => this.nextEvent(), 6000);
+    this.carouselTimer = setInterval(() => this.nextEvent(), this.carouselIntervalMs);
   }
 
   private clearCarouselTimer(): void {
@@ -604,6 +609,13 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
     } else if (this.carouselIndex >= this.events.length) {
       this.carouselIndex = 0;
     }
+  }
+
+  private syncSelectionWithCarousel(): void {
+    if (!this.events.length || !this.isAuthenticated) return;
+    const event = this.events[this.carouselIndex];
+    if (!event || this.selectedEventId === event.id) return;
+    this.selectEvent(event.id);
   }
 
   openEventSearch(): void {

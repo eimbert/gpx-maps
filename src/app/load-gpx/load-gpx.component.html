@@ -130,12 +130,34 @@
                     <p class="event-meta"><strong>Población:</strong> {{ event.population || 'Sin datos' }}</p>
                     <p class="event-meta"><strong>Comunidad:</strong> {{ event.autonomousCommunity || 'Sin datos' }}</p>
                     <div class="event-profile">
-                      <ng-container *ngIf="eventVisuals[event.id]?.profilePoints; else noProfile">
+                      <ng-container *ngIf="eventVisuals[event.id]?.profile?.points; else noProfile">
                         <div class="profile-chart-wrapper">
                           <span class="axis-label axis-label--y">Altura</span>
                           <span class="axis-label axis-label--x">Distancia</span>
-                          <svg viewBox="0 0 240 80" preserveAspectRatio="none" class="profile-chart">
-                            <polyline [attr.points]="eventVisuals[event.id].profilePoints"></polyline>
+                          <svg [attr.viewBox]="'0 0 ' + profileWidth + ' ' + profileHeight" preserveAspectRatio="none" class="profile-chart">
+                            <g class="grid-lines">
+                              <line
+                                *ngFor="let y of eventVisuals[event.id].profile?.gridLinesY"
+                                x1="0"
+                                [attr.y1]="y"
+                                [attr.y2]="y"
+                                [attr.x2]="profileWidth" />
+                            </g>
+                            <g class="axis-ticks axis-ticks--y">
+                              <ng-container *ngFor="let tick of eventVisuals[event.id].profile?.yTicks">
+                                <text [attr.x]="0" [attr.y]="profileHeight - (tick.positionPct / 100) * profileHeight">
+                                  {{ tick.label }}
+                                </text>
+                              </ng-container>
+                            </g>
+                            <g class="axis-ticks axis-ticks--x">
+                              <ng-container *ngFor="let tick of eventVisuals[event.id].profile?.xTicks">
+                                <text [attr.x]="(tick.positionPct / 100) * profileWidth" [attr.y]="profileHeight">
+                                  {{ tick.label }}
+                                </text>
+                              </ng-container>
+                            </g>
+                            <polyline [attr.points]="eventVisuals[event.id].profile?.points"></polyline>
                           </svg>
                         </div>
                       </ng-container>

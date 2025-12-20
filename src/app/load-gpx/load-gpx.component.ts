@@ -37,8 +37,21 @@ interface ParsedTrackResult {
   durationSeconds: number;
 }
 
+interface AxisTick {
+  label: string;
+  positionPct: number;
+  value: number;
+}
+
+interface ProfileVisual {
+  points: string;
+  xTicks: AxisTick[];
+  yTicks: AxisTick[];
+  gridLinesY: number[];
+}
+
 interface EventVisuals {
-  profilePoints: string | null;
+  profile: ProfileVisual | null;
   trackPath: string | null;
 }
 
@@ -74,6 +87,8 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
   personalHistory: EventTrack[] = [];
   routeTrackTimes: RouteTrackTime[] = [];
   eventVisuals: Record<number, EventVisuals> = {};
+  readonly profileWidth = 240;
+  readonly profileHeight = 80;
   private pendingMasterUploadEventId: number | null = null;
 
   eventUpload = {
@@ -295,19 +310,19 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
   private async prepareEventVisuals(event: RaceEvent): Promise<void> {
     const gpxData = await this.resolveMasterGpxContent(event);
     if (!gpxData) {
-      this.updateEventVisuals(event.id, { profilePoints: null, trackPath: null });
+      this.updateEventVisuals(event.id, { profile: null, trackPath: null });
       return;
     }
 
     const points = this.parseTrackPointsFromString(gpxData);
     if (!points.length) {
-      this.updateEventVisuals(event.id, { profilePoints: null, trackPath: null });
+      this.updateEventVisuals(event.id, { profile: null, trackPath: null });
       return;
     }
 
-    const profilePoints = this.buildProfilePolyline(points.map(p => p.ele ?? 0));
+    const profile = this.buildProfileVisual(points);
     const trackPath = this.buildTrackPolyline(points);
-    this.updateEventVisuals(event.id, { profilePoints, trackPath });
+    this.updateEventVisuals(event.id, { profile, trackPath });
   }
 
   private async resolveMasterGpxContent(event: RaceEvent): Promise<string | null> {
@@ -363,19 +378,79 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
     }
   }
 
-  private buildProfilePolyline(elevations: number[], width = 240, height = 80): string | null {
-    if (!elevations.length) return null;
-    const min = Math.min(...elevations);
-    const max = Math.max(...elevations);
-    const range = Math.max(1, max - min);
+  private buildProfileVisual(points: TrackPoint[], width = this.profileWidth, height = this.profileHeight): ProfileVisual | null {
+    if (!points.length) return null;
+
+    const elevations = points.map(p => p.ele ?? 0);
+    const distances = this.buildCumulativeDistances(points);
+    const minEle = Math.min(...elevations);
+    const maxEle = Math.max(...elevations);
+    const eleRange = Math.max(1, maxEle - minEle);
+    const totalDistance = distances[distances.length - 1];
     const safeWidth = Math.max(1, width);
     const safeHeight = Math.max(1, height);
 
-    return elevations.map((ele, idx) => {
-      const x = (idx / Math.max(1, elevations.length - 1)) * safeWidth;
-      const y = safeHeight - ((ele - min) / range) * safeHeight;
+    const pointsStr = elevations.map((ele, idx) => {
+      const x = (distances[idx] / Math.max(1, totalDistance)) * safeWidth;
+      const y = safeHeight - ((ele - minEle) / eleRange) * safeHeight;
       return `${x.toFixed(1)},${y.toFixed(1)}`;
     }).join(' ');
+
+    const yTicks = this.buildAxisTicks(minEle, maxEle, 3);
+    const xTicks = this.buildDistanceTicks(totalDistance, 4);
+    const gridLinesY = yTicks.map(tick => safeHeight - ((tick.value - minEle) / eleRange) * safeHeight);
+
+    return { points: pointsStr, xTicks, yTicks, gridLinesY };
+  }
+
+  private buildCumulativeDistances(points: TrackPoint[]): number[] {
+    const distances: number[] = [0];
+    for (let i = 1; i < points.length; i++) {
+      const prev = points[i - 1];
+      const current = points[i];
+      const delta = this.calculateDistance(prev.lat, prev.lon, current.lat, current.lon);
+      distances.push(distances[i - 1] + delta);
+    }
+    return distances;
+  }
+
+  private buildAxisTicks(min: number, max: number, maxTicks: number): AxisTick[] {
+    if (maxTicks <= 0) return [];
+    const range = Math.max(1, max - min);
+    const step = range / maxTicks;
+    const ticks: AxisTick[] = [];
+    for (let i = 0; i <= maxTicks; i++) {
+      const value = min + step * i;
+      ticks.push({
+        label: `${Math.round(value)}`,
+        positionPct: (i / maxTicks) * 100,
+        value
+      });
+    }
+    return ticks;
+  }
+
+  private buildDistanceTicks(totalDistanceMeters: number, maxTicks: number): AxisTick[] {
+    if (totalDistanceMeters <= 0 || maxTicks <= 0) return [];
+    const totalKm = totalDistanceMeters / 1000;
+    const stepKm = this.pickNiceStep(totalKm / maxTicks);
+    const ticks: AxisTick[] = [];
+    for (let km = 0; km <= totalKm + 1e-6; km += stepKm) {
+      ticks.push({
+        label: `${km.toFixed(0)} km`,
+        positionPct: (km / totalKm) * 100,
+        value: km
+      });
+    }
+    return ticks;
+  }
+
+  private pickNiceStep(approx: number): number {
+    const steps = [0.5, 1, 2, 5, 10, 20, 50, 100];
+    for (const step of steps) {
+      if (step >= approx) return step;
+    }
+    return steps[steps.length - 1];
   }
 
   private buildTrackPolyline(points: TrackPoint[], width = 320, height = 240): string | null {

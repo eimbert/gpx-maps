@@ -663,7 +663,7 @@ export class MapComponent implements OnInit, AfterViewInit {
   }
 
   private buildTerrainStyleUrl(): string {
-    return `https://api.maptiler.com/maps/terrain/style.json?key=${environment.mapTilerKey}`;
+    return environment.mapLibreStyleUrl;
   }
 
   private enable3DLayer(): void {

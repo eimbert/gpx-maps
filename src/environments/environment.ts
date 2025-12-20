@@ -10,7 +10,7 @@ export const environment = {
   meUrl: 'http://localhost:8080/api/auth/me?authorizationHeader',
   routesApiBase: 'http://localhost:8080/api/routes',
   tracksApiBase: 'http://localhost:8080/api/tracks',
-  mapTilerKey: 'ketqFEpljkeNWsZH7lME'
+  mapLibreStyleUrl: 'https://maps.geoapify.com/v1/styles/osm-carto/style.json?apiKey=8aecae69e4a741e3999b70dd20dcc7b7'
 };
 
 /*

@@ -14,14 +14,14 @@
       </ng-container>
     </div>
 
-    <div class="map-controls" role="group" aria-label="Seleccionar fondo del mapa">
-      <label class="control-label" for="base-layer-select">Fondo:</label>
+    <div class="map-controls" role="group" aria-label="Seleccionar mapa base">
+      <label class="control-label" for="base-layer-select">Mapa:</label>
       <select
         id="base-layer-select"
         class="base-layer-select"
         [ngModel]="selectedBaseLayerId"
         (ngModelChange)="onBaseLayerChange($event)"
-        aria-label="Cambiar fondo del mapa"
+        aria-label="Cambiar mapa base"
       >
         <option *ngFor="let option of baseLayerOptions" [value]="option.id">
           {{ option.name }}
@@ -78,4 +78,11 @@
   preload="auto"
   playsinline
   loop
+></audio>
+
+<audio
+  id="countdown-sound"
+  src="assets/musica/inicio.mp3"
+  preload="auto"
+  playsinline
 ></audio>

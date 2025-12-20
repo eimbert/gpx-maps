@@ -495,14 +495,14 @@ export class MapComponent implements OnInit, AfterViewInit {
     this.showStartOverlay = true;
     this.startArmed = true;
     this.countdownInProgress = true;
-    this.countdownValue = '5';
+    this.countdownValue = '3';
 
     if (this.countdownSoundEnabled) {
       this.countdownAudio.currentTime = 0;
       void this.countdownAudio.play().catch(() => { /* ignore */ });
     }
 
-    let current = 5;
+    let current = 3;
     this.clearCountdownTimer();
     this.countdownTimer = window.setInterval(() => {
       current -= 1;

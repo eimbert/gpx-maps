@@ -10,6 +10,9 @@ import { RecorderService } from '../recording/recorder.service';
 import { EventTrack, RaceEvent } from '../interfaces/events';
 import { environment } from '../../environments/environment';
 
+type MapLibreLayer = NonNullable<StyleSpecification['layers']>[number];
+type TerrainStyle = Omit<StyleSpecification, 'layers'> & { layers: MapLibreLayer[] };
+
 interface TrackPoint { lat: number; lon: number; ele: number; time: string; }
 interface TPx extends TrackPoint { t: number; }
 
@@ -154,6 +157,18 @@ export class MapComponent implements OnInit, AfterViewInit {
     ? environment.mapLibreRasterTiles
     : ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'];
   private readonly mapLibreRasterAttribution = environment.mapLibreRasterAttribution || '© OpenStreetMap contributors';
+
+  // MapLibre types no incluyen capa "sky" en la especificación del estilo, así que ampliamos el tipo
+  // para evitar errores de compilación sin perder el tipado principal del estilo.
+  private static readonly skyLayer: { id: string; type: 'sky'; paint: Record<string, unknown> } = {
+    id: 'sky',
+    type: 'sky',
+    paint: {
+      'sky-type': 'atmosphere',
+      'sky-atmosphere-sun-intensity': 12,
+      'sky-opacity': ['interpolate', ['linear'], ['zoom'], 4, 0, 5, 1]
+    }
+  };
 
   constructor(
     private route: ActivatedRoute,
@@ -671,8 +686,8 @@ export class MapComponent implements OnInit, AfterViewInit {
     }).addTo(this.map);
   }
 
-  private buildTerrainStyle(): StyleSpecification {
-    return {
+  private buildTerrainStyle(): TerrainStyle {
+    const baseStyle: TerrainStyle = {
       version: 8,
       sources: {
         'raster-base': {
@@ -699,15 +714,6 @@ export class MapComponent implements OnInit, AfterViewInit {
           source: 'raster-base',
           minzoom: 0,
           maxzoom: 19
-        },
-        {
-          id: 'sky',
-          type: 'sky',
-          paint: {
-            'sky-type': 'atmosphere',
-            'sky-atmosphere-sun-intensity': 12,
-            'sky-opacity': ['interpolate', ['linear'], ['zoom'], 4, 0, 5, 1]
-          }
         }
       ],
       terrain: {
@@ -715,6 +721,11 @@ export class MapComponent implements OnInit, AfterViewInit {
         exaggeration: this.mapLibreTerrainExaggeration
       }
     };
+
+    // Insertamos la capa de cielo usando un tipo ampliado para evitar errores de typing.
+    baseStyle.layers.push(MapComponent.skyLayer as unknown as MapLibreLayer);
+
+    return baseStyle;
   }
 
   private enable3DLayer(): void {

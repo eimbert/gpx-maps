@@ -14,6 +14,21 @@
       </ng-container>
     </div>
 
+    <div class="map-controls" role="group" aria-label="Seleccionar fondo del mapa">
+      <label class="control-label" for="base-layer-select">Fondo:</label>
+      <select
+        id="base-layer-select"
+        class="base-layer-select"
+        [ngModel]="selectedBaseLayerId"
+        (ngModelChange)="onBaseLayerChange($event)"
+        aria-label="Cambiar fondo del mapa"
+      >
+        <option *ngFor="let option of baseLayerOptions" [value]="option.id">
+          {{ option.name }}
+        </option>
+      </select>
+    </div>
+
     <a class="start-btn" routerLink="/">Volver al inicio</a>
     <!-- <a class="stop-rec" (click)="stopRecordingAndDownload()" *ngIf="rec.isRecording">⏹ Stop & Download</a> -->
   </div>

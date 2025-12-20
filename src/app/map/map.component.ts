@@ -33,6 +33,14 @@ interface RankingEntry {
   medal?: 'gold' | 'silver' | 'bronze';
 }
 
+interface BaseLayerOption {
+  id: string;
+  name: string;
+  url: string;
+  attribution: string;
+  maxZoom?: number;
+}
+
 @Component({
   selector: 'app-map',
   templateUrl: './map.component.html',
@@ -100,6 +108,32 @@ export class MapComponent implements OnInit, AfterViewInit {
 
   colors: string[] = [];
   names: string[] = [];
+
+  baseLayerOptions: BaseLayerOption[] = [
+    {
+      id: 'satellite',
+      name: 'Satélite (Esri)',
+      url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+      maxZoom: 19,
+      attribution: 'Tiles © Esri — Source: Esri, Maxar, Earthstar Geographics, and the GIS User Community'
+    },
+    {
+      id: 'terrain',
+      name: 'Relieve (OpenTopoMap)',
+      url: 'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',
+      maxZoom: 17,
+      attribution: '© OpenTopoMap (CC-BY-SA)'
+    },
+    {
+      id: 'street',
+      name: 'Callejero (OpenStreetMap)',
+      url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+      maxZoom: 19,
+      attribution: '© OpenStreetMap contributors'
+    }
+  ];
+  selectedBaseLayerId = this.baseLayerOptions[0]?.id ?? '';
+  private baseLayer: L.TileLayer | null = null;
 
   constructor(
     private route: ActivatedRoute,
@@ -549,15 +583,30 @@ export class MapComponent implements OnInit, AfterViewInit {
   // ---------- mapa ----------
   private initMap(): void {
     this.map = L.map('map', { preferCanvas: true, zoomSnap: 0.1 }).setView([40.4168, -3.7038], 6);
-    L.tileLayer(
-      'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-      {
-        maxZoom: 19,
-        attribution: 'Tiles © Esri — Source: Esri, Maxar, Earthstar Geographics, and the GIS User Community'
-      }
-    ).addTo(this.map);
+    this.applyBaseLayer();
     this.renderer = L.canvas({ padding: 0.25 }).addTo(this.map);
     this.attachTrackLayers();
+  }
+
+  onBaseLayerChange(baseLayerId: string): void {
+    this.selectedBaseLayerId = baseLayerId;
+    this.applyBaseLayer();
+  }
+
+  private applyBaseLayer(): void {
+    if (!this.map) return;
+
+    const option = this.baseLayerOptions.find((o) => o.id === this.selectedBaseLayerId) ?? this.baseLayerOptions[0];
+    if (!option) return;
+
+    if (this.baseLayer) {
+      this.map.removeLayer(this.baseLayer);
+    }
+
+    this.baseLayer = L.tileLayer(option.url, {
+      maxZoom: option.maxZoom ?? 19,
+      attribution: option.attribution
+    }).addTo(this.map);
   }
 
   private attachTrackLayers(): void {

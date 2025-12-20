@@ -80,20 +80,20 @@
 
     <ng-container *ngIf="isAuthenticated">
       <div class="events-actions">
-        <button type="button" class="secondary" style="cursor: pointer;" (click)="openEventSearch()">🔍 Buscar eventos</button>
-        <button type="button" class="secondary" style="cursor: pointer;" (click)="openCreateEventDialog()">➕ Crear nuevo evento</button>
-        <button
-          *ngIf="canDeleteSelectedEvent()"
-          type="button"
-          class="ghost ghost--danger"
-          (click)="deleteSelectedEvent()"
-        >
-          🗑️ Eliminar evento
-        </button>
-        <button type="button" class="home-button events-actions__home" (click)="goHome()">
-          <span class="home-button__icon">🏠</span>
-          <span class="home-button__label">Volver al inicio</span>
-        </button>
+        <div class="events-menu">
+          <button type="button" class="menu-toggle" (click)="toggleEventMenu()">
+            📋 Menú de eventos
+            <span class="chevron" [class.chevron--open]="eventMenuOpen">▾</span>
+          </button>
+          <div class="menu-panel" *ngIf="eventMenuOpen">
+            <button type="button" (click)="scrollToUploadSection()">⬆️ Subir track</button>
+            <button type="button" (click)="openCreateEventDialog()">➕ Crear evento</button>
+            <button type="button" (click)="openEventSearch()">📑 Lista eventos</button>
+            <button type="button" [disabled]="!canDeleteSelectedEvent()" (click)="deleteSelectedEvent()">🗑️ Eliminar evento</button>
+            <button type="button" (click)="openMyTracksDialog()">📂 Mis tracks</button>
+            <button type="button" (click)="goHome(); closeEventMenu()">🏠 Volver al inicio</button>
+          </div>
+        </div>
       </div>
       <input #masterGpxInput type="file" accept=".gpx" hidden (change)="onMasterGpxFileChange($event)" />
 
@@ -203,7 +203,7 @@
 
       <section *ngIf="events.length" class="event-detail">
         <div class="event-panels">
-          <article class="panel">
+          <article class="panel" #uploadSection>
             <div class="panel__header panel__header--stacked">
             <div>
               <h3>Sube tu track</h3>

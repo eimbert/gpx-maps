@@ -535,6 +535,9 @@
 
 .axis-ticks--x text {
   text-anchor: middle;
+  font-size: 7px;
+  dominant-baseline: baseline;
+  transform: translateY(-1px);
 }
 
 .profile-empty {
@@ -560,7 +563,7 @@
 .track-drawing polyline {
   fill: none;
   stroke: #2563eb;
-  stroke-width: 3;
+  stroke-width: 2;
   stroke-linejoin: round;
   stroke-linecap: round;
 }

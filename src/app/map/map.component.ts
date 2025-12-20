@@ -62,11 +62,13 @@ export class MapComponent implements OnInit, AfterViewInit {
   private audio!: HTMLAudioElement;
   private hasTracksReady = false;
   private musicEnabled = true;
+  private countdownSoundEnabled = true;
   private recordingEnabled = false;
   private recordingAspect: '16:9' | '9:16' = '16:9';
   private countdownTimer: number | null = null;
   private countdownInProgress = false;
   private startSequenceLaunched = false;
+  private countdownAudio!: HTMLAudioElement;
   isVerticalViewport = false;
   showRanking = false;
   ranking: RankingEntry[] = [];
@@ -471,6 +473,7 @@ export class MapComponent implements OnInit, AfterViewInit {
     }, 0);
 
     this.audio = document.getElementById('background-music-carrera') as HTMLAudioElement;
+    this.countdownAudio = document.getElementById('countdown-sound') as HTMLAudioElement;
 
     // Desbloquear audio en el primer gesto del usuario (click/tap/tecla)
     // const unlock = () => {
@@ -493,6 +496,11 @@ export class MapComponent implements OnInit, AfterViewInit {
     this.startArmed = true;
     this.countdownInProgress = true;
     this.countdownValue = '5';
+
+    if (this.countdownSoundEnabled) {
+      this.countdownAudio.currentTime = 0;
+      void this.countdownAudio.play().catch(() => { /* ignore */ });
+    }
 
     let current = 5;
     this.clearCountdownTimer();

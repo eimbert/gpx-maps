@@ -33,6 +33,12 @@ export interface EventTrack {
   createdBy?: number;
 }
 
+export interface TrackGpxFile {
+  id: number;
+  fileName?: string | null;
+  routeXml?: string | null;
+}
+
 export interface RouteTrackTime {
   id: number;
   nickname: string;

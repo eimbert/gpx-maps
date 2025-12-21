@@ -4,6 +4,7 @@ import { HttpClient } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 import { EventService } from '../services/event.service';
 import { InfoDialogComponent, InfoDialogData, InfoDialogResult } from '../info-dialog/info-dialog.component';
+import { TrackGpxFile } from '../interfaces/events';
 
 export interface MyTrackRow {
   eventId: number;
@@ -142,6 +143,12 @@ export class MyTracksDialogComponent {
       }
     }
 
+    const gpxFile = await this.fetchTrackGpx(row.trackId);
+    if (gpxFile?.routeXml) {
+      row.fileName = gpxFile.fileName || row.fileName;
+      return this.decodeGpxContent(gpxFile.routeXml);
+    }
+
     return null;
   }
 
@@ -174,5 +181,13 @@ export class MyTracksDialogComponent {
 
   private buildRowKey(row: MyTrackRow): string {
     return `${row.eventId}:${row.trackId}`;
+  }
+
+  private async fetchTrackGpx(trackId: number): Promise<TrackGpxFile | null> {
+    try {
+      return await firstValueFrom(this.eventService.getTrackGpx(trackId));
+    } catch {
+      return null;
+    }
   }
 }

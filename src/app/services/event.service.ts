@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { BehaviorSubject, Observable, catchError, map, of, tap } from 'rxjs';
-import { CreateEventPayload, CreateTrackPayload, EventTrack, RaceEvent, RouteTrackTime } from '../interfaces/events';
+import { CreateEventPayload, CreateTrackPayload, EventTrack, RaceEvent, RouteTrackTime, TrackGpxFile } from '../interfaces/events';
 import { environment } from '../../environments/environment';
 
 type CreateEventResponse = {
@@ -135,6 +135,16 @@ export class EventService {
       map(tracks => (tracks || []).map(track => {
         const routeId = this.resolveTrackRouteId(track);
         return this.normalizeTrack(track, routeId);
+      }))
+    );
+  }
+
+  getTrackGpx(trackId: number): Observable<TrackGpxFile> {
+    return this.http.get<TrackGpxFile>(`${this.tracksApiBase}/${trackId}/gpx`).pipe(
+      map(res => ({
+        id: Number(res.id),
+        fileName: res.fileName ?? null,
+        routeXml: res.routeXml ?? null
       }))
     );
   }

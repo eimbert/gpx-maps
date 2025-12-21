@@ -1680,7 +1680,7 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
       this.showMessage('Inicia sesión para subir tus tracks.');
       return;
     }
-    const dialogRef = this.dialog.open<StandaloneTrackUploadDialogComponent, any, StandaloneTrackUploadDialogResult | undefined>(
+    const dialogRef = this.dialog.open<StandaloneTrackUploadDialogComponent, any, StandaloneTrackUploadResult | undefined>(
       StandaloneTrackUploadDialogComponent,
       { width: '520px' }
     );

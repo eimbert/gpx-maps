@@ -1278,12 +1278,8 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
   }
 
   private validateEventUpload(upload: EventTrackUploadPayload): string | null {
-    const event = this.events.find(e => e.id === upload.eventId);
-    if (!event) {
-      return 'El evento seleccionado no es válido.';
-    }
-    const event = this.events.find(e => e.id === upload.eventId);
-    if (!event) {
+    const selectedEvent = this.events.find(e => e.id === upload.eventId);
+    if (!selectedEvent) {
       return 'El evento seleccionado no es válido.';
     }
     const nickname = this.personalNickname || this.authService.getSession()?.nickname || '';

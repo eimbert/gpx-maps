@@ -166,6 +166,8 @@ export class EventService {
     const location = (event as any).location as string | undefined;
     let population = event.population || '';
     let autonomousCommunity = event.autonomousCommunity || '';
+    const province = (event as any).province ?? (event as any).province_name ?? event.province ?? null;
+    const distanceKm = (event as any).distanceKm ?? (event as any).distance_km ?? event.distanceKm ?? null;
     const logoBlob = event.logoBlob ?? null;
     console.log("LOGOBLOB: ", logoBlob)
     console.log("event. LOGOBLOB: ", event.logoBlob)
@@ -195,6 +197,8 @@ export class EventService {
       id: routeId,
       population,
       autonomousCommunity,
+      province,
+      distanceKm: distanceKm !== undefined && distanceKm !== null ? Number(distanceKm) : null,
       logoBlob,
       logoMime,
       gpxMaster,

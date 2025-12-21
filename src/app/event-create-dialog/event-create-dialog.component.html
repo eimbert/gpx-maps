@@ -9,12 +9,20 @@
 
   <div class="form-grid">
     <label>
+      <span>Track GPX maestro</span>
+      <input type="file" accept=".gpx" (change)="handleGpxUpload($event)" />
+    </label>
+    <label>
       <span>Nombre</span>
       <input type="text" [(ngModel)]="newEvent.name" placeholder="Nombre del evento" />
     </label>
     <label>
       <span>Población</span>
       <input type="text" [(ngModel)]="newEvent.population" placeholder="Ciudad / pueblo" />
+    </label>
+    <label>
+      <span>Provincia</span>
+      <input type="text" [(ngModel)]="newEvent.province" placeholder="Ej: Barcelona" />
     </label>
     <label>
       <span>Comunidad autónoma</span>
@@ -25,8 +33,8 @@
       <input type="number" [(ngModel)]="newEvent.year" />
     </label>
     <label>
-      <span>Track GPX maestro (opcional)</span>
-      <input type="file" accept=".gpx" (change)="handleGpxUpload($event)" />
+      <span>Distancia (km)</span>
+      <input type="number" [(ngModel)]="newEvent.distanceKm" placeholder="Se calcula desde el GPX" />
     </label>
     <label>
       <span>Logo (opcional)</span>

@@ -52,7 +52,9 @@ export interface CreateEventPayload {
   name: string;
   population?: string | null;
   autonomousCommunity?: string | null;
+  province?: string | null;
   year: number;
+  distanceKm?: number | null;
   logoBlob?: string | null;
   logoMime?: string | null;
   gpxMaster?: string | null;
@@ -83,7 +85,9 @@ export interface RaceEvent {
   name: string;
   population?: string | null;
   autonomousCommunity?: string | null;
+  province?: string | null;
   year: number;
+  distanceKm?: number | null;
   //logo?: string;
   logoBlob?: string | null;
   logoMime?: string | null;

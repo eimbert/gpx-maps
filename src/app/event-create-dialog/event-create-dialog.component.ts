@@ -17,7 +17,9 @@ export class EventCreateDialogComponent {
     name: '',
     population: '',
     autonomousCommunity: '',
+    province: '',
     year: new Date().getFullYear(),
+    distanceKm: null as number | null,
     logoBlob: '',
     logoMime: '',
     gpxMaster: '',
@@ -49,16 +51,25 @@ export class EventCreateDialogComponent {
       return;
     }
 
+    if (!this.newEvent.gpxMaster) {
+      this.showMessage('Sube un track GPX válido para continuar.');
+      return;
+    }
+
     if (!this.newEvent.year || this.newEvent.year <= 0) {
       this.showMessage('Introduce un año válido (número entero positivo).');
       return;
     }
 
+    const distanceKm = this.normalizeNumber(this.newEvent.distanceKm);
+
     const event: CreateEventPayload = {
       name: this.newEvent.name.trim(),
       population: this.newEvent.population.trim(),
       autonomousCommunity: this.newEvent.autonomousCommunity.trim(),
+      province: this.newEvent.province.trim(),
       year: this.newEvent.year,
+      distanceKm,
       logoBlob: this.newEvent.logoBlob || null,
       logoMime: this.newEvent.logoMime || null,
       gpxMaster: this.newEvent.gpxMaster || null,
@@ -95,7 +106,8 @@ export class EventCreateDialogComponent {
     }
 
     const text = await file.text();
-    if (!this.isValidGpx(text)) {
+    const parsed = this.parseGpx(text);
+    if (!parsed) {
       this.showMessage('El archivo GPX no parece válido.');
       input.value = '';
       return;
@@ -103,15 +115,93 @@ export class EventCreateDialogComponent {
 
     this.newEvent.gpxMaster = this.encodeBase64(text);
     this.newEvent.gpxMasterFileName = file.name;
+    this.newEvent.distanceKm = parsed.distanceKm;
+    this.newEvent.year = parsed.year ?? this.newEvent.year;
+
+    if (parsed.location) {
+      await this.populateLocationFromReverseGeocode(parsed.location.lat, parsed.location.lon);
+    }
   }
 
-  private isValidGpx(content: string): boolean {
+  private parseGpx(content: string): { distanceKm: number | null; location: { lat: number; lon: number } | null; year: number | null } | null {
     try {
       const parser = new DOMParser();
       const gpx = parser.parseFromString(content, 'application/xml');
-      return !gpx.getElementsByTagName('parsererror').length && gpx.getElementsByTagName('trkpt').length > 0;
+      const trkpts = Array.from(gpx.getElementsByTagName('trkpt'));
+      if (gpx.getElementsByTagName('parsererror').length || !trkpts.length) return null;
+
+      const location = this.extractFirstLocation(trkpts[0]);
+      const distanceKm = this.calculateDistanceKm(trkpts);
+      const year = this.extractYear(gpx);
+
+      return { distanceKm, location, year };
     } catch {
-      return false;
+      return null;
+    }
+  }
+
+  private extractFirstLocation(point: Element | undefined): { lat: number; lon: number } | null {
+    if (!point) return null;
+    const lat = parseFloat(point.getAttribute('lat') || '0');
+    const lon = parseFloat(point.getAttribute('lon') || '0');
+    if (!Number.isFinite(lat) || !Number.isFinite(lon)) return null;
+    return { lat, lon };
+  }
+
+  private calculateDistanceKm(trkpts: Element[]): number | null {
+    if (!trkpts.length) return null;
+    let distanceMeters = 0;
+    for (let i = 1; i < trkpts.length; i++) {
+      const prevLat = parseFloat(trkpts[i - 1].getAttribute('lat') || '0');
+      const prevLon = parseFloat(trkpts[i - 1].getAttribute('lon') || '0');
+      const lat = parseFloat(trkpts[i].getAttribute('lat') || '0');
+      const lon = parseFloat(trkpts[i].getAttribute('lon') || '0');
+      if (!Number.isFinite(prevLat) || !Number.isFinite(prevLon) || !Number.isFinite(lat) || !Number.isFinite(lon)) {
+        continue;
+      }
+      distanceMeters += this.haversineDistance(prevLat, prevLon, lat, lon);
+    }
+    return Number.isFinite(distanceMeters) ? Number((distanceMeters / 1000).toFixed(2)) : null;
+  }
+
+  private haversineDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
+    const toRad = (deg: number) => deg * (Math.PI / 180);
+    const R = 6371000;
+    const dLat = toRad(lat2 - lat1);
+    const dLon = toRad(lon2 - lon1);
+    const a =
+      Math.sin(dLat / 2) ** 2 +
+      Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c;
+  }
+
+  private extractYear(gpx: Document): number | null {
+    const timeNode = gpx.getElementsByTagName('metadata')[0]?.getElementsByTagName('time')[0]
+      || gpx.getElementsByTagName('time')[0];
+    const timeValue = timeNode?.textContent?.trim();
+    if (!timeValue) return null;
+    const date = new Date(timeValue);
+    const year = date.getFullYear();
+    return Number.isFinite(year) ? year : null;
+  }
+
+  private async populateLocationFromReverseGeocode(lat: number, lon: number): Promise<void> {
+    try {
+      const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lon)}&addressdetails=1`;
+      const response = await fetch(url, {
+        headers: {
+          'Accept': 'application/json'
+        }
+      });
+      if (!response.ok) return;
+      const data = await response.json();
+      const address = data?.address || {};
+      this.newEvent.population = address.village || address.town || address.city || this.newEvent.population;
+      this.newEvent.autonomousCommunity = address.state || this.newEvent.autonomousCommunity;
+      this.newEvent.province = address.province || this.newEvent.province;
+    } catch {
+      // Ignorar fallos de geocodificación silenciosamente
     }
   }
 
@@ -121,5 +211,11 @@ export class EventCreateDialogComponent {
     } catch {
       return btoa(content);
     }
+  }
+
+  private normalizeNumber(value: number | null): number | null {
+    if (value === null || value === undefined) return null;
+    const numeric = Number(value);
+    return Number.isFinite(numeric) ? numeric : null;
   }
 }

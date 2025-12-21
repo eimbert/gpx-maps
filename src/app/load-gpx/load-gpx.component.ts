@@ -9,7 +9,7 @@ import { DialogoConfiguracionData } from '../interfaces/estructuras';
 import { TrackMetadataDialogComponent, TrackMetadataDialogResult } from '../track-metadata-dialog/track-metadata-dialog.component';
 import { RouteMismatchDialogComponent } from '../route-mismatch-dialog/route-mismatch-dialog.component';
 import { EventSearchDialogComponent, EventSearchDialogData, EventSearchDialogResult } from '../event-search-dialog/event-search-dialog.component';
-import { BikeType, CreateEventPayload, CreateTrackPayload, EventTrack, RaceCategory, RaceEvent, RouteTrackTime } from '../interfaces/events';
+import { BikeType, CreateEventPayload, CreateTrackPayload, EventTrack, RaceCategory, RaceEvent, RouteTrackTime, TrackGpxFile } from '../interfaces/events';
 import { EventService } from '../services/event.service';
 import { EventCreateDialogComponent, EventCreateDialogResult } from '../event-create-dialog/event-create-dialog.component';
 import { EventTrackUploadDialogComponent, EventTrackUploadDialogData, EventTrackUploadDialogResult } from '../event-track-upload-dialog/event-track-upload-dialog.component';
@@ -18,6 +18,7 @@ import { AuthService } from '../services/auth.service';
 import { Subscription } from 'rxjs';
 import { InfoDialogComponent, InfoDialogData, InfoDialogResult } from '../info-dialog/info-dialog.component';
 import { MyTrackRow, MyTracksDialogComponent } from '../my-tracks-dialog/my-tracks-dialog.component';
+import { StandaloneTrackUploadDialogComponent, StandaloneTrackUploadResult } from '../standalone-track-upload-dialog/standalone-track-upload-dialog.component';
 
 interface TrackPoint {
   lat: number;
@@ -74,6 +75,25 @@ interface EventTrackUploadPayload {
   file: File;
 }
 
+interface UserTrackRow {
+  trackId: number;
+  routeId: number | null;
+  eventName: string;
+  year: number;
+  autonomousCommunity: string | null;
+  province: string | null;
+  population: string | null;
+  distanceKm: number;
+  timeSeconds: number;
+  totalTimeSeconds: number;
+  gpxData?: string | null;
+  gpxAsset?: string | null;
+  fileName?: string | null;
+  canDelete: boolean;
+  title?: string | null;
+  description?: string | null;
+}
+
 @Component({
   selector: 'app-load-gpx',
   templateUrl: './load-gpx.component.html',
@@ -111,6 +131,11 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
   readonly profileHeight = 80;
   private pendingMasterUploadEventId: number | null = null;
   eventMenuOpen = false;
+  userTracks: UserTrackRow[] = [];
+  userTracksLoading = false;
+  private readonly downloadingTracks = new Set<number>();
+  private readonly deletingTracks = new Set<number>();
+  standaloneUploadInProgress = false;
 
   eventUpload: EventTrackUploadDraft = {
     eventId: null,
@@ -161,6 +186,10 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
       this.personalNickname = session?.nickname ?? '';
       if (!this.isAuthenticated && this.mode === 'events') {
         this.showEventsAuthNotice();
+        this.userTracks = [];
+      }
+      if (this.isAuthenticated) {
+        this.refreshUserTracks();
       }
     });
     this.authService.validateSessionWithBackend().subscribe(session => {
@@ -168,6 +197,9 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
       this.personalNickname = session?.nickname ?? '';
       if (!this.isAuthenticated && this.mode === 'events') {
         this.showEventsAuthNotice();
+      }
+      if (this.isAuthenticated) {
+        this.refreshUserTracks();
       }
     });
     this.eventService.getEvents().subscribe(events => {
@@ -177,6 +209,9 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
       this.syncSelectionWithCarousel();
       this.restartCarouselTimer();
       this.buildEventVisuals(events);
+      if (this.isAuthenticated) {
+        this.refreshUserTracks();
+      }
     });
   }
 
@@ -1485,6 +1520,234 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
   private loadRouteTrackTimes(routeId: number): void {
     this.eventService.getRouteTrackTimes(routeId).subscribe(times => {
       this.routeTrackTimes = (times || []).slice().sort((a, b) => a.tiempoReal - b.tiempoReal);
+    });
+  }
+
+  async refreshUserTracks(): Promise<void> {
+    if (!this.isAuthenticated) {
+      this.userTracks = [];
+      return;
+    }
+    this.userTracksLoading = true;
+    try {
+      const tracks = await firstValueFrom(this.eventService.getMyTracks());
+      const eventsById = new Map<number, RaceEvent>(this.events.map(event => [event.id, event]));
+      this.userTracks = tracks.map(track => this.toUserTrackRow(track, eventsById));
+    } catch {
+      this.showMessage('No se pudieron cargar tus tracks. Inténtalo de nuevo más tarde.');
+      this.userTracks = [];
+    } finally {
+      this.userTracksLoading = false;
+    }
+  }
+
+  private toUserTrackRow(track: EventTrack, eventsById: Map<number, RaceEvent>): UserTrackRow {
+    const routeIdValue = track.routeId === null || track.routeId === undefined ? null : this.toNumber(track.routeId, 0);
+    const routeId = routeIdValue && routeIdValue > 0 ? routeIdValue : null;
+    const event = routeId ? eventsById.get(routeId) : undefined;
+    return {
+      trackId: track.id,
+      routeId,
+      eventName: event?.name ?? '-',
+      year: this.resolveTrackYear(track, event),
+      autonomousCommunity: event?.autonomousCommunity ?? null,
+      province: event?.province ?? null,
+      population: event?.population ?? null,
+      distanceKm: this.toNumber(track.distanceKm),
+      timeSeconds: this.toNumber(track.timeSeconds),
+      totalTimeSeconds: this.resolveTotalTimeSeconds(track),
+      gpxData: track.gpxData,
+      gpxAsset: track.gpxAsset,
+      fileName: track.fileName,
+      canDelete: this.canDeleteTrack(track),
+      title: (track as any).title ?? null,
+      description: (track as any).description ?? null
+    };
+  }
+
+  formatDurationHms(seconds: number): string {
+    const total = Math.max(0, Math.round(seconds || 0));
+    const hours = Math.floor(total / 3600);
+    const minutes = Math.floor((total % 3600) / 60);
+    const secs = total % 60;
+    return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+  }
+
+  isDownloadingTrack(row: UserTrackRow): boolean {
+    return this.downloadingTracks.has(row.trackId);
+  }
+
+  isDeletingTrack(row: UserTrackRow): boolean {
+    return this.deletingTracks.has(row.trackId);
+  }
+
+  async downloadUserTrack(row: UserTrackRow): Promise<void> {
+    if (this.isDownloadingTrack(row)) return;
+    this.downloadingTracks.add(row.trackId);
+    try {
+      const gpx = await this.resolveGpxContentForRow(row);
+      if (!gpx) {
+        this.showMessage('No se pudo preparar la descarga del GPX.');
+        return;
+      }
+      const blob = new Blob([gpx], { type: 'application/gpx+xml' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      const safeName = row.fileName || `${row.eventName}-${row.year || 'track'}.gpx`;
+      link.href = url;
+      link.download = safeName;
+      link.click();
+      setTimeout(() => URL.revokeObjectURL(url), 1500);
+    } finally {
+      this.downloadingTracks.delete(row.trackId);
+    }
+  }
+
+  async animateUserTrack(row: UserTrackRow): Promise<void> {
+    const gpx = await this.resolveGpxContentForRow(row);
+    if (!gpx) {
+      this.showMessage('No se pudo cargar el track para animarlo.');
+      return;
+    }
+    if (!this.isValidGpxData(gpx)) {
+      this.showMessage('El archivo GPX no es válido.');
+      return;
+    }
+    try {
+      const { track } = this.parseGpxData(gpx, row.fileName || row.eventName || 'Track', 0);
+      track.name = row.title || track.name;
+      this.tracks = [{ ...track, color: this.pickColor(0) }];
+      this.iniciarVisualizacion();
+    } catch {
+      this.showMessage('No se pudo procesar el track.');
+    }
+  }
+
+  async confirmDeleteUserTrack(row: UserTrackRow): Promise<void> {
+    if (!row.canDelete) {
+      this.showMessage('Solo puedes eliminar tracks que hayas subido tú.');
+      return;
+    }
+    const decision = await this.openInfoDialog({
+      title: 'Eliminar track',
+      message: '¿Seguro que quieres eliminar este track? Esta acción no se puede deshacer.',
+      confirmLabel: 'Eliminar',
+      cancelLabel: 'Cancelar'
+    });
+    if (decision !== 'confirm') return;
+    this.deleteUserTrack(row);
+  }
+
+  private deleteUserTrack(row: UserTrackRow): void {
+    if (this.isDeletingTrack(row)) return;
+    this.deletingTracks.add(row.trackId);
+    this.eventService.removeTrack(row.routeId, row.trackId, this.userId).subscribe(removed => {
+      this.deletingTracks.delete(row.trackId);
+      if (!removed) {
+        this.showMessage('No se pudo eliminar el track.');
+        return;
+      }
+      this.userTracks = this.userTracks.filter(current => current.trackId !== row.trackId);
+    });
+  }
+
+  private async resolveGpxContentForRow(row: UserTrackRow): Promise<string | null> {
+    const decoded = this.decodeGpxContent(row.gpxData);
+    if (decoded) return decoded;
+
+    if (row.gpxAsset) {
+      try {
+        return await firstValueFrom(this.http.get(row.gpxAsset, { responseType: 'text' }));
+      } catch {
+        /* ignore */
+      }
+    }
+
+    try {
+      const gpxFile: TrackGpxFile | null = await firstValueFrom(this.eventService.getTrackGpx(row.trackId));
+      if (gpxFile?.routeXml) {
+        row.fileName = gpxFile.fileName || row.fileName;
+        return this.decodeGpxContent(gpxFile.routeXml);
+      }
+    } catch {
+      /* ignore */
+    }
+    return null;
+  }
+
+  async openStandaloneUploadDialog(): Promise<void> {
+    if (!this.isAuthenticated) {
+      this.showMessage('Inicia sesión para subir tus tracks.');
+      return;
+    }
+    const dialogRef = this.dialog.open<StandaloneTrackUploadDialogComponent, any, StandaloneTrackUploadResult | undefined>(
+      StandaloneTrackUploadDialogComponent,
+      { width: '520px' }
+    );
+    const result = await firstValueFrom(dialogRef.afterClosed());
+    if (!result) return;
+    await this.uploadStandaloneTrack(result);
+  }
+
+  private async uploadStandaloneTrack(result: StandaloneTrackUploadResult): Promise<void> {
+    if (this.standaloneUploadInProgress) return;
+    const nickname = (this.personalNickname || this.authService.getSession()?.nickname || this.authService.getSession()?.email || '').trim();
+    if (!nickname) {
+      this.showMessage('No se pudo obtener tu usuario para asignar el track.');
+      return;
+    }
+    let gpxData: string;
+    try {
+      gpxData = await this.readFileAsText(result.file);
+    } catch {
+      this.showMessage('No se pudo leer el archivo GPX.');
+      return;
+    }
+    if (!this.isValidGpxData(gpxData)) {
+      this.showMessage('El archivo no es un GPX válido.');
+      return;
+    }
+    let parsed: ParsedTrackResult;
+    try {
+      parsed = this.parseGpxData(gpxData, result.file.name, 0);
+    } catch {
+      this.showMessage('El archivo no es un GPX válido.');
+      return;
+    }
+
+    const { track, durationSeconds } = parsed;
+    const activeDurationSeconds = this.calculateActiveDurationSeconds(track.data.trkpts) || durationSeconds;
+    const totalDurationSeconds = this.calculateTotalDurationSeconds(track.data.trkpts) || durationSeconds;
+    const timeSeconds = Math.max(1, Math.round(activeDurationSeconds || durationSeconds || 1));
+    const tiempoReal = Math.max(1, Math.round(totalDurationSeconds || activeDurationSeconds || durationSeconds || 1));
+
+    const payload: CreateTrackPayload = {
+      routeId: null,
+      nickname,
+      category: 'Senior M',
+      bikeType: 'MTB',
+      modalityId: null,
+      timeSeconds,
+      tiempoReal,
+      distanceKm: Number.isFinite(track.details.distance) ? track.details.distance : 0,
+      ascent: track.details.ascent,
+      routeXml: gpxData,
+      fileName: result.file.name,
+      uploadedAt: new Date().toISOString(),
+      duracionRecorrido: this.formatDurationAsLocalTime(timeSeconds),
+      createdBy: this.userId,
+      title: result.title,
+      description: result.description
+    };
+
+    this.standaloneUploadInProgress = true;
+    this.eventService.addTrack(payload).subscribe({
+      next: () => this.refreshUserTracks(),
+      error: () => {
+        this.showMessage('No se pudo subir el track.');
+        this.standaloneUploadInProgress = false;
+      },
+      complete: () => { this.standaloneUploadInProgress = false; }
     });
   }
 

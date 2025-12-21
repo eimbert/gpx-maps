@@ -361,6 +361,78 @@
   height: 28px;
 }
 
+.user-tracks {
+  margin-top: 24px;
+  padding: 16px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.08);
+}
+
+.user-tracks__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.user-tracks__header h3 {
+  margin: 4px 0 0;
+}
+
+.cloud-upload {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  border: 1px solid #cbd5e1;
+  background: linear-gradient(120deg, #e0f2fe, #f5f3ff);
+  font-weight: 800;
+  cursor: pointer;
+  color: #0f172a;
+}
+
+.cloud-upload:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.table-wrapper {
+  overflow-x: auto;
+}
+
+.user-tracks__table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 760px;
+}
+
+.user-tracks__table th,
+.user-tracks__table td {
+  padding: 10px 12px;
+  text-align: left;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.user-tracks__table th {
+  background: #f8fafc;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.user-tracks__table td {
+  color: #0f172a;
+  font-weight: 500;
+}
+
+.ghost--small {
+  padding: 6px 10px;
+  font-size: 13px;
+}
+
 .event-card {
   background: rgba(255, 255, 255, 0.85);
   border-radius: 16px;

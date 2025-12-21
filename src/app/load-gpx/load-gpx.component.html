@@ -60,6 +60,75 @@
         </svg>
       </button>
     </div>
+
+    <section *ngIf="isAuthenticated" class="user-tracks">
+      <div class="user-tracks__header">
+        <div>
+          <p class="eyebrow">Animar GPX</p>
+          <h3>Tracks subidos por ti</h3>
+        </div>
+        <button
+          type="button"
+          class="cloud-upload"
+          (click)="openStandaloneUploadDialog()"
+          [disabled]="standaloneUploadInProgress">
+          <mat-icon aria-hidden="true">cloud_upload</mat-icon>
+          <span>Subir track</span>
+        </button>
+      </div>
+
+      <p class="muted" *ngIf="userTracksLoading">Cargando tus tracks...</p>
+      <p class="muted" *ngIf="!userTracksLoading && !userTracks.length">Aún no has subido tracks.</p>
+
+      <div class="table-wrapper" *ngIf="!userTracksLoading && userTracks.length">
+        <table class="user-tracks__table">
+          <thead>
+            <tr>
+              <th>Evento</th>
+              <th>Año</th>
+              <th>Comunidad</th>
+              <th>Provincia</th>
+              <th>Población</th>
+              <th>Distancia</th>
+              <th>Tiempo movimiento</th>
+              <th>Tiempo total</th>
+              <th>Descargar</th>
+              <th>Animar</th>
+              <th>Eliminar</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let row of userTracks">
+              <td>{{ row.eventName || '-' }}</td>
+              <td>{{ row.year || '-' }}</td>
+              <td>{{ row.autonomousCommunity || '—' }}</td>
+              <td>{{ row.province || '—' }}</td>
+              <td>{{ row.population || '—' }}</td>
+              <td>{{ row.distanceKm ? (row.distanceKm | number:'1.0-1') + ' km' : '—' }}</td>
+              <td>{{ formatDurationHms(row.timeSeconds) }}</td>
+              <td>{{ formatDurationHms(row.totalTimeSeconds) }}</td>
+              <td>
+                <button type="button" class="ghost ghost--small" [disabled]="isDownloadingTrack(row)" (click)="downloadUserTrack(row)">
+                  {{ isDownloadingTrack(row) ? 'Descargando...' : 'Descargar' }}
+                </button>
+              </td>
+              <td>
+                <button type="button" class="ghost ghost--small" (click)="animateUserTrack(row)">Animar</button>
+              </td>
+              <td>
+                <button
+                  type="button"
+                  class="ghost ghost--small ghost--danger"
+                  [disabled]="isDeletingTrack(row) || !row.canDelete"
+                  (click)="confirmDeleteUserTrack(row)">
+                  {{ isDeletingTrack(row) ? 'Eliminando...' : 'Eliminar' }}
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
   </section>
 
   <section *ngIf="mode === 'events'" class="events-wrapper">

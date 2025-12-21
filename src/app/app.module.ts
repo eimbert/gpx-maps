@@ -15,6 +15,8 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatCheckboxModule } from '@angular/material/checkbox';
+import { MatMenuModule } from '@angular/material/menu';
+import { MatIconModule } from '@angular/material/icon';
 import { RouteMismatchDialogComponent } from './route-mismatch-dialog/route-mismatch-dialog.component';
 import { EventSearchDialogComponent } from './event-search-dialog/event-search-dialog.component';
 import { EventCreateDialogComponent } from './event-create-dialog/event-create-dialog.component';
@@ -45,6 +47,8 @@ import { MyTracksDialogComponent } from './my-tracks-dialog/my-tracks-dialog.com
   ],
   imports: [
     MatCheckboxModule,
+    MatMenuModule,
+    MatIconModule,
     MatButtonModule,
     MatFormFieldModule,
     MatInputModule,

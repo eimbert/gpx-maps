@@ -2,6 +2,7 @@ import { Component, ElementRef, OnDestroy, OnInit, ViewChild } from '@angular/co
 import { ActivatedRoute, Router } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
 import { MatDialog } from '@angular/material/dialog';
+import { MatMenuTrigger } from '@angular/material/menu';
 import { firstValueFrom } from 'rxjs';
 import { DialogoConfiguracionComponent } from '../dialogo-configuracion/dialogo-configuracion.component';
 import { DialogoConfiguracionData } from '../interfaces/estructuras';
@@ -64,6 +65,7 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
   @ViewChild('eventFileInput') eventFileInputRef!: ElementRef<HTMLInputElement>;
   @ViewChild('masterGpxInput') masterGpxInputRef!: ElementRef<HTMLInputElement>;
   @ViewChild('uploadSection') uploadSectionRef?: ElementRef<HTMLElement>;
+  @ViewChild(MatMenuTrigger) eventMenuTrigger?: MatMenuTrigger;
 
   readonly maxTracks = 5;
   readonly maxComparison = 4;
@@ -1506,11 +1508,8 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
     }
   }
 
-  toggleEventMenu(): void {
-    this.eventMenuOpen = !this.eventMenuOpen;
-  }
-
   closeEventMenu(): void {
+    this.eventMenuTrigger?.closeMenu();
     this.eventMenuOpen = false;
   }
 

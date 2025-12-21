@@ -56,13 +56,22 @@ interface EventVisuals {
   mapTileUrl: string | null;
 }
 
-interface EventTrackUploadInput {
+interface EventTrackUploadDraft {
   eventId: number | null;
   modalityId: number | null;
   category: RaceCategory;
   bikeType: BikeType;
   distanceKm: number | null;
   file: File | null;
+}
+
+interface EventTrackUploadPayload {
+  eventId: number;
+  modalityId: number | null;
+  category: RaceCategory;
+  bikeType: BikeType;
+  distanceKm: number;
+  file: File;
 }
 
 @Component({
@@ -103,7 +112,7 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
   private pendingMasterUploadEventId: number | null = null;
   eventMenuOpen = false;
 
-  eventUpload: EventTrackUploadInput = {
+  eventUpload: EventTrackUploadDraft = {
     eventId: null,
     category: 'Senior M' as RaceCategory,
     bikeType: 'MTB' as BikeType,
@@ -698,7 +707,7 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
 
     dialogRef.afterClosed().subscribe(result => {
       if (!result) return;
-      const uploadPayload: EventTrackUploadInput = {
+      const uploadPayload: EventTrackUploadPayload = {
         eventId: result.eventId,
         modalityId: result.modalityId ?? null,
         category: result.category,
@@ -716,7 +725,7 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
         file: null
       };
       this.selectMode('events');
-      this.selectEvent(uploadPayload.eventId, uploadPayload.modalityId || undefined);
+      this.selectEvent(uploadPayload.eventId!, uploadPayload.modalityId || undefined);
       this.uploadTrackToEvent(uploadPayload);
     });
   }
@@ -1268,9 +1277,10 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
     return { trkpts: nuevosPuntos };
   }
 
-  private validateEventUpload(upload: EventTrackUploadInput): string | null {
-    if (!upload.eventId) {
-      return 'Elige un evento primero.';
+  private validateEventUpload(upload: EventTrackUploadPayload): string | null {
+    const event = this.events.find(e => e.id === upload.eventId);
+    if (!event) {
+      return 'El evento seleccionado no es válido.';
     }
     const event = this.events.find(e => e.id === upload.eventId);
     if (!event) {
@@ -1296,7 +1306,7 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
     return null;
   }
 
-  async uploadTrackToEvent(upload: EventTrackUploadInput): Promise<void> {
+  async uploadTrackToEvent(upload: EventTrackUploadPayload): Promise<void> {
     if (!this.ensureEventsAccess()) return;
     const validationError = this.validateEventUpload(upload);
     if (validationError) {

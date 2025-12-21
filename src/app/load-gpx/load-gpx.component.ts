@@ -1282,6 +1282,10 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
     if (!event) {
       return 'El evento seleccionado no es válido.';
     }
+    const event = this.events.find(e => e.id === upload.eventId);
+    if (!event) {
+      return 'El evento seleccionado no es válido.';
+    }
     const nickname = this.personalNickname || this.authService.getSession()?.nickname || '';
     if (!nickname.trim()) {
       return 'No se pudo obtener tu nick para el ranking.';

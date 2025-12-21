@@ -1724,7 +1724,7 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
     const payload: CreateTrackPayload = {
       routeId: null,
       nickname,
-      category: 'Senior M',
+      category: null,
       bikeType: 'MTB',
       modalityId: null,
       timeSeconds,
@@ -1736,8 +1736,7 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
       uploadedAt: new Date().toISOString(),
       duracionRecorrido: this.formatDurationAsLocalTime(timeSeconds),
       createdBy: this.userId,
-      title: result.title,
-      description: result.description
+      title: result.title
     };
 
     this.standaloneUploadInProgress = true;

@@ -3,7 +3,8 @@ export type RaceCategory =
   | 'Senior M' | 'Senior F'
   | 'Master 40M' | 'Master 40F'
   | 'Master 50M' | 'Master 50F'
-  | 'Master 60M' | 'Master 60F';
+  | 'Master 60M' | 'Master 60F'
+  | null |  null;
 
 export type BikeType = 'MTB' | 'Carretera' | 'Gravel' | 'e-Bike';
 
@@ -81,7 +82,6 @@ export interface CreateTrackPayload {
   duracionRecorrido?: string;
   createdBy?: number;
   title?: string | null;
-  description?: string | null;
 }
 
 export interface RaceEvent {

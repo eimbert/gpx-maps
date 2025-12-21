@@ -4,7 +4,6 @@ import { MatDialogRef } from '@angular/material/dialog';
 export interface StandaloneTrackUploadResult {
   file: File;
   title: string | null;
-  description: string | null;
 }
 
 @Component({
@@ -38,8 +37,7 @@ export class StandaloneTrackUploadDialogComponent {
     if (!this.file) return;
     this.dialogRef.close({
       file: this.file,
-      title: this.title.trim() || null,
-      description: this.description.trim() || null
+      title: this.title.trim() || null
     });
   }
 }

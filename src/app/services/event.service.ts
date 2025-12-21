@@ -74,10 +74,11 @@ export class EventService {
 
 
   addTrack(track: CreateTrackPayload): Observable<EventTrack> {
-    const routeId = track.routeId;
+    const routeId = track.routeId ?? null;
     return this.http.post<EventTrack>(`${this.tracksApiBase}`, track).pipe(
-      map(created => this.normalizeTrack(created, routeId)),
+      map(created => this.normalizeTrack(created, routeId ?? undefined)),
       tap(created => {
+        if (routeId === null || routeId === undefined) return;
         const updated = this.events$.value.map(event =>
           event.id === routeId ? { ...event, tracks: [...event.tracks, created] } : event
         );
@@ -86,14 +87,19 @@ export class EventService {
     );
   }
 
-  removeTrack(eventId: number, trackId: number, requesterId: number): Observable<boolean> {
-    const event = this.events$.value.find(e => e.id === eventId);
+  removeTrack(eventId: number | null | undefined, trackId: number, requesterId: number): Observable<boolean> {
+    const event = eventId ? this.events$.value.find(e => e.id === eventId) : undefined;
     const track = event?.tracks.find(t => t.id === trackId);
-    if (!event || !track) return of(false);
-    if (track.createdBy && track.createdBy !== requesterId) return of(false);
+    if (event && !track) return of(false);
+    if (event && track?.createdBy && track.createdBy !== requesterId) return of(false);
 
-    return this.http.delete<void>(`${this.routesApiBase}/${eventId}/tracks/${trackId}`).pipe(
+    const url = eventId
+      ? `${this.routesApiBase}/${eventId}/tracks/${trackId}`
+      : `${this.tracksApiBase}/${trackId}`;
+
+    return this.http.delete<void>(url).pipe(
       tap(() => {
+        if (!eventId) return;
         const updated = this.events$.value.map(current =>
           current.id === eventId ? { ...current, tracks: current.tracks.filter(t => t.id !== trackId) } : current
         );
@@ -209,7 +215,7 @@ export class EventService {
     };
   }
 
-  private normalizeTrack(track: EventTrack, routeId: number): EventTrack {
+  private normalizeTrack(track: EventTrack, routeId: number | null | undefined): EventTrack {
     const timeSeconds = Number(track.timeSeconds);
     const tiempoReal = track.tiempoReal === undefined || track.tiempoReal === null
       ? track.tiempoReal ?? undefined
@@ -222,7 +228,7 @@ export class EventService {
       timeSeconds: Number.isFinite(timeSeconds) ? timeSeconds : 0,
       tiempoReal: tiempoReal === undefined || Number.isFinite(tiempoReal) ? tiempoReal : undefined,
       distanceKm: Number.isFinite(distanceKm) ? distanceKm : 0,
-      routeId: track.routeId ?? routeId,
+      routeId: track.routeId ?? routeId ?? null,
       modalityId: track.modalityId === null || track.modalityId === undefined
         ? null
       : Number(track.modalityId),
@@ -232,10 +238,11 @@ export class EventService {
     };
   }
 
-  private resolveTrackRouteId(track: EventTrack): number {
-    const routeId = (track as any).routeId ?? (track as any).route_id ?? 0;
+  private resolveTrackRouteId(track: EventTrack): number | null {
+    const routeId = (track as any).routeId ?? (track as any).route_id ?? null;
+    if (routeId === null || routeId === undefined) return null;
     const numericId = Number(routeId);
-    return Number.isFinite(numericId) ? numericId : 0;
+    return Number.isFinite(numericId) ? numericId : null;
   }
 
   private buildLogoDataUrl(logoBlob?: string | null, logoMime?: string | null): string | undefined {

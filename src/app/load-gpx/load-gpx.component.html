@@ -81,18 +81,47 @@
     <ng-container *ngIf="isAuthenticated">
       <div class="events-actions">
         <div class="events-menu">
-          <button type="button" class="menu-toggle" (click)="toggleEventMenu()">
-            📋 Menú de eventos
-            <span class="chevron" [class.chevron--open]="eventMenuOpen">▾</span>
+          <button
+            type="button"
+            mat-raised-button
+            color="primary"
+            class="menu-toggle"
+            [matMenuTriggerFor]="eventsMenu"
+            #eventsMenuTrigger="matMenuTrigger"
+            (menuOpened)="eventMenuOpen = true"
+            (menuClosed)="eventMenuOpen = false">
+            <span class="menu-toggle__label">
+              <mat-icon aria-hidden="true">event</mat-icon>
+              <span>Menú de eventos</span>
+            </span>
+            <mat-icon class="chevron" [class.chevron--open]="eventMenuOpen" aria-hidden="true">expand_more</mat-icon>
           </button>
-          <div class="menu-panel" *ngIf="eventMenuOpen">
-            <button type="button" (click)="scrollToUploadSection()">⬆️ Subir track</button>
-            <button type="button" (click)="openCreateEventDialog()">➕ Crear evento</button>
-            <button type="button" (click)="openEventSearch()">📑 Lista eventos</button>
-            <button type="button" [disabled]="!canDeleteSelectedEvent()" (click)="deleteSelectedEvent()">🗑️ Eliminar evento</button>
-            <button type="button" (click)="openMyTracksDialog()">📂 Mis tracks</button>
-            <button type="button" (click)="goHome(); closeEventMenu()">🏠 Volver al inicio</button>
-          </div>
+          <mat-menu #eventsMenu="matMenu" class="events-mat-menu">
+            <button mat-menu-item type="button" (click)="scrollToUploadSection()">
+              <mat-icon aria-hidden="true">file_upload</mat-icon>
+              <span>Subir track</span>
+            </button>
+            <button mat-menu-item type="button" (click)="openCreateEventDialog()">
+              <mat-icon aria-hidden="true">add_circle</mat-icon>
+              <span>Crear evento</span>
+            </button>
+            <button mat-menu-item type="button" (click)="openEventSearch()">
+              <mat-icon aria-hidden="true">format_list_bulleted</mat-icon>
+              <span>Lista eventos</span>
+            </button>
+            <button mat-menu-item type="button" [disabled]="!canDeleteSelectedEvent()" (click)="deleteSelectedEvent()">
+              <mat-icon aria-hidden="true">delete</mat-icon>
+              <span>Eliminar evento</span>
+            </button>
+            <button mat-menu-item type="button" (click)="openMyTracksDialog()">
+              <mat-icon aria-hidden="true">folder_shared</mat-icon>
+              <span>Mis tracks</span>
+            </button>
+            <button mat-menu-item type="button" (click)="goHome(); closeEventMenu()">
+              <mat-icon aria-hidden="true">home</mat-icon>
+              <span>Volver al inicio</span>
+            </button>
+          </mat-menu>
         </div>
       </div>
       <input #masterGpxInput type="file" accept=".gpx" hidden (change)="onMasterGpxFileChange($event)" />

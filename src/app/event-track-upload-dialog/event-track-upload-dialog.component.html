@@ -1,0 +1,57 @@
+<div class="upload-dialog">
+  <header class="upload-dialog__header">
+    <div>
+      <p class="eyebrow">Ranking social</p>
+      <h2>Sube tu track</h2>
+      <p class="muted">Elige evento y completa los datos para entrar en la clasificación.</p>
+    </div>
+  </header>
+
+  <div class="form-grid">
+    <label>
+      <span>Evento</span>
+      <select [ngModel]="selectedEventId" (ngModelChange)="onEventChange($event)">
+        <option [ngValue]="null">Selecciona un evento</option>
+        <option *ngFor="let event of data.events" [ngValue]="event.id">
+          {{ event.name }} ({{ event.year }})
+        </option>
+      </select>
+    </label>
+    <label>
+      <span>Modalidad</span>
+      <select [ngModel]="selectedModalityId" (ngModelChange)="onModalityChange($event)" [disabled]="!modalities.length">
+        <option *ngFor="let modality of modalities" [ngValue]="modality.id">
+          {{ modality.name }} • {{ modality.distanceKm | number:'1.0-1' }} km
+        </option>
+        <option *ngIf="!modalities.length" [ngValue]="null">Sin modalidades</option>
+      </select>
+    </label>
+    <label>
+      <span>Categoría</span>
+      <select [(ngModel)]="category">
+        <option *ngFor="let categoryOption of data.categories" [ngValue]="categoryOption">
+          {{ categoryOption }}
+        </option>
+      </select>
+    </label>
+    <label>
+      <span>Distancia (km)</span>
+      <input type="number" min="0" step="0.1" [(ngModel)]="distanceKm" placeholder="Distancia del recorrido" />
+    </label>
+    <label>
+      <span>Tipo de bicicleta</span>
+      <select [(ngModel)]="bikeType">
+        <option *ngFor="let bike of data.bikeTypes" [ngValue]="bike">{{ bike }}</option>
+      </select>
+    </label>
+    <label class="file-input">
+      <span>Track GPX</span>
+      <input type="file" accept=".gpx" (change)="onFileChange($event)" />
+    </label>
+  </div>
+
+  <div class="actions">
+    <button mat-button type="button" (click)="cancel()">Cancelar</button>
+    <button class="btn-start" type="button" (click)="confirm()">Enviar al ranking</button>
+  </div>
+</div>

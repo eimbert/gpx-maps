@@ -97,7 +97,7 @@
             <mat-icon class="chevron" [class.chevron--open]="eventMenuOpen" aria-hidden="true">expand_more</mat-icon>
           </button>
           <mat-menu #eventsMenu="matMenu" class="events-mat-menu">
-            <button mat-menu-item type="button" (click)="scrollToUploadSection()">
+            <button mat-menu-item type="button" (click)="openUploadTrackDialog()">
               <mat-icon aria-hidden="true">file_upload</mat-icon>
               <span>Subir track</span>
             </button>
@@ -232,79 +232,6 @@
 
       <section *ngIf="events.length" class="event-detail">
         <div class="event-panels">
-          <article class="panel" #uploadSection>
-            <div class="panel__header panel__header--stacked">
-            <div>
-              <h3>Sube tu track</h3>
-              <p class="muted">Categoría, distancia, bici y GPX para entrar al ranking automático.</p>
-            </div>
-            <div class="event-selection">
-              <div class="event-status" [class.event-status--empty]="!selectedEvent">
-                <p class="eyebrow">Evento seleccionado</p>
-                <ng-container *ngIf="selectedEvent; else noEventSelected">
-                  <p class="event-status__title">{{ selectedEvent.name }}</p>
-                  <p class="muted">{{ selectedEvent.year }} • {{ getEventLocation(selectedEvent) }}</p>
-                </ng-container>
-                <ng-template #noEventSelected>
-                  <p class="event-status__title">Ningún evento seleccionado</p>
-                  <p class="muted">Elige un evento para habilitar la subida.</p>
-                </ng-template>
-              </div>
-              <div class="event-logo-preview" [class.event-logo-preview--empty]="!selectedEvent">
-                <ng-container *ngIf="selectedEvent; else logoPlaceholder">
-                  <img
-                    [src]="getEventLogo(selectedEvent)"
-                    [alt]="selectedEvent.name + ' logo'"
-                    class="event-logo-preview__image"
-                  />
-                </ng-container>
-                <ng-template #logoPlaceholder>
-                  <span class="muted">Sin logo</span>
-                </ng-template>
-              </div>
-            </div>
-          </div>
-          <div class="form-grid">
-            <label>
-              <span>Evento</span>
-              <select [ngModel]="selectedEventId" (ngModelChange)="handleEventSelection($event)" required>
-                <option [ngValue]="null">Selecciona un evento</option>
-                <option *ngFor="let event of events" [ngValue]="event.id">{{ event.name }} ({{ event.year }})</option>
-              </select>
-            </label>
-            <label>
-              <span>Categoría</span>
-              <select [(ngModel)]="eventUpload.category" required>
-                <option *ngFor="let category of categories" [ngValue]="category">{{ category }}</option>
-              </select>
-            </label>
-            <label>
-              <span>Distancia (km)</span>
-              <input
-                type="number"
-                min="0"
-                step="0.1"
-                [(ngModel)]="eventUpload.distanceKm"
-                placeholder="Distancia del recorrido"
-                required
-              />
-            </label>
-            <label>
-              <span>Tipo de bicicleta</span>
-              <select [(ngModel)]="eventUpload.bikeType" required>
-                <option *ngFor="let bike of bikeTypes" [ngValue]="bike">{{ bike }}</option>
-              </select>
-            </label>
-            <label class="file-input">
-              <span>Track GPX</span>
-              <input #eventFileInput type="file" accept=".gpx" (change)="onEventFileChange($event)" [disabled]="!selectedEvent" required />
-            </label>
-          </div>
-          <button class="btn-start" type="button" (click)="uploadTrackToEvent()" [disabled]="!canUploadToEvent()">
-            <span>Enviar al ranking</span>
-          </button>
-        </article>
-
         <!-- <article class="panel">
           <ng-container *ngIf="selectedEvent; else rankingPlaceholder">
             <div class="panel__header">

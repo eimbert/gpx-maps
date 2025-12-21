@@ -92,9 +92,9 @@
               <th>Distancia</th>
               <th>Tiempo movimiento</th>
               <th>Tiempo total</th>
-              <th>Descargar</th>
-              <th>Animar</th>
-              <th>Eliminar</th>
+              <th class="user-tracks__action-col">Descargar</th>
+              <th class="user-tracks__action-col">Animar</th>
+              <th class="user-tracks__action-col">Eliminar</th>
             </tr>
           </thead>
           <tbody>
@@ -107,21 +107,33 @@
               <td>{{ row.distanceKm ? (row.distanceKm | number:'1.0-1') + ' km' : '—' }}</td>
               <td>{{ formatDurationHms(row.timeSeconds) }}</td>
               <td>{{ formatDurationHms(row.totalTimeSeconds) }}</td>
-              <td>
-                <button type="button" class="ghost ghost--small" [disabled]="isDownloadingTrack(row)" (click)="downloadUserTrack(row)">
-                  {{ isDownloadingTrack(row) ? 'Descargando...' : 'Descargar' }}
-                </button>
-              </td>
-              <td>
-                <button type="button" class="ghost ghost--small" (click)="animateUserTrack(row)">Animar</button>
-              </td>
-              <td>
+              <td class="user-tracks__action-col">
                 <button
                   type="button"
-                  class="ghost ghost--small ghost--danger"
+                  class="ghost ghost--small user-tracks__icon-button"
+                  [disabled]="isDownloadingTrack(row)"
+                  (click)="downloadUserTrack(row)"
+                  [attr.aria-label]="isDownloadingTrack(row) ? 'Descargando track' : 'Descargar track'">
+                  <mat-icon aria-hidden="true">{{ isDownloadingTrack(row) ? 'downloading' : 'file_download' }}</mat-icon>
+                </button>
+              </td>
+              <td class="user-tracks__action-col">
+                <button
+                  type="button"
+                  class="ghost ghost--small user-tracks__icon-button"
+                  (click)="animateUserTrack(row)"
+                  aria-label="Animar track">
+                  <mat-icon aria-hidden="true">play_arrow</mat-icon>
+                </button>
+              </td>
+              <td class="user-tracks__action-col">
+                <button
+                  type="button"
+                  class="ghost ghost--small ghost--danger user-tracks__icon-button"
                   [disabled]="isDeletingTrack(row) || !row.canDelete"
-                  (click)="confirmDeleteUserTrack(row)">
-                  {{ isDeletingTrack(row) ? 'Eliminando...' : 'Eliminar' }}
+                  (click)="confirmDeleteUserTrack(row)"
+                  [attr.aria-label]="isDeletingTrack(row) ? 'Eliminando track' : 'Eliminar track'">
+                  <mat-icon aria-hidden="true">{{ isDeletingTrack(row) ? 'hourglass_top' : 'delete' }}</mat-icon>
                 </button>
               </td>
             </tr>

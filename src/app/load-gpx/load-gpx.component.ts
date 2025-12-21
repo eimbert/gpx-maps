@@ -12,6 +12,7 @@ import { EventSearchDialogComponent, EventSearchDialogData, EventSearchDialogRes
 import { BikeType, CreateEventPayload, CreateTrackPayload, EventTrack, RaceCategory, RaceEvent, RouteTrackTime } from '../interfaces/events';
 import { EventService } from '../services/event.service';
 import { EventCreateDialogComponent, EventCreateDialogResult } from '../event-create-dialog/event-create-dialog.component';
+import { EventTrackUploadDialogComponent, EventTrackUploadDialogData, EventTrackUploadDialogResult } from '../event-track-upload-dialog/event-track-upload-dialog.component';
 import { UserIdentityService } from '../services/user-identity.service';
 import { AuthService } from '../services/auth.service';
 import { Subscription } from 'rxjs';
@@ -55,6 +56,24 @@ interface EventVisuals {
   mapTileUrl: string | null;
 }
 
+interface EventTrackUploadDraft {
+  eventId: number | null;
+  modalityId: number | null;
+  category: RaceCategory;
+  bikeType: BikeType;
+  distanceKm: number | null;
+  file: File | null;
+}
+
+interface EventTrackUploadPayload {
+  eventId: number;
+  modalityId: number | null;
+  category: RaceCategory;
+  bikeType: BikeType;
+  distanceKm: number;
+  file: File;
+}
+
 @Component({
   selector: 'app-load-gpx',
   templateUrl: './load-gpx.component.html',
@@ -62,9 +81,7 @@ interface EventVisuals {
 })
 export class LoadGpxComponent implements OnInit, OnDestroy {
   @ViewChild('fileInput') fileInputRef!: ElementRef<HTMLInputElement>;
-  @ViewChild('eventFileInput') eventFileInputRef!: ElementRef<HTMLInputElement>;
   @ViewChild('masterGpxInput') masterGpxInputRef!: ElementRef<HTMLInputElement>;
-  @ViewChild('uploadSection') uploadSectionRef?: ElementRef<HTMLElement>;
   @ViewChild(MatMenuTrigger) eventMenuTrigger?: MatMenuTrigger;
 
   readonly maxTracks = 5;
@@ -95,12 +112,13 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
   private pendingMasterUploadEventId: number | null = null;
   eventMenuOpen = false;
 
-  eventUpload = {
+  eventUpload: EventTrackUploadDraft = {
+    eventId: null,
     category: 'Senior M' as RaceCategory,
     bikeType: 'MTB' as BikeType,
-    modalityId: null as number | null,
-    distanceKm: null as number | null,
-    file: null as File | null
+    modalityId: null,
+    distanceKm: null,
+    file: null
   };
 
   categories: RaceCategory[] = ['Sub 23M', 'Sub 23F', 'Senior M', 'Senior F', 'Master 40M', 'Master 40F', 'Master 50M', 'Master 50F', 'Master 60M', 'Master 60F'];
@@ -196,6 +214,7 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
   selectEvent(eventId: number, modalityId?: number): void {
     if (!this.ensureEventsAccess()) return;
     this.selectedEventId = eventId;
+    this.eventUpload.eventId = eventId;
     const event = this.selectedEvent;
     this.carouselIndex = Math.max(0, this.events.findIndex(e => e.id === eventId));
     this.selectedComparisonIds.clear();
@@ -206,6 +225,7 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
     const selectedModality = event?.modalities?.find(m => m.id === this.selectedModalityId) ?? event?.modalities?.[0];
     this.eventUpload = {
       ...this.eventUpload,
+      eventId: eventId,
       modalityId: this.selectedModalityId,
       distanceKm: selectedModality?.distanceKm ?? null
     };
@@ -222,21 +242,11 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
       this.selectedComparisonIds.clear();
       this.personalHistory = [];
       this.routeTrackTimes = [];
-      this.eventUpload = { ...this.eventUpload, modalityId: null, distanceKm: null };
-      this.resetEventFileInput();
+      this.eventUpload = { ...this.eventUpload, eventId: null, modalityId: null, distanceKm: null };
       return;
     }
 
     this.selectEvent(eventId);
-  }
-
-  onModalityChange(modalityId: number | null): void {
-    if (!this.ensureEventsAccess()) return;
-    this.selectedModalityId = modalityId;
-    const modality = this.selectedEvent?.modalities?.find(m => m.id === modalityId);
-    if (modality) {
-      this.eventUpload.distanceKm = modality.distanceKm;
-    }
   }
 
   goHome(): void {
@@ -668,6 +678,55 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
         },
         error: () => this.showMessage('No se pudo crear el evento en el servidor.')
       });
+    });
+  }
+
+  openUploadTrackDialog(): void {
+    if (!this.ensureEventsAccess()) return;
+    if (!this.events.length) {
+      this.showMessage('No hay eventos disponibles para subir un track.');
+      return;
+    }
+    this.closeEventMenu();
+    const dialogRef = this.dialog.open<EventTrackUploadDialogComponent, EventTrackUploadDialogData, EventTrackUploadDialogResult>(
+      EventTrackUploadDialogComponent,
+      {
+        width: '720px',
+        data: {
+          events: this.events,
+          categories: this.categories,
+          bikeTypes: this.bikeTypes,
+          defaultEventId: this.selectedEventId ?? this.eventUpload.eventId,
+          defaultModalityId: this.selectedModalityId ?? this.eventUpload.modalityId,
+          defaultCategory: this.eventUpload.category,
+          defaultBikeType: this.eventUpload.bikeType,
+          defaultDistanceKm: this.eventUpload.distanceKm
+        }
+      }
+    );
+
+    dialogRef.afterClosed().subscribe(result => {
+      if (!result) return;
+      const uploadPayload: EventTrackUploadPayload = {
+        eventId: result.eventId,
+        modalityId: result.modalityId ?? null,
+        category: result.category,
+        bikeType: result.bikeType,
+        distanceKm: result.distanceKm,
+        file: result.file
+      };
+      this.eventUpload = {
+        ...this.eventUpload,
+        eventId: uploadPayload.eventId,
+        modalityId: uploadPayload.modalityId,
+        category: uploadPayload.category,
+        bikeType: uploadPayload.bikeType,
+        distanceKm: uploadPayload.distanceKm,
+        file: null
+      };
+      this.selectMode('events');
+      this.selectEvent(uploadPayload.eventId!, uploadPayload.modalityId || undefined);
+      this.uploadTrackToEvent(uploadPayload);
     });
   }
 
@@ -1218,40 +1277,34 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
     return { trkpts: nuevosPuntos };
   }
 
-  private validateEventUpload(): string | null {
-    if (!this.selectedEventId || !this.selectedEvent) {
-      return 'Elige un evento primero.';
+  private validateEventUpload(upload: EventTrackUploadPayload): string | null {
+    const selectedEvent = this.events.find(e => e.id === upload.eventId);
+    if (!selectedEvent) {
+      return 'El evento seleccionado no es válido.';
     }
     const nickname = this.personalNickname || this.authService.getSession()?.nickname || '';
     if (!nickname.trim()) {
       return 'No se pudo obtener tu nick para el ranking.';
     }
-    if (!this.eventUpload.category) {
+    if (!upload.category) {
       return 'Selecciona tu categoría.';
     }
-    if (!this.eventUpload.bikeType) {
+    if (!upload.bikeType) {
       return 'Selecciona tu tipo de bicicleta.';
     }
-    const distanceKm = Number(this.eventUpload.distanceKm);
+    const distanceKm = Number(upload.distanceKm);
     if (!Number.isFinite(distanceKm) || distanceKm <= 0) {
       return 'Añade la distancia en kilómetros del recorrido.';
     }
-    if (!this.eventUpload.file) {
+    if (!upload.file) {
       return 'Selecciona un archivo GPX.';
     }
     return null;
   }
 
-  private resetEventFileInput(): void {
-    this.eventUpload = { ...this.eventUpload, file: null };
-    if (this.eventFileInputRef?.nativeElement) {
-      this.eventFileInputRef.nativeElement.value = '';
-    }
-  }
-
-  async uploadTrackToEvent(): Promise<void> {
+  async uploadTrackToEvent(upload: EventTrackUploadPayload): Promise<void> {
     if (!this.ensureEventsAccess()) return;
-    const validationError = this.validateEventUpload();
+    const validationError = this.validateEventUpload(upload);
     if (validationError) {
       this.showMessage(validationError);
       return;
@@ -1262,23 +1315,22 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
       this.showMessage('No se pudo obtener tu nick para el ranking.');
       return;
     }
-    const routeId = this.selectedEventId!;
-    const modalityId = this.eventUpload.modalityId ?? this.selectedModalityId ?? this.selectedEvent?.modalities?.[0]?.id ?? null;
-    const distanceKm = Number(this.eventUpload.distanceKm);
-    const gpxData = await this.readFileAsText(this.eventUpload.file!);
+    const routeId = upload.eventId!;
+    const event = this.events.find(e => e.id === routeId);
+    const modalityId = upload.modalityId ?? this.selectedModalityId ?? event?.modalities?.[0]?.id ?? null;
+    const distanceKm = Number(upload.distanceKm);
+    const gpxData = await this.readFileAsText(upload.file!);
 
     if (!this.isValidGpxData(gpxData)) {
       this.showMessage('El archivo no es un GPX válido.');
-      this.resetEventFileInput();
       return;
     }
 
     let parsed: ParsedTrackResult;
     try {
-      parsed = this.parseGpxData(gpxData, this.eventUpload.file!.name, 0);
+      parsed = this.parseGpxData(gpxData, upload.file!.name, 0);
     } catch (error) {
       this.showMessage('El archivo no es un GPX válido.');
-      this.resetEventFileInput();
       return;
     }
 
@@ -1295,15 +1347,15 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
     const newTrack: CreateTrackPayload = {
       routeId,
       nickname,
-      category: this.eventUpload.category,
-      bikeType: this.eventUpload.bikeType,
+      category: upload.category,
+      bikeType: upload.bikeType,
       modalityId,
       timeSeconds,
       tiempoReal,
       distanceKm: Number.isFinite(distanceKm) && distanceKm > 0 ? distanceKm : track.details.distance,
       ascent: track.details.ascent,
       routeXml: gpxData,
-      fileName: this.eventUpload.file!.name,
+      fileName: upload.file!.name,
       duracionRecorrido: this.formatDurationAsLocalTime(timeSeconds),
       uploadedAt: new Date().toISOString(),
       createdBy: this.userId
@@ -1315,14 +1367,9 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
         this.personalNickname = nickname;
         this.refreshPersonalHistory();
         this.selectedComparisonIds.add(created.id);
-        this.resetEventFileInput();
       },
       error: () => this.showMessage('No se pudo subir el track al evento.')
     });
-  }
-
-  canUploadToEvent(): boolean {
-    return this.isAuthenticated && !this.validateEventUpload();
   }
 
   async animateSelectedTracks(): Promise<void> {
@@ -1481,19 +1528,6 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
     });
   }
 
-  onEventFileChange(event: Event): void {
-    if (!this.ensureEventsAccess()) return;
-    const input = event.target as HTMLInputElement;
-    const file = input.files?.[0] ?? null;
-    if (file && !file.name.toLowerCase().endsWith('.gpx')) {
-      this.showMessage('Selecciona un archivo GPX válido.');
-      this.resetEventFileInput();
-      return;
-    }
-
-    this.eventUpload.file = file;
-  }
-
   private async ensureLoadedTrackFromEventTrack(track: EventTrack, colorIndex: number): Promise<LoadedTrack | null> {
     try {
       const gpxData = track.gpxData || (track.gpxAsset
@@ -1511,14 +1545,6 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
   closeEventMenu(): void {
     this.eventMenuTrigger?.closeMenu();
     this.eventMenuOpen = false;
-  }
-
-  scrollToUploadSection(): void {
-    this.closeEventMenu();
-    if (!this.ensureEventsAccess()) return;
-    if (this.uploadSectionRef?.nativeElement) {
-      this.uploadSectionRef.nativeElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
   }
 
   async openMyTracksDialog(): Promise<void> {

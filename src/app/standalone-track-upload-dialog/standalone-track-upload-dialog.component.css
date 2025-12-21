@@ -1,0 +1,28 @@
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 320px;
+}
+
+.file-picker {
+  display: grid;
+  gap: 4px;
+}
+
+.file-picker__label {
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.file-picker__hint {
+  margin: 0;
+  color: #64748b;
+  font-size: 13px;
+}
+
+.file-picker__selected {
+  margin: 0;
+  color: #0f172a;
+  font-weight: 600;
+}

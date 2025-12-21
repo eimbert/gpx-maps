@@ -16,7 +16,7 @@ export interface EventModality {
 
 export interface EventTrack {
   id: number;
-  routeId?: number;
+  routeId?: number | null;
   nickname: string;
   category: RaceCategory;
   bikeType: BikeType;
@@ -31,6 +31,8 @@ export interface EventTrack {
   uploadedAt: string;
   duracionRecorrido?: string;
   createdBy?: number;
+  title?: string | null;
+  description?: string | null;
 }
 
 export interface TrackGpxFile {
@@ -63,7 +65,7 @@ export interface CreateEventPayload {
 }
 
 export interface CreateTrackPayload {
-  routeId: number;
+  routeId: number | null;
   nickname: string;
   category: RaceCategory;
   bikeType: BikeType;
@@ -78,6 +80,8 @@ export interface CreateTrackPayload {
   uploadedAt: string;
   duracionRecorrido?: string;
   createdBy?: number;
+  title?: string | null;
+  description?: string | null;
 }
 
 export interface RaceEvent {

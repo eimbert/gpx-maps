@@ -28,6 +28,7 @@ import { VerificationDialogComponent } from './verification-dialog/verification-
 import { AuthInterceptor } from './services/auth.interceptor';
 import { MyTracksDialogComponent } from './my-tracks-dialog/my-tracks-dialog.component';
 import { EventTrackUploadDialogComponent } from './event-track-upload-dialog/event-track-upload-dialog.component';
+import { StandaloneTrackUploadDialogComponent } from './standalone-track-upload-dialog/standalone-track-upload-dialog.component';
 
 @NgModule({
   declarations: [
@@ -45,7 +46,8 @@ import { EventTrackUploadDialogComponent } from './event-track-upload-dialog/eve
     InfoDialogComponent,
     VerificationDialogComponent,
     MyTracksDialogComponent,
-    EventTrackUploadDialogComponent
+    EventTrackUploadDialogComponent,
+    StandaloneTrackUploadDialogComponent
   ],
   imports: [
     MatCheckboxModule,

@@ -1532,7 +1532,9 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
     try {
       const tracks = await firstValueFrom(this.eventService.getMyTracks());
       const eventsById = new Map<number, RaceEvent>(this.events.map(event => [event.id, event]));
-      this.userTracks = tracks.map(track => this.toUserTrackRow(track, eventsById));
+      const rows = tracks.map(track => this.toUserTrackRow(track, eventsById));
+      await this.fillMissingUserTrackLocations(rows);
+      this.userTracks = rows;
     } catch {
       this.showMessage('No se pudieron cargar tus tracks. Inténtalo de nuevo más tarde.');
       this.userTracks = [];
@@ -1563,6 +1565,60 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
       title: (track as any).title ?? null,
       description: (track as any).description ?? null
     };
+  }
+
+  private async fillMissingUserTrackLocations(rows: UserTrackRow[]): Promise<void> {
+    const cache = new Map<string, { population: string | null; autonomousCommunity: string | null; province: string | null }>();
+    for (const row of rows) {
+      if (row.routeId && (row.population || row.autonomousCommunity || row.province)) continue;
+      if (row.population && row.autonomousCommunity && row.province) continue;
+      const point = await this.extractFirstPointForRow(row);
+      if (!point) continue;
+      const key = `${point.lat.toFixed(5)},${point.lon.toFixed(5)}`;
+      let location = cache.get(key);
+      if (!location) {
+        location = await this.reverseGeocode(point.lat, point.lon);
+        if (location) {
+          cache.set(key, location);
+        }
+      }
+      if (!location) continue;
+      row.population = row.population || location.population;
+      row.autonomousCommunity = row.autonomousCommunity || location.autonomousCommunity;
+      row.province = row.province || location.province;
+    }
+  }
+
+  private async extractFirstPointForRow(row: UserTrackRow): Promise<{ lat: number; lon: number } | null> {
+    const gpx = await this.resolveGpxContentForRow(row);
+    if (!gpx) return null;
+    try {
+      const parser = new DOMParser();
+      const xml = parser.parseFromString(gpx, 'application/xml');
+      const trkpt = xml.querySelector('trkpt');
+      if (!trkpt) return null;
+      const lat = parseFloat(trkpt.getAttribute('lat') || '');
+      const lon = parseFloat(trkpt.getAttribute('lon') || '');
+      if (!Number.isFinite(lat) || !Number.isFinite(lon)) return null;
+      return { lat, lon };
+    } catch {
+      return null;
+    }
+  }
+
+  private async reverseGeocode(lat: number, lon: number): Promise<{ population: string | null; autonomousCommunity: string | null; province: string | null } | null> {
+    try {
+      const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lon)}&addressdetails=1`;
+      const result: any = await firstValueFrom(this.http.get(url, { headers: { Accept: 'application/json' } }));
+      const address = result?.address || {};
+      return {
+        population: address.village || address.town || address.city || null,
+        autonomousCommunity: address.state || null,
+        province: address.province || address.county || null
+      };
+    } catch {
+      return null;
+    }
   }
 
   formatDurationHms(seconds: number): string {

@@ -221,6 +221,8 @@ export class EventService {
       ? track.tiempoReal ?? undefined
       : Number(track.tiempoReal);
     const distanceKm = Number(track.distanceKm);
+    const title = this.normalizeTextField((track as any).title ?? (track as any).trackTitle ?? (track as any).track_title);
+    const description = this.normalizeTextField((track as any).description ?? (track as any).trackDescription ?? (track as any).track_description);
 
     return {
       ...track,
@@ -235,6 +237,9 @@ export class EventService {
       createdBy: track.createdBy === undefined || track.createdBy === null
         ? track.createdBy ?? undefined
         : Number(track.createdBy)
+      ,
+      title,
+      description
     };
   }
 
@@ -249,5 +254,11 @@ export class EventService {
     if (!logoBlob) return undefined;
     const mime = (logoMime || 'image/png').trim();
     return `data:${mime};base64,${logoBlob}`;
+  }
+
+  private normalizeTextField(value: any): string | null {
+    if (value === null || value === undefined) return null;
+    const text = String(value).trim();
+    return text || null;
   }
 }

@@ -1776,7 +1776,7 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
     const totalDurationSeconds = this.calculateTotalDurationSeconds(track.data.trkpts) || durationSeconds;
     const timeSeconds = Math.max(1, Math.round(activeDurationSeconds || durationSeconds || 1));
     const tiempoReal = Math.max(1, Math.round(totalDurationSeconds || activeDurationSeconds || durationSeconds || 1));
-
+    
     const payload: CreateTrackPayload = {
       routeId: null,
       nickname,
@@ -1786,7 +1786,7 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
       timeSeconds,
       tiempoReal,
       distanceKm: Number.isFinite(track.details.distance) ? track.details.distance : 0,
-      ascent: track.details.ascent,
+      //ascent: track.details.ascent,
       routeXml: gpxData,
       fileName: result.file.name,
       uploadedAt: new Date().toISOString(),
@@ -1794,6 +1794,8 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
       createdBy: this.userId,
       title: result.title
     };
+
+    console.log("POST a track: ", payload)
 
     this.standaloneUploadInProgress = true;
     this.eventService.addTrack(payload).subscribe({

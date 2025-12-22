@@ -84,7 +84,7 @@
         <table class="user-tracks__table">
           <thead>
             <tr>
-              <th>Evento</th>
+              <th>Evento/Título</th>
               <th>Año</th>
               <th>Comunidad</th>
               <th>Provincia</th>
@@ -99,7 +99,17 @@
           </thead>
           <tbody>
             <tr *ngFor="let row of userTracks">
-              <td>{{ row.eventName || '-' }}</td>
+              <td class="user-tracks__title-col">
+                <div class="user-tracks__label" *ngIf="row.eventName && row.eventName !== '-'">
+                  <span class="user-tracks__pill user-tracks__pill--event">Evento</span>
+                  <span class="user-tracks__title user-tracks__title--event">{{ row.eventName }}</span>
+                </div>
+                <div class="user-tracks__label" *ngIf="row.title">
+                  <span class="user-tracks__pill">Título</span>
+                  <span class="user-tracks__title user-tracks__title--title">{{ row.title }}</span>
+                </div>
+                <span *ngIf="!row.title && (!row.eventName || row.eventName === '-')">—</span>
+              </td>
               <td>{{ row.year || '-' }}</td>
               <td>{{ row.autonomousCommunity || '—' }}</td>
               <td>{{ row.province || '—' }}</td>

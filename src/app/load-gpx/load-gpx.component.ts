@@ -1606,7 +1606,7 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
     }
   }
 
-  private async reverseGeocode(lat: number, lon: number): Promise<{ population: string | null; autonomousCommunity: string | null; province: string | null } | null> {
+  private async reverseGeocode(lat: number, lon: number): Promise<{ population: string | null; autonomousCommunity: string | null; province: string | null } | undefined> {
     try {
       const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lon)}&addressdetails=1`;
       const result: any = await firstValueFrom(this.http.get(url, { headers: { Accept: 'application/json' } }));
@@ -1617,7 +1617,7 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
         province: address.province || address.county || null
       };
     } catch {
-      return null;
+      return undefined;
     }
   }
 

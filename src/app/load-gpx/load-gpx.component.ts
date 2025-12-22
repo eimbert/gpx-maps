@@ -1547,6 +1547,8 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
     const routeIdValue = track.routeId === null || track.routeId === undefined ? null : this.toNumber(track.routeId, 0);
     const routeId = routeIdValue && routeIdValue > 0 ? routeIdValue : null;
     const event = routeId ? eventsById.get(routeId) : undefined;
+    const title = this.normalizeTrackText((track as any).title ?? (track as any).trackTitle ?? (track as any).track_title);
+    const description = this.normalizeTrackText((track as any).description ?? (track as any).trackDescription ?? (track as any).track_description);
     return {
       trackId: track.id,
       routeId,
@@ -1562,8 +1564,8 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
       gpxAsset: track.gpxAsset,
       fileName: track.fileName,
       canDelete: this.canDeleteTrack(track),
-      title: (track as any).title ?? null,
-      description: (track as any).description ?? null
+      title,
+      description
     };
   }
 
@@ -1958,5 +1960,11 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
   private toNumber(value: any, fallback = 0): number {
     const num = Number(value);
     return Number.isFinite(num) ? num : fallback;
+  }
+
+  private normalizeTrackText(value: any): string | null {
+    if (value === null || value === undefined) return null;
+    const text = String(value).trim();
+    return text || null;
   }
 }

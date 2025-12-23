@@ -422,6 +422,30 @@
   color: #0f172a;
 }
 
+.user-tracks__sort {
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.user-tracks__sort:focus-visible {
+  outline: 2px solid #60a5fa;
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+.user-tracks__sort-indicator {
+  font-size: 12px;
+  color: #6b7280;
+}
+
 .user-tracks__table td {
   color: #0f172a;
   font-weight: 500;

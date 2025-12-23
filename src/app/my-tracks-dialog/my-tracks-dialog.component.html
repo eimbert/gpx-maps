@@ -3,9 +3,27 @@
   <table class="tracks-table">
     <thead>
       <tr>
-        <th>Año</th>
+        <th>
+          <button type="button" class="sort-button" (click)="sortBy('year')" aria-label="Ordenar por año">
+            Año <span class="sort-indicator">{{ resolveSortIndicator('year') }}</span>
+          </button>
+        </th>
         <th>Evento</th>
-        <th>Población</th>
+        <th>
+          <button type="button" class="sort-button" (click)="sortBy('province')" aria-label="Ordenar por provincia">
+            Provincia <span class="sort-indicator">{{ resolveSortIndicator('province') }}</span>
+          </button>
+        </th>
+        <th>
+          <button type="button" class="sort-button" (click)="sortBy('population')" aria-label="Ordenar por población">
+            Población <span class="sort-indicator">{{ resolveSortIndicator('population') }}</span>
+          </button>
+        </th>
+        <th>
+          <button type="button" class="sort-button" (click)="sortBy('autonomousCommunity')" aria-label="Ordenar por comunidad">
+            Comunidad <span class="sort-indicator">{{ resolveSortIndicator('autonomousCommunity') }}</span>
+          </button>
+        </th>
         <th>Distancia (km)</th>
         <th>Tiempo en movimiento</th>
         <th>Tiempo total</th>
@@ -14,10 +32,12 @@
       </tr>
     </thead>
     <tbody>
-      <tr *ngFor="let row of rows">
+      <tr *ngFor="let row of sortedRows">
         <td>{{ row.year }}</td>
         <td>{{ row.eventName }}</td>
+        <td>{{ row.province || '—' }}</td>
         <td>{{ row.population || '—' }}</td>
+        <td>{{ row.autonomousCommunity || '—' }}</td>
         <td>{{ row.distanceKm | number:'1.1-1' }}</td>
         <td>{{ formatDuration(row.timeSeconds) }}</td>
         <td>{{ formatDuration(row.totalTimeSeconds) }}</td>

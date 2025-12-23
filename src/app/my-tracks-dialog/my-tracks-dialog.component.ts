@@ -11,7 +11,9 @@ export interface MyTrackRow {
   trackId: number;
   eventName: string;
   year: number;
+  province?: string | null;
   population?: string | null;
+  autonomousCommunity?: string | null;
   distanceKm: number;
   timeSeconds: number;
   totalTimeSeconds: number;
@@ -27,6 +29,9 @@ export interface MyTracksDialogData {
   personalNickname: string;
 }
 
+type SortColumn = 'year' | 'province' | 'population' | 'autonomousCommunity';
+type SortDirection = 'asc' | 'desc';
+
 @Component({
   selector: 'app-my-tracks-dialog',
   templateUrl: './my-tracks-dialog.component.html',
@@ -34,6 +39,9 @@ export interface MyTracksDialogData {
 })
 export class MyTracksDialogComponent {
   rows: MyTrackRow[] = [];
+  sortColumn: SortColumn = 'year';
+  sortDirection: SortDirection = 'asc';
+
   private readonly downloading = new Set<string>();
   private readonly deleting = new Set<string>();
 
@@ -65,6 +73,25 @@ export class MyTracksDialogComponent {
 
   isDeleting(row: MyTrackRow): boolean {
     return this.deleting.has(this.buildRowKey(row));
+  }
+
+  get sortedRows(): MyTrackRow[] {
+    return [...this.rows].sort((a, b) => this.compareRows(a, b));
+  }
+
+  sortBy(column: SortColumn): void {
+    if (this.sortColumn === column) {
+      this.sortDirection = this.sortDirection === 'asc' ? 'desc' : 'asc';
+      return;
+    }
+
+    this.sortColumn = column;
+    this.sortDirection = 'asc';
+  }
+
+  resolveSortIndicator(column: SortColumn): string {
+    if (this.sortColumn !== column) return '⇅';
+    return this.sortDirection === 'asc' ? '▲' : '▼';
   }
 
   async downloadTrack(row: MyTrackRow): Promise<void> {
@@ -189,5 +216,23 @@ export class MyTracksDialogComponent {
     } catch {
       return null;
     }
+  }
+
+  private compareRows(a: MyTrackRow, b: MyTrackRow): number {
+    const direction = this.sortDirection === 'asc' ? 1 : -1;
+
+    if (this.sortColumn === 'year') {
+      return direction * (a.year - b.year);
+    }
+
+    const key = this.sortColumn;
+    const valueA = (a[key] ?? '').toString().toLocaleLowerCase();
+    const valueB = (b[key] ?? '').toString().toLocaleLowerCase();
+
+    if (valueA === valueB) {
+      return direction * a.eventName.localeCompare(b.eventName);
+    }
+
+    return direction * valueA.localeCompare(valueB);
   }
 }

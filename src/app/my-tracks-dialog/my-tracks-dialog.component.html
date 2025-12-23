@@ -55,7 +55,7 @@
           <button
             type="button"
             class="icon-button danger"
-            [disabled]="isDeleting(row) || !row.canDelete"
+            [disabled]="isDeleting(row)"
             (click)="confirmDelete(row)">
             <span aria-hidden="true">🗑️</span>
             <span class="sr-only">Eliminar</span>

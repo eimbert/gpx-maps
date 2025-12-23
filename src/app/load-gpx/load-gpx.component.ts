@@ -1741,10 +1741,10 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
   }
 
   async confirmDeleteUserTrack(row: UserTrackRow): Promise<void> {
-    if (!row.canDelete) {
-      this.showMessage('Solo puedes eliminar tracks que hayas subido tú.');
-      return;
-    }
+    // if (!row.canDelete) {
+    //   this.showMessage('Solo puedes eliminar tracks que hayas subido tú.');
+    //   return;
+    // }
     const decision = await this.openInfoDialog({
       title: 'Eliminar track',
       message: '¿Seguro que quieres eliminar este track? Esta acción no se puede deshacer.',

@@ -52,7 +52,8 @@ export class MyTracksDialogComponent {
     private http: HttpClient,
     private eventService: EventService
   ) {
-    this.rows = [...data.tracks];
+    
+    this.rows = [...data.tracks.filter(track => track.eventId != null && track.eventId != 0)];
   }
 
   close(): void {
@@ -118,11 +119,7 @@ export class MyTracksDialogComponent {
   }
 
   confirmDelete(row: MyTrackRow): void {
-    if (!row.canDelete) {
-      this.showInfo('Solo puedes eliminar tracks que hayas subido tú.');
-      return;
-    }
-
+    
     const dialogRef = this.dialog.open<InfoDialogComponent, InfoDialogData, InfoDialogResult>(InfoDialogComponent, {
       width: '440px',
       data: {

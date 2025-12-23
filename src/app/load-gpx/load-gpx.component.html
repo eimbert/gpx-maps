@@ -156,7 +156,7 @@
                 <button
                   type="button"
                   class="ghost ghost--small ghost--danger user-tracks__icon-button"
-                  [disabled]="isDeletingTrack(row) || !row.canDelete"
+                  [disabled]="isDeletingTrack(row)"
                   (click)="confirmDeleteUserTrack(row)"
                   [attr.aria-label]="isDeletingTrack(row) ? 'Eliminando track' : 'Eliminar track'">
                   <mat-icon aria-hidden="true">{{ isDeletingTrack(row) ? 'hourglass_top' : 'delete' }}</mat-icon>

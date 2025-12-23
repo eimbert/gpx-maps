@@ -94,6 +94,9 @@ interface UserTrackRow {
   description?: string | null;
 }
 
+type UserTracksSortColumn = 'year' | 'province' | 'population' | 'autonomousCommunity';
+type SortDirection = 'asc' | 'desc';
+
 @Component({
   selector: 'app-load-gpx',
   templateUrl: './load-gpx.component.html',
@@ -136,6 +139,8 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
   private readonly downloadingTracks = new Set<number>();
   private readonly deletingTracks = new Set<number>();
   standaloneUploadInProgress = false;
+  userTracksSortColumn: UserTracksSortColumn = 'year';
+  userTracksSortDirection: SortDirection = 'asc';
 
   eventUpload: EventTrackUploadDraft = {
     eventId: null,
@@ -1673,6 +1678,36 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
     } finally {
       this.downloadingTracks.delete(row.trackId);
     }
+  }
+
+  get sortedUserTracks(): UserTrackRow[] {
+    return [...this.userTracks].sort((a, b) => this.compareUserTrackRows(a, b));
+  }
+
+  sortUserTracksBy(column: UserTracksSortColumn): void {
+    if (this.userTracksSortColumn === column) {
+      this.userTracksSortDirection = this.userTracksSortDirection === 'asc' ? 'desc' : 'asc';
+      return;
+    }
+
+    this.userTracksSortColumn = column;
+    this.userTracksSortDirection = 'asc';
+  }
+
+  resolveUserTracksSortIndicator(column: UserTracksSortColumn): string {
+    if (this.userTracksSortColumn !== column) return '⇅';
+    return this.userTracksSortDirection === 'asc' ? '▲' : '▼';
+  }
+
+  private compareUserTrackRows(a: UserTrackRow, b: UserTrackRow): number {
+    const direction = this.userTracksSortDirection === 'asc' ? 1 : -1;
+    const key = this.userTracksSortColumn;
+    const valueA = (a[key] ?? '').toString().toLowerCase();
+    const valueB = (b[key] ?? '').toString().toLowerCase();
+
+    if (valueA < valueB) return -1 * direction;
+    if (valueA > valueB) return 1 * direction;
+    return 0;
   }
 
   async animateUserTrack(row: UserTrackRow): Promise<void> {

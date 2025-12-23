@@ -84,11 +84,27 @@
         <table class="user-tracks__table">
           <thead>
             <tr>
+              <th>
+                <button type="button" class="user-tracks__sort" (click)="sortUserTracksBy('year')" aria-label="Ordenar por año">
+                  Año <span class="user-tracks__sort-indicator">{{ resolveUserTracksSortIndicator('year') }}</span>
+                </button>
+              </th>
+              <th>
+                <button type="button" class="user-tracks__sort" (click)="sortUserTracksBy('autonomousCommunity')" aria-label="Ordenar por comunidad">
+                  Comunidad <span class="user-tracks__sort-indicator">{{ resolveUserTracksSortIndicator('autonomousCommunity') }}</span>
+                </button>
+              </th>
+              <th>
+                <button type="button" class="user-tracks__sort" (click)="sortUserTracksBy('province')" aria-label="Ordenar por provincia">
+                  Provincia <span class="user-tracks__sort-indicator">{{ resolveUserTracksSortIndicator('province') }}</span>
+                </button>
+              </th>
+              <th>
+                <button type="button" class="user-tracks__sort" (click)="sortUserTracksBy('population')" aria-label="Ordenar por población">
+                  Población <span class="user-tracks__sort-indicator">{{ resolveUserTracksSortIndicator('population') }}</span>
+                </button>
+              </th>
               <th>Evento/Título</th>
-              <th>Año</th>
-              <th>Comunidad</th>
-              <th>Provincia</th>
-              <th>Población</th>
               <th>Distancia</th>
               <th>Tiempo movimiento</th>
               <th>Tiempo total</th>
@@ -98,7 +114,7 @@
             </tr>
           </thead>
           <tbody>
-            <tr *ngFor="let row of userTracks">
+            <tr *ngFor="let row of sortedUserTracks">
               <td class="user-tracks__title-col">
                 <div class="user-tracks__label" *ngIf="row.eventName && row.eventName !== '-'"> 
                   <span class="user-tracks__pill user-tracks__pill--event">Evento</span>

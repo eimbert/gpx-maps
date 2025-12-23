@@ -1667,15 +1667,25 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
       this.showMessage('No se pudo cargar el track para animarlo.');
       return;
     }
+
+    const availableSlots = this.maxTracks - this.tracks.length;
+    if (availableSlots <= 0) {
+      this.showMessage(`Puedes cargar como máximo ${this.maxTracks} archivos GPX a la vez.`, 'Límite de tracks');
+      return;
+    }
+
     if (!this.isValidGpxData(gpx)) {
       this.showMessage('El archivo GPX no es válido.');
       return;
     }
     try {
-      const { track } = this.parseGpxData(gpx, row.fileName || row.eventName || 'Track', 0);
+      const { track } = this.parseGpxData(gpx, row.fileName || row.eventName || 'Track', this.tracks.length);
       track.name = row.title || track.name;
-      this.tracks = [{ ...track, color: this.pickColor(0) }];
-      this.iniciarVisualizacion();
+      const updatedTracks = [...this.tracks, track];
+      if (await this.shouldAbortBecauseOfRouteMismatch(updatedTracks)) {
+        return;
+      }
+      this.tracks = updatedTracks;
     } catch {
       this.showMessage('No se pudo procesar el track.');
     }

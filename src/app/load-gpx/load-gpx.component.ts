@@ -3,7 +3,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
 import { MatDialog } from '@angular/material/dialog';
 import { MatMenuTrigger } from '@angular/material/menu';
-import { firstValueFrom } from 'rxjs';
+import { delay, firstValueFrom } from 'rxjs';
 import { DialogoConfiguracionComponent } from '../dialogo-configuracion/dialogo-configuracion.component';
 import { DialogoConfiguracionData } from '../interfaces/estructuras';
 import { TrackMetadataDialogComponent, TrackMetadataDialogResult } from '../track-metadata-dialog/track-metadata-dialog.component';
@@ -1531,10 +1531,13 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
     this.userTracksLoading = true;
     try {
       const tracks = await firstValueFrom(this.eventService.getMyTracks());
+      console.log("tracks: ", tracks)
       const eventsById = new Map<number, RaceEvent>(this.events.map(event => [event.id, event]));
       const rows = tracks.map(track => this.toUserTrackRow(track, eventsById));
+      console.log("rows_1:", rows)
       await this.fillMissingUserTrackLocations(rows);
       this.userTracks = rows;
+      console.log("rows_2:", rows)
     } catch {
       this.showMessage('No se pudieron cargar tus tracks. Inténtalo de nuevo más tarde.');
       this.userTracks = [];
@@ -1545,10 +1548,18 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
 
   private toUserTrackRow(track: EventTrack, eventsById: Map<number, RaceEvent>): UserTrackRow {
     const routeIdValue = track.routeId === null || track.routeId === undefined ? null : this.toNumber(track.routeId, 0);
+   
     const routeId = routeIdValue && routeIdValue > 0 ? routeIdValue : null;
+    
     const event = routeId ? eventsById.get(routeId) : undefined;
+
     const title = this.normalizeTrackText((track as any).title ?? (track as any).trackTitle ?? (track as any).track_title);
+
+    
     const description = this.normalizeTrackText((track as any).description ?? (track as any).trackDescription ?? (track as any).track_description);
+
+    
+
     return {
       trackId: track.id,
       routeId,
@@ -1572,10 +1583,12 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
   private async fillMissingUserTrackLocations(rows: UserTrackRow[]): Promise<void> {
     const cache = new Map<string, { population: string | null; autonomousCommunity: string | null; province: string | null }>();
     for (const row of rows) {
-      if (row.routeId && (row.population || row.autonomousCommunity || row.province)) continue;
+      if (row.routeId) continue;// && (row.population || row.autonomousCommunity || row.province)){
+        
+      
       if (row.population && row.autonomousCommunity && row.province) continue;
       const point = await this.extractFirstPointForRow(row);
-      if (!point) continue;
+      if (!point)  continue;
       const key = `${point.lat.toFixed(5)},${point.lon.toFixed(5)}`;
       let location = cache.get(key);
       if (!location) {
@@ -1588,6 +1601,7 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
       row.population = row.population || location.population;
       row.autonomousCommunity = row.autonomousCommunity || location.autonomousCommunity;
       row.province = row.province || location.province;
+     
     }
   }
 

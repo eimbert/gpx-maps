@@ -87,6 +87,20 @@ export class EventService {
     );
   }
 
+  removeTrackById(trackId: number): Observable<boolean> {
+    return this.http.delete<void>(`${this.tracksApiBase}/${trackId}`).pipe(
+      tap(() => {
+        const updated = this.events$.value.map(event => ({
+          ...event,
+          tracks: event.tracks.filter(track => track.id !== trackId)
+        }));
+        this.events$.next(updated);
+      }),
+      map(() => true),
+      catchError(() => of(false))
+    );
+  }
+
   removeTrack(eventId: number | null | undefined, trackId: number, requesterId: number): Observable<boolean> {
     const event = eventId ? this.events$.value.find(e => e.id === eventId) : undefined;
     const track = event?.tracks.find(t => t.id === trackId);

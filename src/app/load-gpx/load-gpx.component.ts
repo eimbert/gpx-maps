@@ -1758,7 +1758,7 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
   private deleteUserTrack(row: UserTrackRow): void {
     if (this.isDeletingTrack(row)) return;
     this.deletingTracks.add(row.trackId);
-    this.eventService.removeTrack(row.routeId, row.trackId, this.userId).subscribe(removed => {
+    this.eventService.removeTrackById(row.trackId).subscribe(removed => {
       this.deletingTracks.delete(row.trackId);
       if (!removed) {
         this.showMessage('No se pudo eliminar el track.');

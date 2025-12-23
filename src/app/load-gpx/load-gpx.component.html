@@ -114,9 +114,9 @@
               <td>{{ row.autonomousCommunity || '—' }}</td>
               <td>{{ row.province || '—' }}</td>
               <td>{{ row.population || '—' }}</td>
-              <td>{{ row.distanceKm ? (row.distanceKm | number:'1.0-1') + ' km' : '—' }}</td>
-              <td>{{ formatDurationHms(row.timeSeconds) }}</td>
-              <td>{{ formatDurationHms(row.totalTimeSeconds) }}</td>
+              <td style="text-align: right;">{{ row.distanceKm ? (row.distanceKm | number:'1.0-1') + ' km' : '—' }}</td>
+              <td style="text-align: center;">{{ formatDurationHms(row.timeSeconds) }}</td>
+              <td style="text-align: center;">{{ formatDurationHms(row.totalTimeSeconds) }}</td>
               <td class="user-tracks__action-col">
                 <button
                   type="button"

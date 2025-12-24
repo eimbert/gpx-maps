@@ -266,59 +266,57 @@
                     <p class="event-meta"><strong>Población:</strong> {{ event.population || 'Sin datos' }}</p>
                     <p class="event-meta"><strong>Provincia:</strong> {{ event.population || 'Sin datos' }}</p>
                     <p class="event-meta"><strong>Comunidad:</strong> {{ event.autonomousCommunity || 'Sin datos' }}</p>
-                    <div class="event-profile">
-                      <ng-container *ngIf="eventVisuals[event.id]?.profile?.points; else noProfile">
-                        <div class="profile-chart-wrapper">
-                          <svg [attr.viewBox]="'0 0 ' + profileWidth + ' ' + profileHeight" preserveAspectRatio="none" class="profile-chart">
-                            <g class="grid-lines">
-                              <line
-                                *ngFor="let y of eventVisuals[event.id].profile?.gridLinesY"
-                                x1="0"
-                                [attr.y1]="y"
-                                [attr.y2]="y"
-                                [attr.x2]="profileWidth" />
-                            </g>
-                            <polyline [attr.points]="eventVisuals[event.id].profile?.points"></polyline>
-                          </svg>
-                          <div class="profile-legend"  *ngIf="eventVisuals[event.id].profile as profile">
-                            <div class="legend-row">
-                              <span>Altura inicial:</span>
-                              <strong>{{ profile.stats.initialElevation | number: '1.0-0' }} m</strong>
-                            </div>
-                            <div class="legend-row">
-                              <span>Altura máxima:</span>
-                              <strong>{{ profile.stats.maxElevation | number: '1.0-0' }} m</strong>
-                            </div>
-                            <div class="legend-row">
-                              <span>Distancia:</span>
-                              <strong>{{ profile.stats.distanceKm | number: '1.0-1' }} km</strong>
-                            </div>
-                            <div class="legend-row legend-row--tracks">
-                              <span>Tracks subidos:</span>
-                              <div class="legend-row__actions">
-                                <strong>{{ event.tracks.length }}</strong>
-                                
+                    <div class="event-profile-row">
+                      <div class="event-profile">
+                        <ng-container *ngIf="eventVisuals[event.id]?.profile?.points; else noProfile">
+                          <div class="profile-chart-wrapper">
+                            <svg [attr.viewBox]="'0 0 ' + profileWidth + ' ' + profileHeight" preserveAspectRatio="none" class="profile-chart">
+                              <g class="grid-lines">
+                                <line
+                                  *ngFor="let y of eventVisuals[event.id].profile?.gridLinesY"
+                                  x1="0"
+                                  [attr.y1]="y"
+                                  [attr.y2]="y"
+                                  [attr.x2]="profileWidth" />
+                              </g>
+                              <polyline [attr.points]="eventVisuals[event.id].profile?.points"></polyline>
+                            </svg>
+                            <div class="profile-legend"  *ngIf="eventVisuals[event.id].profile as profile">
+                              <div class="legend-row">
+                                <span>Altura inicial:</span>
+                                <strong>{{ profile.stats.initialElevation | number: '1.0-0' }} m</strong>
                               </div>
-                              <div class="legend-row__actions" ></div>
+                              <div class="legend-row">
+                                <span>Altura máxima:</span>
+                                <strong>{{ profile.stats.maxElevation | number: '1.0-0' }} m</strong>
+                              </div>
+                              <div class="legend-row">
+                                <span>Distancia:</span>
+                                <strong>{{ profile.stats.distanceKm | number: '1.0-1' }} km</strong>
+                              </div>
+                              <div class="legend-row legend-row--tracks">
+                                <span>Tracks subidos:</span>
+                                <div class="legend-row__actions">
+                                  <strong>{{ event.tracks.length }}</strong>
+                                  <button
+                                    type="button"
+                                    class="cloud-download"
+                                    [disabled]="!hasMasterTrack(event) || isDownloadingMaster(event.id)"
+                                    (click)="downloadEventMaster(event, $event)">
+                                    <mat-icon aria-hidden="true">cloud_download</mat-icon>
+                                    <span *ngIf="!isDownloadingMaster(event.id)">Bajar track</span>
+                                    <span *ngIf="isDownloadingMaster(event.id)">Bajando...</span>
+                                  </button>
+                                </div>
+                              </div>
                             </div>
-                            <div  class="download-wrap legend-row__actions">
-                              <button
-                                  type="button"
-                                  class="cloud-download"
-                                  [disabled]="!hasMasterTrack(event) || isDownloadingMaster(event.id)"
-                                  (click)="downloadEventMaster(event, $event)">
-                                  <mat-icon aria-hidden="true">cloud_download</mat-icon>
-                                  <span *ngIf="!isDownloadingMaster(event.id)">Bajar track</span>
-                                  <span *ngIf="isDownloadingMaster(event.id)">Bajando...</span>
-                              </button>
-                            </div>
+
                           </div>
-                          
-                        </div>
-                      </ng-container>
-                      <ng-template #noProfile>
-                        <p class="muted profile-empty">Perfil no disponible</p>
-                      </ng-template>
+                        </ng-container>
+                        <ng-template #noProfile>
+                          <p class="muted profile-empty">Perfil no disponible</p>
+                        </ng-template>
+                      </div>
                     </div>
                   </div>
                   <div class="event-card__map" >

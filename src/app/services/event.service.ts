@@ -43,7 +43,7 @@ export class EventService {
   }
 
   createEvent(payload: CreateEventPayload): Observable<RaceEvent> {
-    console.log("antes del post: ", payload)
+    // console.log("antes del post: ", payload)
     return this.http.post<CreateEventResponse>(this.routesApiBase, payload).pipe(
       map(res => {
         if (res.exitCode !== 0) {
@@ -182,18 +182,18 @@ export class EventService {
   }
 
   private normalizeEvent(event: RaceEvent): RaceEvent {
-    console.log("EVENT: ", event)
+    // console.log("EVENT: ", event)
     const location = (event as any).location as string | undefined;
     let population = event.population || '';
     let autonomousCommunity = event.autonomousCommunity || '';
     const province = (event as any).province ?? (event as any).province_name ?? event.province ?? null;
     const distanceKm = (event as any).distanceKm ?? (event as any).distance_km ?? event.distanceKm ?? null;
     const logoBlob = event.logoBlob ?? null;
-    console.log("LOGOBLOB: ", logoBlob)
-    console.log("event. LOGOBLOB: ", event.logoBlob)
+    // console.log("LOGOBLOB: ", logoBlob)
+    // console.log("event. LOGOBLOB: ", event.logoBlob)
     const logoMime = (event as any).logoMime ?? null;
     const logo = event.logoBlob || this.buildLogoDataUrl(logoBlob, logoMime);
-    console.log("LOGO: ", logo)
+    // console.log("LOGO: ", logo)
     const gpxMaster = (event as any).gpxMaster ?? (event as any).gpx_master ?? null;
     const gpxMasterFileName = (event as any).gpxMasterFileName ?? (event as any).gpx_master_file_name ?? null;
 

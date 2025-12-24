@@ -218,15 +218,21 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
         this.refreshUserTracks();
       }
     });
-    this.eventService.getEvents().subscribe(events => {
-      // console.log("Events: ", events )
-      this.events = events;
-      this.syncCarouselIndex();
-      this.syncSelectionWithCarousel();
-      this.restartCarouselTimer();
-      this.buildEventVisuals(events);
-      if (this.isAuthenticated) {
-        this.refreshUserTracks();
+    this.eventService.getEvents().subscribe({
+      next: events => {
+        console.log("Events: ", events )
+        this.events = events;
+        this.syncCarouselIndex();
+        this.syncSelectionWithCarousel();
+        this.restartCarouselTimer();
+        this.buildEventVisuals(events);
+        if (this.isAuthenticated) {
+          this.refreshUserTracks();
+        }
+      },
+      error: () => {
+        this.events = [];
+        this.eventVisuals = {};
       }
     });
   }

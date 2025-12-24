@@ -680,6 +680,13 @@
   font-weight: 600;
 }
 
+.event-profile-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: start;
+  gap: 12px;
+}
+
 .event-profile {
   padding: 10px 12px;
   border-radius: 12px;
@@ -1195,4 +1202,5 @@ input[type="file"] {
 .download-wrap{
   display: flex;
   justify-content: flex-end;
+  align-items: center;
 }

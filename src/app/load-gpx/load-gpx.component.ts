@@ -541,11 +541,11 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
     return { x, y };
   }
 
-  getMapBackgroundStyle(eventId: number): Record<string, string> {
-    const tileUrl = this.eventVisuals[eventId]?.mapTileUrl;
-    if (!tileUrl) return {};
-    return { '--event-map-url': `url('${tileUrl}')` };
-  }
+  // getMapBackgroundStyle(eventId: number): Record<string, string> {
+  //   const tileUrl = this.eventVisuals[eventId]?.mapTileUrl;
+  //   if (!tileUrl) return {};
+  //   return { '--event-map-url': `url('${tileUrl}')` };
+  // }
 
   nextEvent(manual = false): void {
     if (!this.events.length) return;

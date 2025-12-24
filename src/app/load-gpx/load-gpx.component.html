@@ -264,6 +264,7 @@
                       </div>
                     </div>
                     <p class="event-meta"><strong>Población:</strong> {{ event.population || 'Sin datos' }}</p>
+                    <p class="event-meta"><strong>Provincia:</strong> {{ event.population || 'Sin datos' }}</p>
                     <p class="event-meta"><strong>Comunidad:</strong> {{ event.autonomousCommunity || 'Sin datos' }}</p>
                     <div class="event-profile">
                       <ng-container *ngIf="eventVisuals[event.id]?.profile?.points; else noProfile">
@@ -304,7 +305,7 @@
                       </ng-template>
                     </div>
                   </div>
-                  <div class="event-card__map" [ngStyle]="getMapBackgroundStyle(event.id)">
+                  <div class="event-card__map" >
                     <ng-container *ngIf="eventVisuals[event.id]?.trackPath; else missingTrack">
                       <svg viewBox="0 0 320 240" preserveAspectRatio="none" class="track-drawing">
                         <polyline [attr.points]="eventVisuals[event.id].trackPath"></polyline>

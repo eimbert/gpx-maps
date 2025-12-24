@@ -965,6 +965,17 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
     return Math.max(0, (max - min) / 1000);
   }
 
+  private resolveTrackYearFromTrack(track: LoadedTrack): number | null {
+    const times = track.data.trkpts
+      .map(p => new Date(p.time))
+      .filter(date => Number.isFinite(date.getTime()))
+      .sort((a, b) => a.getTime() - b.getTime());
+
+    if (!times.length) return null;
+
+    return times[0].getFullYear();
+  }
+
   private formatDurationAsLocalTime(totalSeconds: number): string {
     const total = Math.max(0, Math.round(totalSeconds));
     const hours = Math.floor(total / 3600);
@@ -1375,6 +1386,11 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
     }
 
     const { track, durationSeconds } = parsed;
+    const trackYear = this.resolveTrackYearFromTrack(track);
+    if (event?.year && trackYear !== null && trackYear !== event.year) {
+      this.showMessage(`El año del track (${trackYear}) no coincide con el del evento (${event.year}). Si no existe un evento para ${trackYear}, puedes crearlo.`);
+      return;
+    }
     const activeDurationSeconds = this.calculateActiveDurationSeconds(track.data.trkpts) || durationSeconds;
     const totalDurationSeconds = this.calculateTotalDurationSeconds(track.data.trkpts) || durationSeconds;
     if (!activeDurationSeconds) {

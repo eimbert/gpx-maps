@@ -7,7 +7,7 @@ import { MapComponent } from './map/map.component';
 const routes: Routes = [
   { path: '', component: HomeComponent },
   { path: 'load', component: LoadGpxComponent },
-  { path: 'events', component: LoadGpxComponent, data: { mode: 'events' } },
+  { path: 'events', component: LoadGpxComponent, canActivate: [AuthGuard], data: { mode: 'events' } },
   { path: 'map', component: MapComponent },
   { path: '**', redirectTo: '' }
 ];

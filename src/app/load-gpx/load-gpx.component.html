@@ -298,7 +298,10 @@
                                 <span>Tracks subidos:</span>
                                 <div class="legend-row__actions">
                                   <strong>{{ event.tracks.length }}</strong>
-                                  <button
+                                  
+                                </div>
+                              </div>
+                              <button
                                     type="button"
                                     class="cloud-download"
                                     [disabled]="!hasMasterTrack(event) || isDownloadingMaster(event.id)"
@@ -306,9 +309,7 @@
                                     <mat-icon aria-hidden="true">cloud_download</mat-icon>
                                     <span *ngIf="!isDownloadingMaster(event.id)">Bajar track</span>
                                     <span *ngIf="isDownloadingMaster(event.id)">Bajando...</span>
-                                  </button>
-                                </div>
-                              </div>
+                              </button>
                             </div>
 
                           </div>

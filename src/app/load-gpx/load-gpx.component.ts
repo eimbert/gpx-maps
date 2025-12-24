@@ -218,15 +218,21 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
         this.refreshUserTracks();
       }
     });
-    this.eventService.getEvents().subscribe(events => {
-      console.log("Events: ", events )
-      this.events = events;
-      this.syncCarouselIndex();
-      this.syncSelectionWithCarousel();
-      this.restartCarouselTimer();
-      this.buildEventVisuals(events);
-      if (this.isAuthenticated) {
-        this.refreshUserTracks();
+    this.eventService.getEvents().subscribe({
+      next: events => {
+        console.log("Events: ", events )
+        this.events = events;
+        this.syncCarouselIndex();
+        this.syncSelectionWithCarousel();
+        this.restartCarouselTimer();
+        this.buildEventVisuals(events);
+        if (this.isAuthenticated) {
+          this.refreshUserTracks();
+        }
+      },
+      error: () => {
+        this.events = [];
+        this.eventVisuals = {};
       }
     });
   }
@@ -249,21 +255,13 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
     if (modeFromRoute === 'routes' || modeFromRoute === 'events') {
       this.mode = modeFromRoute;
     }
-
-    if (this.mode === 'events' && !this.authService.isAuthenticated()) {
-      this.showEventsAuthNotice();
-    }
   }
 
   selectMode(mode: 'routes' | 'events'): void {
     this.mode = mode;
-    if (mode === 'events' && !this.isAuthenticated) {
-      this.showEventsAuthNotice();
-    }
   }
 
   selectEvent(eventId: number, modalityId?: number): void {
-    if (!this.ensureEventsAccess()) return;
     this.selectedEventId = eventId;
     this.eventUpload.eventId = eventId;
     const event = this.selectedEvent;
@@ -326,11 +324,10 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
   private showEventsAuthNotice(): void {
     if (this.eventsNoticeShown) return;
     this.eventsNoticeShown = true;
-    this.router.navigate(['/']);
     this.openInfoDialog({
-      title: 'Función para usuarios registrados',
-      message: 'La sección de eventos y rankings es exclusiva para usuarios registrados. Inicia sesión o regístrate desde la pantalla principal.',
-      confirmLabel: 'OK'
+      title: 'Inicia sesión para participar',
+      message: 'Puedes explorar y animar los eventos sin registrarte. Para subir, crear o gestionar tracks inicia sesión desde la pantalla principal.',
+      confirmLabel: 'Entendido'
     });
   }
 
@@ -586,7 +583,6 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
   }
 
   handleCarouselSelection(eventId: number): void {
-    if (!this.ensureEventsAccess()) return;
     this.selectEvent(eventId);
   }
 
@@ -717,14 +713,13 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
   }
 
   private syncSelectionWithCarousel(): void {
-    if (!this.events.length || !this.isAuthenticated) return;
+    if (!this.events.length) return;
     const event = this.events[this.carouselIndex];
     if (!event || this.selectedEventId === event.id) return;
     this.selectEvent(event.id);
   }
 
   openEventSearch(): void {
-    if (!this.ensureEventsAccess()) return;
     this.closeEventMenu();
     const dialogRef = this.dialog.open<EventSearchDialogComponent, EventSearchDialogData, EventSearchDialogResult>(
       EventSearchDialogComponent,
@@ -1479,7 +1474,6 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
   }
 
   async animateSelectedTracks(): Promise<void> {
-    if (!this.ensureEventsAccess()) return;
     const event = this.selectedEvent;
     if (!event) return;
 
@@ -1513,7 +1507,6 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
   }
 
   toggleComparisonSelection(trackId: number): void {
-    if (!this.ensureEventsAccess()) return;
     if (this.selectedComparisonIds.has(trackId)) {
       this.selectedComparisonIds.delete(trackId);
       return;

@@ -4,31 +4,20 @@
       <div>
         <h1>Anima tus Rutas</h1>
         <p>Arrastra y suelta hasta {{ maxTracks }} recorridos o pulsa para seleccionarlos.</p>
-        <p *ngIf="!isAuthenticated" class="guest-note">Sin sesión iniciada solo puedes cargar un archivo GPX a la vez.</p>
+        <p *ngIf="!isAuthenticated" class="guest-note">Sin sesión iniciada solo puedes cargar un archivo GPX a la vez.
+        </p>
       </div>
-      
+
       <button type="button" class="home-button hero__home" style="cursor: pointer;" (click)="goHome()">
         <span class="home-button__icon">🏠</span>
         <span class="home-button__label">Volver al inicio</span>
       </button>
     </header>
 
-    <div
-      class="dropzone"
-      [class.dropzone--active]="isDragOver"
-      (click)="triggerFileDialog()"
-      (dragover)="onDragOver($event)"
-      (dragleave)="onDragLeave()"
-      (drop)="onDrop($event)"
-    >
-      <input
-        #fileInput
-        type="file"
-        accept=".gpx"
-        [attr.multiple]="isAuthenticated ? '' : null"
-        (change)="onFileInputChange($event)"
-        hidden
-      />
+    <div class="dropzone" [class.dropzone--active]="isDragOver" (click)="triggerFileDialog()"
+      (dragover)="onDragOver($event)" (dragleave)="onDragLeave()" (drop)="onDrop($event)">
+      <input #fileInput type="file" accept=".gpx" [attr.multiple]="isAuthenticated ? '' : null"
+        (change)="onFileInputChange($event)" hidden />
 
       <div class="dropzone__content">
         <div class="icon">📂</div>
@@ -67,10 +56,7 @@
           <p class="eyebrow">Tracks subidos por ti</p>
           <!-- <h3>Tracks subidos por ti</h3> -->
         </div>
-        <button
-          type="button"
-          class="cloud-upload"
-          (click)="openStandaloneUploadDialog()"
+        <button type="button" class="cloud-upload" (click)="openStandaloneUploadDialog()"
           [disabled]="standaloneUploadInProgress">
           <mat-icon aria-hidden="true">cloud_upload</mat-icon>
           <span>Subir track</span>
@@ -86,23 +72,30 @@
             <tr>
               <th>Evento/Título</th>
               <th>
-                <button type="button" class="user-tracks__sort" (click)="sortUserTracksBy('year')" aria-label="Ordenar por año">
+                <button type="button" class="user-tracks__sort" (click)="sortUserTracksBy('year')"
+                  aria-label="Ordenar por año">
                   Año <span class="user-tracks__sort-indicator">{{ resolveUserTracksSortIndicator('year') }}</span>
                 </button>
               </th>
               <th>
-                <button type="button" class="user-tracks__sort" (click)="sortUserTracksBy('autonomousCommunity')" aria-label="Ordenar por comunidad">
-                  Comunidad <span class="user-tracks__sort-indicator">{{ resolveUserTracksSortIndicator('autonomousCommunity') }}</span>
+                <button type="button" class="user-tracks__sort" (click)="sortUserTracksBy('autonomousCommunity')"
+                  aria-label="Ordenar por comunidad">
+                  Comunidad <span class="user-tracks__sort-indicator">{{
+                    resolveUserTracksSortIndicator('autonomousCommunity') }}</span>
                 </button>
               </th>
               <th>
-                <button type="button" class="user-tracks__sort" (click)="sortUserTracksBy('province')" aria-label="Ordenar por provincia">
-                  Provincia <span class="user-tracks__sort-indicator">{{ resolveUserTracksSortIndicator('province') }}</span>
+                <button type="button" class="user-tracks__sort" (click)="sortUserTracksBy('province')"
+                  aria-label="Ordenar por provincia">
+                  Provincia <span class="user-tracks__sort-indicator">{{ resolveUserTracksSortIndicator('province')
+                    }}</span>
                 </button>
               </th>
               <th>
-                <button type="button" class="user-tracks__sort" (click)="sortUserTracksBy('population')" aria-label="Ordenar por población">
-                  Población <span class="user-tracks__sort-indicator">{{ resolveUserTracksSortIndicator('population') }}</span>
+                <button type="button" class="user-tracks__sort" (click)="sortUserTracksBy('population')"
+                  aria-label="Ordenar por población">
+                  Población <span class="user-tracks__sort-indicator">{{ resolveUserTracksSortIndicator('population')
+                    }}</span>
                 </button>
               </th>
               <th>Distancia</th>
@@ -116,7 +109,7 @@
           <tbody>
             <tr *ngFor="let row of sortedUserTracks">
               <td class="user-tracks__title-col">
-                <div class="user-tracks__label" *ngIf="row.eventName && row.eventName !== '-'"> 
+                <div class="user-tracks__label" *ngIf="row.eventName && row.eventName !== '-'">
                   <span class="user-tracks__pill user-tracks__pill--event">Evento</span>
                   <span class="user-tracks__title user-tracks__title--event">{{ row.eventName }}</span>
                 </div>
@@ -134,30 +127,22 @@
               <td style="text-align: center;">{{ formatDurationHms(row.timeSeconds) }}</td>
               <td style="text-align: center;">{{ formatDurationHms(row.totalTimeSeconds) }}</td>
               <td class="user-tracks__action-col">
-                <button
-                  type="button"
-                  class="ghost ghost--small user-tracks__icon-button"
-                  [disabled]="isDownloadingTrack(row)"
-                  (click)="downloadUserTrack(row)"
+                <button type="button" class="ghost ghost--small user-tracks__icon-button"
+                  [disabled]="isDownloadingTrack(row)" (click)="downloadUserTrack(row)"
                   [attr.aria-label]="isDownloadingTrack(row) ? 'Descargando track' : 'Descargar track'">
-                  <mat-icon aria-hidden="true">{{ isDownloadingTrack(row) ? 'downloading' : 'file_download' }}</mat-icon>
+                  <mat-icon aria-hidden="true">{{ isDownloadingTrack(row) ? 'downloading' : 'file_download'
+                    }}</mat-icon>
                 </button>
               </td>
               <td class="user-tracks__action-col">
-                <button
-                  type="button"
-                  class="ghost ghost--small user-tracks__icon-button"
-                  (click)="animateUserTrack(row)"
-                  aria-label="Animar track">
+                <button type="button" class="ghost ghost--small user-tracks__icon-button"
+                  (click)="animateUserTrack(row)" aria-label="Animar track">
                   <mat-icon aria-hidden="true">play_arrow</mat-icon>
                 </button>
               </td>
               <td class="user-tracks__action-col">
-                <button
-                  type="button"
-                  class="ghost ghost--small ghost--danger user-tracks__icon-button"
-                  [disabled]="isDeletingTrack(row)"
-                  (click)="confirmDeleteUserTrack(row)"
+                <button type="button" class="ghost ghost--small ghost--danger user-tracks__icon-button"
+                  [disabled]="isDeletingTrack(row)" (click)="confirmDeleteUserTrack(row)"
                   [attr.aria-label]="isDeletingTrack(row) ? 'Eliminando track' : 'Eliminar track'">
                   <mat-icon aria-hidden="true">{{ isDeletingTrack(row) ? 'hourglass_top' : 'delete' }}</mat-icon>
                 </button>
@@ -173,7 +158,7 @@
     <header class="hero events-hero">
       <div>
         <p style="color: beige; padding-bottom: 10px;">Ranking social</p>
-        <h1  style="color: lightyellow;">Elige evento, sube tu track y anima la carrera</h1>
+        <h1 style="color: lightyellow;">Elige evento, sube tu track y anima la carrera</h1>
         <p style="color: beige;">Explora recorridos</p>
         <p style="color: beige;">Súmate al ranking por categoría</p>
         <p style="color: beige;">Compara tu GPX con otros riders</p>
@@ -188,14 +173,8 @@
     <ng-container *ngIf="isAuthenticated">
       <div class="events-actions">
         <div class="events-menu">
-          <button
-            type="button"
-            mat-raised-button
-            color="primary"
-            class="menu-toggle"
-            [matMenuTriggerFor]="eventsMenu"
-            #eventsMenuTrigger="matMenuTrigger"
-            (menuOpened)="eventMenuOpen = true"
+          <button type="button" mat-raised-button color="primary" class="menu-toggle" [matMenuTriggerFor]="eventsMenu"
+            #eventsMenuTrigger="matMenuTrigger" (menuOpened)="eventMenuOpen = true"
             (menuClosed)="eventMenuOpen = false">
             <span class="menu-toggle__label">
               <mat-icon aria-hidden="true">event</mat-icon>
@@ -237,15 +216,10 @@
         <div class="events-carousel">
           <div class="carousel-window">
             <div class="carousel-track">
-              
-            <article
-              *ngFor="let event of events; index as i"
-              class="event-card event-card--carousel"
-              [class.event-card--active]="event.id === selectedEventId"
-              [class.event-card--current]="i === carouselIndex"
-              
-              (click)="handleCarouselSelection(event.id)"
-            >
+
+              <article *ngFor="let event of events; index as i" class="event-card event-card--carousel"
+                [class.event-card--active]="event.id === selectedEventId"
+                [class.event-card--current]="i === carouselIndex" (click)="handleCarouselSelection(event.id)">
                 <div class="event-card__content">
                   <div class="event-card__info">
                     <p class="eyebrow">{{ event.year }}</p>
@@ -270,18 +244,15 @@
                       <div class="event-profile">
                         <ng-container *ngIf="eventVisuals[event.id]?.profile?.points; else noProfile">
                           <div class="profile-chart-wrapper">
-                            <svg [attr.viewBox]="'0 0 ' + profileWidth + ' ' + profileHeight" preserveAspectRatio="none" class="profile-chart">
+                            <svg [attr.viewBox]="'0 0 ' + profileWidth + ' ' + profileHeight" preserveAspectRatio="none"
+                              class="profile-chart">
                               <g class="grid-lines">
-                                <line
-                                  *ngFor="let y of eventVisuals[event.id].profile?.gridLinesY"
-                                  x1="0"
-                                  [attr.y1]="y"
-                                  [attr.y2]="y"
-                                  [attr.x2]="profileWidth" />
+                                <line *ngFor="let y of eventVisuals[event.id].profile?.gridLinesY" x1="0" [attr.y1]="y"
+                                  [attr.y2]="y" [attr.x2]="profileWidth" />
                               </g>
                               <polyline [attr.points]="eventVisuals[event.id].profile?.points"></polyline>
                             </svg>
-                            <div class="profile-legend"  *ngIf="eventVisuals[event.id].profile as profile">
+                            <div class="profile-legend" *ngIf="eventVisuals[event.id].profile as profile">
                               <div class="legend-row">
                                 <span>Altura inicial:</span>
                                 <strong>{{ profile.stats.initialElevation | number: '1.0-0' }} m</strong>
@@ -298,17 +269,18 @@
                                 <span>Tracks subidos:</span>
                                 <div class="legend-row__actions">
                                   <strong>{{ event.tracks.length }}</strong>
-                                  
+
                                 </div>
                               </div>
-                              <button
-                                    type="button"
-                                    class="cloud-download"
-                                    [disabled]="!hasMasterTrack(event) || isDownloadingMaster(event.id)"
-                                    (click)="downloadEventMaster(event, $event)">
-                                    <mat-icon aria-hidden="true">cloud_download</mat-icon>
-                                    <span *ngIf="!isDownloadingMaster(event.id)">Bajar track</span>
-                                    <span *ngIf="isDownloadingMaster(event.id)">Bajando...</span>
+                              <div class="legend-row" style="border-style: none;">
+                                
+                              </div>
+                              <button type="button" class="cloud-download"
+                                [disabled]="!hasMasterTrack(event) || isDownloadingMaster(event.id)"
+                                (click)="downloadEventMaster(event, $event)">
+                                <mat-icon aria-hidden="true">cloud_download</mat-icon>
+                                <span *ngIf="!isDownloadingMaster(event.id)">Bajar track</span>
+                                <span *ngIf="isDownloadingMaster(event.id)">Bajando...</span>
                               </button>
                             </div>
 
@@ -320,7 +292,7 @@
                       </div>
                     </div>
                   </div>
-                  <div class="event-card__map" >
+                  <div class="event-card__map">
                     <ng-container *ngIf="eventVisuals[event.id]?.trackPath; else missingTrack">
                       <svg viewBox="0 0 320 240" preserveAspectRatio="none" class="track-drawing">
                         <polyline [attr.points]="eventVisuals[event.id].trackPath"></polyline>
@@ -329,10 +301,7 @@
                     <ng-template #missingTrack>
                       <div class="no-track">
                         <p class="muted">No se dispone de track</p>
-                        <button
-                          *ngIf="canUploadMasterGpx(event)"
-                          type="button"
-                          class="secondary"
+                        <button *ngIf="canUploadMasterGpx(event)" type="button" class="secondary"
                           (click)="promptMasterGpxUpload(event.id); $event.stopPropagation();">
                           Subir track
                         </button>
@@ -355,7 +324,7 @@
 
       <section *ngIf="events.length" class="event-detail">
         <div class="event-panels">
-        <!-- <article class="panel">
+          <!-- <article class="panel">
           <ng-container *ngIf="selectedEvent; else rankingPlaceholder">
             <div class="panel__header">
               <h3>Ranking mejor tiempo</h3>
@@ -389,74 +358,72 @@
           </ng-template>
         </article> -->
 
-        <article class="panel">
-          <ng-container *ngIf="selectedEvent; else routeTimesPlaceholder">
-            <div class="panel__header">
-              <h3>Tiempos de la ruta</h3>
-              <p class="muted">Datos obtenidos al seleccionar el recorrido en el carrusel.</p>
-            </div>
-            <ng-container *ngIf="routeTrackTimes.length; else emptyRouteTimes">
-              <ol class="ranking">
-                <li *ngFor="let track of routeTrackTimes; index as i">
-                  <span class="position">#{{ i + 1 }}</span>
-                  <div>
-                    <p class="strong">{{ track.nickname }}</p>
-                    <p class="muted">{{ track.category }}</p>
-                  </div>
-                  <div class="ranking__actions">
-                    <span class="pill">{{ track.distanceKm | number:'1.0-1' }} km</span>
-                    <span class="time">{{ formatTime(track.tiempoReal) }}</span>
-                  </div>
-                </li>
-              </ol>
+          <article class="panel">
+            <ng-container *ngIf="selectedEvent; else routeTimesPlaceholder">
+              <div class="panel__header">
+                <h3>Tiempos de la ruta</h3>
+                <p class="muted">Datos obtenidos al seleccionar el recorrido en el carrusel.</p>
+              </div>
+              <ng-container *ngIf="routeTrackTimes.length; else emptyRouteTimes">
+                <ol class="ranking">
+                  <li *ngFor="let track of routeTrackTimes; index as i">
+                    <span class="position">#{{ i + 1 }}</span>
+                    <div>
+                      <p class="strong">{{ track.nickname }}</p>
+                      <p class="muted">{{ track.category }}</p>
+                    </div>
+                    <div class="ranking__actions">
+                      <span class="pill">{{ track.distanceKm | number:'1.0-1' }} km</span>
+                      <span class="time">{{ formatTime(track.tiempoReal) }}</span>
+                    </div>
+                  </li>
+                </ol>
+              </ng-container>
+              <ng-template #emptyRouteTimes>
+                <p class="muted">No hay tiempos registrados para este recorrido aún.</p>
+              </ng-template>
             </ng-container>
-            <ng-template #emptyRouteTimes>
-              <p class="muted">No hay tiempos registrados para este recorrido aún.</p>
+            <ng-template #routeTimesPlaceholder>
+              <div class="panel__header">
+                <h3>Tiempos de la ruta</h3>
+                <p class="muted">Selecciona un evento para cargar los tiempos.</p>
+              </div>
             </ng-template>
-          </ng-container>
-          <ng-template #routeTimesPlaceholder>
+          </article>
+        </div>
+
+        <article class="panel">
+          <ng-container *ngIf="selectedEvent; else selectionPlaceholder">
             <div class="panel__header">
-              <h3>Tiempos de la ruta</h3>
-              <p class="muted">Selecciona un evento para cargar los tiempos.</p>
+              <h3>Elige hasta 4 rivales</h3>
+              <p class="muted">Activa los que quieras comparar y pulsa "Animar selección".</p>
+            </div>
+            <div class="track-grid">
+              <label class="track-card" *ngFor="let track of availableTracks">
+                <input type="checkbox" [checked]="selectedComparisonIds.has(track.id)"
+                  (change)="toggleComparisonSelection(track.id)" />
+                <div>
+                  <p class="strong">{{ track.nickname }} · {{ findModalityName(track.modalityId) }}</p>
+                  <p class="muted">{{ track.category }} · {{ track.bikeType }} · {{ formatTime(track.timeSeconds) }}</p>
+                </div>
+                <span class="pill">{{ track.distanceKm | number:'1.0-1' }} km</span>
+                <button *ngIf="canDeleteTrack(track)" type="button" class="icon-button"
+                  (click)="deleteTrack(track.id); $event.stopPropagation(); $event.preventDefault();">
+                  🗑️
+                </button>
+              </label>
+            </div>
+            <div class="actions">
+              <button class="btn-start" type="button" (click)="animateSelectedTracks()">Animar selección</button>
+            </div>
+          </ng-container>
+          <ng-template #selectionPlaceholder>
+            <div class="panel__header">
+              <h3>Elige hasta 4 rivales</h3>
+              <p class="muted">Selecciona un evento para ver los aportes disponibles.</p>
             </div>
           </ng-template>
         </article>
-      </div>
-
-      <article class="panel">
-        <ng-container *ngIf="selectedEvent; else selectionPlaceholder">
-          <div class="panel__header">
-            <h3>Elige hasta 4 rivales</h3>
-            <p class="muted">Activa los que quieras comparar y pulsa "Animar selección".</p>
-          </div>
-          <div class="track-grid">
-            <label class="track-card" *ngFor="let track of availableTracks">
-              <input type="checkbox" [checked]="selectedComparisonIds.has(track.id)" (change)="toggleComparisonSelection(track.id)" />
-              <div>
-                <p class="strong">{{ track.nickname }} · {{ findModalityName(track.modalityId) }}</p>
-                <p class="muted">{{ track.category }} · {{ track.bikeType }} · {{ formatTime(track.timeSeconds) }}</p>
-              </div>
-              <span class="pill">{{ track.distanceKm | number:'1.0-1' }} km</span>
-              <button
-                *ngIf="canDeleteTrack(track)"
-                type="button"
-                class="icon-button"
-                (click)="deleteTrack(track.id); $event.stopPropagation(); $event.preventDefault();">
-                🗑️
-              </button>
-            </label>
-          </div>
-          <div class="actions">
-            <button class="btn-start" type="button" (click)="animateSelectedTracks()">Animar selección</button>
-          </div>
-        </ng-container>
-        <ng-template #selectionPlaceholder>
-          <div class="panel__header">
-            <h3>Elige hasta 4 rivales</h3>
-            <p class="muted">Selecciona un evento para ver los aportes disponibles.</p>
-          </div>
-        </ng-template>
-      </article>
 
         <article class="panel" *ngIf="personalHistory.length">
           <div class="panel__header">
@@ -472,10 +439,7 @@
               <div class="history__meta">
                 <span class="pill">{{ formatTime(track.timeSeconds) }}</span>
                 <span class="muted">{{ track.uploadedAt | date:'medium' }}</span>
-                <button
-                  *ngIf="canDeleteTrack(track)"
-                  type="button"
-                  class="icon-button"
+                <button *ngIf="canDeleteTrack(track)" type="button" class="icon-button"
                   (click)="deleteTrack(track.id, selectedEventId || undefined)">
                   🗑️
                 </button>

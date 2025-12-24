@@ -3,7 +3,7 @@ export const environment = {
   loginUrl: '/api/auth/login',
   registerUrl: '/api/auth/register',
   resendVerificationUrl: '/api/auth/resend-verification',
-  meUrl: '/api/auth/me',
+  meUrl: '/api/tracks/me',
   routesApiBase: '/api/routes',
   tracksApiBase: '/api/tracks'
 };

@@ -734,6 +734,34 @@
   color: #0f172a;
 }
 
+.legend-row--tracks {
+  gap: 8px;
+}
+
+.legend-row__actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.cloud-download {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border-radius: 12px;
+  border: 1px solid #cbd5e1;
+  background: linear-gradient(120deg, #e0f2fe, #f5f3ff);
+  font-weight: 800;
+  cursor: pointer;
+  color: #0f172a;
+}
+
+.cloud-download:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 .event-card__map {
   position: relative;
   background-color: #7185b3;

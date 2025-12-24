@@ -962,7 +962,7 @@ export class MapComponent implements OnInit, AfterViewInit {
   // Cada pausa se acumula y se resta a todos los puntos posteriores, dejando el track como si no se
   // hubiera detenido la grabación.
   private removeStopsAdaptive(xs: TPx[], pauseThresholdMs = 30_000): TPx[] {
-    console.log('[StopsAdaptive] ENTER len=', xs?.length);
+    // console.log('[StopsAdaptive] ENTER len=', xs?.length);
     if (!xs || xs.length < 2) { console.log('[StopsAdaptive] EXIT early'); return xs?.slice() ?? []; }
 
     const out: TPx[] = [{ ...xs[0] }];

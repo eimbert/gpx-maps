@@ -219,7 +219,7 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
       }
     });
     this.eventService.getEvents().subscribe(events => {
-      console.log("Events: ", events )
+      // console.log("Events: ", events )
       this.events = events;
       this.syncCarouselIndex();
       this.syncSelectionWithCarousel();
@@ -749,7 +749,7 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
     dialogRef.afterClosed().subscribe(result => {
       if (!result?.event) return;
       const payload: CreateEventPayload = { ...result.event, createdBy: this.userId };
-      console.log("CreateEventPayload: ", payload)
+      // console.log("CreateEventPayload: ", payload)
       this.eventService.createEvent(payload).subscribe({
         next: created => {
           this.selectMode('events');
@@ -1589,13 +1589,13 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
     this.userTracksLoading = true;
     try {
       const tracks = await firstValueFrom(this.eventService.getMyTracks());
-      console.log("tracks: ", tracks)
+      // console.log("tracks: ", tracks)
       const eventsById = new Map<number, RaceEvent>(this.events.map(event => [event.id, event]));
       const rows = tracks.map(track => this.toUserTrackRow(track, eventsById));
-      console.log("rows_1:", rows)
+      // console.log("rows_1:", rows)
       await this.fillMissingUserTrackLocations(rows);
       this.userTracks = rows;
-      console.log("rows_2:", rows)
+      // console.log("rows_2:", rows)
     } catch {
       this.showMessage('No se pudieron cargar tus tracks. Inténtalo de nuevo más tarde.');
       this.userTracks = [];
@@ -1909,7 +1909,7 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
       title: result.title
     };
 
-    console.log("POST a track: ", payload)
+    // console.log("POST a track: ", payload)
 
     this.standaloneUploadInProgress = true;
     this.eventService.addTrack(payload).subscribe({

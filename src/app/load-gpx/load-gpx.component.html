@@ -293,9 +293,20 @@
                               <span>Distancia:</span>
                               <strong>{{ profile.stats.distanceKm | number: '1.0-1' }} km</strong>
                             </div>
-                            <div class="legend-row">
+                            <div class="legend-row legend-row--tracks">
                               <span>Tracks subidos:</span>
-                              <strong>{{ event.tracks.length }}</strong>
+                              <div class="legend-row__actions">
+                                <strong>{{ event.tracks.length }}</strong>
+                                <button
+                                  type="button"
+                                  class="cloud-download"
+                                  [disabled]="!hasMasterTrack(event) || isDownloadingMaster(event.id)"
+                                  (click)="downloadEventMaster(event, $event)">
+                                  <mat-icon aria-hidden="true">cloud_download</mat-icon>
+                                  <span *ngIf="!isDownloadingMaster(event.id)">Bajar track</span>
+                                  <span *ngIf="isDownloadingMaster(event.id)">Bajando...</span>
+                                </button>
+                              </div>
                             </div>
                           </div>
                         </div>

@@ -138,6 +138,7 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
   userTracksLoading = false;
   private readonly downloadingTracks = new Set<number>();
   private readonly deletingTracks = new Set<number>();
+  private readonly downloadingMasterTracks = new Set<number>();
   standaloneUploadInProgress = false;
   userTracksSortColumn: UserTracksSortColumn = 'year';
   userTracksSortDirection: SortDirection = 'asc';
@@ -575,6 +576,39 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
 
   canUploadMasterGpx(event: RaceEvent): boolean {
     return this.isAuthenticated && event.createdBy === this.userId;
+  }
+
+  hasMasterTrack(event: RaceEvent): boolean {
+    return !!(event.gpxMaster || event.tracks?.[0]);
+  }
+
+  isDownloadingMaster(eventId: number): boolean {
+    return this.downloadingMasterTracks.has(eventId);
+  }
+
+  async downloadEventMaster(event: RaceEvent, clickEvent?: Event): Promise<void> {
+    clickEvent?.stopPropagation();
+    if (this.isDownloadingMaster(event.id)) return;
+
+    this.downloadingMasterTracks.add(event.id);
+    try {
+      const gpxData = await this.resolveMasterGpxContent(event);
+      if (!gpxData) {
+        this.showMessage('No se pudo descargar el track maestro.');
+        return;
+      }
+
+      const blob = new Blob([gpxData], { type: 'application/gpx+xml' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      const fileName = event.gpxMasterFileName || `${event.name || 'evento'}-master.gpx`;
+      link.href = url;
+      link.download = fileName;
+      link.click();
+      setTimeout(() => URL.revokeObjectURL(url), 1500);
+    } finally {
+      this.downloadingMasterTracks.delete(event.id);
+    }
   }
 
   promptMasterGpxUpload(eventId: number): void {

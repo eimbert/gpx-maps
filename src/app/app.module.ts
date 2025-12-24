@@ -25,6 +25,7 @@ import { LoginDialogComponent } from './login-dialog/login-dialog.component';
 import { RegisterDialogComponent } from './register-dialog/register-dialog.component';
 import { InfoDialogComponent } from './info-dialog/info-dialog.component';
 import { VerificationDialogComponent } from './verification-dialog/verification-dialog.component';
+import { AuthGuard } from './services/auth.guard';
 import { AuthInterceptor } from './services/auth.interceptor';
 import { MyTracksDialogComponent } from './my-tracks-dialog/my-tracks-dialog.component';
 import { EventTrackUploadDialogComponent } from './event-track-upload-dialog/event-track-upload-dialog.component';
@@ -63,6 +64,7 @@ import { StandaloneTrackUploadDialogComponent } from './standalone-track-upload-
     FormsModule, BrowserAnimationsModule
   ],
   providers: [
+    AuthGuard,
     {
       provide: HTTP_INTERCEPTORS,
       useClass: AuthInterceptor,

@@ -8,7 +8,7 @@ import { AuthGuard } from './services/auth.guard';
 const routes: Routes = [
   { path: '', component: HomeComponent },
   { path: 'load', component: LoadGpxComponent },
-  { path: 'events', component: LoadGpxComponent, data: { mode: 'events' }, canActivate: [AuthGuard] },
+  { path: 'events', component: LoadGpxComponent, canActivate: [AuthGuard], data: { mode: 'events' } },
   { path: 'map', component: MapComponent },
   { path: '**', redirectTo: '' }
 ];

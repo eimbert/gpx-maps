@@ -1191,3 +1191,8 @@ input[type="file"] {
   position: relative;
   z-index: 1;
 }
+
+.download-wrap{
+  display: flex;
+  justify-content: flex-end;
+}

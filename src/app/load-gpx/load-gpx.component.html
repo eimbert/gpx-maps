@@ -280,7 +280,7 @@
                             </g>
                             <polyline [attr.points]="eventVisuals[event.id].profile?.points"></polyline>
                           </svg>
-                          <div class="profile-legend" *ngIf="eventVisuals[event.id].profile as profile">
+                          <div class="profile-legend"  *ngIf="eventVisuals[event.id].profile as profile">
                             <div class="legend-row">
                               <span>Altura inicial:</span>
                               <strong>{{ profile.stats.initialElevation | number: '1.0-0' }} m</strong>
@@ -297,7 +297,12 @@
                               <span>Tracks subidos:</span>
                               <div class="legend-row__actions">
                                 <strong>{{ event.tracks.length }}</strong>
-                                <button
+                                
+                              </div>
+                              <div class="legend-row__actions" ></div>
+                            </div>
+                            <div  class="download-wrap legend-row__actions">
+                              <button
                                   type="button"
                                   class="cloud-download"
                                   [disabled]="!hasMasterTrack(event) || isDownloadingMaster(event.id)"
@@ -305,10 +310,10 @@
                                   <mat-icon aria-hidden="true">cloud_download</mat-icon>
                                   <span *ngIf="!isDownloadingMaster(event.id)">Bajar track</span>
                                   <span *ngIf="isDownloadingMaster(event.id)">Bajando...</span>
-                                </button>
-                              </div>
+                              </button>
                             </div>
                           </div>
+                          
                         </div>
                       </ng-container>
                       <ng-template #noProfile>

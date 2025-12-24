@@ -298,6 +298,15 @@
                                 <span>Tracks subidos:</span>
                                 <div class="legend-row__actions">
                                   <strong>{{ event.tracks.length }}</strong>
+                                  <button
+                                    type="button"
+                                    class="cloud-download"
+                                    [disabled]="!hasMasterTrack(event) || isDownloadingMaster(event.id)"
+                                    (click)="downloadEventMaster(event, $event)">
+                                    <mat-icon aria-hidden="true">cloud_download</mat-icon>
+                                    <span *ngIf="!isDownloadingMaster(event.id)">Bajar track</span>
+                                    <span *ngIf="isDownloadingMaster(event.id)">Bajando...</span>
+                                  </button>
                                 </div>
                               </div>
                             </div>
@@ -307,17 +316,6 @@
                         <ng-template #noProfile>
                           <p class="muted profile-empty">Perfil no disponible</p>
                         </ng-template>
-                      </div>
-                      <div class="download-wrap legend-row__actions">
-                        <button
-                            type="button"
-                            class="cloud-download"
-                            [disabled]="!hasMasterTrack(event) || isDownloadingMaster(event.id)"
-                            (click)="downloadEventMaster(event, $event)">
-                            <mat-icon aria-hidden="true">cloud_download</mat-icon>
-                            <span *ngIf="!isDownloadingMaster(event.id)">Bajar track</span>
-                            <span *ngIf="isDownloadingMaster(event.id)">Bajando...</span>
-                        </button>
                       </div>
                     </div>
                   </div>

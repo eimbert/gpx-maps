@@ -142,6 +142,7 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
   standaloneUploadInProgress = false;
   userTracksSortColumn: UserTracksSortColumn = 'year';
   userTracksSortDirection: SortDirection = 'asc';
+  private sessionExpiredNotified = false;
 
   eventUpload: EventTrackUploadDraft = {
     eventId: null,
@@ -184,14 +185,20 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit() {
+    const hadStoredSession = !!this.authService.getSession();
     this.applyInitialMode();
     this.isAuthenticated = this.authService.isAuthenticated();
     this.personalNickname = this.authService.getSession()?.nickname ?? '';
     this.sessionSub = this.authService.sessionChanges$.subscribe(session => {
       this.isAuthenticated = !!session;
       this.personalNickname = session?.nickname ?? '';
+      if (session) {
+        this.sessionExpiredNotified = false;
+      }
       if (!this.isAuthenticated && this.mode === 'events') {
         this.showEventsAuthNotice();
+      }
+      if (!this.isAuthenticated) {
         this.userTracks = [];
       }
       if (this.isAuthenticated) {
@@ -201,6 +208,9 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
     this.authService.validateSessionWithBackend().subscribe(session => {
       this.isAuthenticated = !!session;
       this.personalNickname = session?.nickname ?? '';
+      if (!this.isAuthenticated && hadStoredSession) {
+        this.handleSessionExpired();
+      }
       if (!this.isAuthenticated && this.mode === 'events') {
         this.showEventsAuthNotice();
       }
@@ -305,6 +315,12 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
         this.router.navigate(['/']);
       }
     });
+  }
+
+  private handleSessionExpired(): void {
+    if (this.sessionExpiredNotified) return;
+    this.sessionExpiredNotified = true;
+    this.showMessage('Tu sesión ha expirado. Inicia sesión de nuevo para seguir disfrutando de todas las funciones.', 'Sesión expirada');
   }
 
   private showEventsAuthNotice(): void {

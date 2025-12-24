@@ -50,7 +50,7 @@ export class RegisterDialogComponent implements OnDestroy {
     this.authService.register(this.email, this.password, this.name, this.nickname).subscribe({
       next: response => {
         if (!environment.production) {
-          console.log(response);
+          // console.log(response);
         }
 
         this.loading = false;

@@ -37,7 +37,7 @@ export class LoginDialogComponent {
     this.authService.login(this.email, this.password).subscribe({
       next: response => {
         if(!environment.production)
-          console.log(response)
+          // console.log(response)
         this.loading = false;
         if ((response as LoginErrorResponse).exitCode !== 0) {
           const loginError = response as LoginErrorResponse;

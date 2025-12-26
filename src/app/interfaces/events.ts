@@ -30,6 +30,8 @@ export interface EventTrack {
   population?: string | null;
   autonomousCommunity?: string | null;
   province?: string | null;
+  startLatitude?: number | null;
+  startLongitude?: number | null;
   gpxAsset?: string;
   gpxData?: string;
   fileName?: string;
@@ -83,6 +85,8 @@ export interface CreateTrackPayload {
   population?: string | null;
   autonomousCommunity?: string | null;
   province?: string | null;
+  startLatitude?: number | null;
+  startLongitude?: number | null;
   gpxAsset?: string;
   routeXml?: string;
   fileName?: string;

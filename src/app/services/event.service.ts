@@ -187,7 +187,11 @@ export class EventService {
     let population = event.population || '';
     let autonomousCommunity = event.autonomousCommunity || '';
     const province = (event as any).province ?? (event as any).province_name ?? event.province ?? null;
-    const distanceKm = (event as any).distanceKm ?? (event as any).distance_km ?? event.distanceKm ?? null;
+    const distanceKm = (event as any).distanceKm
+      ?? (event as any).distance_km
+      ?? (event as any).distante_km
+      ?? event.distanceKm
+      ?? null;
     const logoBlob = event.logoBlob ?? null;
     // console.log("LOGOBLOB: ", logoBlob)
     // console.log("event. LOGOBLOB: ", event.logoBlob)

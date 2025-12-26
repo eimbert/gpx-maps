@@ -64,6 +64,7 @@ export interface CreateEventPayload {
   province?: string | null;
   year: number;
   distanceKm?: number | null;
+  distante_km?: number | null;
   logoBlob?: string | null;
   logoMime?: string | null;
   gpxMaster?: string | null;
@@ -104,6 +105,7 @@ export interface RaceEvent {
   province?: string | null;
   year: number;
   distanceKm?: number | null;
+  distante_km?: number | null;
   //logo?: string;
   logoBlob?: string | null;
   logoMime?: string | null;

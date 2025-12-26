@@ -1616,21 +1616,20 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
       this.showMessage('Selecciona al menos un track para comparar.');
       return;
     }
-    console.log("event: ", event)
+
     const loaded: LoadedTrack[] = [];
     for (let i = 0; i < selectedIds.length; i++) {
       const trackRef = event.tracks.find(t => t.id === selectedIds[i]);
-      console.log("trackRef: ", trackRef)
-      
       if (!trackRef) continue;
+
       const built = await this.ensureLoadedTrackFromEventTrack(trackRef, i);
-      if (built) {
-        loaded.push({
-          ...built,
-          color: this.pickColor(i),
-          name: `${trackRef.nickname} • ${this.findModalityName(trackRef.modalityId)}`
-        });
-      }
+      if (!built) continue;
+
+      loaded.push({
+        ...built,
+        color: this.pickColor(i),
+        name: `${trackRef.nickname} • ${this.findModalityName(trackRef.modalityId)}`
+      });
     }
 
     if (!loaded.length) {
@@ -1642,8 +1641,8 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
     this.iniciarVisualizacion();
   }
 
+
   toggleComparisonSelection(trackId: number): void {
-    console.log("track sekleccionado: ", trackId)
     if (this.selectedComparisonIds.has(trackId)) {
       this.selectedComparisonIds.delete(trackId);
       return;
@@ -1728,9 +1727,9 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
   // REFRESH OPTIMIZADO
   // =========================
   async refreshUserTracks(): Promise<void> {
-    
+
     if (this.refreshInFlight) return this.refreshInFlight;
-    
+
     this.refreshInFlight = (async () => {
       if (!this.isAuthenticated) {
         this.userTracks = [];

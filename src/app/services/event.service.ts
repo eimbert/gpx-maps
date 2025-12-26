@@ -150,6 +150,16 @@ export class EventService {
     );
   }
 
+  getRouteGpx(routeId: number): Observable<TrackGpxFile> {
+    return this.http.get<TrackGpxFile>(`${this.tracksApiBase}/route/${routeId}`).pipe(
+      map(res => ({
+        id: Number(res.id),
+        fileName: res.fileName ?? null,
+        routeXml: res.routeXml ?? null
+      }))
+    );
+  }
+
   getMyTracks(): Observable<EventTrack[]> {
     return this.http.get<EventTrack[]>(`${this.tracksApiBase}/me`).pipe(
       map(tracks => (tracks || []).map(track => {

@@ -310,6 +310,19 @@
         </div>
       </div>
 
+      <div class="carousel-controls">
+        <button type="button" class="carousel-button" (click)="prevEvent(true)" aria-label="Evento anterior">
+          <mat-icon aria-hidden="true">skip_previous</mat-icon>
+        </button>
+        <button type="button" class="carousel-button carousel-button--primary" (click)="toggleCarouselPlayback()"
+          [attr.aria-label]="isCarouselPaused ? 'Reanudar carrusel' : 'Pausar carrusel'">
+          <mat-icon aria-hidden="true">{{ isCarouselPaused ? 'play_arrow' : 'pause' }}</mat-icon>
+        </button>
+        <button type="button" class="carousel-button" (click)="nextEvent(true)" aria-label="Siguiente evento">
+          <mat-icon aria-hidden="true">skip_next</mat-icon>
+        </button>
+      </div>
+
 
     </ng-container>
 
@@ -323,24 +336,42 @@
 
           <article class="panel">
             <ng-container *ngIf="selectedEvent; else routeTimesPlaceholder">
-              <div class="panel__header">
-                <h3>Tiempos de la ruta</h3>
-                <p class="muted">Datos obtenidos al seleccionar el recorrido en el carrusel.</p>
+              <div class="panel__header panel__header--ranking">
+                <div>
+                  <h3>Tiempos de la ruta</h3>
+                  <p class="muted">Datos obtenidos al seleccionar el recorrido en el carrusel.</p>
+                </div>
+                <button class="ranking-animate" type="button" (click)="animateSelectedTracks()"
+                  [disabled]="!selectedComparisonIds.size" aria-label="Animar tracks seleccionados">
+                  <span class="ranking-animate__icon" aria-hidden="true">🚴‍♀️</span>
+                  <span>Animar selección</span>
+                </button>
               </div>
               <ng-container *ngIf="routeTrackTimes.length; else emptyRouteTimes">
-                <ol class="ranking">
-                  <li *ngFor="let track of routeTrackTimes; index as i">
+                <div class="ranking ranking--grid">
+                  <div class="ranking__header">
+                    <span>#</span>
+                    <span>Rider</span>
+                    <span>Datos</span>
+                    <span class="ranking__select-col">Seleccionar</span>
+                  </div>
+                  <div class="ranking__row" *ngFor="let track of routeTrackTimes; index as i">
                     <span class="position">#{{ i + 1 }}</span>
-                    <div>
+                    <div class="ranking__rider">
                       <p class="strong">{{ track.nickname }}</p>
                       <p class="muted">{{ track.category }}</p>
                     </div>
-                    <div class="ranking__actions">
+                    <div class="ranking__meta">
                       <span class="pill">{{ track.distanceKm | number:'1.0-1' }} km</span>
                       <span class="time">{{ formatTime(track.tiempoReal) }}</span>
                     </div>
-                  </li>
-                </ol>
+                    <label class="ranking__checkbox" aria-label="Seleccionar track para animar">
+                      <input type="checkbox" [checked]="selectedComparisonIds.has(track.id)"
+                        (change)="toggleComparisonSelection(track.id)" />
+                      <span class="ranking__checkbox-box"></span>
+                    </label>
+                  </div>
+                </div>
               </ng-container>
               <ng-template #emptyRouteTimes>
                 <p class="muted">No hay tiempos registrados para este recorrido aún.</p>
@@ -354,39 +385,6 @@
             </ng-template>
           </article>
         </div>
-
-        <article class="panel">
-          <ng-container *ngIf="selectedEvent; else selectionPlaceholder">
-            <div class="panel__header">
-              <h3>Elige hasta 4 rivales</h3>
-              <p class="muted">Activa los que quieras comparar y pulsa "Animar selección".</p>
-            </div>
-            <div class="track-grid">
-              <label class="track-card" *ngFor="let track of availableTracks">
-                <input type="checkbox" [checked]="selectedComparisonIds.has(track.id)"
-                  (change)="toggleComparisonSelection(track.id)" />
-                <div>
-                  <p class="strong">{{ track.nickname }} · {{ findModalityName(track.modalityId) }}</p>
-                  <p class="muted">{{ track.category }} · {{ track.bikeType }} · {{ formatTime(track.timeSeconds) }}</p>
-                </div>
-                <span class="pill">{{ track.distanceKm | number:'1.0-1' }} km</span>
-                <button *ngIf="canDeleteTrack(track)" type="button" class="icon-button"
-                  (click)="deleteTrack(track.id); $event.stopPropagation(); $event.preventDefault();">
-                  🗑️
-                </button>
-              </label>
-            </div>
-            <div class="actions">
-              <button class="btn-start" type="button" (click)="animateSelectedTracks()">Animar selección</button>
-            </div>
-          </ng-container>
-          <ng-template #selectionPlaceholder>
-            <div class="panel__header">
-              <h3>Elige hasta 4 rivales</h3>
-              <p class="muted">Selecciona un evento para ver los aportes disponibles.</p>
-            </div>
-          </ng-template>
-        </article>
 
         <article class="panel" *ngIf="personalHistory.length">
           <div class="panel__header">

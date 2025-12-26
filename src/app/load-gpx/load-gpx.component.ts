@@ -1539,6 +1539,7 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
       );
       return;
     }
+    const trackLocation = await this.resolveTrackLocationFromGpx(gpxData);
     const activeDurationSeconds = this.calculateActiveDurationSeconds(track.data.trkpts) || durationSeconds;
     const totalDurationSeconds = this.calculateTotalDurationSeconds(track.data.trkpts) || durationSeconds;
     if (!activeDurationSeconds) {
@@ -1548,8 +1549,14 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
     const timeSeconds = Math.max(1, Math.round(activeDurationSeconds));
     const tiempoReal = Math.max(1, Math.round(totalDurationSeconds || timeSeconds));
 
+    const year = trackYear ?? event?.year ?? new Date().getFullYear();
+    const population = trackLocation?.population ?? event?.population ?? null;
+    const autonomousCommunity = trackLocation?.autonomousCommunity ?? event?.autonomousCommunity ?? null;
+    const province = trackLocation?.province ?? event?.province ?? null;
+
     const newTrack: CreateTrackPayload = {
       routeId,
+      year,
       nickname,
       category: upload.category,
       bikeType: upload.bikeType,
@@ -1558,6 +1565,9 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
       tiempoReal,
       distanceKm: Number.isFinite(distanceKm) && distanceKm > 0 ? distanceKm : track.details.distance,
       ascent: track.details.ascent,
+      population,
+      autonomousCommunity,
+      province,
       routeXml: gpxData,
       fileName: upload.file!.name,
       duracionRecorrido: this.formatDurationAsLocalTime(timeSeconds),
@@ -1707,7 +1717,6 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
       try {
         const tracks = await firstValueFrom(this.eventService.getMyTracks());
         const rows = tracks.map(track => this.toUserTrackRow(track, this.eventsById));
-        await this.fillMissingUserTrackLocations(rows);
         this.userTracks = rows;
       } catch {
         this.showMessage('No se pudieron cargar tus tracks. Inténtalo de nuevo más tarde.');
@@ -1739,6 +1748,11 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
 
     const event = routeId ? eventsById.get(routeId) : undefined;
 
+    const year = this.resolveTrackYear(track, event);
+    const population = track.population ?? event?.population ?? null;
+    const autonomousCommunity = track.autonomousCommunity ?? event?.autonomousCommunity ?? null;
+    const province = track.province ?? event?.province ?? null;
+
     const title = this.pickFirstText(track as any, ['title', 'trackTitle', 'track_title']);
     const description = this.pickFirstText(track as any, ['description', 'trackDescription', 'track_description']);
 
@@ -1746,10 +1760,10 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
       trackId: track.id,
       routeId,
       eventName: event?.name ?? '-',
-      year: this.resolveTrackYear(track, event),
-      autonomousCommunity: event?.autonomousCommunity ?? null,
-      province: event?.province ?? null,
-      population: event?.population ?? null,
+      year,
+      autonomousCommunity,
+      province,
+      population,
       distanceKm: this.toNumber(track.distanceKm),
       timeSeconds: this.toNumber(track.timeSeconds),
       totalTimeSeconds: this.resolveTotalTimeSeconds(track),
@@ -1762,61 +1776,7 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
     };
   }
 
-  private async runWithConcurrency<T>(items: T[], concurrency: number, worker: (item: T) => Promise<void>): Promise<void> {
-    let index = 0;
-
-    const runners = Array.from({ length: Math.min(concurrency, items.length) }, async () => {
-      while (index < items.length) {
-        const current = index++;
-        await worker(items[current]);
-      }
-    });
-
-    await Promise.all(runners);
-  }
-
-  private async fillMissingUserTrackLocations(rows: UserTrackRow[]): Promise<void> {
-    const targets = rows.filter(r => !(r.population && r.autonomousCommunity && r.province));
-    if (!targets.length) return;
-
-    type Info = { row: UserTrackRow; key: string; lat: number; lon: number };
-    const infos: Info[] = [];
-
-    for (const row of targets) {
-      // IMPORTANTE: ya NO hacemos "if (row.routeId) continue;"
-      const point = await this.extractFirstPointForRow(row);
-      if (!point) continue;
-
-      const key = `${point.lat.toFixed(5)},${point.lon.toFixed(5)}`;
-      infos.push({ row, key, lat: point.lat, lon: point.lon });
-    }
-
-    if (!infos.length) return;
-
-    const uniqueInfos = Array.from(new Map(infos.map(i => [i.key, i])).values());
-
-    // Nominatim: mejor bajo
-    const concurrency = 3;
-
-    await this.runWithConcurrency(uniqueInfos, concurrency, async info => {
-      if (this.geoCache.has(info.key)) return;
-      const location = await this.reverseGeocode(info.lat, info.lon);
-      if (location) this.geoCache.set(info.key, location);
-    });
-
-    for (const { row, key } of infos) {
-      const location = this.geoCache.get(key);
-      if (!location) continue;
-
-      row.population = row.population || location.population;
-      row.autonomousCommunity = row.autonomousCommunity || location.autonomousCommunity;
-      row.province = row.province || location.province;
-    }
-  }
-
-  private async extractFirstPointForRow(row: UserTrackRow): Promise<{ lat: number; lon: number } | null> {
-    const gpx = await this.resolveGpxContentForRow(row);
-    if (!gpx) return null;
+  private extractFirstPointFromGpx(gpx: string): { lat: number; lon: number } | null {
     try {
       const parser = new DOMParser();
       const xml = parser.parseFromString(gpx, 'application/xml');
@@ -1829,6 +1789,24 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
     } catch {
       return null;
     }
+  }
+
+  private async resolveTrackLocationFromGpx(
+    gpxData: string
+  ): Promise<{ population: string | null; autonomousCommunity: string | null; province: string | null } | null> {
+    const point = this.extractFirstPointFromGpx(gpxData);
+    if (!point) return null;
+
+    const key = `${point.lat.toFixed(5)},${point.lon.toFixed(5)}`;
+    if (this.geoCache.has(key)) {
+      return this.geoCache.get(key) ?? null;
+    }
+
+    const location = await this.reverseGeocode(point.lat, point.lon);
+    if (location) {
+      this.geoCache.set(key, location);
+    }
+    return location;
   }
 
   private async reverseGeocode(
@@ -2041,13 +2019,20 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
     }
 
     const { track, durationSeconds } = parsed;
+    const trackYear = this.resolveTrackYearFromTrack(track);
+    const trackLocation = await this.resolveTrackLocationFromGpx(gpxData);
     const activeDurationSeconds = this.calculateActiveDurationSeconds(track.data.trkpts) || durationSeconds;
     const totalDurationSeconds = this.calculateTotalDurationSeconds(track.data.trkpts) || durationSeconds;
     const timeSeconds = Math.max(1, Math.round(activeDurationSeconds || durationSeconds || 1));
     const tiempoReal = Math.max(1, Math.round(totalDurationSeconds || activeDurationSeconds || durationSeconds || 1));
+    const year = trackYear ?? new Date().getFullYear();
+    const population = trackLocation?.population ?? null;
+    const autonomousCommunity = trackLocation?.autonomousCommunity ?? null;
+    const province = trackLocation?.province ?? null;
 
     const payload: CreateTrackPayload = {
       routeId: null,
+      year,
       nickname,
       category: null,
       bikeType: 'MTB',
@@ -2060,6 +2045,9 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
       uploadedAt: new Date().toISOString(),
       duracionRecorrido: this.formatDurationAsLocalTime(timeSeconds),
       createdBy: this.userId,
+      population,
+      autonomousCommunity,
+      province,
       title: result.title
     };
 
@@ -2155,14 +2143,18 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
 
       return tracks.map(track => {
         const event = track.routeId ? eventsById.get(track.routeId) : undefined;
+        const year = this.resolveTrackYear(track, event);
+        const population = track.population ?? event?.population ?? null;
+        const autonomousCommunity = track.autonomousCommunity ?? event?.autonomousCommunity ?? null;
+        const province = track.province ?? event?.province ?? null;
         return {
           eventId: track.routeId ?? 0,
           trackId: track.id,
           eventName: event?.name ?? '—',
-          year: this.resolveTrackYear(track, event),
-          province: event?.province ?? null,
-          population: event?.population ?? null,
-          autonomousCommunity: event?.autonomousCommunity ?? null,
+          year,
+          province,
+          population,
+          autonomousCommunity,
           distanceKm: this.toNumber(track.distanceKm),
           timeSeconds: this.toNumber(track.timeSeconds),
           totalTimeSeconds: this.resolveTotalTimeSeconds(track),
@@ -2196,6 +2188,14 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
   }
 
   private resolveTrackYear(track: EventTrack, event?: RaceEvent): number {
+    const trackYear = (track as any).year ?? (track as any).trackYear ?? track.year;
+    if (trackYear !== undefined && trackYear !== null) {
+      const parsedTrackYear = Number(trackYear);
+      if (Number.isFinite(parsedTrackYear)) {
+        return parsedTrackYear;
+      }
+    }
+
     if (event?.year) {
       return event.year;
     }

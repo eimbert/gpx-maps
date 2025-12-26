@@ -18,6 +18,7 @@ export interface EventModality {
 export interface EventTrack {
   id: number;
   routeId?: number | null;
+  year?: number | null;
   nickname: string;
   category: RaceCategory;
   bikeType: BikeType;
@@ -26,6 +27,9 @@ export interface EventTrack {
   tiempoReal?: number;
   distanceKm: number;
   ascent?: number;
+  population?: string | null;
+  autonomousCommunity?: string | null;
+  province?: string | null;
   gpxAsset?: string;
   gpxData?: string;
   fileName?: string;
@@ -67,6 +71,7 @@ export interface CreateEventPayload {
 
 export interface CreateTrackPayload {
   routeId: number | null;
+  year?: number | null;
   nickname: string;
   category: RaceCategory;
   bikeType: BikeType;
@@ -75,6 +80,9 @@ export interface CreateTrackPayload {
   tiempoReal?: number;
   distanceKm: number;
   ascent?: number;
+  population?: string | null;
+  autonomousCommunity?: string | null;
+  province?: string | null;
   gpxAsset?: string;
   routeXml?: string;
   fileName?: string;

@@ -235,6 +235,12 @@ export class EventService {
       ? track.tiempoReal ?? undefined
       : Number(track.tiempoReal);
     const distanceKm = Number(track.distanceKm);
+    const year = (track as any).year ?? (track as any).trackYear ?? track.year ?? null;
+    const population = this.normalizeTextField((track as any).population ?? (track as any).poblacion ?? track.population);
+    const autonomousCommunity = this.normalizeTextField(
+      (track as any).autonomousCommunity ?? (track as any).comunidadAutonoma ?? track.autonomousCommunity
+    );
+    const province = this.normalizeTextField((track as any).province ?? (track as any).provincia ?? track.province);
     const title = this.normalizeTextField((track as any).title ?? (track as any).trackTitle ?? (track as any).track_title);
     const description = this.normalizeTextField((track as any).description ?? (track as any).trackDescription ?? (track as any).track_description);
 
@@ -244,6 +250,10 @@ export class EventService {
       timeSeconds: Number.isFinite(timeSeconds) ? timeSeconds : 0,
       tiempoReal: tiempoReal === undefined || Number.isFinite(tiempoReal) ? tiempoReal : undefined,
       distanceKm: Number.isFinite(distanceKm) ? distanceKm : 0,
+      year: Number.isFinite(Number(year)) ? Number(year) : null,
+      population,
+      autonomousCommunity,
+      province,
       routeId: track.routeId ?? routeId ?? null,
       modalityId: track.modalityId === null || track.modalityId === undefined
         ? null

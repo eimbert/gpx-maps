@@ -2152,9 +2152,21 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
 
   private async ensureLoadedTrackFromEventTrack(track: EventTrack, colorIndex: number): Promise<LoadedTrack | null> {
     try {
-      const gpxData = track.gpxData || (track.gpxAsset ? await firstValueFrom(this.http.get(track.gpxAsset, { responseType: 'text' })) : null);
+      let gpxData = track.gpxData
+        || (track.gpxAsset ? await firstValueFrom(this.http.get(track.gpxAsset, { responseType: 'text' })) : null);
+
+      if (!gpxData) {
+        const gpxFile = await firstValueFrom(this.eventService.getTrackGpx(track.id));
+        gpxData = gpxFile.routeXml ?? null;
+        if (gpxFile.fileName) track.fileName = gpxFile.fileName;
+      }
+
       if (!gpxData) return null;
-      const { track: loadedTrack } = this.parseGpxData(gpxData, track.fileName || track.nickname, colorIndex);
+
+      track.gpxData = gpxData;
+      const fileName = track.fileName || track.nickname;
+
+      const { track: loadedTrack } = this.parseGpxData(gpxData, fileName, colorIndex);
       loadedTrack.name = `${track.nickname} (${track.category})`;
       return loadedTrack;
     } catch {

@@ -1616,10 +1616,12 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
       this.showMessage('Selecciona al menos un track para comparar.');
       return;
     }
-
+    console.log("event: ", event)
     const loaded: LoadedTrack[] = [];
     for (let i = 0; i < selectedIds.length; i++) {
       const trackRef = event.tracks.find(t => t.id === selectedIds[i]);
+      console.log("trackRef: ", trackRef)
+      
       if (!trackRef) continue;
       const built = await this.ensureLoadedTrackFromEventTrack(trackRef, i);
       if (built) {
@@ -1641,6 +1643,7 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
   }
 
   toggleComparisonSelection(trackId: number): void {
+    console.log("track sekleccionado: ", trackId)
     if (this.selectedComparisonIds.has(trackId)) {
       this.selectedComparisonIds.delete(trackId);
       return;

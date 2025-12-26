@@ -142,6 +142,7 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
   carouselIndex = 0;
   private carouselTimer?: ReturnType<typeof setInterval>;
   private readonly carouselIntervalMs = 9000;
+  isCarouselPaused = false;
 
   selectedComparisonIds = new Set<number>();
   latestUploadedTrackId: number | null = null;
@@ -652,20 +653,31 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
     if (!this.events.length) return;
     this.carouselIndex = (this.carouselIndex + 1) % this.events.length;
     this.syncSelectionWithCarousel();
-    if (manual) this.restartCarouselTimer();
+    if (manual && !this.isCarouselPaused) this.restartCarouselTimer();
   }
 
   prevEvent(manual = false): void {
     if (!this.events.length) return;
     this.carouselIndex = (this.carouselIndex - 1 + this.events.length) % this.events.length;
     this.syncSelectionWithCarousel();
-    if (manual) this.restartCarouselTimer();
+    if (manual && !this.isCarouselPaused) this.restartCarouselTimer();
   }
 
   goToEvent(index: number): void {
     if (index < 0 || index >= this.events.length) return;
     this.carouselIndex = index;
     this.syncSelectionWithCarousel();
+    if (!this.isCarouselPaused) {
+      this.restartCarouselTimer();
+    }
+  }
+
+  toggleCarouselPlayback(): void {
+    this.isCarouselPaused = !this.isCarouselPaused;
+    if (this.isCarouselPaused) {
+      this.clearCarouselTimer();
+      return;
+    }
     this.restartCarouselTimer();
   }
 
@@ -779,7 +791,7 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
 
   restartCarouselTimer(): void {
     this.clearCarouselTimer();
-    if (!this.events.length) return;
+    if (!this.events.length || this.isCarouselPaused) return;
     this.carouselTimer = setInterval(() => this.nextEvent(), this.carouselIntervalMs);
   }
 

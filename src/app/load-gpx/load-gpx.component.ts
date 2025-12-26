@@ -1619,15 +1619,24 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
 
     const loaded: LoadedTrack[] = [];
     for (let i = 0; i < selectedIds.length; i++) {
-      const trackRef = event.tracks.find(t => t.id === selectedIds[i]);
-      if (!trackRef) continue;
-      const built = await this.ensureLoadedTrackFromEventTrack(trackRef, i);
-      if (built) {
+      const trackId = selectedIds[i];
+      const trackInfo = this.routeTrackTimes.find(track => track.id === trackId);
+
+      try {
+        const gpxFile = await firstValueFrom(this.eventService.getRouteGpx(trackId));
+        const gpxData = gpxFile.routeXml ?? null;
+        if (!gpxData) continue;
+
+        const fileName = gpxFile.fileName || trackInfo?.nickname || `Track ${trackId}`;
+        const { track } = this.parseGpxData(gpxData, fileName, i);
+
         loaded.push({
-          ...built,
+          ...track,
           color: this.pickColor(i),
-          name: `${trackRef.nickname} • ${this.findModalityName(trackRef.modalityId)}`
+          name: trackInfo ? `${trackInfo.nickname} • ${trackInfo.category}` : track.name
         });
+      } catch {
+        continue;
       }
     }
 

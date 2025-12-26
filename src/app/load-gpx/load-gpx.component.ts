@@ -85,6 +85,17 @@ interface EventTrackUploadPayload {
   file: File;
 }
 
+type TrackLocationDetails = {
+  population: string | null;
+  autonomousCommunity: string | null;
+  province: string | null;
+};
+
+type TrackLocationInfo = TrackLocationDetails & {
+  startLatitude: number | null;
+  startLongitude: number | null;
+};
+
 interface UserTrackRow {
   trackId: number;
   routeId: number | null;
@@ -190,10 +201,7 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
   // ====== Eventos precalculados + cache geocoding ======
   private eventsById = new Map<number, RaceEvent>();
 
-  private geoCache = new Map<
-    string,
-    { population: string | null; autonomousCommunity: string | null; province: string | null }
-  >();
+  private geoCache = new Map<string, TrackLocationDetails>();
 
   // ====== Orquestación refresh + no-reentrante ======
   private destroy$ = new Subject<void>();
@@ -1550,9 +1558,11 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
     const tiempoReal = Math.max(1, Math.round(totalDurationSeconds || timeSeconds));
 
     const year = trackYear ?? event?.year ?? new Date().getFullYear();
-    const population = trackLocation?.population ?? event?.population ?? null;
-    const autonomousCommunity = trackLocation?.autonomousCommunity ?? event?.autonomousCommunity ?? null;
-    const province = trackLocation?.province ?? event?.province ?? null;
+    const population = trackLocation.population ?? event?.population ?? null;
+    const autonomousCommunity = trackLocation.autonomousCommunity ?? event?.autonomousCommunity ?? null;
+    const province = trackLocation.province ?? event?.province ?? null;
+    const startLatitude = trackLocation.startLatitude ?? null;
+    const startLongitude = trackLocation.startLongitude ?? null;
 
     const newTrack: CreateTrackPayload = {
       routeId,
@@ -1568,12 +1578,17 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
       population,
       autonomousCommunity,
       province,
+      startLatitude,
+      startLongitude,
       routeXml: gpxData,
       fileName: upload.file!.name,
       duracionRecorrido: this.formatDurationAsLocalTime(timeSeconds),
       uploadedAt: new Date().toISOString(),
       createdBy: this.userId
     };
+
+    // eslint-disable-next-line no-console
+    console.log('Track para evento listo para enviar:', newTrack);
 
     this.eventService.addTrack(newTrack).subscribe({
       next: created => {
@@ -1791,28 +1806,46 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
     }
   }
 
-  private async resolveTrackLocationFromGpx(
-    gpxData: string
-  ): Promise<{ population: string | null; autonomousCommunity: string | null; province: string | null } | null> {
+  private async resolveTrackLocationFromGpx(gpxData: string): Promise<TrackLocationInfo> {
     const point = this.extractFirstPointFromGpx(gpxData);
-    if (!point) return null;
+    if (!point) {
+      return {
+        startLatitude: null,
+        startLongitude: null,
+        population: null,
+        autonomousCommunity: null,
+        province: null
+      };
+    }
 
     const key = `${point.lat.toFixed(5)},${point.lon.toFixed(5)}`;
-    if (this.geoCache.has(key)) {
-      return this.geoCache.get(key) ?? null;
+    const cached = this.geoCache.get(key);
+    if (cached) {
+      return { ...cached, startLatitude: point.lat, startLongitude: point.lon };
     }
 
     const location = await this.reverseGeocode(point.lat, point.lon);
     if (location) {
       this.geoCache.set(key, location);
+      return { ...location, startLatitude: point.lat, startLongitude: point.lon };
     }
-    return location;
+
+    this.geoCache.set(key, {
+      population: null,
+      autonomousCommunity: null,
+      province: null
+    });
+
+    return {
+      startLatitude: point.lat,
+      startLongitude: point.lon,
+      population: null,
+      autonomousCommunity: null,
+      province: null
+    };
   }
 
-  private async reverseGeocode(
-    lat: number,
-    lon: number
-  ): Promise<{ population: string | null; autonomousCommunity: string | null; province: string | null } | null> {
+  private async reverseGeocode(lat: number, lon: number): Promise<TrackLocationDetails | null> {
     try {
       const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${encodeURIComponent(
         lat
@@ -2026,9 +2059,11 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
     const timeSeconds = Math.max(1, Math.round(activeDurationSeconds || durationSeconds || 1));
     const tiempoReal = Math.max(1, Math.round(totalDurationSeconds || activeDurationSeconds || durationSeconds || 1));
     const year = trackYear ?? new Date().getFullYear();
-    const population = trackLocation?.population ?? null;
-    const autonomousCommunity = trackLocation?.autonomousCommunity ?? null;
-    const province = trackLocation?.province ?? null;
+    const population = trackLocation.population ?? null;
+    const autonomousCommunity = trackLocation.autonomousCommunity ?? null;
+    const province = trackLocation.province ?? null;
+    const startLatitude = trackLocation.startLatitude ?? null;
+    const startLongitude = trackLocation.startLongitude ?? null;
 
     const payload: CreateTrackPayload = {
       routeId: null,
@@ -2048,8 +2083,13 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
       population,
       autonomousCommunity,
       province,
+      startLatitude,
+      startLongitude,
       title: result.title
     };
+
+    // eslint-disable-next-line no-console
+    console.log('Track para Mis tracks listo para enviar:', payload);
 
     this.standaloneUploadInProgress = true;
     this.eventService.addTrack(payload).subscribe({

@@ -3,19 +3,29 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
 import { MatDialog } from '@angular/material/dialog';
 import { MatMenuTrigger } from '@angular/material/menu';
-import { delay, firstValueFrom } from 'rxjs';
+import { firstValueFrom, Subject, Subscription, from } from 'rxjs';
+import { auditTime, exhaustMap, filter, takeUntil } from 'rxjs/operators';
+
 import { DialogoConfiguracionComponent } from '../dialogo-configuracion/dialogo-configuracion.component';
 import { DialogoConfiguracionData } from '../interfaces/estructuras';
 import { TrackMetadataDialogComponent, TrackMetadataDialogResult } from '../track-metadata-dialog/track-metadata-dialog.component';
 import { RouteMismatchDialogComponent } from '../route-mismatch-dialog/route-mismatch-dialog.component';
 import { EventSearchDialogComponent, EventSearchDialogData, EventSearchDialogResult } from '../event-search-dialog/event-search-dialog.component';
-import { BikeType, CreateEventPayload, CreateTrackPayload, EventTrack, RaceCategory, RaceEvent, RouteTrackTime, TrackGpxFile } from '../interfaces/events';
+import {
+  BikeType,
+  CreateEventPayload,
+  CreateTrackPayload,
+  EventTrack,
+  RaceCategory,
+  RaceEvent,
+  RouteTrackTime,
+  TrackGpxFile
+} from '../interfaces/events';
 import { EventService } from '../services/event.service';
 import { EventCreateDialogComponent, EventCreateDialogResult } from '../event-create-dialog/event-create-dialog.component';
 import { EventTrackUploadDialogComponent, EventTrackUploadDialogData, EventTrackUploadDialogResult } from '../event-track-upload-dialog/event-track-upload-dialog.component';
 import { UserIdentityService } from '../services/user-identity.service';
 import { AuthService } from '../services/auth.service';
-import { Subscription } from 'rxjs';
 import { InfoDialogComponent, InfoDialogData, InfoDialogResult } from '../info-dialog/info-dialog.component';
 import { MyTrackRow, MyTracksDialogComponent } from '../my-tracks-dialog/my-tracks-dialog.component';
 import { StandaloneTrackUploadDialogComponent, StandaloneTrackUploadResult } from '../standalone-track-upload-dialog/standalone-track-upload-dialog.component';
@@ -111,6 +121,7 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
   readonly maxComparison = 4;
   private readonly overlapThreshold = 0.65;
   private readonly overlapProximityMeters = 150;
+
   isDragOver = false;
   tracks: LoadedTrack[] = [];
   isAuthenticated = false;
@@ -124,24 +135,32 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
   carouselIndex = 0;
   private carouselTimer?: ReturnType<typeof setInterval>;
   private readonly carouselIntervalMs = 9000;
+
   selectedComparisonIds = new Set<number>();
   latestUploadedTrackId: number | null = null;
   personalNickname = '';
   personalHistory: EventTrack[] = [];
   routeTrackTimes: RouteTrackTime[] = [];
   eventVisuals: Record<number, EventVisuals> = {};
+
   readonly profileWidth = 240;
   readonly profileHeight = 80;
+
   private pendingMasterUploadEventId: number | null = null;
   eventMenuOpen = false;
+
   userTracks: UserTrackRow[] = [];
   userTracksLoading = false;
+
   private readonly downloadingTracks = new Set<number>();
   private readonly deletingTracks = new Set<number>();
   private readonly downloadingMasterTracks = new Set<number>();
+
   standaloneUploadInProgress = false;
+
   userTracksSortColumn: UserTracksSortColumn = 'year';
   userTracksSortDirection: SortDirection = 'asc';
+
   private sessionExpiredNotified = false;
 
   eventUpload: EventTrackUploadDraft = {
@@ -153,9 +172,33 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
     file: null
   };
 
-  categories: RaceCategory[] = ['Sub 23M', 'Sub 23F', 'Senior M', 'Senior F', 'Master 40M', 'Master 40F', 'Master 50M', 'Master 50F', 'Master 60M', 'Master 60F'];
+  categories: RaceCategory[] = [
+    'Sub 23M',
+    'Sub 23F',
+    'Senior M',
+    'Senior F',
+    'Master 40M',
+    'Master 40F',
+    'Master 50M',
+    'Master 50F',
+    'Master 60M',
+    'Master 60F'
+  ];
   bikeTypes: BikeType[] = ['MTB', 'Carretera', 'Gravel', 'e-Bike'];
   private readonly userId: number;
+
+  // ====== Eventos precalculados + cache geocoding ======
+  private eventsById = new Map<number, RaceEvent>();
+
+  private geoCache = new Map<
+    string,
+    { population: string | null; autonomousCommunity: string | null; province: string | null }
+  >();
+
+  // ====== Orquestación refresh + no-reentrante ======
+  private destroy$ = new Subject<void>();
+  private refreshRequest$ = new Subject<void>();
+  private refreshInFlight?: Promise<void>;
 
   constructor(
     public dialog: MatDialog,
@@ -164,7 +207,8 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
     private eventService: EventService,
     private http: HttpClient,
     private authService: AuthService,
-    identityService: UserIdentityService) {
+    identityService: UserIdentityService
+  ) {
     this.userId = identityService.getUserId();
   }
 
@@ -178,68 +222,112 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
   }
 
   private showMessage(message: string, title = 'Aviso'): void {
-    this.openInfoDialog({
+    void this.openInfoDialog({
       title,
       message
     });
   }
 
-  ngOnInit() {
+  ngOnInit(): void {
     const hadStoredSession = !!this.authService.getSession();
+
     this.applyInitialMode();
+
     this.isAuthenticated = this.authService.isAuthenticated();
     this.personalNickname = this.authService.getSession()?.nickname ?? '';
-    this.sessionSub = this.authService.sessionChanges$.subscribe(session => {
-      this.isAuthenticated = !!session;
-      this.personalNickname = session?.nickname ?? '';
-      if (session) {
-        this.sessionExpiredNotified = false;
-      }
-      if (!this.isAuthenticated && this.mode === 'events') {
-        this.showEventsAuthNotice();
-      }
-      if (!this.isAuthenticated) {
-        this.userTracks = [];
-      }
-      if (this.isAuthenticated) {
-        this.refreshUserTracks();
-      }
-    });
-    this.authService.validateSessionWithBackend().subscribe(session => {
-      this.isAuthenticated = !!session;
-      this.personalNickname = session?.nickname ?? '';
-      if (!this.isAuthenticated && hadStoredSession) {
-        this.handleSessionExpired();
-      }
-      if (!this.isAuthenticated && this.mode === 'events') {
-        this.showEventsAuthNotice();
-      }
-      if (this.isAuthenticated) {
-        this.refreshUserTracks();
-      }
-    });
-    this.eventService.getEvents().subscribe({
-      next: events => {
-        console.log("Events: ", events )
-        this.events = events;
-        this.syncCarouselIndex();
-        this.syncSelectionWithCarousel();
-        this.restartCarouselTimer();
-        this.buildEventVisuals(events);
-        if (this.isAuthenticated) {
-          this.refreshUserTracks();
+
+    // ÚNICO sitio donde se ejecuta el refresh REAL
+    this.refreshRequest$
+      .pipe(
+        auditTime(0),
+        filter(() => this.isAuthenticated),
+        exhaustMap(() => from(this.refreshUserTracks())),
+        takeUntil(this.destroy$)
+      )
+      .subscribe();
+
+    // Cambios de sesión
+    this.sessionSub = this.authService.sessionChanges$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(session => {
+        this.isAuthenticated = !!session;
+        this.personalNickname = session?.nickname ?? '';
+
+        if (session) {
+          this.sessionExpiredNotified = false;
         }
-      },
-      error: () => {
-        this.events = [];
-        this.eventVisuals = {};
-      }
-    });
+
+        if (!this.isAuthenticated && this.mode === 'events') {
+          this.showEventsAuthNotice();
+        }
+
+        if (!this.isAuthenticated) {
+          this.userTracks = [];
+        } else {
+          this.requestRefreshUserTracks();
+        }
+      });
+
+    // Validación con backend (puede provocar sessionChanges$ también)
+    this.authService
+      .validateSessionWithBackend()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(session => {
+        this.isAuthenticated = !!session;
+        this.personalNickname = session?.nickname ?? '';
+
+        if (!this.isAuthenticated && hadStoredSession) {
+          this.handleSessionExpired();
+        }
+
+        if (!this.isAuthenticated && this.mode === 'events') {
+          this.showEventsAuthNotice();
+        }
+
+        if (this.isAuthenticated) {
+          this.requestRefreshUserTracks();
+        }
+      });
+
+    // Eventos
+    this.eventService
+      .getEvents()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: events => {
+          this.events = events;
+
+          // precalcula el Map una vez (y reutilízalo en refreshUserTracks)
+          this.eventsById = new Map<number, RaceEvent>(events.map(e => [e.id, e]));
+
+          this.syncCarouselIndex();
+          this.syncSelectionWithCarousel();
+          this.restartCarouselTimer();
+          void this.buildEventVisuals(events);
+
+          if (this.isAuthenticated) {
+            this.requestRefreshUserTracks();
+          }
+        },
+        error: () => {
+          this.events = [];
+          this.eventsById = new Map<number, RaceEvent>();
+          this.eventVisuals = {};
+        }
+      });
   }
 
   ngOnDestroy(): void {
     this.clearCarouselTimer();
+
+    this.destroy$.next();
+    this.destroy$.complete();
+
     this.sessionSub?.unsubscribe();
+  }
+
+  private requestRefreshUserTracks(): void {
+    this.refreshRequest$.next();
   }
 
   get selectedEvent(): RaceEvent | undefined {
@@ -303,9 +391,10 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
   }
 
   private notifyMultiTrackRequiresAuth(): void {
-    this.openInfoDialog({
+    void this.openInfoDialog({
       title: 'Acceso limitado',
-      message: 'Solo los usuarios registrados pueden cargar más de un GPX a la vez. Ve a la pantalla principal para iniciar sesión o registrarte.',
+      message:
+        'Solo los usuarios registrados pueden cargar más de un GPX a la vez. Ve a la pantalla principal para iniciar sesión o registrarte.',
       confirmLabel: 'Ir a inicio',
       cancelLabel: 'Seguir aquí'
     }).then(result => {
@@ -318,15 +407,19 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
   private handleSessionExpired(): void {
     if (this.sessionExpiredNotified) return;
     this.sessionExpiredNotified = true;
-    this.showMessage('Tu sesión ha expirado. Inicia sesión de nuevo para seguir disfrutando de todas las funciones.', 'Sesión expirada');
+    this.showMessage(
+      'Tu sesión ha expirado. Inicia sesión de nuevo para seguir disfrutando de todas las funciones.',
+      'Sesión expirada'
+    );
   }
 
   private showEventsAuthNotice(): void {
     if (this.eventsNoticeShown) return;
     this.eventsNoticeShown = true;
-    this.openInfoDialog({
+    void this.openInfoDialog({
       title: 'Inicia sesión para participar',
-      message: 'Puedes explorar y animar los eventos sin registrarte. Para subir, crear o gestionar tracks inicia sesión desde la pantalla principal.',
+      message:
+        'Puedes explorar y animar los eventos sin registrarte. Para subir, crear o gestionar tracks inicia sesión desde la pantalla principal.',
       confirmLabel: 'Entendido'
     });
   }
@@ -343,16 +436,13 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
   }
 
   getEventLogoBg(event: any): string {
-    const raw = event?.logoBlob; // ajusta el campo
+    const raw = event?.logoBlob;
     if (!raw) return 'none';
 
-    // Si ya viene como data URL completa, úsala tal cual
-    const dataUrl = raw.startsWith('data:image/')
-      ? raw
-      : `data:image/png;base64,${raw.replace(/\s/g, '')}`;
+    const dataUrl = raw.startsWith('data:image/') ? raw : `data:image/png;base64,${raw.replace(/\s/g, '')}`;
 
     return `url("${dataUrl}")`;
-}
+  }
 
   getEventLogo(event: RaceEvent): string {
     if (event.logoBlob) {
@@ -409,7 +499,9 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
       try {
         const data = await firstValueFrom(this.http.get(firstTrack.gpxAsset, { responseType: 'text' }));
         if (this.isValidGpxData(data)) return data;
-      } catch { /* ignore */ }
+      } catch {
+        /* ignore */
+      }
     }
     return null;
   }
@@ -436,13 +528,17 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
       const gpx = parser.parseFromString(gpxData, 'application/xml');
       const trkpts = Array.from(gpx.getElementsByTagName('trkpt'));
       if (gpx.getElementsByTagName('parsererror').length || !trkpts.length) return [];
-      return trkpts.map(pt => ({
-        lat: parseFloat(pt.getAttribute('lat') || '0'),
-        lon: parseFloat(pt.getAttribute('lon') || '0'),
-        ele: parseFloat(pt.getElementsByTagName('ele')[0]?.textContent || '0'),
-        time: pt.getElementsByTagName('time')[0]?.textContent || '',
-        hr: pt.getElementsByTagName('ns3:hr')[0] ? parseInt(pt.getElementsByTagName('ns3:hr')[0].textContent || '0') : null
-      })).filter(p => Number.isFinite(p.lat) && Number.isFinite(p.lon));
+      return trkpts
+        .map(pt => ({
+          lat: parseFloat(pt.getAttribute('lat') || '0'),
+          lon: parseFloat(pt.getAttribute('lon') || '0'),
+          ele: parseFloat(pt.getElementsByTagName('ele')[0]?.textContent || '0'),
+          time: pt.getElementsByTagName('time')[0]?.textContent || '',
+          hr: pt.getElementsByTagName('ns3:hr')[0]
+            ? parseInt(pt.getElementsByTagName('ns3:hr')[0].textContent || '0', 10)
+            : null
+        }))
+        .filter(p => Number.isFinite(p.lat) && Number.isFinite(p.lon));
     } catch {
       return [];
     }
@@ -461,11 +557,13 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
     const safeWidth = Math.max(1, width);
     const safeHeight = Math.max(1, height);
 
-    const pointsStr = elevations.map((ele, idx) => {
-      const x = (distances[idx] / Math.max(1, totalDistance)) * safeWidth;
-      const y = safeHeight - ((ele - minEle) / eleRange) * safeHeight;
-      return `${x.toFixed(1)},${y.toFixed(1)}`;
-    }).join(' ');
+    const pointsStr = elevations
+      .map((ele, idx) => {
+        const x = (distances[idx] / Math.max(1, totalDistance)) * safeWidth;
+        const y = safeHeight - ((ele - minEle) / eleRange) * safeHeight;
+        return `${x.toFixed(1)},${y.toFixed(1)}`;
+      })
+      .join(' ');
 
     const gridLinesY = [0.25, 0.5, 0.75].map(ratio => safeHeight - ratio * safeHeight);
 
@@ -505,11 +603,13 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
     const innerWidth = Math.max(1, width - padding * 2);
     const innerHeight = Math.max(1, height - padding * 2);
 
-    return points.map(point => {
-      const x = ((point.lon - minLon) / lonRange) * innerWidth + padding;
-      const y = innerHeight - ((point.lat - minLat) / latRange) * innerHeight + padding;
-      return `${x.toFixed(1)},${y.toFixed(1)}`;
-    }).join(' ');
+    return points
+      .map(point => {
+        const x = ((point.lon - minLon) / lonRange) * innerWidth + padding;
+        const y = innerHeight - ((point.lat - minLat) / latRange) * innerHeight + padding;
+        return `${x.toFixed(1)},${y.toFixed(1)}`;
+      })
+      .join(' ');
   }
 
   private buildStaticTileUrl(points: TrackPoint[], zoomHint = 13): string | null {
@@ -549,17 +649,9 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
     const latRad = (lat * Math.PI) / 180;
     const n = 2 ** zoom;
     const x = Math.floor(((lon + 180) / 360) * n);
-    const y = Math.floor(
-      (1 - Math.log(Math.tan(latRad) + 1 / Math.cos(latRad)) / Math.PI) / 2 * n
-    );
+    const y = Math.floor((1 - Math.log(Math.tan(latRad) + 1 / Math.cos(latRad)) / Math.PI) / 2 * n);
     return { x, y };
   }
-
-  // getMapBackgroundStyle(eventId: number): Record<string, string> {
-  //   const tileUrl = this.eventVisuals[eventId]?.mapTileUrl;
-  //   if (!tileUrl) return {};
-  //   return { '--event-map-url': `url('${tileUrl}')` };
-  // }
 
   nextEvent(manual = false): void {
     if (!this.events.length) return;
@@ -655,20 +747,24 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
       return;
     }
 
-    this.eventService.updateGpxMaster(targetEventId, {
-      gpxMaster: this.encodeGpxContent(gpxData),
-      gpxMasterFileName: file.name
-    }).subscribe({
-      next: updated => {
-        this.events = this.events.map(ev => ev.id === updated.id ? updated : ev);
-        void this.prepareEventVisuals(updated);
-        this.resetMasterGpxInput();
-      },
-      error: () => {
-        this.showMessage('No se pudo guardar el track maestro.');
-        this.resetMasterGpxInput();
-      }
-    });
+    this.eventService
+      .updateGpxMaster(targetEventId, {
+        gpxMaster: this.encodeGpxContent(gpxData),
+        gpxMasterFileName: file.name
+      })
+      .subscribe({
+        next: updated => {
+          this.events = this.events.map(ev => (ev.id === updated.id ? updated : ev));
+          // también actualiza el Map si cambió el evento
+          this.eventsById.set(updated.id, updated);
+          void this.prepareEventVisuals(updated);
+          this.resetMasterGpxInput();
+        },
+        error: () => {
+          this.showMessage('No se pudo guardar el track maestro.');
+          this.resetMasterGpxInput();
+        }
+      });
   }
 
   private resetMasterGpxInput(): void {
@@ -755,7 +851,6 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
     dialogRef.afterClosed().subscribe(result => {
       if (!result?.event) return;
       const payload: CreateEventPayload = { ...result.event, createdBy: this.userId };
-      // console.log("CreateEventPayload: ", payload)
       this.eventService.createEvent(payload).subscribe({
         next: created => {
           this.selectMode('events');
@@ -773,22 +868,23 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
       return;
     }
     this.closeEventMenu();
-    const dialogRef = this.dialog.open<EventTrackUploadDialogComponent, EventTrackUploadDialogData, EventTrackUploadDialogResult>(
+    const dialogRef = this.dialog.open<
       EventTrackUploadDialogComponent,
-      {
-        width: '720px',
-        data: {
-          events: this.events,
-          categories: this.categories,
-          bikeTypes: this.bikeTypes,
-          defaultEventId: this.selectedEventId ?? this.eventUpload.eventId,
-          defaultModalityId: this.selectedModalityId ?? this.eventUpload.modalityId,
-          defaultCategory: this.eventUpload.category,
-          defaultBikeType: this.eventUpload.bikeType,
-          defaultDistanceKm: this.eventUpload.distanceKm
-        }
+      EventTrackUploadDialogData,
+      EventTrackUploadDialogResult
+    >(EventTrackUploadDialogComponent, {
+      width: '720px',
+      data: {
+        events: this.events,
+        categories: this.categories,
+        bikeTypes: this.bikeTypes,
+        defaultEventId: this.selectedEventId ?? this.eventUpload.eventId,
+        defaultModalityId: this.selectedModalityId ?? this.eventUpload.modalityId,
+        defaultCategory: this.eventUpload.category,
+        defaultBikeType: this.eventUpload.bikeType,
+        defaultDistanceKm: this.eventUpload.distanceKm
       }
-    );
+    });
 
     dialogRef.afterClosed().subscribe(result => {
       if (!result) return;
@@ -811,11 +907,11 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
       };
       this.selectMode('events');
       this.selectEvent(uploadPayload.eventId!, uploadPayload.modalityId || undefined);
-      this.uploadTrackToEvent(uploadPayload);
+      void this.uploadTrackToEvent(uploadPayload);
     });
   }
 
-  startBackgroundMusic() {
+  startBackgroundMusic(): void {
     const audio = document.getElementById('background-music') as HTMLAudioElement;
     if (audio) {
       audio.play().catch(error => {
@@ -910,7 +1006,7 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
       const ele = parseFloat(trkpts[i].getElementsByTagName('ele')[0]?.textContent || '0');
       const time = trkpts[i].getElementsByTagName('time')[0]?.textContent || '';
       const hrElement = trkpts[i].getElementsByTagName('ns3:hr')[0];
-      const hr = hrElement ? parseInt(hrElement.textContent || '0') : null;
+      const hr = hrElement ? parseInt(hrElement.textContent || '0', 10) : null;
 
       if (i === 0) {
         firstTime = time;
@@ -928,9 +1024,8 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
     }
 
     const date = firstTime ? new Date(firstTime).toLocaleString() : new Date().toLocaleString();
-    const durationSeconds = (firstTime && lastTime)
-      ? Math.max(0, (new Date(lastTime).getTime() - new Date(firstTime).getTime()) / 1000)
-      : 0;
+    const durationSeconds =
+      firstTime && lastTime ? Math.max(0, (new Date(lastTime).getTime() - new Date(firstTime).getTime()) / 1000) : 0;
 
     const track: LoadedTrack = {
       name: fileName.replace(/\.[^.]+$/, ''),
@@ -948,7 +1043,9 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
           lon: parseFloat(trkpt.getAttribute('lon')!),
           ele: parseFloat(trkpt.getElementsByTagName('ele')[0]?.textContent || '0'),
           time: trkpt.getElementsByTagName('time')[0]?.textContent || '',
-          hr: trkpt.getElementsByTagName('ns3:hr')[0] ? parseInt(trkpt.getElementsByTagName('ns3:hr')[0].textContent || '0') : null
+          hr: trkpt.getElementsByTagName('ns3:hr')[0]
+            ? parseInt(trkpt.getElementsByTagName('ns3:hr')[0].textContent || '0', 10)
+            : null
         }))
       }
     };
@@ -992,9 +1089,7 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
 
   private calculateTotalDurationSeconds(trkpts: TrackPoint[]): number {
     if (!trkpts?.length) return 0;
-    const times = trkpts
-      .map(p => new Date(p.time).getTime())
-      .filter(t => Number.isFinite(t));
+    const times = trkpts.map(p => new Date(p.time).getTime()).filter(t => Number.isFinite(t));
 
     if (times.length < 2) return 0;
 
@@ -1071,14 +1166,14 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
 
   private calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
     const R = 6371e3;
-    const φ1 = lat1 * Math.PI / 180;
-    const φ2 = lat2 * Math.PI / 180;
-    const Δφ = (lat2 - lat1) * Math.PI / 180;
-    const Δλ = (lon2 - lon1) * Math.PI / 180;
+    const φ1 = (lat1 * Math.PI) / 180;
+    const φ2 = (lat2 * Math.PI) / 180;
+    const Δφ = ((lat2 - lat1) * Math.PI) / 180;
+    const Δλ = ((lon2 - lon1) * Math.PI) / 180;
 
-    const a = Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
-      Math.cos(φ1) * Math.cos(φ2) *
-      Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
+    const a =
+      Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
+      Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 
     return R * c;
@@ -1103,9 +1198,7 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
     if (minOverlap < this.overlapThreshold) {
       const percentage = Math.round(minOverlap * 100);
       const continueAnyway = await firstValueFrom(
-        this.dialog.open(RouteMismatchDialogComponent, {
-          data: { percentage }
-        }).afterClosed()
+        this.dialog.open(RouteMismatchDialogComponent, { data: { percentage } }).afterClosed()
       );
       return !continueAnyway;
     }
@@ -1168,15 +1261,16 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
       colors: this.tracks.map((t, i) => t.color || this.pickColor(i))
     };
 
-    this.dialog.open<TrackMetadataDialogComponent, TrackMetadataDialogResult, TrackMetadataDialogResult>(
-      TrackMetadataDialogComponent,
-      {
-        width: '520px',
-        data: metadataDefaults
-      }
-    )
+    this.dialog
+      .open<TrackMetadataDialogComponent, TrackMetadataDialogResult, TrackMetadataDialogResult>(
+        TrackMetadataDialogComponent,
+        {
+          width: '520px',
+          data: metadataDefaults
+        }
+      )
       .afterClosed()
-      .subscribe((meta) => {
+      .subscribe(meta => {
         if (!meta) return;
         this.applyMetadata(meta);
         this.abrirCuadroConfiguracion(meta);
@@ -1188,30 +1282,35 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
 
     const tracksPayload = this.tracks.map(track => ({
       trkpts: track.data.trkpts.map(p => ({
-        lat: p.lat, lon: p.lon, ele: p.ele, time: p.time, hr: p.hr ?? null
+        lat: p.lat,
+        lon: p.lon,
+        ele: p.ele,
+        time: p.time,
+        hr: p.hr ?? null
       }))
     }));
 
     const namesPayload = meta.names.map((n, i) => n?.trim() || `Track ${i + 1}`);
     const colorsPayload = meta.colors.map((c, i) => c || this.pickColor(i));
 
-    this.dialog.open<DialogoConfiguracionComponent, Partial<DialogoConfiguracionData>, DialogoConfiguracionData>(
-      DialogoConfiguracionComponent,
-      {
-        width: '520px',
-        data: {
-          eliminarPausasLargas: false,
-          anadirLogoTitulos: false,
-          activarMusica: true,
-          grabarAnimacion: false,
-          relacionAspectoGrabacion: '16:9',
-          permitirAdversarioVirtual,
-          modoVisualizacion: 'general',
+    this.dialog
+      .open<DialogoConfiguracionComponent, Partial<DialogoConfiguracionData>, DialogoConfiguracionData>(
+        DialogoConfiguracionComponent,
+        {
+          width: '520px',
+          data: {
+            eliminarPausasLargas: false,
+            anadirLogoTitulos: false,
+            activarMusica: true,
+            grabarAnimacion: false,
+            relacionAspectoGrabacion: '16:9',
+            permitirAdversarioVirtual,
+            modoVisualizacion: 'general'
+          }
         }
-      }
-    )
+      )
       .afterClosed()
-      .subscribe((result) => {
+      .subscribe(result => {
         if (!result) return;
 
         let tracksFinal = tracksPayload;
@@ -1255,13 +1354,14 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
             try {
               const dataUrl = await this.downscaleImageFromFile(file, 122, 'image/png', 0.92, false);
               afterLogo(dataUrl);
-            } catch { afterLogo(null); }
+            } catch {
+              afterLogo(null);
+            }
           };
           input.click();
         } else {
           afterLogo(null);
         }
-
       });
   }
 
@@ -1277,29 +1377,31 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
       const img = new Image();
       img.onload = () => {
         try {
-          const scale = allowUpscale
-            ? (targetHeight / img.naturalHeight)
-            : Math.min(1, targetHeight / img.naturalHeight);
+          const scale = allowUpscale ? targetHeight / img.naturalHeight : Math.min(1, targetHeight / img.naturalHeight);
 
           const h = Math.max(1, Math.round(img.naturalHeight * scale));
           const w = Math.max(1, Math.round(img.naturalWidth * scale));
 
           const canvas = document.createElement('canvas');
-          canvas.width = w; canvas.height = h;
+          canvas.width = w;
+          canvas.height = h;
 
           const ctx = canvas.getContext('2d')!;
           ctx.imageSmoothingQuality = 'high';
           ctx.drawImage(img, 0, 0, w, h);
 
           URL.revokeObjectURL(url);
-          const q = (outputType === 'image/jpeg' || outputType === 'image/webp') ? quality : undefined;
+          const q = outputType === 'image/jpeg' || outputType === 'image/webp' ? quality : undefined;
           resolve(canvas.toDataURL(outputType, q));
         } catch (e) {
           URL.revokeObjectURL(url);
           reject(e);
         }
       };
-      img.onerror = (e) => { URL.revokeObjectURL(url); reject(e); };
+      img.onerror = e => {
+        URL.revokeObjectURL(url);
+        reject(e);
+      };
       img.src = url;
     });
   }
@@ -1308,7 +1410,7 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
     const partes = valor.split(':');
     const horas = parseInt(partes[0] ?? '0', 10);
     const minutos = parseInt(partes[1] ?? '0', 10);
-    const total = Math.max(0, (horas * 60 + minutos));
+    const total = Math.max(0, horas * 60 + minutos);
     return total > 0 ? total * 60 : 45 * 60;
   }
 
@@ -1324,7 +1426,7 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
     if (!track?.data?.trkpts || track.data.trkpts.length < 2) return null;
 
     const puntos = track.data.trkpts as any[];
-    const segmentos = [] as { distancia: number; pendiente: number }[];
+    const segmentos: { distancia: number; pendiente: number }[] = [];
 
     for (let i = 1; i < puntos.length; i++) {
       const dist = this.calculateDistance(puntos[i - 1].lat, puntos[i - 1].lon, puntos[i].lat, puntos[i].lon);
@@ -1338,7 +1440,8 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
     const windowSize = 5;
     const velocidadesSuavizadasMs = segmentos.map((seg, idx, arr) => {
       const half = Math.floor(windowSize / 2);
-      let sum = 0, count = 0;
+      let sum = 0,
+        count = 0;
       for (let j = Math.max(0, idx - half); j <= Math.min(arr.length - 1, idx + half); j++) {
         const velKmh = this.velocidadSegunPendiente(arr[j].pendiente);
         sum += velKmh / 3.6;
@@ -1356,9 +1459,7 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
     const inicio = new Date(puntos[0].time ?? Date.now());
     let tiempoActual = isNaN(inicio.getTime()) ? Date.now() : inicio.getTime();
 
-    const nuevosPuntos = [
-      { ...puntos[0], time: new Date(tiempoActual).toISOString(), hr: puntos[0].hr ?? null }
-    ];
+    const nuevosPuntos = [{ ...puntos[0], time: new Date(tiempoActual).toISOString(), hr: puntos[0].hr ?? null }];
 
     for (let i = 1; i < puntos.length; i++) {
       const duracionSegmento = baseDuraciones[i - 1] * factorEscala * 1000;
@@ -1425,7 +1526,7 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
     let parsed: ParsedTrackResult;
     try {
       parsed = this.parseGpxData(gpxData, upload.file!.name, 0);
-    } catch (error) {
+    } catch {
       this.showMessage('El archivo no es un GPX válido.');
       return;
     }
@@ -1433,7 +1534,9 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
     const { track, durationSeconds } = parsed;
     const trackYear = this.resolveTrackYearFromTrack(track);
     if (event?.year && trackYear !== null && trackYear !== event.year) {
-      this.showMessage(`El año del track (${trackYear}) no coincide con el del evento (${event.year}). Si no existe un evento para ${trackYear}, puedes crearlo.`);
+      this.showMessage(
+        `El año del track (${trackYear}) no coincide con el del evento (${event.year}). Si no existe un evento para ${trackYear}, puedes crearlo.`
+      );
       return;
     }
     const activeDurationSeconds = this.calculateActiveDurationSeconds(track.data.trkpts) || durationSeconds;
@@ -1587,42 +1690,57 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
     });
   }
 
+  // =========================
+  // REFRESH OPTIMIZADO
+  // =========================
   async refreshUserTracks(): Promise<void> {
-    if (!this.isAuthenticated) {
-      this.userTracks = [];
-      return;
+    
+    if (this.refreshInFlight) return this.refreshInFlight;
+    
+    this.refreshInFlight = (async () => {
+      if (!this.isAuthenticated) {
+        this.userTracks = [];
+        return;
+      }
+
+      this.userTracksLoading = true;
+      try {
+        const tracks = await firstValueFrom(this.eventService.getMyTracks());
+        const rows = tracks.map(track => this.toUserTrackRow(track, this.eventsById));
+        await this.fillMissingUserTrackLocations(rows);
+        this.userTracks = rows;
+      } catch {
+        this.showMessage('No se pudieron cargar tus tracks. Inténtalo de nuevo más tarde.');
+        this.userTracks = [];
+      } finally {
+        this.userTracksLoading = false;
+      }
+    })().finally(() => {
+      this.refreshInFlight = undefined;
+    });
+
+    return this.refreshInFlight;
+  }
+
+  private pickFirstText(obj: any, keys: string[]): string | null {
+    for (const k of keys) {
+      const v = obj?.[k];
+      if (v !== null && v !== undefined) {
+        const s = String(v).trim();
+        if (s) return s;
+      }
     }
-    this.userTracksLoading = true;
-    try {
-      const tracks = await firstValueFrom(this.eventService.getMyTracks());
-      // console.log("tracks: ", tracks)
-      const eventsById = new Map<number, RaceEvent>(this.events.map(event => [event.id, event]));
-      const rows = tracks.map(track => this.toUserTrackRow(track, eventsById));
-      // console.log("rows_1:", rows)
-      await this.fillMissingUserTrackLocations(rows);
-      this.userTracks = rows;
-      // console.log("rows_2:", rows)
-    } catch {
-      this.showMessage('No se pudieron cargar tus tracks. Inténtalo de nuevo más tarde.');
-      this.userTracks = [];
-    } finally {
-      this.userTracksLoading = false;
-    }
+    return null;
   }
 
   private toUserTrackRow(track: EventTrack, eventsById: Map<number, RaceEvent>): UserTrackRow {
     const routeIdValue = track.routeId === null || track.routeId === undefined ? null : this.toNumber(track.routeId, 0);
-   
-    const routeId = routeIdValue && routeIdValue > 0 ? routeIdValue : null;
-    
+    const routeId = routeIdValue !== null && routeIdValue > 0 ? routeIdValue : null;
+
     const event = routeId ? eventsById.get(routeId) : undefined;
 
-    const title = this.normalizeTrackText((track as any).title ?? (track as any).trackTitle ?? (track as any).track_title);
-
-    
-    const description = this.normalizeTrackText((track as any).description ?? (track as any).trackDescription ?? (track as any).track_description);
-
-    
+    const title = this.pickFirstText(track as any, ['title', 'trackTitle', 'track_title']);
+    const description = this.pickFirstText(track as any, ['description', 'trackDescription', 'track_description']);
 
     return {
       trackId: track.id,
@@ -1639,33 +1757,60 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
       gpxAsset: track.gpxAsset,
       fileName: track.fileName,
       canDelete: this.canDeleteTrack(track),
-      title,
-      description
+      title: this.normalizeTrackText(title),
+      description: this.normalizeTrackText(description)
     };
   }
 
-  private async fillMissingUserTrackLocations(rows: UserTrackRow[]): Promise<void> {
-    const cache = new Map<string, { population: string | null; autonomousCommunity: string | null; province: string | null }>();
-    for (const row of rows) {
-      if (row.routeId) continue;// && (row.population || row.autonomousCommunity || row.province)){
-        
-      
-      if (row.population && row.autonomousCommunity && row.province) continue;
-      const point = await this.extractFirstPointForRow(row);
-      if (!point)  continue;
-      const key = `${point.lat.toFixed(5)},${point.lon.toFixed(5)}`;
-      let location = cache.get(key);
-      if (!location) {
-        location = await this.reverseGeocode(point.lat, point.lon);
-        if (location) {
-          cache.set(key, location);
-        }
+  private async runWithConcurrency<T>(items: T[], concurrency: number, worker: (item: T) => Promise<void>): Promise<void> {
+    let index = 0;
+
+    const runners = Array.from({ length: Math.min(concurrency, items.length) }, async () => {
+      while (index < items.length) {
+        const current = index++;
+        await worker(items[current]);
       }
+    });
+
+    await Promise.all(runners);
+  }
+
+  private async fillMissingUserTrackLocations(rows: UserTrackRow[]): Promise<void> {
+    const targets = rows.filter(r => !(r.population && r.autonomousCommunity && r.province));
+    if (!targets.length) return;
+
+    type Info = { row: UserTrackRow; key: string; lat: number; lon: number };
+    const infos: Info[] = [];
+
+    for (const row of targets) {
+      // IMPORTANTE: ya NO hacemos "if (row.routeId) continue;"
+      const point = await this.extractFirstPointForRow(row);
+      if (!point) continue;
+
+      const key = `${point.lat.toFixed(5)},${point.lon.toFixed(5)}`;
+      infos.push({ row, key, lat: point.lat, lon: point.lon });
+    }
+
+    if (!infos.length) return;
+
+    const uniqueInfos = Array.from(new Map(infos.map(i => [i.key, i])).values());
+
+    // Nominatim: mejor bajo
+    const concurrency = 3;
+
+    await this.runWithConcurrency(uniqueInfos, concurrency, async info => {
+      if (this.geoCache.has(info.key)) return;
+      const location = await this.reverseGeocode(info.lat, info.lon);
+      if (location) this.geoCache.set(info.key, location);
+    });
+
+    for (const { row, key } of infos) {
+      const location = this.geoCache.get(key);
       if (!location) continue;
+
       row.population = row.population || location.population;
       row.autonomousCommunity = row.autonomousCommunity || location.autonomousCommunity;
       row.province = row.province || location.province;
-     
     }
   }
 
@@ -1686,9 +1831,14 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
     }
   }
 
-  private async reverseGeocode(lat: number, lon: number): Promise<{ population: string | null; autonomousCommunity: string | null; province: string | null } | undefined> {
+  private async reverseGeocode(
+    lat: number,
+    lon: number
+  ): Promise<{ population: string | null; autonomousCommunity: string | null; province: string | null } | null> {
     try {
-      const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lon)}&addressdetails=1`;
+      const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${encodeURIComponent(
+        lat
+      )}&lon=${encodeURIComponent(lon)}&addressdetails=1`;
       const result: any = await firstValueFrom(this.http.get(url, { headers: { Accept: 'application/json' } }));
       const address = result?.address || {};
       return {
@@ -1697,7 +1847,7 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
         province: address.province || address.county || null
       };
     } catch {
-      return undefined;
+      return null;
     }
   }
 
@@ -1800,10 +1950,6 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
   }
 
   async confirmDeleteUserTrack(row: UserTrackRow): Promise<void> {
-    // if (!row.canDelete) {
-    //   this.showMessage('Solo puedes eliminar tracks que hayas subido tú.');
-    //   return;
-    // }
     const decision = await this.openInfoDialog({
       title: 'Eliminar track',
       message: '¿Seguro que quieres eliminar este track? Esta acción no se puede deshacer.',
@@ -1867,7 +2013,10 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
 
   private async uploadStandaloneTrack(result: StandaloneTrackUploadResult): Promise<void> {
     if (this.standaloneUploadInProgress) return;
-    const nickname = (this.personalNickname || this.authService.getSession()?.nickname || this.authService.getSession()?.email || '').trim();
+    const nickname = (this.personalNickname ||
+      this.authService.getSession()?.nickname ||
+      this.authService.getSession()?.email ||
+      '').trim();
     if (!nickname) {
       this.showMessage('No se pudo obtener tu usuario para asignar el track.');
       return;
@@ -1896,7 +2045,7 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
     const totalDurationSeconds = this.calculateTotalDurationSeconds(track.data.trkpts) || durationSeconds;
     const timeSeconds = Math.max(1, Math.round(activeDurationSeconds || durationSeconds || 1));
     const tiempoReal = Math.max(1, Math.round(totalDurationSeconds || activeDurationSeconds || durationSeconds || 1));
-    
+
     const payload: CreateTrackPayload = {
       routeId: null,
       nickname,
@@ -1906,7 +2055,6 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
       timeSeconds,
       tiempoReal,
       distanceKm: Number.isFinite(track.details.distance) ? track.details.distance : 0,
-      //ascent: track.details.ascent,
       routeXml: gpxData,
       fileName: result.file.name,
       uploadedAt: new Date().toISOString(),
@@ -1915,16 +2063,16 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
       title: result.title
     };
 
-    // console.log("POST a track: ", payload)
-
     this.standaloneUploadInProgress = true;
     this.eventService.addTrack(payload).subscribe({
-      next: () => this.refreshUserTracks(),
+      next: () => this.requestRefreshUserTracks(),
       error: () => {
         this.showMessage('No se pudo subir el track.');
         this.standaloneUploadInProgress = false;
       },
-      complete: () => { this.standaloneUploadInProgress = false; }
+      complete: () => {
+        this.standaloneUploadInProgress = false;
+      }
     });
   }
 
@@ -1970,9 +2118,7 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
 
   private async ensureLoadedTrackFromEventTrack(track: EventTrack, colorIndex: number): Promise<LoadedTrack | null> {
     try {
-      const gpxData = track.gpxData || (track.gpxAsset
-        ? await firstValueFrom(this.http.get(track.gpxAsset, { responseType: 'text' }))
-        : null);
+      const gpxData = track.gpxData || (track.gpxAsset ? await firstValueFrom(this.http.get(track.gpxAsset, { responseType: 'text' })) : null);
       if (!gpxData) return null;
       const { track: loadedTrack } = this.parseGpxData(gpxData, track.fileName || track.nickname, colorIndex);
       loadedTrack.name = `${track.nickname} (${track.category})`;
@@ -2004,7 +2150,8 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
   private async buildMyTrackRows(): Promise<MyTrackRow[]> {
     try {
       const tracks = await firstValueFrom(this.eventService.getMyTracks());
-      const eventsById = new Map<number, RaceEvent>(this.events.map(event => [event.id, event]));
+      // usa el Map precalculado
+      const eventsById = this.eventsById;
 
       return tracks.map(track => {
         const event = track.routeId ? eventsById.get(track.routeId) : undefined;
@@ -2068,11 +2215,11 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
     if (parts.some(part => Number.isNaN(part))) return null;
     if (parts.length === 3) {
       const [hours, minutes, seconds] = parts;
-      return (hours * 3600) + (minutes * 60) + seconds;
+      return hours * 3600 + minutes * 60 + seconds;
     }
     if (parts.length === 2) {
       const [minutes, seconds] = parts;
-      return (minutes * 60) + seconds;
+      return minutes * 60 + seconds;
     }
     return null;
   }

@@ -322,39 +322,7 @@
 
     <section *ngIf="events.length" class="event-detail">
         <div class="event-panels">
-          <!-- <article class="panel">
-          <ng-container *ngIf="selectedEvent; else rankingPlaceholder">
-            <div class="panel__header">
-              <h3>Ranking mejor tiempo</h3>
-              <p class="muted">Tu mejor marca se conserva, el resto queda en historial personal.</p>
-            </div>
-            <ol class="ranking">
-              <li *ngFor="let track of ranking; index as i" [class.ranking__item--mine]="track.id === latestUploadedTrackId || track.nickname === personalNickname">
-                <span class="position">#{{ i + 1 }}</span>
-                <div>
-                  <p class="strong">{{ track.nickname }} · {{ findModalityName(track.modalityId) }}</p>
-                  <p class="muted">{{ track.category }} · {{ track.bikeType }}</p>
-                </div>
-                <div class="ranking__actions">
-                  <span class="time">{{ formatTime(track.timeSeconds) }}</span>
-                  <button
-                    *ngIf="canDeleteTrack(track)"
-                    type="button"
-                    class="icon-button"
-                    (click)="deleteTrack(track.id)">
-                    🗑️
-                  </button>
-                </div>
-              </li>
-            </ol>
-          </ng-container>
-          <ng-template #rankingPlaceholder>
-            <div class="panel__header">
-              <h3>Ranking mejor tiempo</h3>
-              <p class="muted">Selecciona un evento para ver el ranking.</p>
-            </div>
-          </ng-template>
-        </article> -->
+         
 
           <article class="panel">
             <ng-container *ngIf="selectedEvent; else routeTimesPlaceholder">

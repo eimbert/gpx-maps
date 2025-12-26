@@ -33,7 +33,7 @@ export class AuthGuard implements CanActivate {
   private showAccessDeniedDialog(): void {
     const dialogData: InfoDialogData = {
       title: 'Función para usuarios registrados',
-      message: 'La sección de eventos y rankings es exclusiva para usuarios registrados. Inicia sesión o regístrate desde la pantalla principal.',
+      message: 'La sección de eventos y rankings es exclusiva para usuarios registrados. Regístrate o inicia sesión.',
       confirmLabel: 'OK'
     };
 

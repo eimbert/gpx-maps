@@ -346,12 +346,13 @@
                   <h3>Tiempos de la ruta</h3>
                   <p class="muted">Datos obtenidos al seleccionar el recorrido en el carrusel.</p>
                 </div>
-                <button class="ranking-animate" type="button" (click)="animateSelectedTracks()"
-                  [disabled]="!selectedComparisonIds.size" aria-label="Animar tracks seleccionados"
-                  matTooltip="Animar en el mapa los tracks seleccionados en la tabla">
-                  <span class="ranking-animate__icon" aria-hidden="true">🚴‍♀️</span>
-                  <span>Animar selección</span>
-                </button>
+                <div style="text-align: right; margin-right: 27px;">
+                  <button class="ranking-animate" type="button" (click)="animateSelectedTracks()"
+                    [disabled]="!selectedComparisonIds.size" aria-label="Animar tracks seleccionados"
+                    matTooltip="Animar en el mapa los tracks seleccionados en la tabla">
+                    <span class="ranking-animate__icon" aria-hidden="true">🚴‍♀️</span>
+                  </button>
+                </div>
               </div>
               <ng-container *ngIf="routeTrackTimes.length; else emptyRouteTimes">
                 <div class="ranking ranking--grid">

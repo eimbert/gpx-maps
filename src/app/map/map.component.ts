@@ -327,10 +327,23 @@ export class MapComponent implements OnInit, AfterViewInit {
   private loadTracksFromBackend(routeId: number): void {
     this.http.get<RaceEvent>(`${environment.routesApiBase}/${routeId}`).subscribe({
       next: async (event) => {
-        await this.buildTrackMetasFromEvent(event);
+        const normalizedEvent = this.normalizeEventFromBackend(event);
+        await this.buildTrackMetasFromEvent(normalizedEvent);
       },
       error: () => this.loadTracksFromSessionOrQuery()
     });
+  }
+
+  private normalizeEventFromBackend(event: RaceEvent): RaceEvent {
+    const distanceKm = event.distanceKm
+      ?? (event as any).distance_km
+      ?? (event as any).distante_km
+      ?? null;
+
+    return {
+      ...event,
+      distanceKm: Number.isFinite(Number(distanceKm)) ? Number(distanceKm) : null,
+    };
   }
 
   private async buildTrackMetasFromEvent(event: RaceEvent): Promise<void> {

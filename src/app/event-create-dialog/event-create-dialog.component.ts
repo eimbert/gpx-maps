@@ -20,6 +20,7 @@ export class EventCreateDialogComponent {
     province: '',
     year: new Date().getFullYear(),
     distanceKm: null as number | null,
+    distante_km: null as number | null,
     logoBlob: '',
     logoMime: '',
     gpxMaster: '',
@@ -70,6 +71,7 @@ export class EventCreateDialogComponent {
       province: this.newEvent.province.trim(),
       year: this.newEvent.year,
       distanceKm,
+      distante_km: distanceKm,
       logoBlob: this.newEvent.logoBlob || null,
       logoMime: this.newEvent.logoMime || null,
       gpxMaster: this.newEvent.gpxMaster || null,
@@ -116,6 +118,7 @@ export class EventCreateDialogComponent {
     this.newEvent.gpxMaster = this.encodeBase64(text);
     this.newEvent.gpxMasterFileName = file.name;
     this.newEvent.distanceKm = parsed.distanceKm;
+    this.newEvent.distante_km = parsed.distanceKm;
     this.newEvent.year = parsed.year ?? this.newEvent.year;
 
     if (parsed.location) {

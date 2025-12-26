@@ -42,7 +42,8 @@
     </section>
 
     <div class="action-row">
-      <button (click)="iniciarVisualizacion()" [disabled]="!tracksCargados()" class="btn-start">
+      <button (click)="iniciarVisualizacion()" [disabled]="!tracksCargados()" class="btn-start"
+        matTooltip="Iniciar la animación de los tracks cargados">
         <span>Iniciar</span>
         <svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" class="btn-start__icon">
           <path d="M5 3l14 9-14 9V3z" fill="currentColor" />
@@ -173,6 +174,7 @@
     <div class="events-actions">
       <div class="events-menu">
         <button type="button" mat-icon-button color="primary" class="menu-toggle" [matMenuTriggerFor]="eventsMenu"
+          matTooltip="Abrir menú de acciones del evento"
           [class.menu-toggle--open]="eventMenuOpen" #eventsMenuTrigger="matMenuTrigger" (menuOpened)="eventMenuOpen = true"
           (menuClosed)="eventMenuOpen = false" aria-label="Abrir menú de eventos">
           <mat-icon aria-hidden="true">more_vert</mat-icon>
@@ -311,14 +313,17 @@
       </div>
 
       <div class="carousel-controls">
-        <button type="button" class="carousel-button" (click)="prevEvent(true)" aria-label="Evento anterior">
+        <button type="button" class="carousel-button" (click)="prevEvent(true)" aria-label="Evento anterior"
+          matTooltip="Ir al evento anterior del carrusel">
           <mat-icon aria-hidden="true">skip_previous</mat-icon>
         </button>
         <button type="button" class="carousel-button carousel-button--primary" (click)="toggleCarouselPlayback()"
-          [attr.aria-label]="isCarouselPaused ? 'Reanudar carrusel' : 'Pausar carrusel'">
+          [attr.aria-label]="isCarouselPaused ? 'Reanudar carrusel' : 'Pausar carrusel'"
+          [matTooltip]="isCarouselPaused ? 'Reanudar reproducción automática' : 'Pausar reproducción automática'">
           <mat-icon aria-hidden="true">{{ isCarouselPaused ? 'play_arrow' : 'pause' }}</mat-icon>
         </button>
-        <button type="button" class="carousel-button" (click)="nextEvent(true)" aria-label="Siguiente evento">
+        <button type="button" class="carousel-button" (click)="nextEvent(true)" aria-label="Siguiente evento"
+          matTooltip="Avanzar al siguiente evento del carrusel">
           <mat-icon aria-hidden="true">skip_next</mat-icon>
         </button>
       </div>
@@ -342,7 +347,8 @@
                   <p class="muted">Datos obtenidos al seleccionar el recorrido en el carrusel.</p>
                 </div>
                 <button class="ranking-animate" type="button" (click)="animateSelectedTracks()"
-                  [disabled]="!selectedComparisonIds.size" aria-label="Animar tracks seleccionados">
+                  [disabled]="!selectedComparisonIds.size" aria-label="Animar tracks seleccionados"
+                  matTooltip="Animar en el mapa los tracks seleccionados en la tabla">
                   <span class="ranking-animate__icon" aria-hidden="true">🚴‍♀️</span>
                   <span>Animar selección</span>
                 </button>

@@ -69,19 +69,15 @@ interface EventVisuals {
 
 interface EventTrackUploadDraft {
   eventId: number | null;
-  modalityId: number | null;
   category: RaceCategory;
   bikeType: BikeType;
-  distanceKm: number | null;
   file: File | null;
 }
 
 interface EventTrackUploadPayload {
   eventId: number;
-  modalityId: number | null;
   category: RaceCategory;
   bikeType: BikeType;
-  distanceKm: number;
   file: File;
 }
 
@@ -178,8 +174,6 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
     eventId: null,
     category: 'Senior M' as RaceCategory,
     bikeType: 'MTB' as BikeType,
-    modalityId: null,
-    distanceKm: null,
     file: null
   };
 
@@ -367,13 +361,6 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
       event.tracks.slice(0, 3).forEach(track => this.selectedComparisonIds.add(track.id));
     }
     this.selectedModalityId = modalityId ?? event?.modalities?.[0]?.id ?? null;
-    const selectedModality = event?.modalities?.find(m => m.id === this.selectedModalityId) ?? event?.modalities?.[0];
-    this.eventUpload = {
-      ...this.eventUpload,
-      eventId: eventId,
-      modalityId: this.selectedModalityId,
-      distanceKm: selectedModality?.distanceKm ?? null
-    };
     if (this.personalNickname) {
       this.refreshPersonalHistory();
     }
@@ -387,7 +374,7 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
       this.selectedComparisonIds.clear();
       this.personalHistory = [];
       this.routeTrackTimes = [];
-      this.eventUpload = { ...this.eventUpload, eventId: null, modalityId: null, distanceKm: null };
+      this.eventUpload = { ...this.eventUpload, eventId: null };
       return;
     }
 
@@ -887,10 +874,8 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
         categories: this.categories,
         bikeTypes: this.bikeTypes,
         defaultEventId: this.selectedEventId ?? this.eventUpload.eventId,
-        defaultModalityId: this.selectedModalityId ?? this.eventUpload.modalityId,
         defaultCategory: this.eventUpload.category,
-        defaultBikeType: this.eventUpload.bikeType,
-        defaultDistanceKm: this.eventUpload.distanceKm
+        defaultBikeType: this.eventUpload.bikeType
       }
     });
 
@@ -898,23 +883,19 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
       if (!result) return;
       const uploadPayload: EventTrackUploadPayload = {
         eventId: result.eventId,
-        modalityId: result.modalityId ?? null,
         category: result.category,
         bikeType: result.bikeType,
-        distanceKm: result.distanceKm,
         file: result.file
       };
       this.eventUpload = {
         ...this.eventUpload,
         eventId: uploadPayload.eventId,
-        modalityId: uploadPayload.modalityId,
         category: uploadPayload.category,
         bikeType: uploadPayload.bikeType,
-        distanceKm: uploadPayload.distanceKm,
         file: null
       };
       this.selectMode('events');
-      this.selectEvent(uploadPayload.eventId!, uploadPayload.modalityId || undefined);
+      this.selectEvent(uploadPayload.eventId!);
       void this.uploadTrackToEvent(uploadPayload);
     });
   }
@@ -1497,10 +1478,6 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
     if (!upload.bikeType) {
       return 'Selecciona tu tipo de bicicleta.';
     }
-    const distanceKm = Number(upload.distanceKm);
-    if (!Number.isFinite(distanceKm) || distanceKm <= 0) {
-      return 'Añade la distancia en kilómetros del recorrido.';
-    }
     if (!upload.file) {
       return 'Selecciona un archivo GPX.';
     }
@@ -1522,8 +1499,7 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
     }
     const routeId = upload.eventId!;
     const event = this.events.find(e => e.id === routeId);
-    const modalityId = upload.modalityId ?? this.selectedModalityId ?? event?.modalities?.[0]?.id ?? null;
-    const distanceKm = Number(upload.distanceKm);
+    const modalityId = null;
     const gpxData = await this.readFileAsText(upload.file!);
 
     if (!this.isValidGpxData(gpxData)) {
@@ -1541,9 +1517,27 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
 
     const { track, durationSeconds } = parsed;
     const trackYear = this.resolveTrackYearFromTrack(track);
-    if (event?.year && trackYear !== null && trackYear !== event.year) {
+    if (event?.year) {
+      if (trackYear === null) {
+        this.showMessage('El track no incluye una fecha válida para comprobar el año del evento.');
+        return;
+      }
+      if (trackYear !== event.year) {
+        this.showMessage(
+          `El año del track (${trackYear}) no coincide con el del evento (${event.year}). Si no existe un evento para ${trackYear}, puedes crearlo.`
+        );
+        return;
+      }
+    }
+    const trackDistanceKm = Number(track.details.distance);
+    if (!Number.isFinite(trackDistanceKm) || trackDistanceKm <= 0) {
+      this.showMessage('No se pudo calcular la distancia del track.');
+      return;
+    }
+    const eventDistanceKm = this.toNumber(event?.distanceKm, Number.NaN);
+    if (Number.isFinite(eventDistanceKm) && Math.abs(trackDistanceKm - eventDistanceKm) > 5) {
       this.showMessage(
-        `El año del track (${trackYear}) no coincide con el del evento (${event.year}). Si no existe un evento para ${trackYear}, puedes crearlo.`
+        `La distancia del track (${trackDistanceKm.toFixed(1)} km) no coincide con la del evento (${eventDistanceKm?.toFixed(1)} km). La tolerancia máxima es de ±5 km.`
       );
       return;
     }
@@ -1573,7 +1567,7 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
       modalityId,
       timeSeconds,
       tiempoReal,
-      distanceKm: Number.isFinite(distanceKm) && distanceKm > 0 ? distanceKm : track.details.distance,
+      distanceKm: trackDistanceKm,
       ascent: track.details.ascent,
       population,
       autonomousCommunity,

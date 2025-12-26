@@ -172,13 +172,10 @@
 
     <div class="events-actions">
       <div class="events-menu">
-        <button type="button" mat-raised-button color="primary" class="menu-toggle" [matMenuTriggerFor]="eventsMenu"
-          #eventsMenuTrigger="matMenuTrigger" (menuOpened)="eventMenuOpen = true" (menuClosed)="eventMenuOpen = false">
-          <span class="menu-toggle__label">
-            <mat-icon aria-hidden="true">event</mat-icon>
-            <span>Menú de eventos</span>
-          </span>
-          <mat-icon class="chevron" [class.chevron--open]="eventMenuOpen" aria-hidden="true">expand_more</mat-icon>
+        <button type="button" mat-icon-button color="primary" class="menu-toggle" [matMenuTriggerFor]="eventsMenu"
+          [class.menu-toggle--open]="eventMenuOpen" #eventsMenuTrigger="matMenuTrigger" (menuOpened)="eventMenuOpen = true"
+          (menuClosed)="eventMenuOpen = false" aria-label="Abrir menú de eventos">
+          <mat-icon aria-hidden="true">more_vert</mat-icon>
         </button>
         <mat-menu #eventsMenu="matMenu" class="events-mat-menu">
           <button mat-menu-item type="button" (click)="openUploadTrackDialog()">

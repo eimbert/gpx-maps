@@ -18,25 +18,12 @@
       </select>
     </label>
     <label>
-      <span>Modalidad</span>
-      <select [ngModel]="selectedModalityId" (ngModelChange)="onModalityChange($event)" [disabled]="!modalities.length">
-        <option *ngFor="let modality of modalities" [ngValue]="modality.id">
-          {{ modality.name }} • {{ modality.distanceKm | number:'1.0-1' }} km
-        </option>
-        <option *ngIf="!modalities.length" [ngValue]="null">Sin modalidades</option>
-      </select>
-    </label>
-    <label>
       <span>Categoría</span>
       <select [(ngModel)]="category">
         <option *ngFor="let categoryOption of data.categories" [ngValue]="categoryOption">
           {{ categoryOption }}
         </option>
       </select>
-    </label>
-    <label>
-      <span>Distancia (km)</span>
-      <input type="number" min="0" step="0.1" [(ngModel)]="distanceKm" placeholder="Distancia del recorrido" />
     </label>
     <label>
       <span>Tipo de bicicleta</span>

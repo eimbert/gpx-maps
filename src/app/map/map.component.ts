@@ -721,7 +721,7 @@ export class MapComponent implements OnInit, AfterViewInit {
     this.allTracksBounds = union.isValid() ? union.pad(0.05) : null;
     if (this.allTracksBounds) {
       this.map.fitBounds(this.allTracksBounds, {
-        padding: this.computeFitPadding(),
+        ...this.computeFitOptions(),
         maxZoom: this.leaderZoomLevel - 1
       });
       const currentZoom = this.map.getZoom();
@@ -867,13 +867,36 @@ export class MapComponent implements OnInit, AfterViewInit {
       this.map.flyToBounds(this.allTracksBounds, {
         animate: true,
         duration: 0.7,
-        padding: this.computeFitPadding(),
+        ...this.computeFitOptions(),
         maxZoom: this.leaderZoomLevel - 1,
       });
     }
   }
 
-  private computeFitPadding(): [number, number] {
+  private computeFitOptions(): L.FitBoundsOptions {
+    const basePadding = this.computeBasePadding();
+    if (!this.isVerticalViewport) return { padding: basePadding };
+
+    const mapEl = document.getElementById('map');
+    if (!mapEl) return { padding: basePadding };
+
+    const mapRect = mapEl.getBoundingClientRect();
+    const topOverlay = document.querySelector('.map-ui') as HTMLElement | null;
+    const bottomOverlay = (document.querySelector('.map-logo img') || document.querySelector('.map-logo')) as HTMLElement | null;
+
+    const topOverlap = topOverlay ? this.measureVerticalOverlap(topOverlay.getBoundingClientRect(), mapRect) : 0;
+    const bottomOverlap = bottomOverlay ? this.measureVerticalOverlap(bottomOverlay.getBoundingClientRect(), mapRect) : 0;
+
+    const paddingTop = basePadding[1] + topOverlap;
+    const paddingBottom = basePadding[1] + bottomOverlap;
+
+    return {
+      paddingTopLeft: L.point(basePadding[0], paddingTop),
+      paddingBottomRight: L.point(basePadding[0], paddingBottom)
+    };
+  }
+
+  private computeBasePadding(): [number, number] {
     if (!this.map) return [24, 24];
     if (!this.isVerticalViewport) return [24, 24];
 
@@ -881,6 +904,11 @@ export class MapComponent implements OnInit, AfterViewInit {
     const padX = Math.max(40, Math.round(size.x * 0.12));
     const padY = Math.max(30, Math.round(size.y * 0.08));
     return [padX, padY];
+  }
+
+  private measureVerticalOverlap(rect: DOMRect, mapRect: DOMRect): number {
+    const overlap = Math.max(0, Math.min(rect.bottom, mapRect.bottom) - Math.max(rect.top, mapRect.top));
+    return Math.round(Math.min(overlap, mapRect.height));
   }
 
   private applyTrackVisibility(): void {

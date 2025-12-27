@@ -8,11 +8,14 @@
         </p>
       </div>
 
-      <button type="button" class="event-action-button event-action-button--home hero__home" (click)="goHome()"
-        matTooltip="Volver al inicio" aria-label="Volver al inicio">
-        <mat-icon aria-hidden="true">home</mat-icon>
-      </button>
+      
     </header>
+    <div style=" margin-top:28px;">
+      <button type="button" class="event-action-button event-action-button--home hero__home" (click)="goHome()"
+          matTooltip="Volver al inicio" aria-label="Volver al inicio">
+          <mat-icon aria-hidden="true">home</mat-icon>
+      </button>
+    </div>
 
     <div class="dropzone" [class.dropzone--active]="isDragOver" (click)="triggerFileDialog()"
       (dragover)="onDragOver($event)" (dragleave)="onDragLeave()" (drop)="onDrop($event)">
@@ -171,7 +174,7 @@
       <button type="button" class="secondary" (click)="goHome()">Volver a la pantalla principal</button>
     </div>
 
-    <div class="events-actions">
+    <div class="events-actions"  style="margin-top:28px;">
       <div class="events-actions__buttons">
         <button type="button" class="event-action-button event-action-button--home" (click)="goHome()"
           matTooltip="Volver al inicio" aria-label="Volver al inicio">

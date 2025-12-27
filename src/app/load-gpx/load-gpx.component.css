@@ -27,7 +27,7 @@
   margin: 0 auto;
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 8px;
 }
 
 .action-row {
@@ -49,6 +49,7 @@
   color: whitesmoke;
   font-weight: 500;
   font-size: 20px;
+ 
 }
 
 .guest-note {

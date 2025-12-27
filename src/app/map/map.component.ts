@@ -720,7 +720,7 @@ export class MapComponent implements OnInit, AfterViewInit {
     this.allTracksBounds = union.isValid() ? union.pad(0.05) : null;
     if (this.allTracksBounds) {
       this.map.fitBounds(this.allTracksBounds, {
-        padding: [24, 24],
+        padding: this.computeFitPadding(),
         maxZoom: this.leaderZoomLevel - 1
       });
       const currentZoom = this.map.getZoom();
@@ -859,8 +859,23 @@ export class MapComponent implements OnInit, AfterViewInit {
   private setGeneralView(): void {
     if (!this.map) return;
     if (this.allTracksBounds && this.allTracksBounds.isValid()) {
-      this.map.flyToBounds(this.allTracksBounds, { animate: true, duration: 0.7 });
+      this.map.flyToBounds(this.allTracksBounds, {
+        animate: true,
+        duration: 0.7,
+        padding: this.computeFitPadding(),
+        maxZoom: this.leaderZoomLevel - 1,
+      });
     }
+  }
+
+  private computeFitPadding(): [number, number] {
+    if (!this.map) return [24, 24];
+    if (!this.isVerticalViewport) return [24, 24];
+
+    const size = this.map.getSize();
+    const padX = Math.max(40, Math.round(size.x * 0.12));
+    const padY = Math.max(30, Math.round(size.y * 0.08));
+    return [padX, padY];
   }
 
   private applyTrackVisibility(): void {

@@ -87,6 +87,7 @@ export class MapComponent implements OnInit, AfterViewInit {
   private readonly leaderZoomLevel = 17;
   private readonly leaderFlyDurationMs = 650;
   private readonly generalViewZoomScale = 0.75;
+  private readonly generalViewZoomScaleVertical = 0.65;
   private readonly ghostOpacity = 0.4;
   private readonly ghostWeight = 3;
   private readonly progressOpacity = 0.95;
@@ -730,7 +731,7 @@ export class MapComponent implements OnInit, AfterViewInit {
           this.map.setZoom(targetZoom);
         }
       } else {
-        const scaledZoom = currentZoom + Math.log2(this.generalViewZoomScale);
+        const scaledZoom = currentZoom + Math.log2(this.generalViewZoomScaleForViewport);
         const boundedZoom = Math.max(this.map.getMinZoom(), Math.min(this.leaderZoomLevel - 1, scaledZoom));
         if (boundedZoom !== currentZoom) {
           this.map.setZoom(boundedZoom);
@@ -854,6 +855,10 @@ export class MapComponent implements OnInit, AfterViewInit {
 
   private get leaderFlyDuration(): number {
     return this.isZoomMode ? this.leaderFlyDurationMs * this.zoomPanSlowdownFactor : this.leaderFlyDurationMs;
+  }
+
+  private get generalViewZoomScaleForViewport(): number {
+    return this.isVerticalViewport ? this.generalViewZoomScaleVertical : this.generalViewZoomScale;
   }
 
   private setGeneralView(): void {

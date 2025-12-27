@@ -909,10 +909,9 @@ export class MapComponent implements OnInit, AfterViewInit {
     if (!leader) return;
 
     const target = L.latLng(leader);
-    const viewBounds = this.map.getBounds().pad(this.isZoomMode ? -0.3 : -0.2);
     const zoomMismatch = this.map.getZoom() < this.leaderZoomLevel;
 
-    if (viewBounds.contains(target) && !zoomMismatch) {
+    if (this.isTargetWithinComfortZone(target) && !zoomMismatch) {
       this.lastLeaderTarget = target;
       return;
     }
@@ -929,6 +928,25 @@ export class MapComponent implements OnInit, AfterViewInit {
     });
     this.lastLeaderPan = now;
     this.lastLeaderTarget = target;
+  }
+
+  private isTargetWithinComfortZone(target: L.LatLng): boolean {
+    if (!this.map) return true;
+
+    if (!this.isVerticalViewport) {
+      const viewBounds = this.map.getBounds().pad(this.isZoomMode ? -0.3 : -0.2);
+      return viewBounds.contains(target);
+    }
+
+    const size = this.map.getSize();
+    const paddingX = size.x * 0.25; // mayor margen lateral para 9:16
+    const paddingY = size.y * 0.15;
+    const comfortBounds = L.bounds(
+      L.point(paddingX, paddingY),
+      L.point(size.x - paddingX, size.y - paddingY)
+    );
+    const targetPoint = this.map.latLngToContainerPoint(target);
+    return comfortBounds.contains(targetPoint);
   }
 
   private updateVisualization(now: number, relMs: number, someoneFinished: boolean): void {

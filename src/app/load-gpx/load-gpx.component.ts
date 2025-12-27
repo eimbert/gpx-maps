@@ -2,7 +2,6 @@ import { Component, ElementRef, OnDestroy, OnInit, ViewChild } from '@angular/co
 import { ActivatedRoute, Router } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
 import { MatDialog } from '@angular/material/dialog';
-import { MatMenuTrigger } from '@angular/material/menu';
 import { firstValueFrom, Subject, Subscription, from } from 'rxjs';
 import { auditTime, exhaustMap, filter, takeUntil } from 'rxjs/operators';
 
@@ -122,7 +121,6 @@ type SortDirection = 'asc' | 'desc';
 export class LoadGpxComponent implements OnInit, OnDestroy {
   @ViewChild('fileInput') fileInputRef!: ElementRef<HTMLInputElement>;
   @ViewChild('masterGpxInput') masterGpxInputRef!: ElementRef<HTMLInputElement>;
-  @ViewChild(MatMenuTrigger) eventMenuTrigger?: MatMenuTrigger;
 
   readonly maxTracks = 5;
   readonly maxComparison = 4;
@@ -155,7 +153,6 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
   readonly profileHeight = 80;
 
   private pendingMasterUploadEventId: number | null = null;
-  eventMenuOpen = false;
 
   userTracks: UserTrackRow[] = [];
   userTracksLoading = false;
@@ -823,7 +820,6 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
   }
 
   openEventSearch(): void {
-    this.closeEventMenu();
     const dialogRef = this.dialog.open<EventSearchDialogComponent, EventSearchDialogData, EventSearchDialogResult>(
       EventSearchDialogComponent,
       {
@@ -847,7 +843,6 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
 
   openCreateEventDialog(): void {
     if (!this.ensureEventsAccess()) return;
-    this.closeEventMenu();
     const dialogRef = this.dialog.open<EventCreateDialogComponent, undefined, EventCreateDialogResult>(
       EventCreateDialogComponent,
       {
@@ -874,7 +869,6 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
       this.showMessage('No hay eventos disponibles para subir un track.');
       return;
     }
-    this.closeEventMenu();
     const dialogRef = this.dialog.open<
       EventTrackUploadDialogComponent,
       EventTrackUploadDialogData,
@@ -2147,7 +2141,6 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
 
   deleteSelectedEvent(): void {
     if (!this.ensureEventsAccess()) return;
-    this.closeEventMenu();
     const eventId = this.selectedEventId;
     if (!eventId || !this.selectedEvent) return;
     if (!this.canDeleteSelectedEvent()) {
@@ -2186,14 +2179,8 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
     }
   }
 
-  closeEventMenu(): void {
-    this.eventMenuTrigger?.closeMenu();
-    this.eventMenuOpen = false;
-  }
-
   async openMyTracksDialog(): Promise<void> {
     if (!this.ensureEventsAccess()) return;
-    this.closeEventMenu();
     const rows = await this.buildMyTrackRows();
     this.dialog.open<MyTracksDialogComponent, any>(MyTracksDialogComponent, {
       width: '1080px',

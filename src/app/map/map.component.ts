@@ -11,6 +11,13 @@ import { environment } from '../../environments/environment';
 interface TrackPoint { lat: number; lon: number; ele: number; time: string; }
 interface TPx extends TrackPoint { t: number; }
 
+interface PauseInterval {
+  startAbs: number;
+  endAbs: number;
+  durationMs: number;
+  anchor: { lat: number; lon: number };
+}
+
 interface TrackMeta {
   name: string;
   color: string;
@@ -20,6 +27,8 @@ interface TrackMeta {
   prog?: L.Polyline;
   mark?: L.Marker;
   ticks?: L.LayerGroup;
+  pauses: PauseInterval[];
+  pauseLayer?: L.LayerGroup;
   cursor: number;
   nextTickRel: number;
   finalAdded: boolean;
@@ -291,6 +300,7 @@ export class MapComponent implements OnInit, AfterViewInit {
       color: colors[index] ?? this.defaultColors[index % this.defaultColors.length],
       raw: (track?.trkpts ?? []) as TrackPoint[],
       sanitized: [],
+      pauses: [],
       cursor: 0,
       nextTickRel: this.TICK_STEP_MS,
       finalAdded: false,
@@ -301,10 +311,13 @@ export class MapComponent implements OnInit, AfterViewInit {
   private applySanitization(): void {
     this.trackMetas = this.trackMetas.map((meta) => {
       let sanitized = this.sanitize(meta.raw);
+      let pauses: PauseInterval[] = [];
       if (this.removeStops) {
-        sanitized = this.removeStopsAdaptive(sanitized);
+        const result = this.removeStopsAdaptive(sanitized);
+        sanitized = result.track;
+        pauses = result.pauses;
       }
-      return { ...meta, sanitized };
+      return { ...meta, sanitized, pauses };
     });
 
     if (this.map) {
@@ -390,6 +403,7 @@ export class MapComponent implements OnInit, AfterViewInit {
         color,
         raw,
         sanitized: [],
+        pauses: [],
         cursor: 0,
         nextTickRel: this.TICK_STEP_MS,
         finalAdded: false,
@@ -482,6 +496,23 @@ export class MapComponent implements OnInit, AfterViewInit {
       className: 'tick-label tick-label-final'
     });
     group.addLayer(dot);
+  }
+
+  private addPauseMarker(pause: PauseInterval, color: string, group: L.LayerGroup): void {
+    const minutes = pause.durationMs / 60000;
+    const label = minutes < 1 ? '<1 min' : `${Math.round(minutes)} min`;
+    const icon = L.divIcon({
+      className: 'pause-marker',
+      html: `
+        <div class="pause-icon" style="background:${color}">⏱️</div>
+        <div class="pause-label">${label}</div>
+      `,
+      iconSize: [1, 1],
+      iconAnchor: [-4, 10]
+    });
+
+    const marker = L.marker([pause.anchor.lat, pause.anchor.lon], { icon, interactive: false });
+    group.addLayer(marker);
   }
 
   // ---------- lifecycle ----------
@@ -707,7 +738,8 @@ export class MapComponent implements OnInit, AfterViewInit {
       full: meta.full ?? L.polyline([], ghost(meta.color)).addTo(this.map),
       prog: meta.prog ?? L.polyline([], prog(meta.color)).addTo(this.map),
       mark: meta.mark ?? L.marker([0, 0], { icon: mk(meta.color) }),
-      ticks: meta.ticks ?? L.layerGroup().addTo(this.map)
+      ticks: meta.ticks ?? L.layerGroup().addTo(this.map),
+      pauseLayer: meta.pauseLayer ?? L.layerGroup().addTo(this.map)
     }));
   }
 
@@ -726,19 +758,22 @@ export class MapComponent implements OnInit, AfterViewInit {
       meta.nextTickRel = this.TICK_STEP_MS;
       meta.finalAdded = false;
 
-      if (meta.has && meta.full && meta.prog && meta.mark && meta.ticks) {
+      if (meta.has && meta.full && meta.prog && meta.mark && meta.ticks && meta.pauseLayer) {
         const latlngs = meta.sanitized.map(p => L.latLng(p.lat, p.lon));
         const startLatLng = latlngs[0];
         meta.full.setLatLngs(latlngs);
         meta.prog.setLatLngs([startLatLng]);
         meta.mark.setLatLng(startLatLng).addTo(this.map);
         meta.ticks.clearLayers();
+        meta.pauseLayer.clearLayers();
+        meta.pauses.forEach((pause) => this.addPauseMarker(pause, meta.color, meta.pauseLayer!));
         boundsPts.push(...latlngs);
         anyTrack = true;
-      } else if (meta.full && meta.prog && meta.ticks) {
+      } else if (meta.full && meta.prog && meta.ticks && meta.pauseLayer) {
         meta.full.setLatLngs([]);
         meta.prog.setLatLngs([]);
         meta.ticks.clearLayers();
+        meta.pauseLayer.clearLayers();
       }
     });
 
@@ -1067,11 +1102,18 @@ export class MapComponent implements OnInit, AfterViewInit {
   // Comprime el timeline detectando pausas como saltos de tiempo > 30 s entre puntos consecutivos
   // o tramos con velocidad muy baja (<= 0.2 m/s). Cada pausa se acumula y se resta a todos los
   // puntos posteriores, dejando el track como si no se hubiera detenido la grabación.
-  private removeStopsAdaptive(xs: TPx[], pauseThresholdMs = 30_000): TPx[] {
-    if (!xs || xs.length < 2) { console.log('[StopsAdaptive] EXIT early'); return xs?.slice() ?? []; }
+  private removeStopsAdaptive(xs: TPx[], pauseThresholdMs = 30_000): { track: TPx[]; pauses: PauseInterval[] } {
+    if (!xs || xs.length < 2) { console.log('[StopsAdaptive] EXIT early'); return { track: xs?.slice() ?? [], pauses: [] }; }
 
     const out: TPx[] = [];
+    const pauses: PauseInterval[] = [];
     let totalPauseMs = 0;
+    let inPause = false;
+    let pauseStartAbs = 0;
+    let pauseDuration = 0;
+    let pauseEndAbs = 0;
+    let pauseAnchor: { lat: number; lon: number } | null = null;
+
     for (let i = 0; i < xs.length; i++) {
       const originalTime = xs[i].t;
 
@@ -1083,14 +1125,39 @@ export class MapComponent implements OnInit, AfterViewInit {
 
         if (isLongGap || isStopped) {
           totalPauseMs += gapMs; // acumulamos TODO el parón detectado
+          if (!inPause) {
+            inPause = true;
+            pauseStartAbs = xs[i - 1].t;
+            pauseAnchor = { lat: xs[i - 1].lat, lon: xs[i - 1].lon };
+            pauseDuration = 0;
+          }
+          pauseDuration += gapMs;
+          pauseEndAbs = xs[i].t;
+        } else if (inPause) {
+          pauses.push({
+            startAbs: pauseStartAbs,
+            endAbs: pauseEndAbs,
+            durationMs: pauseDuration,
+            anchor: pauseAnchor ?? { lat: xs[i - 1].lat, lon: xs[i - 1].lon }
+          });
+          inPause = false;
         }
       }
 
       out.push({ ...xs[i], t: originalTime - totalPauseMs });
     }
 
-    console.log('[StopsAdaptive] total pausa (s):', Math.round(totalPauseMs / 1000), 'umbral (ms):', pauseThresholdMs);
-    return out;
+    if (inPause) {
+      pauses.push({
+        startAbs: pauseStartAbs,
+        endAbs: pauseEndAbs,
+        durationMs: pauseDuration,
+        anchor: pauseAnchor ?? { lat: xs[xs.length - 1].lat, lon: xs[xs.length - 1].lon }
+      });
+    }
+
+    console.log('[StopsAdaptive] total pausa (s):', Math.round(totalPauseMs / 1000), 'umbral (ms):', pauseThresholdMs, 'pausas:', pauses.length);
+    return { track: out, pauses };
   }
 
   private buildRanking(): RankingEntry[] {

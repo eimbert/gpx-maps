@@ -147,6 +147,21 @@ export class MapComponent implements OnInit, AfterViewInit {
     public rec: RecorderService,
     private http: HttpClient) { }
 
+  private hydrateRemoveStopsFlag(): void {
+    let payload: any = null;
+    try { payload = JSON.parse(sessionStorage.getItem('gpxViewerPayload') || 'null'); } catch { payload = null; }
+
+    if (payload && typeof payload.rmstops !== 'undefined') {
+      this.removeStops = !!payload.rmstops;
+      return;
+    }
+
+    const rmstopsParam = this.route.snapshot.queryParamMap.get('rmstops');
+    if (rmstopsParam !== null) {
+      this.removeStops = (rmstopsParam === '1' || rmstopsParam === 'true');
+    }
+  }
+
   // ---------- util ----------
   private getVideoDimensions(): { width: number; height: number } {
     return this.recordingAspect === '9:16'
@@ -463,6 +478,8 @@ export class MapComponent implements OnInit, AfterViewInit {
   ngOnInit(): void {
     const startFlag = this.route.snapshot.queryParamMap.get('s');
     this.autoStartRequested = false // (startFlag === '1' || startFlag === 'true');
+
+    this.hydrateRemoveStopsFlag();
 
     const backendRouteId = Number(this.route.snapshot.queryParamMap.get('routeId'));
     if (Number.isFinite(backendRouteId)) {

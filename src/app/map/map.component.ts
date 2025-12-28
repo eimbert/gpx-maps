@@ -508,8 +508,8 @@ export class MapComponent implements OnInit, AfterViewInit {
       html: `
         <div class="pause-label">${label}</div>
       `,
-      iconSize: [1, 1],
-      iconAnchor: [-4, 10]
+      iconSize: undefined,
+      iconAnchor: [-8, 12]
     });
 
     const marker = L.marker([pause.anchor.lat, pause.anchor.lon], { icon, interactive: false });
@@ -1129,7 +1129,8 @@ export class MapComponent implements OnInit, AfterViewInit {
           if (!inPause) {
             inPause = true;
             pauseStartAbs = xs[i - 1].t;
-            pauseAnchor = { lat: xs[i - 1].lat, lon: xs[i - 1].lon };
+            const anchorSource = isLongGap ? xs[i - 1] : xs[i];
+            pauseAnchor = { lat: anchorSource.lat, lon: anchorSource.lon };
             pauseDuration = 0;
           }
           pauseDuration += gapMs;

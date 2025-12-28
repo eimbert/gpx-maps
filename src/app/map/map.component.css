@@ -171,6 +171,8 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  width: auto !important;
+  height: auto !important;
   padding: 6px 12px;
   background: linear-gradient(180deg, #f6f7f8, #e5e7eb);
   color: #1f2937;

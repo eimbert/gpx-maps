@@ -500,7 +500,8 @@ export class MapComponent implements OnInit, AfterViewInit {
 
   private addPauseMarker(pause: PauseInterval, color: string, group: L.LayerGroup): void {
     const minutes = pause.durationMs / 60000;
-    const label = minutes < 1 ? '<1 min' : `${Math.round(minutes)} min`;
+    if (minutes < 1) return;
+    const label = `${Math.round(minutes)} min`;
     const icon = L.divIcon({
       className: 'pause-marker',
       html: `

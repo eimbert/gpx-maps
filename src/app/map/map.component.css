@@ -134,9 +134,20 @@
   color: #111;
   border: 1px solid rgba(0,0,0,0.15);
   border-radius: 6px;
-  padding: 2px 6px;
+  padding: 4px 8px;
   font: 600 11px/1.2 system-ui, -apple-system, Segoe UI, Roboto, Arial;
   box-shadow: 0 2px 6px rgba(0,0,0,.12);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.tick-label::before{
+  content: "\23f1";
+  font-size: 13px;
+  line-height: 1;
+  color: #475569;
 }
 .tick-label-final{ border-width: 2px; box-shadow: 0 3px 10px rgba(0,0,0,.2); }
 

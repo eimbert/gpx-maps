@@ -9,6 +9,8 @@ import { DialogoConfiguracionData } from '../interfaces/estructuras';
 })
 export class DialogoConfiguracionComponent {
   eliminarPausasLargas = true;
+  marcarPausasLargas = true;
+  umbralPausaSegundos = 30;
   anadirLogoTitulos = false;
   activarMusica = true;
   grabarAnimacion = false;
@@ -24,7 +26,9 @@ export class DialogoConfiguracionComponent {
   ) {
     // valores iniciales opcionales
     if (data) {
-      this.eliminarPausasLargas = true;
+      this.eliminarPausasLargas = data.eliminarPausasLargas ?? this.eliminarPausasLargas;
+      this.marcarPausasLargas = data.marcarPausasLargas ?? this.marcarPausasLargas;
+      this.umbralPausaSegundos = Math.max(1, Math.trunc(data.umbralPausaSegundos ?? this.umbralPausaSegundos));
       this.anadirLogoTitulos   = !!data.anadirLogoTitulos;
       this.permitirAdversarioVirtual = !!data.permitirAdversarioVirtual;
       this.incluirAdversarioVirtual = !!data.incluirAdversarioVirtual;
@@ -41,6 +45,8 @@ export class DialogoConfiguracionComponent {
   guardar(): void {
     this.dialogRef.close({
       eliminarPausasLargas: this.eliminarPausasLargas,
+      marcarPausasLargas: this.marcarPausasLargas,
+      umbralPausaSegundos: Math.max(1, Math.trunc(this.umbralPausaSegundos)),
       anadirLogoTitulos: this.anadirLogoTitulos,
       activarMusica: this.activarMusica,
       grabarAnimacion: this.grabarAnimacion,

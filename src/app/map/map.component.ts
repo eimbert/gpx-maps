@@ -62,6 +62,8 @@ export class MapComponent implements OnInit, AfterViewInit {
 
   logoDataUrl: string | null = null;
   removeStops = false;  // quitar paradas largas
+  markLongPauses = true;
+  pauseThresholdSeconds = 30;
 
   showStartOverlay = true;
   countdownValue: string | null = null;
@@ -312,11 +314,15 @@ export class MapComponent implements OnInit, AfterViewInit {
     this.trackMetas = this.trackMetas.map((meta) => {
       let sanitized = this.sanitize(meta.raw);
       let pauses: PauseInterval[] = [];
+      const pauseThresholdMs = Math.max(1, this.pauseThresholdSeconds) * 1000;
+
       if (this.removeStops) {
-        const result = this.removeStopsAdaptive(sanitized);
+        const result = this.removeStopsAdaptive(sanitized, pauseThresholdMs);
         sanitized = result.track;
-      } else {
-        pauses = this.removeStopsAdaptive(sanitized).pauses;
+        pauses = this.markLongPauses ? result.pauses.filter(p => p.durationMs >= pauseThresholdMs) : [];
+      } else if (this.markLongPauses) {
+        pauses = this.removeStopsAdaptive(sanitized, pauseThresholdMs).pauses
+          .filter(p => p.durationMs >= pauseThresholdMs);
       }
       return { ...meta, sanitized, pauses };
     });
@@ -340,6 +346,11 @@ export class MapComponent implements OnInit, AfterViewInit {
       this.trackMetas = this.buildMetas(this.names, this.colors, trks);
       this.logoDataUrl = payload.logo ?? null;
       this.removeStops = !!payload.rmstops;
+      this.markLongPauses = payload.marcarPausasLargas ?? this.markLongPauses;
+      const thresholdFromPayload = Number(payload.umbralPausaSegundos);
+      this.pauseThresholdSeconds = Number.isFinite(thresholdFromPayload) && thresholdFromPayload >= 1
+        ? Math.trunc(thresholdFromPayload)
+        : this.pauseThresholdSeconds;
       this.musicEnabled = payload.activarMusica ?? true;
       this.recordingEnabled = !!payload.grabarAnimacion;
       if (payload.relacionAspectoGrabacion === '9:16') {
@@ -360,6 +371,13 @@ export class MapComponent implements OnInit, AfterViewInit {
       this.trackMetas = this.buildMetas(this.names, this.colors, trks);
       this.logoDataUrl = (params['logo'] ?? null) as string | null;
       this.removeStops = (params['rmstops'] === '1' || params['rmstops'] === 'true');
+      this.markLongPauses = params['markpauses'] === undefined
+        ? this.markLongPauses
+        : (params['markpauses'] === '1' || params['markpauses'] === 'true');
+      const thresholdFromQuery = Number(params['pausethreshold']);
+      this.pauseThresholdSeconds = Number.isFinite(thresholdFromQuery) && thresholdFromQuery >= 1
+        ? Math.trunc(thresholdFromQuery)
+        : this.pauseThresholdSeconds;
       this.applySanitization();
     });
   }

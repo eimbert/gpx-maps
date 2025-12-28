@@ -1061,21 +1061,20 @@ export class MapComponent implements OnInit, AfterViewInit {
     // console.log('[StopsAdaptive] ENTER len=', xs?.length);
     if (!xs || xs.length < 2) { console.log('[StopsAdaptive] EXIT early'); return xs?.slice() ?? []; }
 
-    const out: TPx[] = [{ ...xs[0] }];
+    const out: TPx[] = [];
     let totalPauseMs = 0;
-    let prevOriginalTime = xs[0].t;
 
-    for (let i = 1; i < xs.length; i++) {
-      const currentOriginalTime = xs[i].t;
-      const gapMs = currentOriginalTime - prevOriginalTime;
+    for (let i = 0; i < xs.length; i++) {
+      const originalTime = xs[i].t;
 
-      if (gapMs > pauseThresholdMs) {
-        totalPauseMs += gapMs;
+      if (i > 0) {
+        const gapMs = originalTime - xs[i - 1].t;
+        if (gapMs > pauseThresholdMs) {
+          totalPauseMs += gapMs; // acumulamos TODO el parón detectado
+        }
       }
 
-      const correctedTime = currentOriginalTime - totalPauseMs;
-      out.push({ ...xs[i], t: correctedTime });
-      prevOriginalTime = currentOriginalTime;
+      out.push({ ...xs[i], t: originalTime - totalPauseMs });
     }
 
     console.log('[StopsAdaptive] total pausa (s):', Math.round(totalPauseMs / 1000), 'umbral (ms):', pauseThresholdMs);

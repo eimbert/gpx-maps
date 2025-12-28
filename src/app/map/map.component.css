@@ -144,8 +144,14 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
+  padding: 6px 10px;
   transform: translate(4px, -10px);
-  filter: drop-shadow(0 2px 6px rgba(0,0,0,.35));
+  background: rgba(15,23,42,0.88);
+  border: 1px solid rgba(255,255,255,0.25);
+  border-radius: 12px;
+  color: #e2e8f0;
+  box-shadow: 0 4px 12px rgba(0,0,0,.32);
+  backdrop-filter: blur(2px);
 }
 .pause-icon{
   width: 18px;
@@ -158,13 +164,10 @@
   border: 2px solid rgba(255,255,255,0.9);
 }
 .pause-label{
-  background: rgba(255,255,255,0.95);
-  color: #0f172a;
-  border: 1px solid rgba(0,0,0,0.18);
-  border-radius: 8px;
-  padding: 4px 8px;
-  font: 700 11px/1.2 system-ui, -apple-system, Segoe UI, Roboto, Arial;
-  box-shadow: 0 2px 6px rgba(0,0,0,.18);
+  margin: 0;
+  color: inherit;
+  font: 800 12px/1.2 system-ui, -apple-system, Segoe UI, Roboto, Arial;
+  letter-spacing: 0.01em;
   white-space: nowrap;
 }
 

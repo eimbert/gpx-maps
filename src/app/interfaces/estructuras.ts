@@ -1,5 +1,7 @@
 export interface DialogoConfiguracionData {
   eliminarPausasLargas: boolean;
+  marcarPausasLargas?: boolean;
+  umbralPausaSegundos?: number;
   anadirLogoTitulos: boolean;
   activarMusica: boolean;
   permitirAdversarioVirtual?: boolean;

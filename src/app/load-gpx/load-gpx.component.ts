@@ -1295,6 +1295,8 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
           width: '520px',
           data: {
             eliminarPausasLargas: false,
+            marcarPausasLargas: true,
+            umbralPausaSegundos: 30,
             anadirLogoTitulos: false,
             activarMusica: true,
             grabarAnimacion: false,
@@ -1329,6 +1331,8 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
             tracks: tracksFinal,
             logo: logoDataUrl,
             rmstops: !!result.eliminarPausasLargas,
+            marcarPausasLargas: !!result.marcarPausasLargas,
+            umbralPausaSegundos: Math.max(1, Math.trunc(result.umbralPausaSegundos ?? 30)),
             activarMusica: !!result.activarMusica,
             grabarAnimacion: !!result.grabarAnimacion,
             relacionAspectoGrabacion: result.relacionAspectoGrabacion ?? '16:9',

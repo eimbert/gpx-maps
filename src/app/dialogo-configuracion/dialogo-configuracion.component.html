@@ -17,6 +17,23 @@
         Depurar el track para eliminar pausas largas
       </mat-checkbox>
 
+      <div class="pause-option">
+        <mat-checkbox [(ngModel)]="marcarPausasLargas">
+          Señalar las pausas mayores de
+        </mat-checkbox>
+        <div class="pause-threshold">
+          <input
+            type="number"
+            min="1"
+            step="1"
+            [(ngModel)]="umbralPausaSegundos"
+            [disabled]="!marcarPausasLargas"
+            aria-label="Umbral de pausa en segundos"
+          />
+          <span>segundos</span>
+        </div>
+      </div>
+
       <mat-checkbox [(ngModel)]="anadirLogoTitulos">
         Añadir un logo a los títulos (ej. logo de la carrera)
       </mat-checkbox>

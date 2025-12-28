@@ -169,6 +169,11 @@ export class MapComponent implements OnInit, AfterViewInit {
       : { width: 2560, height: 1440 };
   }
 
+  private roundCoord(x: number, decimals = 6): number {
+    const f = 10 ** decimals;
+    return Math.round(x * f) / f;
+  }
+
   private isCoordValid(lat: number, lon: number): boolean {
     return Number.isFinite(lat) && Number.isFinite(lon) && Math.abs(lat) <= 90 && Math.abs(lon) <= 180;
   }
@@ -219,7 +224,12 @@ export class MapComponent implements OnInit, AfterViewInit {
 
   // limpia: ordena y filtra saltos >60 km/h
   private sanitize(arr: TrackPoint[]): TPx[] {
-    const validCoords = arr.filter(p => this.isCoordValid(p.lat, p.lon));
+    const rounded = arr.map(p => ({
+      ...p,
+      lat: this.roundCoord(p.lat),
+      lon: this.roundCoord(p.lon),
+    }));
+    const validCoords = rounded.filter(p => this.isCoordValid(p.lat, p.lon));
     const parsed = validCoords.map(p => ({ ...p, t: this.ms(p.time) }));
     const withTime = parsed.filter(p => Number.isFinite(p.t));
 
@@ -1055,33 +1065,24 @@ export class MapComponent implements OnInit, AfterViewInit {
   }
 
   // Comprime el timeline detectando pausas como saltos de tiempo > 30 s entre puntos consecutivos.
-  // Si dos puntos tienen misma lat/lon también se consideran pausa y se elimina el duplicado.
   // Cada pausa se acumula y se resta a todos los puntos posteriores, dejando el track como si no se
   // hubiera detenido la grabación.
   private removeStopsAdaptive(xs: TPx[], pauseThresholdMs = 30_000): TPx[] {
-    if (!xs || xs.length < 2) { return xs?.slice() ?? []; }
+    if (!xs || xs.length < 2) { console.log('[StopsAdaptive] EXIT early'); return xs?.slice() ?? []; }
 
     const out: TPx[] = [];
     let totalPauseMs = 0;
-    let lastKept = xs[0];
+    for (let i = 0; i < xs.length; i++) {
+      const originalTime = xs[i].t;
 
-    out.push({ ...lastKept, t: lastKept.t });
-
-    for (let i = 1; i < xs.length; i++) {
-      const current = xs[i];
-      const gapMs = current.t - lastKept.t;
-
-      if (current.lat === lastKept.lat && current.lon === lastKept.lon) {
-        totalPauseMs += gapMs;
-        continue;
+      if (i > 0) {
+        const gapMs = originalTime - xs[i - 1].t;
+        if (gapMs > pauseThresholdMs) {
+          totalPauseMs += gapMs; // acumulamos TODO el parón detectado
+        }
       }
 
-      if (gapMs > pauseThresholdMs) {
-        totalPauseMs += gapMs;
-      }
-
-      out.push({ ...current, t: current.t - totalPauseMs });
-      lastKept = current;
+      out.push({ ...xs[i], t: originalTime - totalPauseMs });
     }
 
     console.log('[StopsAdaptive] total pausa (s):', Math.round(totalPauseMs / 1000), 'umbral (ms):', pauseThresholdMs);

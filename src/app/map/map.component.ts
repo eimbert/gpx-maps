@@ -293,6 +293,7 @@ export class MapComponent implements OnInit, AfterViewInit {
       let sanitized = this.sanitize(meta.raw);
       if (this.removeStops) {
         sanitized = this.removeStopsAdaptive(sanitized);
+        sanitized = this.removeStopsByLowSpeedDropInner(sanitized);
       }
       return { ...meta, sanitized };
     });
@@ -1078,6 +1079,118 @@ export class MapComponent implements OnInit, AfterViewInit {
     }
 
     console.log('[StopsAdaptive] total pausa (s):', Math.round(totalPauseMs / 1000), 'umbral (ms):', pauseThresholdMs);
+    return out;
+  }
+
+  // Elimina paradas por velocidad baja (< 0.4 km/h) que duren >= 30s.
+  // Además de “comprimir” el tiempo, elimina los puntos interiores del tramo lento.
+  // Pensada para encadenarse DESPUÉS de removeStopsAdaptive(xs).
+  private removeStopsByLowSpeedDropInner(
+    xs: TPx[],
+    speedThresholdKmh = 0.4,
+    minPauseMs = 30_000
+  ): TPx[] {
+    if (!xs || xs.length < 2) return xs?.slice() ?? [];
+
+    const distMeters = (a: TPx, b: TPx): number => {
+      const R = 6371000; // m
+      const toRad = (d: number) => (d * Math.PI) / 180;
+
+      const dLat = toRad(b.lat - a.lat);
+      const dLon = toRad(b.lon - a.lon);
+      const lat1 = toRad(a.lat);
+      const lat2 = toRad(b.lat);
+
+      const sinDLat = Math.sin(dLat / 2);
+      const sinDLon = Math.sin(dLon / 2);
+
+      const h =
+        sinDLat * sinDLat +
+        Math.cos(lat1) * Math.cos(lat2) * sinDLon * sinDLon;
+
+      return 2 * R * Math.asin(Math.min(1, Math.sqrt(h)));
+    };
+
+    type Interval = { startIdx: number; endIdx: number; startT: number; endT: number; dur: number };
+    const intervals: Interval[] = [];
+
+    // Detectar intervalos “lentos” consecutivos
+    let inStop = false;
+    let startIdx = 0;
+
+    for (let i = 1; i < xs.length; i++) {
+      const dt = xs[i].t - xs[i - 1].t;
+      if (!Number.isFinite(dt) || dt <= 0) continue;
+
+      const d = distMeters(xs[i - 1], xs[i]);
+      const speedKmh = (d / dt) * 3.6;
+
+      const isSlow = speedKmh < speedThresholdKmh;
+
+      if (isSlow) {
+        if (!inStop) {
+          inStop = true;
+          startIdx = i - 1; // ancla en el punto previo al primer tramo lento
+        }
+      } else {
+        if (inStop) {
+          const endIdx = i - 1; // último punto dentro del tramo lento
+          const dur = xs[endIdx].t - xs[startIdx].t;
+          if (dur >= minPauseMs) {
+            intervals.push({
+              startIdx,
+              endIdx,
+              startT: xs[startIdx].t,
+              endT: xs[endIdx].t,
+              dur
+            });
+          }
+          inStop = false;
+        }
+      }
+    }
+
+    // Cierre si acaba dentro de una parada
+    if (inStop) {
+      const endIdx = xs.length - 1;
+      const dur = xs[endIdx].t - xs[startIdx].t;
+      if (dur >= minPauseMs) {
+        intervals.push({
+          startIdx,
+          endIdx,
+          startT: xs[startIdx].t,
+          endT: xs[endIdx].t,
+          dur
+        });
+      }
+    }
+
+    if (intervals.length === 0) return xs.slice();
+
+    // Construir salida: eliminamos puntos del tramo lento y comprimimos timeline acumulativamente
+    const out: TPx[] = [];
+    let pauseSum = 0;
+    let k = 0;
+    let cur = intervals[k];
+
+    for (let i = 0; i < xs.length; i++) {
+      // Si estamos dentro de un intervalo lento “válido”, eliminamos todos los puntos
+      // excepto el punto de inicio (startIdx).
+      if (cur && i > cur.startIdx && i <= cur.endIdx) {
+        continue;
+      }
+
+      // Si ya hemos pasado el final del intervalo, acumulamos su duración (compresión)
+      while (cur && i > cur.endIdx) {
+        pauseSum += cur.dur;
+        k++;
+        cur = intervals[k];
+      }
+
+      const tAdj = xs[i].t - pauseSum;
+      out.push({ ...xs[i], t: tAdj });
+    }
+
     return out;
   }
 

@@ -315,7 +315,8 @@ export class MapComponent implements OnInit, AfterViewInit {
       if (this.removeStops) {
         const result = this.removeStopsAdaptive(sanitized);
         sanitized = result.track;
-        pauses = result.pauses;
+      } else {
+        pauses = this.removeStopsAdaptive(sanitized).pauses;
       }
       return { ...meta, sanitized, pauses };
     });

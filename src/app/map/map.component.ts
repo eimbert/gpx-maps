@@ -1062,17 +1062,23 @@ export class MapComponent implements OnInit, AfterViewInit {
     if (!xs || xs.length < 2) { console.log('[StopsAdaptive] EXIT early'); return xs?.slice() ?? []; }
 
     const out: TPx[] = [{ ...xs[0] }];
-    let paused = 0;
+    let totalPauseMs = 0;
+    let prevOriginalTime = xs[0].t;
 
     for (let i = 1; i < xs.length; i++) {
-      const dt = xs[i].t - xs[i - 1].t;
-      if (dt > pauseThresholdMs) {
-        paused += dt;
+      const currentOriginalTime = xs[i].t;
+      const gapMs = currentOriginalTime - prevOriginalTime;
+
+      if (gapMs > pauseThresholdMs) {
+        totalPauseMs += gapMs;
       }
-      out.push({ ...xs[i], t: xs[i].t - paused });
+
+      const correctedTime = currentOriginalTime - totalPauseMs;
+      out.push({ ...xs[i], t: correctedTime });
+      prevOriginalTime = currentOriginalTime;
     }
 
-    console.log('[StopsAdaptive] total pausa (s):', Math.round(paused / 1000), 'umbral (ms):', pauseThresholdMs);
+    console.log('[StopsAdaptive] total pausa (s):', Math.round(totalPauseMs / 1000), 'umbral (ms):', pauseThresholdMs);
     return out;
   }
 

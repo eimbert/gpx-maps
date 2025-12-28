@@ -1064,9 +1064,9 @@ export class MapComponent implements OnInit, AfterViewInit {
     this.followLeader(relMs, now);
   }
 
-  // Comprime el timeline detectando pausas como saltos de tiempo > 30 s entre puntos consecutivos.
-  // Cada pausa se acumula y se resta a todos los puntos posteriores, dejando el track como si no se
-  // hubiera detenido la grabación.
+  // Comprime el timeline detectando pausas como saltos de tiempo > 30 s entre puntos consecutivos
+  // o tramos con velocidad muy baja (<= 0.2 m/s). Cada pausa se acumula y se resta a todos los
+  // puntos posteriores, dejando el track como si no se hubiera detenido la grabación.
   private removeStopsAdaptive(xs: TPx[], pauseThresholdMs = 30_000): TPx[] {
     if (!xs || xs.length < 2) { console.log('[StopsAdaptive] EXIT early'); return xs?.slice() ?? []; }
 
@@ -1077,7 +1077,11 @@ export class MapComponent implements OnInit, AfterViewInit {
 
       if (i > 0) {
         const gapMs = originalTime - xs[i - 1].t;
-        if (gapMs > pauseThresholdMs) {
+        const speedMs = this.speedMs(xs[i - 1], xs[i]);
+        const isLongGap = gapMs > pauseThresholdMs;
+        const isStopped = speedMs <= 0.2;
+
+        if (isLongGap || isStopped) {
           totalPauseMs += gapMs; // acumulamos TODO el parón detectado
         }
       }

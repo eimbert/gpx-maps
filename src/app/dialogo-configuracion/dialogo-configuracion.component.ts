@@ -9,8 +9,8 @@ import { DialogoConfiguracionData } from '../interfaces/estructuras';
 })
 export class DialogoConfiguracionComponent {
   eliminarPausasLargas = true;
-  marcarPausasLargas = true;
-  umbralPausaSegundos = 30;
+  marcarPausasLargas = false;
+  umbralPausaMinutos = 1;
   anadirLogoTitulos = false;
   activarMusica = true;
   grabarAnimacion = false;
@@ -28,7 +28,8 @@ export class DialogoConfiguracionComponent {
     if (data) {
       this.eliminarPausasLargas = data.eliminarPausasLargas ?? this.eliminarPausasLargas;
       this.marcarPausasLargas = data.marcarPausasLargas ?? this.marcarPausasLargas;
-      this.umbralPausaSegundos = Math.max(1, Math.trunc(data.umbralPausaSegundos ?? this.umbralPausaSegundos));
+      const umbralPausaSegundos = data.umbralPausaSegundos ?? this.umbralPausaMinutos * 60;
+      this.umbralPausaMinutos = Math.max(1, Math.round(umbralPausaSegundos / 60));
       this.anadirLogoTitulos   = !!data.anadirLogoTitulos;
       this.permitirAdversarioVirtual = !!data.permitirAdversarioVirtual;
       this.incluirAdversarioVirtual = !!data.incluirAdversarioVirtual;
@@ -46,7 +47,7 @@ export class DialogoConfiguracionComponent {
     this.dialogRef.close({
       eliminarPausasLargas: this.eliminarPausasLargas,
       marcarPausasLargas: this.marcarPausasLargas,
-      umbralPausaSegundos: Math.max(1, Math.trunc(this.umbralPausaSegundos)),
+      umbralPausaSegundos: Math.max(60, Math.trunc(this.umbralPausaMinutos) * 60),
       anadirLogoTitulos: this.anadirLogoTitulos,
       activarMusica: this.activarMusica,
       grabarAnimacion: this.grabarAnimacion,

@@ -1055,26 +1055,33 @@ export class MapComponent implements OnInit, AfterViewInit {
   }
 
   // Comprime el timeline detectando pausas como saltos de tiempo > 30 s entre puntos consecutivos.
+  // Si dos puntos tienen misma lat/lon también se consideran pausa y se elimina el duplicado.
   // Cada pausa se acumula y se resta a todos los puntos posteriores, dejando el track como si no se
   // hubiera detenido la grabación.
   private removeStopsAdaptive(xs: TPx[], pauseThresholdMs = 30_000): TPx[] {
-    // console.log('[StopsAdaptive] ENTER len=', xs?.length);
-    if (!xs || xs.length < 2) { console.log('[StopsAdaptive] EXIT early'); return xs?.slice() ?? []; }
+    if (!xs || xs.length < 2) { return xs?.slice() ?? []; }
 
     const out: TPx[] = [];
     let totalPauseMs = 0;
+    let lastKept = xs[0];
 
-    for (let i = 0; i < xs.length; i++) {
-      const originalTime = xs[i].t;
+    out.push({ ...lastKept, t: lastKept.t });
 
-      if (i > 0) {
-        const gapMs = originalTime - xs[i - 1].t;
-        if (gapMs > pauseThresholdMs) {
-          totalPauseMs += gapMs; // acumulamos TODO el parón detectado
-        }
+    for (let i = 1; i < xs.length; i++) {
+      const current = xs[i];
+      const gapMs = current.t - lastKept.t;
+
+      if (current.lat === lastKept.lat && current.lon === lastKept.lon) {
+        totalPauseMs += gapMs;
+        continue;
       }
 
-      out.push({ ...xs[i], t: originalTime - totalPauseMs });
+      if (gapMs > pauseThresholdMs) {
+        totalPauseMs += gapMs;
+      }
+
+      out.push({ ...current, t: current.t - totalPauseMs });
+      lastKept = current;
     }
 
     console.log('[StopsAdaptive] total pausa (s):', Math.round(totalPauseMs / 1000), 'umbral (ms):', pauseThresholdMs);

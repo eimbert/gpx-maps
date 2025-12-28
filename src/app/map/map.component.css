@@ -129,16 +129,42 @@
 .start-btn:hover{ transform: translateY(-1px); box-shadow: 0 8px 22px rgba(67,56,202,.45); }
 .start-btn:active{ transform: translateY(0); filter: brightness(.95); }
 
-.tick-label{
-  background: rgba(255,255,255,0.9);
-  color: #111;
-  border: 1px solid rgba(0,0,0,0.15);
-  border-radius: 6px;
-  padding: 2px 6px;
-  font: 600 11px/1.2 system-ui, -apple-system, Segoe UI, Roboto, Arial;
-  box-shadow: 0 2px 6px rgba(0,0,0,.12);
+:host ::ng-deep .tick-label{
+  position: relative;
+  background: linear-gradient(180deg, #fff7e6, #ffe8c7);
+  color: #4b3412;
+  border: 1px solid #e7cfa2;
+  border-radius: 10px;
+  padding: 6px 12px;
+  font: 700 11px/1.15 system-ui, -apple-system, Segoe UI, Roboto, Arial;
+  box-shadow: 0 6px 16px rgba(0,0,0,.18), inset 0 1px 0 rgba(255,255,255,.55);
+  display: inline-flex;
+  align-items: center;
+  flex-direction: row;
+  gap: 4px;
+  white-space: nowrap;
+  line-height: 1.1;
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
 }
-.tick-label-final{ border-width: 2px; box-shadow: 0 3px 10px rgba(0,0,0,.2); }
+
+:host ::ng-deep .tick-label::after{
+  content: '';
+  position: absolute;
+  left: -7px;
+  top: 50%;
+  transform: translateY(-50%);
+  border-style: solid;
+  border-width: 7px 7px 7px 0;
+  border-color: transparent #e7cfa2 transparent transparent;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,.12));
+}
+
+:host ::ng-deep .tick-label-final{
+  border-width: 2px;
+  box-shadow: 0 8px 18px rgba(0,0,0,.25), inset 0 1px 0 rgba(255,255,255,.6);
+  background: linear-gradient(180deg, #ffe7bc, #ffdca1);
+}
 
 .pause-marker{
   display: inline-flex;

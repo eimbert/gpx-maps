@@ -502,11 +502,10 @@ export class MapComponent implements OnInit, AfterViewInit {
   private addPauseMarker(pause: PauseInterval, color: string, group: L.LayerGroup): void {
     const minutes = pause.durationMs / 60000;
     if (minutes < 1) return;
-    const label = `${Math.round(minutes)} min`;
+    const label = `parada de ${Math.round(minutes)} min`;
     const icon = L.divIcon({
       className: 'pause-marker',
       html: `
-        <div class="pause-icon" style="background:${color}">⏱️</div>
         <div class="pause-label">${label}</div>
       `,
       iconSize: [1, 1],

@@ -1111,6 +1111,23 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
     return times[0].getFullYear();
   }
 
+  private resolveTrackYearFromGpx(rawGpx?: string | null): number | null {
+    const gpx = this.decodeGpxContent(rawGpx);
+    if (!gpx) return null;
+
+    const points = this.parseTrackPointsFromString(gpx);
+    if (!points.length) return null;
+
+    const times = points
+      .map(p => new Date(p.time))
+      .filter(date => Number.isFinite(date.getTime()))
+      .sort((a, b) => a.getTime() - b.getTime());
+
+    if (!times.length) return null;
+
+    return times[0].getFullYear();
+  }
+
   private formatDurationAsLocalTime(totalSeconds: number): string {
     const total = Math.max(0, Math.round(totalSeconds));
     const hours = Math.floor(total / 3600);
@@ -2255,6 +2272,11 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
       if (Number.isFinite(parsedTrackYear)) {
         return parsedTrackYear;
       }
+    }
+
+    const gpxYear = this.resolveTrackYearFromGpx(track.gpxData);
+    if (gpxYear !== null) {
+      return gpxYear;
     }
 
     if (event?.year) {

@@ -402,3 +402,64 @@
   color: #fcd34d;
   text-shadow: 0 1px 6px rgba(0,0,0,0.45);
 }
+
+.profile-overlay{
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 12px 16px;
+  z-index: 1001;
+  pointer-events: none;
+}
+
+.profile-panel{
+  margin: 0 auto;
+  max-width: min(980px, 96vw);
+  background: linear-gradient(180deg, rgba(15,23,42,0.85), rgba(15,23,42,0.75));
+  border: 1px solid rgba(255,255,255,0.14);
+  border-radius: 14px;
+  box-shadow: 0 12px 26px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.08);
+  overflow: hidden;
+}
+
+.profile-chart{
+  display: block;
+  width: 100%;
+  height: 180px;
+  background: radial-gradient(circle at 20% 20%, rgba(255,255,255,0.06), transparent 38%),
+    linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02));
+}
+
+.profile-grid{
+  stroke: rgba(255,255,255,0.18);
+  stroke-width: 1;
+  stroke-dasharray: 5 6;
+}
+
+.profile-polyline{
+  fill: none;
+  stroke: #22c55e;
+  stroke-width: 2.8;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.35));
+}
+
+.profile-cursor{
+  stroke: #f97316;
+  stroke-width: 2;
+  stroke-linecap: round;
+  filter: drop-shadow(0 0 6px rgba(249,115,22,0.65));
+}
+
+.profile-message{
+  margin: 0 auto 6px;
+  max-width: min(460px, 92vw);
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgba(15,23,42,0.75);
+  color: #e2e8f0;
+  text-align: center;
+  font: 700 14px/1.35 system-ui, -apple-system, Segoe UI, Roboto, Arial;
+  border: 1px dashed rgba(255,255,255,0.2);
+  box-shadow: 0 8px 18px rgba(0,0,0,0.28);
+}

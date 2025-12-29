@@ -10,5 +10,6 @@ export interface DialogoConfiguracionData {
   grabarAnimacion?: boolean;
   relacionAspectoGrabacion?: '16:9' | '9:16';
   modoVisualizacion?: 'general' | 'zoomCabeza';
+  mostrarPerfil?: boolean;
 
 }

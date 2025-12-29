@@ -473,6 +473,17 @@ export class MapComponent implements OnInit, AfterViewInit {
     return `${m} min`;
   }
 
+  private createTickLabel(content: string, isFinal = false): L.Marker {
+    const icon = L.divIcon({
+      className: 'tick-label-wrapper',
+      html: `<div class="tick-label${isFinal ? ' tick-label-final' : ''}">${content}</div>`,
+      iconSize: undefined,
+      iconAnchor: [-8, 12],
+    });
+
+    return L.marker([0, 0], { icon, interactive: false });
+  }
+
   // Añade un tick (punto + etiqueta) en un tiempo absoluto
   private addTickAtAbs(track: TPx[], absT: number, color: string, group: L.LayerGroup, startAbs: number): void {
     if (absT > track[track.length - 1].t) return;
@@ -485,13 +496,11 @@ export class MapComponent implements OnInit, AfterViewInit {
       fillOpacity: 0.9,
       pane: 'overlayPane'
     });
-    dot.bindTooltip(this.fmtHMin(absT - startAbs), {
-      permanent: true,
-      direction: 'right',
-      offset: L.point(8, 0),
-      className: 'tick-label'
-    });
+
+    const label = this.createTickLabel(this.fmtHMin(absT - startAbs));
+    label.setLatLng([lat, lon]);
     group.addLayer(dot);
+    group.addLayer(label);
   }
 
   // Marca FINAL (en el último punto) con duración total
@@ -508,13 +517,11 @@ export class MapComponent implements OnInit, AfterViewInit {
       fillOpacity: 1,
       pane: 'overlayPane'
     });
-    dot.bindTooltip(this.fmtHMin(endAbs - startAbs), {
-      permanent: true,
-      direction: 'right',
-      offset: L.point(10, 0),
-      className: 'tick-label tick-label-final'
-    });
+
+    const label = this.createTickLabel(this.fmtHMin(endAbs - startAbs), true);
+    label.setLatLng([lat, lon]);
     group.addLayer(dot);
+    group.addLayer(label);
   }
 
   private addPauseMarker(pause: PauseInterval, color: string, group: L.LayerGroup): void {

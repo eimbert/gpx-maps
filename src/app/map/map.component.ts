@@ -125,6 +125,7 @@ export class MapComponent implements OnInit, AfterViewInit {
   profileWidth = 960;
   profileHeight = 180;
   profileCursorX = 0;
+  profileTrackColor = '#f97316';
   private profileTrackIndex = 0;
 
   // Ambos terminan aprox. en este tiempo de reproducción
@@ -372,10 +373,12 @@ export class MapComponent implements OnInit, AfterViewInit {
     if (!this.profileEnabled) {
       this.profileVisual = null;
       this.profileCursorX = 0;
+      this.profileTrackColor = '#f97316';
       return;
     }
 
     const meta = this.trackMetas[this.profileTrackIndex];
+    this.profileTrackColor = meta?.color ?? '#f97316';
     if (!meta || !meta.sanitized.length || meta.totalDistance <= 0) {
       this.profileVisual = null;
       this.profileCursorX = 0;

@@ -7,6 +7,7 @@ import * as L from 'leaflet';
 import { RecorderService } from '../recording/recorder.service';
 import { EventTrack, RaceEvent } from '../interfaces/events';
 import { environment } from '../../environments/environment';
+import { ProfileVisual, TrackPointWithElevation, buildCumulativeDistances, buildProfileVisual } from '../utils/profile-visual';
 
 interface TrackPoint { lat: number; lon: number; ele: number; time: string; }
 interface TPx extends TrackPoint { t: number; }
@@ -32,6 +33,8 @@ interface TrackMeta {
   cursor: number;
   nextTickRel: number;
   finalAdded: boolean;
+  distances: number[];
+  totalDistance: number;
   has: boolean;
 }
 
@@ -116,6 +119,13 @@ export class MapComponent implements OnInit, AfterViewInit {
   private started = false;
 
   showUniformSpeedDialog = false;
+
+  profileEnabled = true;
+  profileVisual: ProfileVisual | null = null;
+  profileWidth = 960;
+  profileHeight = 180;
+  profileCursorX = 0;
+  private profileTrackIndex = 0;
 
   // Ambos terminan aprox. en este tiempo de reproducción
   private desiredDurationSec = 30;
@@ -323,6 +333,8 @@ export class MapComponent implements OnInit, AfterViewInit {
       cursor: 0,
       nextTickRel: this.TICK_STEP_MS,
       finalAdded: false,
+      distances: [],
+      totalDistance: 0,
       has: false,
     }));
   }
@@ -341,8 +353,12 @@ export class MapComponent implements OnInit, AfterViewInit {
         pauses = this.removeStopsAdaptive(sanitized, pauseThresholdMs).pauses
           .filter(p => p.durationMs >= pauseThresholdMs);
       }
-      return { ...meta, sanitized, pauses };
+      const distances = sanitized.length ? buildCumulativeDistances(sanitized as TrackPointWithElevation[]) : [];
+      const totalDistance = distances[distances.length - 1] ?? 0;
+      return { ...meta, sanitized, pauses, distances, totalDistance };
     });
+
+    this.updateProfileVisual();
 
     if (this.map) {
       this.attachTrackLayers();
@@ -350,6 +366,57 @@ export class MapComponent implements OnInit, AfterViewInit {
       this.startCountdown();
       void this.autoStartIfRequested();
     }
+  }
+
+  private updateProfileVisual(): void {
+    if (!this.profileEnabled) {
+      this.profileVisual = null;
+      this.profileCursorX = 0;
+      return;
+    }
+
+    const meta = this.trackMetas[this.profileTrackIndex];
+    if (!meta || !meta.sanitized.length || meta.totalDistance <= 0) {
+      this.profileVisual = null;
+      this.profileCursorX = 0;
+      return;
+    }
+
+    this.profileVisual = buildProfileVisual(
+      meta.sanitized as TrackPointWithElevation[],
+      this.profileWidth,
+      this.profileHeight
+    );
+    this.profileCursorX = 0;
+  }
+
+  private updateProfileCursor(meta: TrackMeta, tAbs: number): void {
+    if (!this.profileEnabled || !this.profileVisual || meta.totalDistance <= 0 || !meta.distances.length) return;
+    const distance = this.distanceAtCursor(meta, tAbs);
+    this.profileCursorX = this.computeProfileCursorPosition(distance, meta.totalDistance);
+  }
+
+  private distanceAtCursor(meta: TrackMeta, tAbs: number): number {
+    if (!meta.distances.length || meta.sanitized.length < 2) return 0;
+    const lastPoint = meta.sanitized[meta.sanitized.length - 1];
+    if (tAbs >= lastPoint.t) return meta.totalDistance;
+
+    const i = Math.min(meta.cursor, meta.sanitized.length - 2);
+    const p0 = meta.sanitized[i];
+    const p1 = meta.sanitized[i + 1];
+    const d0 = meta.distances[i];
+    const d1 = meta.distances[i + 1] ?? d0;
+    const denom = p1.t - p0.t;
+    const f = denom > 0 ? Math.max(0, Math.min(1, (tAbs - p0.t) / denom)) : 0;
+    return d0 + (d1 - d0) * f;
+  }
+
+  private computeProfileCursorPosition(distance: number, totalDistance: number): number {
+    const safeTotal = Math.max(0, totalDistance);
+    const clamped = Math.max(0, Math.min(distance, safeTotal));
+    if (safeTotal === 0) return 0;
+    const ratio = clamped / safeTotal;
+    return ratio * this.profileWidth;
   }
 
   private loadTracksFromSessionOrQuery(): void {
@@ -374,6 +441,7 @@ export class MapComponent implements OnInit, AfterViewInit {
         this.recordingAspect = '9:16';
       }
       this.visualizationMode = payload.modoVisualizacion === 'zoomCabeza' ? 'zoomCabeza' : 'general';
+      this.profileEnabled = payload.mostrarPerfil ?? true;
       this.isVerticalViewport = this.recordingAspect === '9:16';
       this.applySanitization();
       return;
@@ -443,6 +511,8 @@ export class MapComponent implements OnInit, AfterViewInit {
         cursor: 0,
         nextTickRel: this.TICK_STEP_MS,
         finalAdded: false,
+        distances: [],
+        totalDistance: 0,
         has: false,
       });
       names.push(name);
@@ -881,6 +951,7 @@ export class MapComponent implements OnInit, AfterViewInit {
     this.lastLeaderTarget = null;
 
     this.applyTrackVisibility();
+    this.profileCursorX = 0;
 
     let last = performance.now();
     const step = (now: number) => {
@@ -890,12 +961,12 @@ export class MapComponent implements OnInit, AfterViewInit {
 
       let allDone = true;
 
-      this.trackMetas.forEach((meta) => {
+      this.trackMetas.forEach((meta, index) => {
         if (!meta.has || !meta.sanitized.length || !meta.prog || !meta.mark || !meta.ticks) return;
 
         const start = meta.sanitized[0].t;
-      const end = meta.sanitized[meta.sanitized.length - 1].t;
-      const tAbs = start + this.relMs;
+        const end = meta.sanitized[meta.sanitized.length - 1].t;
+        const tAbs = start + this.relMs;
 
         while (meta.cursor + 1 < meta.sanitized.length && meta.sanitized[meta.cursor + 1].t <= tAbs) meta.cursor++;
 
@@ -915,8 +986,15 @@ export class MapComponent implements OnInit, AfterViewInit {
         meta.prog.setLatLngs(path);
         meta.mark.setLatLng(L.latLng(pos[0], pos[1]));
 
+        if (this.profileEnabled && index === this.profileTrackIndex) {
+          this.updateProfileCursor(meta, tAbs);
+        }
+
         const done = meta.cursor >= meta.sanitized.length - 1 && tAbs >= end;
-        if (done && !meta.finalAdded) { this.addFinalTick(meta.sanitized, meta.color, meta.ticks, start); meta.finalAdded = true; }
+        if (done && !meta.finalAdded) {
+          this.addFinalTick(meta.sanitized, meta.color, meta.ticks, start);
+          meta.finalAdded = true;
+        }
         if (!done) allDone = false;
       });
 

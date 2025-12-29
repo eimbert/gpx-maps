@@ -10,6 +10,7 @@ import { DialogoConfiguracionData } from '../interfaces/estructuras';
 import { TrackMetadataDialogComponent, TrackMetadataDialogResult } from '../track-metadata-dialog/track-metadata-dialog.component';
 import { RouteMismatchDialogComponent } from '../route-mismatch-dialog/route-mismatch-dialog.component';
 import { EventSearchDialogComponent, EventSearchDialogData, EventSearchDialogResult } from '../event-search-dialog/event-search-dialog.component';
+import { ProfileVisual, TrackPointWithElevation, buildProfileVisual } from '../utils/profile-visual';
 import {
   BikeType,
   CreateEventPayload,
@@ -48,16 +49,6 @@ interface LoadedTrack {
 interface ParsedTrackResult {
   track: LoadedTrack;
   durationSeconds: number;
-}
-
-interface ProfileVisual {
-  points: string;
-  gridLinesY: number[];
-  stats: {
-    initialElevation: number;
-    maxElevation: number;
-    distanceKm: number;
-  };
 }
 
 interface EventVisuals {
@@ -472,7 +463,7 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
       return;
     }
 
-    const profile = this.buildProfileVisual(points);
+    const profile = buildProfileVisual(points as TrackPointWithElevation[], this.profileWidth, this.profileHeight);
     const trackPath = this.buildTrackPolyline(points);
     const mapTileUrl = this.buildStaticTileUrl(points);
     this.updateEventVisuals(event.id, { profile, trackPath, mapTileUrl });
@@ -535,51 +526,6 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
     } catch {
       return [];
     }
-  }
-
-  private buildProfileVisual(points: TrackPoint[], width = this.profileWidth, height = this.profileHeight): ProfileVisual | null {
-    if (!points.length) return null;
-
-    const elevations = points.map(p => p.ele ?? 0);
-    const distances = this.buildCumulativeDistances(points);
-    const initialEle = elevations[0];
-    const minEle = Math.min(...elevations);
-    const maxEle = Math.max(...elevations);
-    const eleRange = Math.max(1, maxEle - minEle);
-    const totalDistance = distances[distances.length - 1];
-    const safeWidth = Math.max(1, width);
-    const safeHeight = Math.max(1, height);
-
-    const pointsStr = elevations
-      .map((ele, idx) => {
-        const x = (distances[idx] / Math.max(1, totalDistance)) * safeWidth;
-        const y = safeHeight - ((ele - minEle) / eleRange) * safeHeight;
-        return `${x.toFixed(1)},${y.toFixed(1)}`;
-      })
-      .join(' ');
-
-    const gridLinesY = [0.25, 0.5, 0.75].map(ratio => safeHeight - ratio * safeHeight);
-
-    return {
-      points: pointsStr,
-      gridLinesY,
-      stats: {
-        initialElevation: initialEle,
-        maxElevation: maxEle,
-        distanceKm: totalDistance / 1000
-      }
-    };
-  }
-
-  private buildCumulativeDistances(points: TrackPoint[]): number[] {
-    const distances: number[] = [0];
-    for (let i = 1; i < points.length; i++) {
-      const prev = points[i - 1];
-      const current = points[i];
-      const delta = this.calculateDistance(prev.lat, prev.lon, current.lat, current.lon);
-      distances.push(distances[i - 1] + delta);
-    }
-    return distances;
   }
 
   private buildTrackPolyline(points: TrackPoint[], width = 320, height = 240): string | null {
@@ -1319,7 +1265,8 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
             grabarAnimacion: false,
             relacionAspectoGrabacion: '16:9',
             permitirAdversarioVirtual,
-            modoVisualizacion: 'general'
+            modoVisualizacion: 'general',
+            mostrarPerfil: true
           }
         }
       )
@@ -1353,7 +1300,8 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
             activarMusica: !!result.activarMusica,
             grabarAnimacion: !!result.grabarAnimacion,
             relacionAspectoGrabacion: result.relacionAspectoGrabacion ?? '16:9',
-            modoVisualizacion: result.modoVisualizacion ?? 'general'
+            modoVisualizacion: result.modoVisualizacion ?? 'general',
+            mostrarPerfil: !!result.mostrarPerfil
           };
           sessionStorage.setItem('gpxViewerPayload', JSON.stringify(payload));
 

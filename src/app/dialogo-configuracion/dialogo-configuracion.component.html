@@ -9,7 +9,7 @@
 
   <section class="option-section">
     <div class="section-header">
-      <h3>Preferencias del vídeo</h3>
+      <h3>Preferencias de la animación</h3>
       <p class="section-hint">Selecciona los ajustes que mejor se adapten a tu proyecto.</p>
     </div>
     <div class="checkbox-grid">
@@ -19,7 +19,7 @@
 
       <div class="pause-option">
         <mat-checkbox [(ngModel)]="marcarPausasLargas">
-          Señalar las pausas mayores de
+          Informar pausas de
         </mat-checkbox>
         <div class="pause-threshold">
           <input
@@ -30,13 +30,13 @@
             [disabled]="!marcarPausasLargas"
             aria-label="Umbral de pausa en minutos"
           />
-          <span>minutos</span>
+          <span>minutos, o mayores</span>
         </div>
       </div>
 
-      <mat-checkbox [(ngModel)]="anadirLogoTitulos">
+      <!-- <mat-checkbox [(ngModel)]="anadirLogoTitulos">
         Añadir un logo a los títulos (ej. logo de la carrera)
-      </mat-checkbox>
+      </mat-checkbox> -->
 
       <mat-checkbox [(ngModel)]="activarMusica">
         Activar la música

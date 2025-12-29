@@ -27,7 +27,7 @@ export class DialogoConfiguracionComponent {
   ) {
     // valores iniciales opcionales
     if (data) {
-      this.eliminarPausasLargas = data.eliminarPausasLargas ?? this.eliminarPausasLargas;
+      this.eliminarPausasLargas = true;
       this.marcarPausasLargas = data.marcarPausasLargas ?? this.marcarPausasLargas;
       const umbralPausaSegundos = data.umbralPausaSegundos ?? this.umbralPausaMinutos * 60;
       this.umbralPausaMinutos = Math.max(1, Math.round(umbralPausaSegundos / 60));

@@ -1,5 +1,5 @@
 import { Component, OnInit, AfterViewInit } from '@angular/core';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 
@@ -155,8 +155,25 @@ export class MapComponent implements OnInit, AfterViewInit {
 
   constructor(
     private route: ActivatedRoute,
+    private router: Router,
     public rec: RecorderService,
     private http: HttpClient) { }
+
+  goBack(): void {
+    const origin = this.route.snapshot.queryParamMap.get('from');
+
+    if (origin === 'events') {
+      this.router.navigate(['/events']);
+      return;
+    }
+
+    if (origin === 'routes') {
+      this.router.navigate(['/load'], { queryParams: { mode: 'routes' } });
+      return;
+    }
+
+    this.router.navigate(['/']);
+  }
 
   private hydrateRemoveStopsFlag(): void {
     let payload: any = null;

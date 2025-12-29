@@ -75,6 +75,8 @@
           class="profile-chart"
           [attr.viewBox]="'0 0 ' + profileWidth + ' ' + profileHeight"
           preserveAspectRatio="none"
+          [style.--profile-color]="profileTrackColor"
+          [style.--profile-cursor-color]="profileTrackColor"
         >
           <line
             *ngFor="let y of profileVisual.gridLinesY"

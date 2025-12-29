@@ -427,6 +427,8 @@
   display: block;
   width: 100%;
   height: 180px;
+  --profile-color: #22c55e;
+  --profile-cursor-color: #f97316;
   background: radial-gradient(circle at 20% 20%, rgba(255,255,255,0.06), transparent 38%),
     linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02));
 }
@@ -439,16 +441,16 @@
 
 .profile-polyline{
   fill: none;
-  stroke: #22c55e;
+  stroke: var(--profile-color, #22c55e);
   stroke-width: 2.8;
   filter: drop-shadow(0 2px 4px rgba(0,0,0,0.35));
 }
 
 .profile-cursor{
-  stroke: #f97316;
+  stroke: var(--profile-cursor-color, #f97316);
   stroke-width: 2;
   stroke-linecap: round;
-  filter: drop-shadow(0 0 6px rgba(249,115,22,0.65));
+  filter: drop-shadow(0 0 6px var(--profile-cursor-color, #f97316));
 }
 
 .profile-message{

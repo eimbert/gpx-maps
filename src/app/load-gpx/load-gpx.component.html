@@ -66,10 +66,28 @@
         </button>
       </div>
 
-      <p class="muted" *ngIf="userTracksLoading">Cargando tus rutas...</p>
-      <p class="muted" *ngIf="!userTracksLoading && !userTracks.length">Aún no has subido rutas.</p>
+      <div class="user-tracks__tabs">
+        <button type="button" class="user-tracks__tab" [class.user-tracks__tab--active]="activeUserTracksTab === 'personal'"
+          (click)="setUserTracksTab('personal')" aria-label="Ver tus rutas personales">
+          <span>Tus rutas</span>
+          <span class="user-tracks__tab-count">{{ getUserTrackRows('personal').length }}</span>
+        </button>
+        <button type="button" class="user-tracks__tab" [class.user-tracks__tab--active]="activeUserTracksTab === 'events'"
+          (click)="setUserTracksTab('events')" aria-label="Ver tus rutas de eventos">
+          <span>Rutas de Eventos</span>
+          <span class="user-tracks__tab-count">{{ getUserTrackRows('events').length }}</span>
+        </button>
+        <button type="button" class="user-tracks__tab" [class.user-tracks__tab--active]="activeUserTracksTab === 'shared'"
+          (click)="setUserTracksTab('shared')" aria-label="Ver rutas de otros usuarios">
+          <span>Rutas otros usuarios</span>
+          <span class="user-tracks__tab-count">{{ getUserTrackRows('shared').length }}</span>
+        </button>
+      </div>
 
-      <div class="user-tracks__panel" *ngIf="!userTracksLoading && userTracks.length">
+      <p class="muted" *ngIf="activeTracksLoading">{{ activeTracksLoadingLabel }}</p>
+      <p class="muted" *ngIf="!activeTracksLoading && !getUserTrackRows(activeUserTracksTab).length">{{ activeTracksEmptyMessage }}</p>
+
+      <div class="user-tracks__panel" *ngIf="!activeTracksLoading && getUserTrackRows(activeUserTracksTab).length">
         <div class="user-tracks__table-toolbar">
           <div class="user-tracks__filter">
             <mat-icon aria-hidden="true">search</mat-icon>

@@ -169,6 +169,12 @@ export class EventService {
     );
   }
 
+  getSharedTracks(): Observable<EventTrack[]> {
+    return this.http.get<EventTrack[]>(`${this.tracksApiBase}/shared`).pipe(
+      map(tracks => (tracks || []).map(track => this.normalizeTrack(track, this.resolveTrackRouteId(track))))
+    );
+  }
+
   getTrackGpx(trackId: number): Observable<TrackGpxFile> {
     return this.http.get<TrackGpxFile>(`${this.tracksApiBase}/${trackId}/gpx`).pipe(
       map(res => ({
@@ -257,6 +263,7 @@ export class EventService {
     const province = this.normalizeTextField((track as any).province ?? (track as any).provincia ?? track.province);
     const title = this.normalizeTextField((track as any).title ?? (track as any).trackTitle ?? (track as any).track_title);
     const description = this.normalizeTextField((track as any).description ?? (track as any).trackDescription ?? (track as any).track_description);
+    const shared = Boolean((track as any).shared);
 
     return {
       ...track,
@@ -276,6 +283,7 @@ export class EventService {
         ? track.createdBy ?? undefined
         : Number(track.createdBy)
       ,
+      shared,
       title,
       description
     };

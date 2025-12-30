@@ -8,6 +8,7 @@
 
 .container {
   height: 100vh;
+  
   box-sizing: border-box;
   background-image: url('/assets/fondo_pantalla2.png');
   background-size: cover;
@@ -25,7 +26,7 @@
 
 .load-wrapper,
 .events-wrapper {
-  max-width: 1200px;
+  max-width: 85%;
   margin: 0 auto;
   display: flex;
   flex-direction: column;

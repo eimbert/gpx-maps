@@ -113,6 +113,15 @@ type UserTracksSortColumn =
   | 'timeSeconds'
   | 'totalTimeSeconds';
 type SortDirection = 'asc' | 'desc';
+type UserTracksTab = 'personal' | 'events' | 'shared';
+
+interface TrackTableState {
+  sortColumn: UserTracksSortColumn;
+  sortDirection: SortDirection;
+  filter: string;
+  rows: number;
+  page: number;
+}
 
 @Component({
   selector: 'app-load-gpx',
@@ -155,21 +164,29 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
 
   private pendingMasterUploadEventId: number | null = null;
 
-  userTracks: UserTrackRow[] = [];
   userTracksLoading = false;
+  sharedTracksLoading = false;
+
+  private readonly userTrackRows: Record<UserTracksTab, UserTrackRow[]> = {
+    personal: [],
+    events: [],
+    shared: []
+  };
+
+  private readonly tableState: Record<UserTracksTab, TrackTableState> = {
+    personal: { sortColumn: 'year', sortDirection: 'asc', filter: '', rows: 10, page: 0 },
+    events: { sortColumn: 'year', sortDirection: 'asc', filter: '', rows: 10, page: 0 },
+    shared: { sortColumn: 'year', sortDirection: 'asc', filter: '', rows: 10, page: 0 }
+  };
+
+  readonly userTracksRowsOptions = [10, 25, 50];
+  activeUserTracksTab: UserTracksTab = 'personal';
 
   private readonly downloadingTracks = new Set<number>();
   private readonly deletingTracks = new Set<number>();
   private readonly downloadingMasterTracks = new Set<number>();
 
   standaloneUploadInProgress = false;
-
-  userTracksSortColumn: UserTracksSortColumn = 'year';
-  userTracksSortDirection: SortDirection = 'asc';
-  userTracksFilter = '';
-  userTracksRows = 10;
-  userTracksPage = 0;
-  userTracksRowsOptions = [10, 25, 50];
 
   private sessionExpiredNotified = false;
 
@@ -269,7 +286,9 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
         }
 
         if (!this.isAuthenticated) {
-          this.userTracks = [];
+          this.resetUserTrackRows();
+          this.userTracksLoading = false;
+          this.sharedTracksLoading = false;
         } else {
           this.requestRefreshUserTracks();
         }
@@ -1721,26 +1740,64 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
 
     this.refreshInFlight = (async () => {
       if (!this.isAuthenticated) {
-        this.userTracks = [];
+        this.resetUserTrackRows();
         return;
       }
 
       this.userTracksLoading = true;
+      this.sharedTracksLoading = true;
       try {
-        const tracks = await firstValueFrom(this.eventService.getMyTracks());
+        const [tracks, sharedTracks] = await Promise.all([
+          firstValueFrom(this.eventService.getMyTracks()),
+          firstValueFrom(this.eventService.getSharedTracks())
+        ]);
+
         const rows = tracks.map(track => this.toUserTrackRow(track, this.eventsById));
-        this.userTracks = rows;
+        this.userTrackRows.personal = rows.filter(row => !row.routeId);
+        this.userTrackRows.events = rows.filter(row => !!row.routeId);
+        this.userTrackRows.shared = (sharedTracks || []).map(track => this.toUserTrackRow(track, this.eventsById));
       } catch {
         this.showMessage('No se pudieron cargar tus tracks. Inténtalo de nuevo más tarde.');
-        this.userTracks = [];
+        this.resetUserTrackRows();
       } finally {
         this.userTracksLoading = false;
+        this.sharedTracksLoading = false;
       }
     })().finally(() => {
       this.refreshInFlight = undefined;
     });
 
     return this.refreshInFlight;
+  }
+
+  private resetUserTrackRows(): void {
+    (Object.keys(this.userTrackRows) as UserTracksTab[]).forEach(tab => {
+      this.userTrackRows[tab] = [];
+    });
+  }
+
+  setUserTracksTab(tab: UserTracksTab): void {
+    this.activeUserTracksTab = tab;
+  }
+
+  getUserTrackRows(tab: UserTracksTab): UserTrackRow[] {
+    return this.userTrackRows[tab];
+  }
+
+  get activeTracksLoading(): boolean {
+    return this.activeUserTracksTab === 'shared' ? this.sharedTracksLoading : this.userTracksLoading;
+  }
+
+  get activeTracksLoadingLabel(): string {
+    if (this.activeUserTracksTab === 'shared') return 'Cargando rutas compartidas...';
+    if (this.activeUserTracksTab === 'events') return 'Cargando tus rutas de eventos...';
+    return 'Cargando tus rutas...';
+  }
+
+  get activeTracksEmptyMessage(): string {
+    if (this.activeUserTracksTab === 'shared') return 'Aún no hay rutas compartidas.';
+    if (this.activeUserTracksTab === 'events') return 'Aún no has subido rutas de eventos.';
+    return 'Aún no has subido rutas.';
   }
 
   private pickFirstText(obj: any, keys: string[]): string | null {
@@ -1903,86 +1960,131 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
     }
   }
 
+  private getTableState(tab: UserTracksTab): TrackTableState {
+    return this.tableState[tab];
+  }
+
+  get userTracksFilter(): string {
+    return this.getTableState(this.activeUserTracksTab).filter;
+  }
+
+  get userTracksRows(): number {
+    return this.getTableState(this.activeUserTracksTab).rows;
+  }
+
+  get userTracksPage(): number {
+    return this.getTableState(this.activeUserTracksTab).page;
+  }
+
   get sortedUserTracks(): UserTrackRow[] {
-    return [...this.userTracks].sort((a, b) => this.compareUserTrackRows(a, b));
+    return this.getSortedUserTracksForTab(this.activeUserTracksTab);
+  }
+
+  private getSortedUserTracksForTab(tab: UserTracksTab): UserTrackRow[] {
+    const state = this.getTableState(tab);
+    return [...this.userTrackRows[tab]].sort((a, b) => this.compareUserTrackRows(a, b, state));
   }
 
   get filteredUserTracks(): UserTrackRow[] {
-    const query = this.userTracksFilter.trim().toLowerCase();
-    if (!query) return this.sortedUserTracks;
+    return this.getFilteredUserTracksForTab(this.activeUserTracksTab);
+  }
 
-    return this.sortedUserTracks.filter(row => this.matchesUserTrackFilter(row, query));
+  private getFilteredUserTracksForTab(tab: UserTracksTab): UserTrackRow[] {
+    const state = this.getTableState(tab);
+    const query = state.filter.trim().toLowerCase();
+    const sorted = this.getSortedUserTracksForTab(tab);
+    if (!query) return sorted;
+
+    return sorted.filter(row => this.matchesUserTrackFilter(row, query));
   }
 
   get paginatedUserTracks(): UserTrackRow[] {
-    const filtered = this.filteredUserTracks;
-    const safePage = this.resolveSafeUserTracksPage(filtered.length);
-    if (safePage !== this.userTracksPage) {
-      this.userTracksPage = safePage;
+    return this.getPaginatedUserTracksForTab(this.activeUserTracksTab);
+  }
+
+  private getPaginatedUserTracksForTab(tab: UserTracksTab): UserTrackRow[] {
+    const state = this.getTableState(tab);
+    const filtered = this.getFilteredUserTracksForTab(tab);
+    const safePage = this.resolveSafeUserTracksPage(filtered.length, state);
+    if (safePage !== state.page) {
+      state.page = safePage;
     }
-    const start = safePage * this.userTracksRows;
-    return filtered.slice(start, start + this.userTracksRows);
+    const start = safePage * state.rows;
+    return filtered.slice(start, start + state.rows);
   }
 
   get userTracksPageCount(): number {
-    const total = this.filteredUserTracks.length;
+    return this.getUserTracksPageCountForTab(this.activeUserTracksTab);
+  }
+
+  private getUserTracksPageCountForTab(tab: UserTracksTab): number {
+    const state = this.getTableState(tab);
+    const total = this.getFilteredUserTracksForTab(tab).length;
     if (!total) return 0;
-    return Math.ceil(total / this.userTracksRows);
+    return Math.ceil(total / state.rows);
   }
 
   get userTracksRangeStart(): number {
-    const total = this.filteredUserTracks.length;
+    const total = this.getFilteredUserTracksForTab(this.activeUserTracksTab).length;
     if (!total) return 0;
-    const safePage = this.resolveSafeUserTracksPage(total);
-    return safePage * this.userTracksRows + 1;
+    const state = this.getTableState(this.activeUserTracksTab);
+    const safePage = this.resolveSafeUserTracksPage(total, state);
+    return safePage * state.rows + 1;
   }
 
   get userTracksRangeEnd(): number {
-    const total = this.filteredUserTracks.length;
+    const total = this.getFilteredUserTracksForTab(this.activeUserTracksTab).length;
     if (!total) return 0;
-    const safePage = this.resolveSafeUserTracksPage(total);
-    return Math.min((safePage + 1) * this.userTracksRows, total);
+    const state = this.getTableState(this.activeUserTracksTab);
+    const safePage = this.resolveSafeUserTracksPage(total, state);
+    return Math.min((safePage + 1) * state.rows, total);
   }
 
   sortUserTracksBy(column: UserTracksSortColumn): void {
-    if (this.userTracksSortColumn === column) {
-      this.userTracksSortDirection = this.userTracksSortDirection === 'asc' ? 'desc' : 'asc';
+    const state = this.getTableState(this.activeUserTracksTab);
+    if (state.sortColumn === column) {
+      state.sortDirection = state.sortDirection === 'asc' ? 'desc' : 'asc';
       return;
     }
 
-    this.userTracksSortColumn = column;
-    this.userTracksSortDirection = 'asc';
+    state.sortColumn = column;
+    state.sortDirection = 'asc';
   }
 
   resolveUserTracksSortIndicator(column: UserTracksSortColumn): string {
-    if (this.userTracksSortColumn !== column) return '⇅';
-    return this.userTracksSortDirection === 'asc' ? '▲' : '▼';
+    const state = this.getTableState(this.activeUserTracksTab);
+    if (state.sortColumn !== column) return '⇅';
+    return state.sortDirection === 'asc' ? '▲' : '▼';
   }
 
   onUserTracksFilter(term: string): void {
-    this.userTracksFilter = term;
-    this.userTracksPage = 0;
+    const state = this.getTableState(this.activeUserTracksTab);
+    state.filter = term;
+    state.page = 0;
   }
 
   onUserTracksRowsChange(rows: number): void {
+    const state = this.getTableState(this.activeUserTracksTab);
     const parsed = Number(rows);
-    this.userTracksRows = Number.isFinite(parsed) && parsed > 0 ? parsed : this.userTracksRowsOptions[0];
-    this.userTracksPage = 0;
+    state.rows = Number.isFinite(parsed) && parsed > 0 ? parsed : this.userTracksRowsOptions[0];
+    state.page = 0;
   }
 
   changeUserTracksPage(delta: number): void {
-    if (!this.userTracksPageCount) {
-      this.userTracksPage = 0;
+    const state = this.getTableState(this.activeUserTracksTab);
+    const pageCount = this.getUserTracksPageCountForTab(this.activeUserTracksTab);
+    if (!pageCount) {
+      state.page = 0;
       return;
     }
-    const nextPage = Math.min(Math.max(this.userTracksPage + delta, 0), this.userTracksPageCount - 1);
-    this.userTracksPage = nextPage;
+    const nextPage = Math.min(Math.max(state.page + delta, 0), pageCount - 1);
+    state.page = nextPage;
   }
 
-  private resolveSafeUserTracksPage(total: number): number {
+  private resolveSafeUserTracksPage(total: number, state: TrackTableState): number {
     if (!total) return 0;
-    const pageCount = Math.ceil(total / this.userTracksRows);
-    return Math.min(this.userTracksPage, pageCount - 1);
+    const pageCount = Math.ceil(total / state.rows);
+    return Math.min(state.page, pageCount - 1);
   }
 
   private matchesUserTrackFilter(row: UserTrackRow, query: string): boolean {
@@ -2001,9 +2103,9 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
     return searchable.some(value => (value ?? '').toString().toLowerCase().includes(query));
   }
 
-  private compareUserTrackRows(a: UserTrackRow, b: UserTrackRow): number {
-    const direction = this.userTracksSortDirection === 'asc' ? 1 : -1;
-    const key = this.userTracksSortColumn;
+  private compareUserTrackRows(a: UserTrackRow, b: UserTrackRow, state: TrackTableState): number {
+    const direction = state.sortDirection === 'asc' ? 1 : -1;
+    const key = state.sortColumn;
     const rawA = a[key] ?? '';
     const rawB = b[key] ?? '';
 
@@ -2074,7 +2176,9 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
         this.showMessage('No se pudo eliminar el track.');
         return;
       }
-      this.userTracks = this.userTracks.filter(current => current.trackId !== row.trackId);
+      (Object.keys(this.userTrackRows) as UserTracksTab[]).forEach(tab => {
+        this.userTrackRows[tab] = this.userTrackRows[tab].filter(current => current.trackId !== row.trackId);
+      });
     });
   }
 

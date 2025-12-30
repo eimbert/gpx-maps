@@ -31,7 +31,7 @@
     </div>
 
     <section class="tracks" *ngIf="tracks.length">
-      <h2>Tracks cargados</h2>
+      <h2>Rutas cargadas</h2>
       <ul class="file-list">
         <li class="file-item" *ngFor="let track of tracks; index as i">
           <span class="file-pill">{{ i + 1 }}</span>
@@ -57,18 +57,17 @@
     <section *ngIf="isAuthenticated" class="user-tracks">
       <div class="user-tracks__header">
         <div>
-          <p class="eyebrow">Tracks subidos por ti</p>
-          <!-- <h3>Tracks subidos por ti</h3> -->
+          <p class="eyebrow">Rutas guardadas</p>
         </div>
         <button type="button" class="cloud-upload" (click)="openStandaloneUploadDialog()"
           [disabled]="standaloneUploadInProgress">
           <mat-icon aria-hidden="true">cloud_upload</mat-icon>
-          <span>Subir track</span>
+          <span>Subir ruta</span>
         </button>
       </div>
 
-      <p class="muted" *ngIf="userTracksLoading">Cargando tus tracks...</p>
-      <p class="muted" *ngIf="!userTracksLoading && !userTracks.length">Aún no has subido tracks.</p>
+      <p class="muted" *ngIf="userTracksLoading">Cargando tus rutas...</p>
+      <p class="muted" *ngIf="!userTracksLoading && !userTracks.length">Aún no has subido rutas.</p>
 
       <div class="table-wrapper" *ngIf="!userTracksLoading && userTracks.length">
         <table class="user-tracks__table">
@@ -170,7 +169,7 @@
     </header>
     <div *ngIf="!isAuthenticated" class="events-locked">
       <p class="events-locked__title">Explora y anima eventos sin registrarte.</p>
-      <p class="muted">Inicia sesión o regístrate desde la pantalla principal si quieres subir o gestionar tracks.</p>
+      <p class="muted">Inicia sesión o regístrate desde la pantalla principal si quieres subir o gestionar rutas.</p>
       <button type="button" class="secondary" (click)="goHome()">Volver a la pantalla principal</button>
     </div>
 
@@ -181,7 +180,7 @@
           <mat-icon aria-hidden="true">home</mat-icon>
         </button>
         <button type="button" class="event-action-button" (click)="openUploadTrackDialog()"
-          matTooltip="Subir track" aria-label="Subir track">
+          matTooltip="Subir ruta" aria-label="Subir ruta">
           <mat-icon aria-hidden="true">file_upload</mat-icon>
         </button>
         <button type="button" class="event-action-button" (click)="openCreateEventDialog()"

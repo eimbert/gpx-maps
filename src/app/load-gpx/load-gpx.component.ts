@@ -85,6 +85,7 @@ type TrackLocationInfo = TrackLocationDetails & {
 interface UserTrackRow {
   trackId: number;
   routeId: number | null;
+  nickname: string | null;
   eventName: string;
   year: number;
   autonomousCommunity: string | null;
@@ -1831,6 +1832,7 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
     return {
       trackId: track.id,
       routeId,
+      nickname: this.normalizeTrackText(track.nickname),
       eventName: event?.name ?? '-',
       year,
       autonomousCommunity,
@@ -2090,6 +2092,7 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
   private matchesUserTrackFilter(row: UserTrackRow, query: string): boolean {
     const searchable = [
       row.title,
+      row.nickname,
       row.eventName,
       row.autonomousCommunity,
       row.province,

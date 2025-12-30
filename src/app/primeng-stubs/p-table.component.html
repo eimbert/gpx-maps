@@ -1,0 +1,34 @@
+<div class="p-datatable p-component" [ngClass]="styleClass">
+  <div class="p-datatable-caption" *ngIf="captionTemplate">
+    <ng-container *ngTemplateOutlet="captionTemplate.template"></ng-container>
+  </div>
+
+  <div class="p-datatable-wrapper">
+    <table>
+      <thead *ngIf="headerTemplate">
+        <ng-container *ngTemplateOutlet="headerTemplate.template"></ng-container>
+      </thead>
+      <tbody>
+        <ng-container *ngIf="items.length; else empty">
+          <ng-container *ngFor="let row of items; let rowIndex = index">
+            <ng-container
+              *ngIf="bodyTemplate"
+              [ngTemplateOutlet]="bodyTemplate.template"
+              [ngTemplateOutletContext]="{ $implicit: row, rowIndex: rowIndex }"
+            ></ng-container>
+          </ng-container>
+        </ng-container>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="p-datatable-footer" *ngIf="footerTemplate">
+    <ng-container *ngTemplateOutlet="footerTemplate.template"></ng-container>
+  </div>
+</div>
+
+<ng-template #empty>
+  <div class="p-datatable-emptymessage" *ngIf="emptyMessageTemplate">
+    <ng-container *ngTemplateOutlet="emptyMessageTemplate.template"></ng-container>
+  </div>
+</ng-template>

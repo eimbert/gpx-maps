@@ -69,109 +69,125 @@
       <p class="muted" *ngIf="userTracksLoading">Cargando tus rutas...</p>
       <p class="muted" *ngIf="!userTracksLoading && !userTracks.length">Aún no has subido rutas.</p>
 
-      <div class="table-wrapper" *ngIf="!userTracksLoading && userTracks.length">
-        <table mat-table [dataSource]="sortedUserTracks" class="user-tracks__table mat-elevation-z1" aria-label="Rutas guardadas">
+      <div class="user-tracks__panel" *ngIf="!userTracksLoading && userTracks.length">
+        <div class="user-tracks__table-toolbar">
+          <div class="user-tracks__filter">
+            <mat-icon aria-hidden="true">search</mat-icon>
+            <input type="text" [value]="userTracksFilter" (input)="onUserTracksFilter($any($event.target)?.value || '')" placeholder="Buscar por título, evento o ubicación" aria-label="Filtrar rutas guardadas">
+          </div>
+          <div class="user-tracks__counts">
+            <span class="user-tracks__count">{{ filteredUserTracks.length }} rutas</span>
+            <span class="user-tracks__range" *ngIf="filteredUserTracks.length && filteredUserTracks.length !== paginatedUserTracks.length">
+              Mostrando {{ userTracksRangeStart }}-{{ userTracksRangeEnd }}
+            </span>
+          </div>
+        </div>
 
-          <ng-container matColumnDef="title">
-            <th mat-header-cell *matHeaderCellDef>Evento/Título</th>
-            <td mat-cell *matCellDef="let row" class="user-tracks__title-col">
-              <div class="user-tracks__label" *ngIf="row.eventName && row.eventName !== '-'">
-                <span class="user-tracks__pill user-tracks__pill--event">Evento</span>
-                <span class="user-tracks__title user-tracks__title--event">{{ row.eventName }}</span>
+        <p-table [value]="paginatedUserTracks" styleClass="user-tracks__table p-datatable-sm" aria-label="Rutas guardadas">
+          <ng-template pTemplate="header">
+            <tr>
+              <th>Evento/Título</th>
+              <th>
+                <button type="button" class="user-tracks__sort" (click)="sortUserTracksBy('year')" aria-label="Ordenar por año">
+                  Año <span class="user-tracks__sort-indicator">{{ resolveUserTracksSortIndicator('year') }}</span>
+                </button>
+              </th>
+              <th>
+                <button type="button" class="user-tracks__sort" (click)="sortUserTracksBy('autonomousCommunity')" aria-label="Ordenar por comunidad">
+                  Comunidad <span class="user-tracks__sort-indicator">{{ resolveUserTracksSortIndicator('autonomousCommunity') }}</span>
+                </button>
+              </th>
+              <th>
+                <button type="button" class="user-tracks__sort" (click)="sortUserTracksBy('province')" aria-label="Ordenar por provincia">
+                  Provincia <span class="user-tracks__sort-indicator">{{ resolveUserTracksSortIndicator('province') }}</span>
+                </button>
+              </th>
+              <th>
+                <button type="button" class="user-tracks__sort" (click)="sortUserTracksBy('population')" aria-label="Ordenar por población">
+                  Población <span class="user-tracks__sort-indicator">{{ resolveUserTracksSortIndicator('population') }}</span>
+                </button>
+              </th>
+              <th>
+                <button type="button" class="user-tracks__sort" (click)="sortUserTracksBy('distanceKm')" aria-label="Ordenar por distancia">
+                  Distancia <span class="user-tracks__sort-indicator">{{ resolveUserTracksSortIndicator('distanceKm') }}</span>
+                </button>
+              </th>
+              <th>
+                <button type="button" class="user-tracks__sort" (click)="sortUserTracksBy('timeSeconds')" aria-label="Ordenar por tiempo en movimiento">
+                  Tiempo <span class="user-tracks__sort-indicator">{{ resolveUserTracksSortIndicator('timeSeconds') }}</span>
+                </button>
+              </th>
+              <th>
+                <button type="button" class="user-tracks__sort" (click)="sortUserTracksBy('totalTimeSeconds')" aria-label="Ordenar por tiempo total">
+                  Tiempo total <span class="user-tracks__sort-indicator">{{ resolveUserTracksSortIndicator('totalTimeSeconds') }}</span>
+                </button>
+              </th>
+              <th class="user-tracks__action-col">Descargar</th>
+              <th class="user-tracks__action-col">Animar</th>
+              <th class="user-tracks__action-col">Eliminar</th>
+            </tr>
+          </ng-template>
+
+          <ng-template pTemplate="body" let-row>
+            <tr>
+              <td class="user-tracks__title-col">
+                <div class="user-tracks__label" *ngIf="row.eventName && row.eventName !== '-'">
+                  <span class="user-tracks__pill user-tracks__pill--event">Evento</span>
+                  <span class="user-tracks__title user-tracks__title--event">{{ row.eventName }}</span>
+                </div>
+                <div class="user-tracks__label" *ngIf="row.title">
+                  <span class="user-tracks__pill">Título</span>
+                  <span class="user-tracks__title user-tracks__title--title">{{ row.title }}</span>
+                </div>
+                <span *ngIf="!row.title && (!row.eventName || row.eventName === '-')">—</span>
+              </td>
+              <td>{{ row.year || '-' }}</td>
+              <td>{{ row.autonomousCommunity || '—' }}</td>
+              <td>{{ row.province || '—' }}</td>
+              <td>{{ row.population || '—' }}</td>
+              <td class="user-tracks__metric user-tracks__metric--right">{{ row.distanceLabel }}</td>
+              <td class="user-tracks__metric user-tracks__metric--center">{{ row.movingTimeLabel }}</td>
+              <td class="user-tracks__metric user-tracks__metric--center">{{ row.totalTimeLabel }}</td>
+              <td class="user-tracks__action-col">
+                <button type="button" class="ghost ghost--small user-tracks__icon-button" [disabled]="isDownloadingTrack(row)" (click)="downloadUserTrack(row)" [attr.aria-label]="isDownloadingTrack(row) ? 'Descargando track' : 'Descargar track'">
+                  <mat-icon aria-hidden="true">{{ isDownloadingTrack(row) ? 'downloading' : 'file_download' }}</mat-icon>
+                </button>
+              </td>
+              <td class="user-tracks__action-col">
+                <button type="button" class="ghost ghost--small user-tracks__icon-button" (click)="animateUserTrack(row)" aria-label="Animar track">
+                  <mat-icon aria-hidden="true">play_arrow</mat-icon>
+                </button>
+              </td>
+              <td class="user-tracks__action-col">
+                <button type="button" class="ghost ghost--small ghost--danger user-tracks__icon-button" [disabled]="isDeletingTrack(row)" (click)="confirmDeleteUserTrack(row)" [attr.aria-label]="isDeletingTrack(row) ? 'Eliminando track' : 'Eliminar track'">
+                  <mat-icon aria-hidden="true">{{ isDeletingTrack(row) ? 'hourglass_top' : 'delete' }}</mat-icon>
+                </button>
+              </td>
+            </tr>
+          </ng-template>
+
+          <ng-template pTemplate="emptymessage">
+            <div class="user-tracks__empty">No hay rutas que coincidan con la búsqueda.</div>
+          </ng-template>
+
+          <ng-template pTemplate="footer">
+            <div class="user-tracks__pagination">
+              <div class="user-tracks__pagination-rows">
+                <label for="userTracksRows">Filas:</label>
+                <select id="userTracksRows" [value]="userTracksRows" (change)="onUserTracksRowsChange($any($event.target).value)">
+                  <option *ngFor="let option of userTracksRowsOptions" [value]="option">{{ option }}</option>
+                </select>
               </div>
-              <div class="user-tracks__label" *ngIf="row.title">
-                <span class="user-tracks__pill">Título</span>
-                <span class="user-tracks__title user-tracks__title--title">{{ row.title }}</span>
+              <div class="user-tracks__pagination-controls">
+                <button type="button" class="ghost ghost--small" (click)="changeUserTracksPage(-1)" [disabled]="userTracksPage === 0 || !userTracksPageCount">Anterior</button>
+                <span class="user-tracks__page-indicator">
+                  Página {{ userTracksPageCount ? userTracksPage + 1 : 0 }} / {{ userTracksPageCount || 0 }}
+                </span>
+                <button type="button" class="ghost ghost--small" (click)="changeUserTracksPage(1)" [disabled]="!userTracksPageCount || userTracksPage + 1 >= userTracksPageCount">Siguiente</button>
               </div>
-              <span *ngIf="!row.title && (!row.eventName || row.eventName === '-')">—</span>
-            </td>
-          </ng-container>
-
-          <ng-container matColumnDef="year">
-            <th mat-header-cell *matHeaderCellDef>
-              <button type="button" class="user-tracks__sort" (click)="sortUserTracksBy('year')" aria-label="Ordenar por año">
-                Año <span class="user-tracks__sort-indicator">{{ resolveUserTracksSortIndicator('year') }}</span>
-              </button>
-            </th>
-            <td mat-cell *matCellDef="let row">{{ row.year || '-' }}</td>
-          </ng-container>
-
-          <ng-container matColumnDef="autonomousCommunity">
-            <th mat-header-cell *matHeaderCellDef>
-              <button type="button" class="user-tracks__sort" (click)="sortUserTracksBy('autonomousCommunity')" aria-label="Ordenar por comunidad">
-                Comunidad <span class="user-tracks__sort-indicator">{{ resolveUserTracksSortIndicator('autonomousCommunity') }}</span>
-              </button>
-            </th>
-            <td mat-cell *matCellDef="let row">{{ row.autonomousCommunity || '—' }}</td>
-          </ng-container>
-
-          <ng-container matColumnDef="province">
-            <th mat-header-cell *matHeaderCellDef>
-              <button type="button" class="user-tracks__sort" (click)="sortUserTracksBy('province')" aria-label="Ordenar por provincia">
-                Provincia <span class="user-tracks__sort-indicator">{{ resolveUserTracksSortIndicator('province') }}</span>
-              </button>
-            </th>
-            <td mat-cell *matCellDef="let row">{{ row.province || '—' }}</td>
-          </ng-container>
-
-          <ng-container matColumnDef="population">
-            <th mat-header-cell *matHeaderCellDef>
-              <button type="button" class="user-tracks__sort" (click)="sortUserTracksBy('population')" aria-label="Ordenar por población">
-                Población <span class="user-tracks__sort-indicator">{{ resolveUserTracksSortIndicator('population') }}</span>
-              </button>
-            </th>
-            <td mat-cell *matCellDef="let row">{{ row.population || '—' }}</td>
-          </ng-container>
-
-          <ng-container matColumnDef="distance">
-            <th mat-header-cell *matHeaderCellDef>Distancia</th>
-            <td mat-cell *matCellDef="let row" class="user-tracks__metric user-tracks__metric--right">{{ row.distanceKm ? (row.distanceKm | number:'1.0-1') + ' km' : '—' }}</td>
-          </ng-container>
-
-          <ng-container matColumnDef="movingTime">
-            <th mat-header-cell *matHeaderCellDef>Tiempo movimiento</th>
-            <td mat-cell *matCellDef="let row" class="user-tracks__metric user-tracks__metric--center">{{ formatDurationHms(row.timeSeconds) }}</td>
-          </ng-container>
-
-          <ng-container matColumnDef="totalTime">
-            <th mat-header-cell *matHeaderCellDef>Tiempo total</th>
-            <td mat-cell *matCellDef="let row" class="user-tracks__metric user-tracks__metric--center">{{ formatDurationHms(row.totalTimeSeconds) }}</td>
-          </ng-container>
-
-          <ng-container matColumnDef="download">
-            <th mat-header-cell *matHeaderCellDef class="user-tracks__action-col">Descargar</th>
-            <td mat-cell *matCellDef="let row" class="user-tracks__action-col">
-              <button type="button" class="ghost ghost--small user-tracks__icon-button" [disabled]="isDownloadingTrack(row)" (click)="downloadUserTrack(row)" [attr.aria-label]="isDownloadingTrack(row) ? 'Descargando track' : 'Descargar track'">
-                <mat-icon aria-hidden="true">{{ isDownloadingTrack(row) ? 'downloading' : 'file_download' }}</mat-icon>
-              </button>
-            </td>
-          </ng-container>
-
-          <ng-container matColumnDef="animate">
-            <th mat-header-cell *matHeaderCellDef class="user-tracks__action-col">Animar</th>
-            <td mat-cell *matCellDef="let row" class="user-tracks__action-col">
-              <button type="button" class="ghost ghost--small user-tracks__icon-button" (click)="animateUserTrack(row)" aria-label="Animar track">
-                <mat-icon aria-hidden="true">play_arrow</mat-icon>
-              </button>
-            </td>
-          </ng-container>
-
-          <ng-container matColumnDef="delete">
-            <th mat-header-cell *matHeaderCellDef class="user-tracks__action-col">Eliminar</th>
-            <td mat-cell *matCellDef="let row" class="user-tracks__action-col">
-              <button type="button" class="ghost ghost--small ghost--danger user-tracks__icon-button" [disabled]="isDeletingTrack(row)" (click)="confirmDeleteUserTrack(row)" [attr.aria-label]="isDeletingTrack(row) ? 'Eliminando track' : 'Eliminar track'">
-                <mat-icon aria-hidden="true">{{ isDeletingTrack(row) ? 'hourglass_top' : 'delete' }}</mat-icon>
-              </button>
-            </td>
-          </ng-container>
-
-          <tr mat-header-row *matHeaderRowDef="userTrackDisplayedColumns"></tr>
-          <tr mat-row *matRowDef="let row; columns: userTrackDisplayedColumns;"></tr>
-        </table>
-      </div>
-
-      </div>
-      </div>
+            </div>
+          </ng-template>
+        </p-table>
       </div>
     </section>
   </section>

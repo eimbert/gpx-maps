@@ -397,6 +397,24 @@
   color: #0f172a;
 }
 
+.user-tracks__table tbody tr {
+  transition: background-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.user-tracks__table tbody tr:nth-child(odd) {
+  background: #fbfdff;
+}
+
+.user-tracks__table tbody tr:hover,
+.user-tracks__table tbody tr:focus-within {
+  background: #eef2ff;
+  box-shadow: inset 0 0 0 1px #e2e8f0;
+}
+
+.user-tracks__table tbody tr:active {
+  background: #e0f2fe;
+}
+
 .user-tracks__sort {
   background: none;
   border: none;

@@ -240,8 +240,10 @@
                           <svg [attr.viewBox]="'0 0 ' + profileWidth + ' ' + profileHeight" preserveAspectRatio="none"
                             class="profile-chart">
                             <g class="grid-lines">
-                              <line *ngFor="let y of eventVisuals[event.id].profile?.gridLinesY" x1="0" [attr.y1]="y"
-                                [attr.y2]="y" [attr.x2]="profileWidth" />
+                              <ng-container *ngFor="let line of eventVisuals[event.id].profile?.gridLines">
+                                <line x1="0" [attr.y1]="line.y" [attr.y2]="line.y" [attr.x2]="profileWidth" />
+                                <text class="grid-label" x="4" [attr.y]="line.labelY">{{ line.label }}</text>
+                              </ng-container>
                             </g>
                             <polyline [attr.points]="eventVisuals[event.id].profile?.points"></polyline>
                           </svg>

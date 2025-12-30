@@ -714,6 +714,14 @@
   opacity: 1;
 }
 
+.grid-label {
+  fill: #0f172a;
+  font: 600 10px/1.2 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, Arial;
+  paint-order: stroke;
+  stroke: #f8fafc;
+  stroke-width: 2px;
+}
+
 .profile-chart polyline {
   fill: none;
   stroke: #0f172a;

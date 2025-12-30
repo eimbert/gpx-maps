@@ -385,33 +385,41 @@
 }
 
 .user-tracks__table th,
-.user-tracks__table td {
+.user-tracks__table td,
+.user-tracks__table .mat-header-cell,
+.user-tracks__table .mat-cell {
   padding: 10px 12px;
   text-align: left;
   border-bottom: 1px solid #e2e8f0;
 }
 
-.user-tracks__table th {
+.user-tracks__table th,
+.user-tracks__table .mat-header-cell {
   background: #f8fafc;
   font-weight: 800;
   color: #0f172a;
 }
 
-.user-tracks__table tbody tr {
+.user-tracks__table tbody tr,
+.user-tracks__table .mat-row {
   transition: background-color 0.15s ease, box-shadow 0.15s ease;
 }
 
-.user-tracks__table tbody tr:nth-child(odd) {
+.user-tracks__table tbody tr:nth-child(odd),
+.user-tracks__table .mat-row:nth-of-type(odd) {
   background: #fbfdff;
 }
 
 .user-tracks__table tbody tr:hover,
-.user-tracks__table tbody tr:focus-within {
+.user-tracks__table tbody tr:focus-within,
+.user-tracks__table .mat-row:hover,
+.user-tracks__table .mat-row:focus-within {
   background: #eef2ff;
   box-shadow: inset 0 0 0 1px #e2e8f0;
 }
 
-.user-tracks__table tbody tr:active {
+.user-tracks__table tbody tr:active,
+.user-tracks__table .mat-row:active {
   background: #e0f2fe;
 }
 
@@ -439,9 +447,22 @@
   color: #6b7280;
 }
 
-.user-tracks__table td {
+.user-tracks__table td,
+.user-tracks__table .mat-cell {
   color: #0f172a;
   font-weight: 500;
+}
+
+.user-tracks__metric {
+  font-variant-numeric: tabular-nums;
+}
+
+.user-tracks__metric--right {
+  text-align: right;
+}
+
+.user-tracks__metric--center {
+  text-align: center;
 }
 
 .user-tracks__title-col {

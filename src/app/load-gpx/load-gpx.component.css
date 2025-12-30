@@ -374,7 +374,7 @@
 
 .table-wrapper {
   overflow-x: auto;
-  max-height: 360px;
+  max-height: 520px;
   overflow-y: auto;
 }
 
@@ -760,6 +760,14 @@
   border-radius: 8px;
   background: #fff;
   color: #0f172a;
+}
+
+.legend-row--altitude {
+  font-size: 10px;
+}
+
+.legend-row--altitude strong {
+  font-size: 11px;
 }
 
 .legend-row--tracks {

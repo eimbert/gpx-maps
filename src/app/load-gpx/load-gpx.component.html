@@ -248,11 +248,11 @@
                             <polyline [attr.points]="eventVisuals[event.id].profile?.points"></polyline>
                           </svg>
                           <div class="profile-legend" *ngIf="eventVisuals[event.id].profile as profile">
-                            <div class="legend-row">
+                            <div class="legend-row legend-row--altitude">
                               <span>Altura inicial:</span>
                               <strong>{{ profile.stats.initialElevation | number: '1.0-0' }} m</strong>
                             </div>
-                            <div class="legend-row">
+                            <div class="legend-row legend-row--altitude">
                               <span>Altura máxima:</span>
                               <strong>{{ profile.stats.maxElevation | number: '1.0-0' }} m</strong>
                             </div>

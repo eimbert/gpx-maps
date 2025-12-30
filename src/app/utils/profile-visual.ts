@@ -54,8 +54,7 @@ export function buildProfileVisual(
 
   const lineCandidates = [
     { elevation: maxEle },
-    { elevation: initialEle },
-    ...[0.25, 0.5, 0.75].map(ratio => ({ elevation: minEle + ratio * eleRange }))
+    { elevation: minEle }
   ];
 
   const seen = new Set<string>();

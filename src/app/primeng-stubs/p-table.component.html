@@ -11,7 +11,11 @@
       <tbody>
         <ng-container *ngIf="items.length; else empty">
           <ng-container *ngFor="let row of items; let rowIndex = index">
-            <ng-container *ngTemplateOutlet="bodyTemplate?.template; context: { $implicit: row, rowIndex: rowIndex }"></ng-container>
+            <ng-container
+              *ngIf="bodyTemplate"
+              [ngTemplateOutlet]="bodyTemplate.template"
+              [ngTemplateOutletContext]="{ $implicit: row, rowIndex: rowIndex }"
+            ></ng-container>
           </ng-container>
         </ng-container>
       </tbody>

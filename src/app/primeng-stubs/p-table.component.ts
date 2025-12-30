@@ -12,11 +12,11 @@ export class PTableComponent implements AfterContentInit {
 
   @ContentChildren(PTemplateDirective) templates!: QueryList<PTemplateDirective>;
 
-  headerTemplate?: PTemplateDirective;
-  bodyTemplate?: PTemplateDirective;
-  captionTemplate?: PTemplateDirective;
-  emptyMessageTemplate?: PTemplateDirective;
-  footerTemplate?: PTemplateDirective;
+  headerTemplate: PTemplateDirective | null = null;
+  bodyTemplate: PTemplateDirective | null = null;
+  captionTemplate: PTemplateDirective | null = null;
+  emptyMessageTemplate: PTemplateDirective | null = null;
+  footerTemplate: PTemplateDirective | null = null;
 
   ngAfterContentInit(): void {
     this.templates.forEach(template => {

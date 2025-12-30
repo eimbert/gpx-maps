@@ -374,6 +374,8 @@
 
 .table-wrapper {
   overflow-x: auto;
+  max-height: 360px;
+  overflow-y: auto;
 }
 
 .user-tracks__table {

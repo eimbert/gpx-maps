@@ -6,7 +6,7 @@ export interface TrackPointWithElevation {
 
 export interface ProfileVisual {
   points: string;
-  gridLinesY: number[];
+  gridLines: { y: number; labelY: number; label: string }[];
   stats: {
     initialElevation: number;
     maxElevation: number;
@@ -50,11 +50,35 @@ export function buildProfileVisual(
     })
     .join(' ');
 
-  const gridLinesY = [0.25, 0.5, 0.75].map(ratio => safeHeight - ratio * safeHeight);
+  const toY = (ele: number): number => safeHeight - ((ele - minEle) / eleRange) * safeHeight;
+
+  const lineCandidates = [
+    { elevation: maxEle },
+    { elevation: initialEle },
+    ...[0.25, 0.5, 0.75].map(ratio => ({ elevation: minEle + ratio * eleRange }))
+  ];
+
+  const seen = new Set<string>();
+  const gridLines = lineCandidates
+    .map(({ elevation }) => {
+      const y = toY(elevation);
+      return {
+        y,
+        labelY: Math.max(12, y - 6),
+        label: `${Math.round(elevation)} m`
+      };
+    })
+    .filter(line => {
+      const key = `${Math.round(line.y)}-${line.label}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return Number.isFinite(line.y);
+    })
+    .sort((a, b) => a.y - b.y);
 
   return {
     points: pointsStr,
-    gridLinesY,
+    gridLines,
     stats: {
       initialElevation: initialEle,
       maxElevation: maxEle,

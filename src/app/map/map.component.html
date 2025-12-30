@@ -68,40 +68,36 @@
     </div>
   </div>
 
-  <div class="profile-overlay" aria-label="Perfil de elevación">
-    <ng-container *ngIf="profileEnabled; else profileDisabled">
-      <div class="profile-panel" *ngIf="profileVisual; else profileUnavailable">
-        <svg
-          class="profile-chart"
-          [attr.viewBox]="'0 0 ' + profileWidth + ' ' + profileHeight"
-          preserveAspectRatio="none"
-          [style.--profile-color]="profileTrackColor"
-          [style.--profile-cursor-color]="profileTrackColor"
-        >
+  <div class="profile-overlay" *ngIf="profileEnabled" aria-label="Perfil de elevación">
+    <div class="profile-panel" *ngIf="profileVisual; else profileUnavailable">
+      <svg
+        class="profile-chart"
+        [attr.viewBox]="'0 0 ' + profileWidth + ' ' + profileHeight"
+        preserveAspectRatio="none"
+        [style.--profile-color]="profileTrackColor"
+        [style.--profile-cursor-color]="profileTrackColor"
+      >
+        <ng-container *ngFor="let line of profileVisual.gridLines">
           <line
-            *ngFor="let y of profileVisual.gridLinesY"
             class="profile-grid"
             x1="0"
-            [attr.y1]="y"
+            [attr.y1]="line.y"
             [attr.x2]="profileWidth"
-            [attr.y2]="y"
+            [attr.y2]="line.y"
           />
-          <polyline class="profile-polyline" [attr.points]="profileVisual.points"></polyline>
-          <line
-            class="profile-cursor"
-            [attr.x1]="profileCursorX"
-            [attr.x2]="profileCursorX"
-            y1="0"
-            [attr.y2]="profileHeight"
-          ></line>
-        </svg>
-      </div>
-    </ng-container>
+          <text class="profile-grid-label" x="8" [attr.y]="line.labelY">{{ line.label }}</text>
+        </ng-container>
+        <polyline class="profile-polyline" [attr.points]="profileVisual.points"></polyline>
+        <line
+          class="profile-cursor"
+          [attr.x1]="profileCursorX"
+          [attr.x2]="profileCursorX"
+          y1="0"
+          [attr.y2]="profileHeight"
+        ></line>
+      </svg>
+    </div>
   </div>
-
-  <ng-template #profileDisabled>
-    <div class="profile-message">Perfil desactivado</div>
-  </ng-template>
   <ng-template #profileUnavailable>
     <div class="profile-message">Perfil no disponible</div>
   </ng-template>

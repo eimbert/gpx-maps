@@ -18,6 +18,7 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatIconModule } from '@angular/material/icon';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatTableModule } from '@angular/material/table';
 import { RouteMismatchDialogComponent } from './route-mismatch-dialog/route-mismatch-dialog.component';
 import { EventSearchDialogComponent } from './event-search-dialog/event-search-dialog.component';
 import { EventCreateDialogComponent } from './event-create-dialog/event-create-dialog.component';
@@ -56,6 +57,7 @@ import { StandaloneTrackUploadDialogComponent } from './standalone-track-upload-
     MatMenuModule,
     MatIconModule,
     MatTooltipModule,
+    MatTableModule,
     MatButtonModule,
     MatFormFieldModule,
     MatInputModule,

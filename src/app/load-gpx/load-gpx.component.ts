@@ -147,6 +147,19 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
 
   userTracks: UserTrackRow[] = [];
   userTracksLoading = false;
+  userTrackDisplayedColumns: string[] = [
+    'title',
+    'year',
+    'autonomousCommunity',
+    'province',
+    'population',
+    'distance',
+    'movingTime',
+    'totalTime',
+    'download',
+    'animate',
+    'delete'
+  ];
 
   private readonly downloadingTracks = new Set<number>();
   private readonly deletingTracks = new Set<number>();

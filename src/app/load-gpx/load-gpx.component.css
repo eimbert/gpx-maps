@@ -460,7 +460,7 @@
 }
 
 .user-tracks__metric--right {
-  text-align: right;
+  text-align: center;
 }
 
 .user-tracks__metric--center {
@@ -1429,4 +1429,14 @@ input[type="file"] {
   position: relative;
   z-index: 1;
 }
+
+
+
+
+/* Transición suave */
+:host ::ng-deep .user-tracks__table tbody > tr,
+:host ::ng-deep .user-tracks__table tbody > tr > td {
+  transition: background-color 160ms ease;
+}
+
 

@@ -123,7 +123,7 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
   @ViewChild('fileInput') fileInputRef!: ElementRef<HTMLInputElement>;
   @ViewChild('masterGpxInput') masterGpxInputRef!: ElementRef<HTMLInputElement>;
 
-  readonly maxTracks = 5;
+  readonly maxTracks = 4;
   readonly maxComparison = 4;
   private readonly overlapThreshold = 0.65;
   private readonly overlapProximityMeters = 150;
@@ -169,9 +169,11 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
   userTracksFilter = '';
   userTracksRows = 10;
   userTracksPage = 0;
-  userTracksRowsOptions = [5, 10, 25, 50];
+  userTracksRowsOptions = [10, 25, 50];
 
   private sessionExpiredNotified = false;
+
+  hoveredUserTrack: any | null = null;
 
   eventUpload: EventTrackUploadDraft = {
     eventId: null,

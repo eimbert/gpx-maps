@@ -2,3 +2,13 @@
 @import '@angular/material/prebuilt-themes/indigo-pink.css';
 html, body { height: 100%; }
 body { margin: 0; font-family: Roboto, "Helvetica Neue", sans-serif; }
+
+
+/* .user-tracks__table .p-datatable-wrapper > table > tbody > tr:hover > td {
+  background-color: red !important;
+} */
+
+.user-tracks__table .p-datatable-wrapper > table > tbody > tr:hover {
+  background-color: rgb(160, 248, 248) !important;
+}
+

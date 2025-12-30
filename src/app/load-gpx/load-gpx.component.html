@@ -39,7 +39,7 @@
             <span class="file-name" [title]="track.fileName">{{ track.fileName }}</span>
             <span class="file-alias" [title]="track.name">{{ track.name }}</span>
           </div>
-          <button type="button" class="ghost" (click)="borrarFichero(i)">Quitar</button>
+          <button type="button" style="cursor: pointer;" class="ghost" (click)="borrarFichero(i)">Quitar</button>
         </li>
       </ul>
     </section>
@@ -83,26 +83,26 @@
           </div>
         </div>
 
-        <p-table [value]="paginatedUserTracks" styleClass="user-tracks__table p-datatable-sm" aria-label="Rutas guardadas">
+        <p-table [value]="paginatedUserTracks" styleClass="user-tracks__table p-datatable-sm p-datatable-hoverable-rows" aria-label="Rutas guardadas" >
           <ng-template pTemplate="header">
             <tr>
-              <th>Evento/Título</th>
-              <th>
+              <th>Ruta</th>
+              <th style="text-align: left;">
                 <button type="button" class="user-tracks__sort" (click)="sortUserTracksBy('year')" aria-label="Ordenar por año">
                   Año <span class="user-tracks__sort-indicator">{{ resolveUserTracksSortIndicator('year') }}</span>
                 </button>
               </th>
-              <th>
+              <th style="text-align: left;">
                 <button type="button" class="user-tracks__sort" (click)="sortUserTracksBy('autonomousCommunity')" aria-label="Ordenar por comunidad">
                   Comunidad <span class="user-tracks__sort-indicator">{{ resolveUserTracksSortIndicator('autonomousCommunity') }}</span>
                 </button>
               </th>
-              <th>
+              <th style="text-align: left;">
                 <button type="button" class="user-tracks__sort" (click)="sortUserTracksBy('province')" aria-label="Ordenar por provincia">
                   Provincia <span class="user-tracks__sort-indicator">{{ resolveUserTracksSortIndicator('province') }}</span>
                 </button>
               </th>
-              <th>
+              <th style="text-align: left;">
                 <button type="button" class="user-tracks__sort" (click)="sortUserTracksBy('population')" aria-label="Ordenar por población">
                   Población <span class="user-tracks__sort-indicator">{{ resolveUserTracksSortIndicator('population') }}</span>
                 </button>
@@ -129,14 +129,14 @@
           </ng-template>
 
           <ng-template pTemplate="body" let-row>
-            <tr>
+            <tr class="p-selectable-row">
               <td class="user-tracks__title-col">
                 <div class="user-tracks__label" *ngIf="row.eventName && row.eventName !== '-'">
-                  <span class="user-tracks__pill user-tracks__pill--event">Evento</span>
-                  <span class="user-tracks__title user-tracks__title--event">{{ row.eventName }}</span>
+                  <!-- <span class="user-tracks__pill user-tracks__pill--event">Evento</span> -->
+                  <span class="user-tracks__title user-tracks__title--event">{{ row.eventName }} (E)</span>
                 </div>
                 <div class="user-tracks__label" *ngIf="row.title">
-                  <span class="user-tracks__pill">Título</span>
+                  <!-- <span class="user-tracks__pill">Título</span> -->
                   <span class="user-tracks__title user-tracks__title--title">{{ row.title }}</span>
                 </div>
                 <span *ngIf="!row.title && (!row.eventName || row.eventName === '-')">—</span>
@@ -150,17 +150,17 @@
               <td class="user-tracks__metric user-tracks__metric--center">{{ row.totalTimeLabel }}</td>
               <td class="user-tracks__action-col">
                 <button type="button" class="ghost ghost--small user-tracks__icon-button" [disabled]="isDownloadingTrack(row)" (click)="downloadUserTrack(row)" [attr.aria-label]="isDownloadingTrack(row) ? 'Descargando track' : 'Descargar track'">
-                  <mat-icon aria-hidden="true">{{ isDownloadingTrack(row) ? 'downloading' : 'file_download' }}</mat-icon>
+                  <mat-icon aria-hidden="true" style="color: blue;">{{ isDownloadingTrack(row) ? 'downloading' : 'file_download' }}</mat-icon>
                 </button>
               </td>
               <td class="user-tracks__action-col">
                 <button type="button" class="ghost ghost--small user-tracks__icon-button" (click)="animateUserTrack(row)" aria-label="Animar track">
-                  <mat-icon aria-hidden="true">play_arrow</mat-icon>
+                  <mat-icon aria-hidden="true" style="color: orange;">play_arrow</mat-icon>
                 </button>
               </td>
               <td class="user-tracks__action-col">
                 <button type="button" class="ghost ghost--small ghost--danger user-tracks__icon-button" [disabled]="isDeletingTrack(row)" (click)="confirmDeleteUserTrack(row)" [attr.aria-label]="isDeletingTrack(row) ? 'Eliminando track' : 'Eliminar track'">
-                  <mat-icon aria-hidden="true">{{ isDeletingTrack(row) ? 'hourglass_top' : 'delete' }}</mat-icon>
+                  <mat-icon aria-hidden="true" >{{ isDeletingTrack(row) ? 'hourglass_top' : 'delete' }}</mat-icon>
                 </button>
               </td>
             </tr>
@@ -179,11 +179,11 @@
                 </select>
               </div>
               <div class="user-tracks__pagination-controls">
-                <button type="button" class="ghost ghost--small" (click)="changeUserTracksPage(-1)" [disabled]="userTracksPage === 0 || !userTracksPageCount">Anterior</button>
+                <button type="button" style="cursor: pointer;" class="ghost ghost--small" (click)="changeUserTracksPage(-1)" [disabled]="userTracksPage === 0 || !userTracksPageCount">Anterior</button>
                 <span class="user-tracks__page-indicator">
                   Página {{ userTracksPageCount ? userTracksPage + 1 : 0 }} / {{ userTracksPageCount || 0 }}
                 </span>
-                <button type="button" class="ghost ghost--small" (click)="changeUserTracksPage(1)" [disabled]="!userTracksPageCount || userTracksPage + 1 >= userTracksPageCount">Siguiente</button>
+                <button type="button" style="cursor: pointer;" class="ghost ghost--small" (click)="changeUserTracksPage(1)" [disabled]="!userTracksPageCount || userTracksPage + 1 >= userTracksPageCount">Siguiente</button>
               </div>
             </div>
           </ng-template>

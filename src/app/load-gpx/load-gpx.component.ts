@@ -93,6 +93,9 @@ interface UserTrackRow {
   distanceKm: number;
   timeSeconds: number;
   totalTimeSeconds: number;
+  distanceLabel: string;
+  movingTimeLabel: string;
+  totalTimeLabel: string;
   gpxData?: string | null;
   gpxAsset?: string | null;
   fileName?: string | null;
@@ -101,7 +104,14 @@ interface UserTrackRow {
   description?: string | null;
 }
 
-type UserTracksSortColumn = 'year' | 'province' | 'population' | 'autonomousCommunity';
+type UserTracksSortColumn =
+  | 'year'
+  | 'province'
+  | 'population'
+  | 'autonomousCommunity'
+  | 'distanceKm'
+  | 'timeSeconds'
+  | 'totalTimeSeconds';
 type SortDirection = 'asc' | 'desc';
 
 @Component({
@@ -147,19 +157,6 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
 
   userTracks: UserTrackRow[] = [];
   userTracksLoading = false;
-  userTrackDisplayedColumns: string[] = [
-    'title',
-    'year',
-    'autonomousCommunity',
-    'province',
-    'population',
-    'distance',
-    'movingTime',
-    'totalTime',
-    'download',
-    'animate',
-    'delete'
-  ];
 
   private readonly downloadingTracks = new Set<number>();
   private readonly deletingTracks = new Set<number>();
@@ -169,6 +166,10 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
 
   userTracksSortColumn: UserTracksSortColumn = 'year';
   userTracksSortDirection: SortDirection = 'asc';
+  userTracksFilter = '';
+  userTracksRows = 10;
+  userTracksPage = 0;
+  userTracksRowsOptions = [5, 10, 25, 50];
 
   private sessionExpiredNotified = false;
 
@@ -1761,6 +1762,9 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
     const population = track.population ?? event?.population ?? null;
     const autonomousCommunity = track.autonomousCommunity ?? event?.autonomousCommunity ?? null;
     const province = track.province ?? event?.province ?? null;
+    const distanceKm = this.toNumber(track.distanceKm);
+    const timeSeconds = this.toNumber(track.timeSeconds);
+    const totalTimeSeconds = this.resolveTotalTimeSeconds(track);
 
     const title = this.pickFirstText(track as any, ['title', 'trackTitle', 'track_title']);
     const description = this.pickFirstText(track as any, ['description', 'trackDescription', 'track_description']);
@@ -1773,9 +1777,12 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
       autonomousCommunity,
       province,
       population,
-      distanceKm: this.toNumber(track.distanceKm),
-      timeSeconds: this.toNumber(track.timeSeconds),
-      totalTimeSeconds: this.resolveTotalTimeSeconds(track),
+      distanceKm,
+      timeSeconds,
+      totalTimeSeconds,
+      distanceLabel: Number.isFinite(distanceKm) && distanceKm > 0 ? `${distanceKm.toFixed(1)} km` : '—',
+      movingTimeLabel: this.formatDurationHms(timeSeconds),
+      totalTimeLabel: this.formatDurationHms(totalTimeSeconds),
       gpxData: track.gpxData,
       gpxAsset: track.gpxAsset,
       fileName: track.fileName,
@@ -1898,6 +1905,43 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
     return [...this.userTracks].sort((a, b) => this.compareUserTrackRows(a, b));
   }
 
+  get filteredUserTracks(): UserTrackRow[] {
+    const query = this.userTracksFilter.trim().toLowerCase();
+    if (!query) return this.sortedUserTracks;
+
+    return this.sortedUserTracks.filter(row => this.matchesUserTrackFilter(row, query));
+  }
+
+  get paginatedUserTracks(): UserTrackRow[] {
+    const filtered = this.filteredUserTracks;
+    const safePage = this.resolveSafeUserTracksPage(filtered.length);
+    if (safePage !== this.userTracksPage) {
+      this.userTracksPage = safePage;
+    }
+    const start = safePage * this.userTracksRows;
+    return filtered.slice(start, start + this.userTracksRows);
+  }
+
+  get userTracksPageCount(): number {
+    const total = this.filteredUserTracks.length;
+    if (!total) return 0;
+    return Math.ceil(total / this.userTracksRows);
+  }
+
+  get userTracksRangeStart(): number {
+    const total = this.filteredUserTracks.length;
+    if (!total) return 0;
+    const safePage = this.resolveSafeUserTracksPage(total);
+    return safePage * this.userTracksRows + 1;
+  }
+
+  get userTracksRangeEnd(): number {
+    const total = this.filteredUserTracks.length;
+    if (!total) return 0;
+    const safePage = this.resolveSafeUserTracksPage(total);
+    return Math.min((safePage + 1) * this.userTracksRows, total);
+  }
+
   sortUserTracksBy(column: UserTracksSortColumn): void {
     if (this.userTracksSortColumn === column) {
       this.userTracksSortDirection = this.userTracksSortDirection === 'asc' ? 'desc' : 'asc';
@@ -1913,11 +1957,65 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
     return this.userTracksSortDirection === 'asc' ? '▲' : '▼';
   }
 
+  onUserTracksFilter(term: string): void {
+    this.userTracksFilter = term;
+    this.userTracksPage = 0;
+  }
+
+  onUserTracksRowsChange(rows: number): void {
+    const parsed = Number(rows);
+    this.userTracksRows = Number.isFinite(parsed) && parsed > 0 ? parsed : this.userTracksRowsOptions[0];
+    this.userTracksPage = 0;
+  }
+
+  changeUserTracksPage(delta: number): void {
+    if (!this.userTracksPageCount) {
+      this.userTracksPage = 0;
+      return;
+    }
+    const nextPage = Math.min(Math.max(this.userTracksPage + delta, 0), this.userTracksPageCount - 1);
+    this.userTracksPage = nextPage;
+  }
+
+  private resolveSafeUserTracksPage(total: number): number {
+    if (!total) return 0;
+    const pageCount = Math.ceil(total / this.userTracksRows);
+    return Math.min(this.userTracksPage, pageCount - 1);
+  }
+
+  private matchesUserTrackFilter(row: UserTrackRow, query: string): boolean {
+    const searchable = [
+      row.title,
+      row.eventName,
+      row.autonomousCommunity,
+      row.province,
+      row.population,
+      row.year?.toString(),
+      row.distanceLabel,
+      row.movingTimeLabel,
+      row.totalTimeLabel
+    ];
+
+    return searchable.some(value => (value ?? '').toString().toLowerCase().includes(query));
+  }
+
   private compareUserTrackRows(a: UserTrackRow, b: UserTrackRow): number {
     const direction = this.userTracksSortDirection === 'asc' ? 1 : -1;
     const key = this.userTracksSortColumn;
-    const valueA = (a[key] ?? '').toString().toLowerCase();
-    const valueB = (b[key] ?? '').toString().toLowerCase();
+    const rawA = a[key] ?? '';
+    const rawB = b[key] ?? '';
+
+    if (typeof rawA === 'number' && typeof rawB === 'number') {
+      if (Number.isNaN(rawA) && Number.isNaN(rawB)) return 0;
+      if (Number.isNaN(rawA)) return 1 * direction;
+      if (Number.isNaN(rawB)) return -1 * direction;
+      if (rawA < rawB) return -1 * direction;
+      if (rawA > rawB) return 1 * direction;
+      return 0;
+    }
+
+    const valueA = rawA.toString().toLowerCase();
+    const valueB = rawB.toString().toLowerCase();
 
     if (valueA < valueB) return -1 * direction;
     if (valueA > valueB) return 1 * direction;

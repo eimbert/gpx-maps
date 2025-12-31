@@ -22,7 +22,7 @@ export interface EventTrack {
   nickname: string;
   category: RaceCategory;
   bikeType: BikeType;
-  shared?: boolean;
+  shared: boolean;
   modalityId?: number | null;
   timeSeconds: number;
   tiempoReal?: number;

@@ -10,7 +10,7 @@ import { DialogoConfiguracionData } from '../interfaces/estructuras';
 export class DialogoConfiguracionComponent {
   eliminarPausasLargas = true;
   marcarPausasLargas = false;
-  umbralPausaMinutos = 1;
+  umbralPausaMinutos = 4;
   anadirLogoTitulos = false;
   activarMusica = true;
   grabarAnimacion = false;

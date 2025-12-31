@@ -74,7 +74,7 @@
         </button>
         <button type="button" class="user-tracks__tab" [class.user-tracks__tab--active]="activeUserTracksTab === 'events'"
           (click)="setUserTracksTab('events')" aria-label="Ver tus rutas de eventos">
-          <span>Rutas de Eventos</span>
+          <span>Tus rutas en eventos</span>
           <span class="user-tracks__tab-count">{{ getUserTrackRows('events').length }}</span>
         </button>
         <button type="button" class="user-tracks__tab" [class.user-tracks__tab--active]="activeUserTracksTab === 'shared'"

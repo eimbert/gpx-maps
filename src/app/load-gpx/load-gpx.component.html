@@ -59,8 +59,8 @@
         <div>
           <p class="eyebrow">Rutas disponibles</p>
         </div>
-        <button type="button" class="cloud-upload" (click)="openStandaloneUploadDialog()"
-          [disabled]="standaloneUploadInProgress">
+        <button *ngIf="activeUserTracksTab === 'personal'" type="button" class="cloud-upload"
+          (click)="openStandaloneUploadDialog()" [disabled]="standaloneUploadInProgress">
           <mat-icon aria-hidden="true">cloud_upload</mat-icon>
           <span>Subir ruta</span>
         </button>

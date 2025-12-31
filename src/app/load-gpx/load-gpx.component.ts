@@ -2289,7 +2289,8 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
       province,
       startLatitude,
       startLongitude,
-      title: result.title
+      title: result.title,
+      shared: result.shared
     };
 
     // eslint-disable-next-line no-console

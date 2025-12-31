@@ -96,6 +96,7 @@ export interface CreateTrackPayload {
   duracionRecorrido?: string;
   createdBy?: number;
   title?: string | null;
+  shared?: boolean;
 }
 
 export interface RaceEvent {

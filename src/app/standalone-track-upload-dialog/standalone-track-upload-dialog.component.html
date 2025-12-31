@@ -16,6 +16,10 @@
     <p class="file-picker__hint" *ngIf="!file">Selecciona el track a subir.</p>
     <p class="file-picker__selected" *ngIf="file">{{ file.name }}</p>
   </div>
+
+  <mat-checkbox [(ngModel)]="shared">
+    Compartir ruta con otros usuarios
+  </mat-checkbox>
 </div>
 
 <div mat-dialog-actions align="end">

@@ -86,6 +86,7 @@ interface UserTrackRow {
   trackId: number;
   routeId: number | null;
   nickname: string | null;
+  bikeType: BikeType | null;
   eventName: string;
   year: number;
   autonomousCommunity: string | null;
@@ -1833,6 +1834,7 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
       trackId: track.id,
       routeId,
       nickname: this.normalizeTrackText(track.nickname),
+      bikeType: track.bikeType ?? null,
       eventName: event?.name ?? '-',
       year,
       autonomousCommunity,
@@ -2093,6 +2095,7 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
     const searchable = [
       row.title,
       row.nickname,
+      row.bikeType,
       row.eventName,
       row.autonomousCommunity,
       row.province,

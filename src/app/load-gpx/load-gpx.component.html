@@ -106,6 +106,7 @@
             <tr>
               <th>Ruta</th>
               <th style="text-align: left;" *ngIf="activeUserTracksTab === 'shared'">Nickname</th>
+              <th style="text-align: left;" *ngIf="activeUserTracksTab === 'shared'">Tipo bici</th>
               <th style="text-align: left;">
                 <button type="button" class="user-tracks__sort" (click)="sortUserTracksBy('year')" aria-label="Ordenar por año">
                   Año <span class="user-tracks__sort-indicator">{{ resolveUserTracksSortIndicator('year') }}</span>
@@ -161,6 +162,7 @@
                 <span *ngIf="!row.title && (!row.eventName || row.eventName === '-')">—</span>
               </td>
               <td *ngIf="activeUserTracksTab === 'shared'">{{ row.nickname || '—' }}</td>
+              <td *ngIf="activeUserTracksTab === 'shared'">{{ row.bikeType || '—' }}</td>
               <td>{{ row.year || '-' }}</td>
               <td>{{ row.autonomousCommunity || '—' }}</td>
               <td>{{ row.province || '—' }}</td>

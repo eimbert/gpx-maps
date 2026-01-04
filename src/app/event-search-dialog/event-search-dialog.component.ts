@@ -20,7 +20,10 @@ interface EventSearchRow {
   population: string | null | undefined;
   autonomousCommunity: string | null | undefined;
   distancesKm: number[];
-  logoBlob?: string;
+  logo?: string | null;
+  mime?: string | null;   
+  distanceKm?: number | null;
+
 }
 
 @Component({
@@ -36,11 +39,14 @@ export class EventSearchDialogComponent {
     @Inject(MAT_DIALOG_DATA) public data: EventSearchDialogData,
     private dialogRef: MatDialogRef<EventSearchDialogComponent, EventSearchDialogResult>
   ) {
+    console.clear()
+    console.log(data)
     this.rows = this.buildRows(data.events);
   }
 
   getLogo(row: EventSearchRow): string {
-    return row.logoBlob || this.placeholderLogo;
+    
+    return row.logo ? `data:${row.mime};base64,${row.logo}` : this.placeholderLogo;
   }
 
   isSelected(row: EventSearchRow): boolean {
@@ -52,7 +58,8 @@ export class EventSearchDialogComponent {
   }
 
   getDistancesLabel(row: EventSearchRow): string {
-    return row.distancesKm.map(distance => `${distance.toLocaleString('es-ES', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} km`).join(' · ');
+    return row.distanceKm ? row.distanceKm + " km": ""
+    //row.distancesKm.map(distance => `${distance.toLocaleString('es-ES', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} km`).join(' · ');
   }
 
   private buildRows(events: RaceEvent[]): EventSearchRow[] {
@@ -63,7 +70,9 @@ export class EventSearchDialogComponent {
       population: event.population,
       autonomousCommunity: event.autonomousCommunity,
       distancesKm: event.modalities.map(modality => modality.distanceKm),
-      logo: event.logoBlob
+      logo: event.logoBlob,
+      mime: event.logoMime,
+      distanceKm: event.distanceKm
     }));
   }
 }

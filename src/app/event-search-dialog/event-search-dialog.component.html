@@ -16,7 +16,7 @@
           <th>Año</th>
           <th>Población</th>
           <th>Comunidad</th>
-          <th class="distance-col">Distancias</th>
+          <th class="distance-col"  style="text-align: right;">Distancias</th>
         </tr>
       </thead>
       <tbody>
@@ -26,8 +26,8 @@
           [class.is-selected]="isSelected(row)"
         >
           <td class="logo-col">
-            <div class="logo-wrapper" [class.logo-wrapper--placeholder]="!row.logoBlob">
-              <img [src]="getLogo(row)" [alt]="row.logoBlob ? row.name : 'Imagen no disponible'" />
+            <div class="logo-wrapper" [class.logo-wrapper--placeholder]="!row.logo">
+              <img [src]="getLogo(row)" [alt]="row.logo ? row.name : 'Imagen no disponible'" />
             </div>
           </td>
           <td>
@@ -36,7 +36,7 @@
           <td>{{ row.year }}</td>
           <td>{{ row.population }}</td>
           <td>{{ row.autonomousCommunity }}</td>
-          <td class="distance-col">{{ getDistancesLabel(row) }}</td>
+          <td class="distance-col" style="text-align: right;">{{ getDistancesLabel(row) }}</td>
         </tr>
       </tbody>
     </table>

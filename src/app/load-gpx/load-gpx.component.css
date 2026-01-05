@@ -508,6 +508,78 @@
   overflow: hidden;
 }
 
+.user-tracks__groups {
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #fff;
+  box-shadow: 0 10px 26px rgba(15, 23, 42, 0.06);
+}
+
+.user-tracks__population-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.user-tracks__population-table th,
+.user-tracks__population-table td {
+  padding: 12px 14px;
+  border-bottom: 1px solid #e2e8f0;
+  vertical-align: middle;
+}
+
+.user-tracks__population-row:hover td {
+  background: #f8fafc;
+}
+
+.user-tracks__expand {
+  border: 1px solid #e2e8f0;
+  background: #fff;
+  border-radius: 8px;
+  padding: 6px;
+  cursor: pointer;
+  margin-right: 10px;
+  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.08);
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+.user-tracks__expand:hover {
+  background: #eef2ff;
+  border-color: #cbd5e1;
+}
+
+.user-tracks__population-name {
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.user-tracks__maps-link {
+  color: #2563eb;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.user-tracks__maps-link:hover,
+.user-tracks__maps-link:focus-visible {
+  text-decoration: underline;
+}
+
+.user-tracks__routes-row td {
+  padding: 0;
+  background: #f8fafc;
+}
+
+.user-tracks__nested-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.user-tracks__nested-table th,
+.user-tracks__nested-table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
 .user-tracks__empty {
   padding: 14px;
   text-align: center;

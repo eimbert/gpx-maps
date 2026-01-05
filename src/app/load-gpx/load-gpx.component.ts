@@ -127,6 +127,8 @@ interface TrackTableState {
 
 interface GroupedUserTracks {
   population: string;
+  province: string | null;
+  autonomousCommunity: string | null;
   routes: UserTrackRow[];
   count: number;
 }
@@ -2025,17 +2027,38 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
 
   private getGroupedUserTracksForTab(tab: UserTracksTab): GroupedUserTracks[] {
     const filtered = this.getFilteredUserTracksForTab(tab);
-    const map = new Map<string, UserTrackRow[]>();
+    const map = new Map<
+      string,
+      { routes: UserTrackRow[]; province: string | null; autonomousCommunity: string | null }
+    >();
 
     filtered.forEach(route => {
       const population = this.normalizePopulationName(route.population);
-      const routes = map.get(population) ?? [];
-      routes.push(route);
-      map.set(population, routes);
+      const existing = map.get(population);
+      if (existing) {
+        existing.routes.push(route);
+        if (!existing.province && route.province) existing.province = route.province;
+        if (!existing.autonomousCommunity && route.autonomousCommunity) {
+          existing.autonomousCommunity = route.autonomousCommunity;
+        }
+        return;
+      }
+
+      map.set(population, {
+        routes: [route],
+        province: route.province ?? null,
+        autonomousCommunity: route.autonomousCommunity ?? null
+      });
     });
 
     return Array.from(map.entries())
-      .map(([population, routes]) => ({ population, routes, count: routes.length }))
+      .map(([population, data]) => ({
+        population,
+        routes: data.routes,
+        count: data.routes.length,
+        province: data.province,
+        autonomousCommunity: data.autonomousCommunity
+      }))
       .sort((a, b) => a.population.localeCompare(b.population, 'es', { sensitivity: 'base' }));
   }
 
@@ -2184,8 +2207,14 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
     expanded.add(population);
   }
 
-  buildGoogleMapsLink(population: string): string {
-    const query = population || '';
+  buildGoogleMapsLink(
+    population: string,
+    province?: string | null,
+    autonomousCommunity?: string | null
+  ): string {
+    const query = [population, province, autonomousCommunity]
+      .filter(Boolean)
+      .join(', ');
     return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
   }
 

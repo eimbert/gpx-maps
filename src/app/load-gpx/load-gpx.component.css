@@ -553,6 +553,16 @@
   color: #0f172a;
 }
 
+.user-tracks__population-meta {
+  margin-left: 8px;
+  color: #475569;
+  font-weight: 700;
+}
+
+.user-tracks__population-community {
+  margin-left: 2px;
+}
+
 .user-tracks__maps-link {
   color: #2563eb;
   font-weight: 800;

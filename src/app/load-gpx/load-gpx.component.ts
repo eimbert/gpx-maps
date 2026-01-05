@@ -125,6 +125,12 @@ interface TrackTableState {
   page: number;
 }
 
+interface GroupedUserTracks {
+  population: string;
+  routes: UserTrackRow[];
+  count: number;
+}
+
 @Component({
   selector: 'app-load-gpx',
   templateUrl: './load-gpx.component.html',
@@ -183,6 +189,12 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
 
   readonly userTracksRowsOptions = [10, 25, 50];
   activeUserTracksTab: UserTracksTab = 'personal';
+
+  private readonly expandedPopulations: Record<UserTracksTab, Set<string>> = {
+    personal: new Set<string>(),
+    events: new Set<string>(),
+    shared: new Set<string>()
+  };
 
   private readonly downloadingTracks = new Set<number>();
   private readonly deletingTracks = new Set<number>();
@@ -1780,6 +1792,7 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
 
   setUserTracksTab(tab: UserTracksTab): void {
     this.activeUserTracksTab = tab;
+    this.expandedPopulations[tab].clear();
   }
 
   getUserTrackRows(tab: UserTracksTab): UserTrackRow[] {
@@ -1993,6 +2006,10 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
     return this.getFilteredUserTracksForTab(this.activeUserTracksTab);
   }
 
+  get groupedUserTracks(): GroupedUserTracks[] {
+    return this.getGroupedUserTracksForTab(this.activeUserTracksTab);
+  }
+
   private getFilteredUserTracksForTab(tab: UserTracksTab): UserTrackRow[] {
     const state = this.getTableState(tab);
     const query = state.filter.trim().toLowerCase();
@@ -2002,19 +2019,35 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
     return sorted.filter(row => this.matchesUserTrackFilter(row, query));
   }
 
-  get paginatedUserTracks(): UserTrackRow[] {
-    return this.getPaginatedUserTracksForTab(this.activeUserTracksTab);
+  get paginatedUserTracks(): GroupedUserTracks[] {
+    return this.getPaginatedUserTrackGroupsForTab(this.activeUserTracksTab);
   }
 
-  private getPaginatedUserTracksForTab(tab: UserTracksTab): UserTrackRow[] {
-    const state = this.getTableState(tab);
+  private getGroupedUserTracksForTab(tab: UserTracksTab): GroupedUserTracks[] {
     const filtered = this.getFilteredUserTracksForTab(tab);
-    const safePage = this.resolveSafeUserTracksPage(filtered.length, state);
+    const map = new Map<string, UserTrackRow[]>();
+
+    filtered.forEach(route => {
+      const population = this.normalizePopulationName(route.population);
+      const routes = map.get(population) ?? [];
+      routes.push(route);
+      map.set(population, routes);
+    });
+
+    return Array.from(map.entries())
+      .map(([population, routes]) => ({ population, routes, count: routes.length }))
+      .sort((a, b) => a.population.localeCompare(b.population, 'es', { sensitivity: 'base' }));
+  }
+
+  private getPaginatedUserTrackGroupsForTab(tab: UserTracksTab): GroupedUserTracks[] {
+    const state = this.getTableState(tab);
+    const groups = this.getGroupedUserTracksForTab(tab);
+    const safePage = this.resolveSafeUserTracksPage(groups.length, state);
     if (safePage !== state.page) {
       state.page = safePage;
     }
     const start = safePage * state.rows;
-    return filtered.slice(start, start + state.rows);
+    return groups.slice(start, start + state.rows);
   }
 
   get userTracksPageCount(): number {
@@ -2023,13 +2056,13 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
 
   private getUserTracksPageCountForTab(tab: UserTracksTab): number {
     const state = this.getTableState(tab);
-    const total = this.getFilteredUserTracksForTab(tab).length;
+    const total = this.getGroupedUserTracksForTab(tab).length;
     if (!total) return 0;
     return Math.ceil(total / state.rows);
   }
 
   get userTracksRangeStart(): number {
-    const total = this.getFilteredUserTracksForTab(this.activeUserTracksTab).length;
+    const total = this.getGroupedUserTracksForTab(this.activeUserTracksTab).length;
     if (!total) return 0;
     const state = this.getTableState(this.activeUserTracksTab);
     const safePage = this.resolveSafeUserTracksPage(total, state);
@@ -2037,7 +2070,7 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
   }
 
   get userTracksRangeEnd(): number {
-    const total = this.getFilteredUserTracksForTab(this.activeUserTracksTab).length;
+    const total = this.getGroupedUserTracksForTab(this.activeUserTracksTab).length;
     if (!total) return 0;
     const state = this.getTableState(this.activeUserTracksTab);
     const safePage = this.resolveSafeUserTracksPage(total, state);
@@ -2130,6 +2163,30 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
     if (valueA < valueB) return -1 * direction;
     if (valueA > valueB) return 1 * direction;
     return 0;
+  }
+
+  private normalizePopulationName(population: string | null): string {
+    const value = population?.trim();
+    return value?.length ? value : 'Sin población';
+  }
+
+  isPopulationExpanded(population: string): boolean {
+    return this.expandedPopulations[this.activeUserTracksTab].has(population);
+  }
+
+  togglePopulationExpansion(population: string): void {
+    const expanded = this.expandedPopulations[this.activeUserTracksTab];
+    if (expanded.has(population)) {
+      expanded.delete(population);
+      return;
+    }
+
+    expanded.add(population);
+  }
+
+  buildGoogleMapsLink(population: string): string {
+    const query = population || '';
+    return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
   }
 
   async animateUserTrack(row: UserTrackRow): Promise<void> {

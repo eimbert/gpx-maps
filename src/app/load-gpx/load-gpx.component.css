@@ -528,6 +528,10 @@
   vertical-align: middle;
 }
 
+.user-tracks__population-table th:first-child {
+  text-align: left;
+}
+
 .user-tracks__population-row:hover td {
   background: #f8fafc;
 }
@@ -588,6 +592,14 @@
 .user-tracks__nested-table td {
   padding: 10px 12px;
   border-bottom: 1px solid #e2e8f0;
+}
+
+.user-tracks__nested-table thead th {
+  background: #f1f5f9;
+}
+
+.user-tracks__route-row:hover td {
+  background: #e0f2fe;
 }
 
 .user-tracks__empty {

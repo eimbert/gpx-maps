@@ -3,8 +3,9 @@
   flex-direction: column;
   gap: 16px;
   height: 100%;
-  padding: 8px;
- 
+  padding: 12px;
+  background: radial-gradient(circle at top left, rgba(56, 189, 248, 0.12), transparent 45%),
+    radial-gradient(circle at bottom right, rgba(94, 234, 212, 0.18), transparent 48%);
 }
 
 .search-dialog__header {
@@ -38,32 +39,52 @@
 .search-dialog__table {
   flex: 1;
   overflow: auto;
-  border-radius: 12px;
-  border: 1px solid #e2e8f0;
-  background: #fff;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6);
+  border-radius: 18px;
+  border: 1px solid #dbeafe;
+  background: linear-gradient(180deg, #f8fbff 0%, #ffffff 100%);
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.08);
+  padding: 8px 10px 12px;
 }
 
 .search-dialog table {
   width: 100%;
-  border-collapse: collapse;
+  border-collapse: separate;
+  border-spacing: 0 12px;
   min-width: 720px;
 }
 
 .search-dialog th,
 .search-dialog td {
-  padding: 12px 16px;
+  padding: 14px 18px;
   text-align: left;
-  border-bottom: 1px solid #e2e8f0;
   color: #0f172a;
   font-size: 14px;
 }
 
 .search-dialog thead {
-  background: #f8fafc;
+  background: transparent;
   position: sticky;
   top: 0;
   z-index: 1;
+}
+
+.search-dialog thead th {
+  background: linear-gradient(120deg, #38bdf8, #5eead4);
+  color: #0f172a;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-size: 12px;
+  border-bottom: none;
+}
+
+.search-dialog thead th:first-child {
+  border-top-left-radius: 14px;
+  border-bottom-left-radius: 14px;
+}
+
+.search-dialog thead th:last-child {
+  border-top-right-radius: 14px;
+  border-bottom-right-radius: 14px;
 }
 
 .logo-col {
@@ -78,12 +99,13 @@
 .logo-wrapper {
   width: 64px;
   height: 64px;
-  border-radius: 12px;
+  border-radius: 16px;
   overflow: hidden;
   display: grid;
   place-items: center;
-  border: 1px solid #e2e8f0;
+  border: 1px solid #dbeafe;
   background: #fff;
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.12);
 }
 
 .logo-wrapper--placeholder {
@@ -98,19 +120,46 @@
 
 .search-dialog tr {
   cursor: pointer;
-  transition: background 0.15s ease;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
 
 .search-dialog tr:hover {
-  background: #f8fafc;
+  transform: translateY(-2px);
 }
 
 .search-dialog tr.is-selected {
-  background: #e0f2fe;
+  box-shadow: 0 14px 28px rgba(56, 189, 248, 0.2);
 }
 
 .main-text {
   font-weight: 700;
+}
+
+.search-dialog tbody tr td {
+  background: #ffffff;
+  border-top: 1px solid #e2e8f0;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.search-dialog tbody tr td:first-child {
+  border-left: 1px solid #e2e8f0;
+  border-top-left-radius: 16px;
+  border-bottom-left-radius: 16px;
+}
+
+.search-dialog tbody tr td:last-child {
+  border-right: 1px solid #e2e8f0;
+  border-top-right-radius: 16px;
+  border-bottom-right-radius: 16px;
+}
+
+.search-dialog tbody tr:hover td {
+  background: #f0f9ff;
+}
+
+.search-dialog tbody tr.is-selected td {
+  background: #e0f2fe;
+  border-color: #7dd3fc;
 }
 
 ::ng-deep .mat-dialog-container {

@@ -583,20 +583,7 @@
   background: #f8fafc;
 }
 
-.user-tracks__nested-table {
-  width: 100%;
-  border-collapse: collapse;
-}
 
-.user-tracks__nested-table th,
-.user-tracks__nested-table td {
-  padding: 10px 12px;
-  border-bottom: 1px solid #e2e8f0;
-}
-
-.user-tracks__nested-table thead th {
-  background: #f1f5f9;
-}
 
 .user-tracks__route-row:hover td {
   background: #e0f2fe;
@@ -1565,9 +1552,42 @@ input[type="file"] {
 
 
 /* Transición suave */
-:host ::ng-deep .user-tracks__table tbody > tr,
+/* :host ::ng-deep .user-tracks__table tbody > tr,
 :host ::ng-deep .user-tracks__table tbody > tr > td {
   transition: background-color 160ms ease;
+} */
+
+.user-tracks__nested-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.user-tracks__nested-table th,
+.user-tracks__nested-table td {
+  padding: 3px 5px;
+  border: 1px solid #e2e8f0;
+}
+
+/* .user-tracks__nested-table thead th {
+  background: #f1f5f9;
+} */
+
+.user-tracks__nested-table > table > tbody > tr:hover {
+  background-color: rgb(160, 248, 248) !important;
+}
+.tabla-in-head{
+  color: green;
+  background: transparent;
+}
+
+.user-tracks__nested-table  thead  th {
+    background: rgb(207, 202, 202);
+    font-weight: 100;
 }
 
 
+
+
+.tabla-rutas{
+  width: 100%;
+}

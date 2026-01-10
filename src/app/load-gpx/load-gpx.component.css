@@ -537,19 +537,35 @@
 }
 
 .user-tracks__expand {
-  border: 1px solid #e2e8f0;
-  background: #fff;
-  border-radius: 8px;
-  padding: 6px;
+  border: 1px solid transparent;
+  background: linear-gradient(135deg, #ffffff, #f8fafc);
+  border-radius: 999px;
+  padding: 6px 8px;
   cursor: pointer;
   margin-right: 10px;
-  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.08);
-  transition: background-color 0.2s ease, border-color 0.2s ease;
+  box-shadow: 0 10px 18px rgba(15, 23, 42, 0.12);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease,
+    transform 0.2s ease;
 }
 
 .user-tracks__expand:hover {
-  background: #eef2ff;
-  border-color: #cbd5e1;
+  background: linear-gradient(135deg, #e0f2fe, #e2e8f0);
+  border-color: #bae6fd;
+  box-shadow: 0 12px 20px rgba(30, 64, 175, 0.2);
+  transform: translateY(-1px);
+}
+
+.user-tracks__expand:focus-visible {
+  outline: 2px solid #60a5fa;
+  outline-offset: 2px;
+}
+
+.user-tracks__expand-icon {
+  font-size: 20px;
+  color: #1e293b;
 }
 
 .user-tracks__population-name {
@@ -1600,5 +1616,4 @@ input[type="file"] {
 :host ::ng-deep td {
     font-weight:100;
 }
-
 

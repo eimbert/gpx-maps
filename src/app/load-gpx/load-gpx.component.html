@@ -115,7 +115,7 @@
                 <tr >
                   <td>
                     <button type="button" class="user-tracks__expand" (click)="togglePopulationExpansion(group.population)" [attr.aria-expanded]="isPopulationExpanded(group.population)" [attr.aria-label]="isPopulationExpanded(group.population) ? 'Ocultar rutas en ' + group.population : 'Mostrar rutas en ' + group.population">
-                      <mat-icon aria-hidden="true">{{ isPopulationExpanded(group.population) ? 'expand_less' : 'expand_more' }}</mat-icon>
+                      <mat-icon class="user-tracks__expand-icon" aria-hidden="true">{{ isPopulationExpanded(group.population) ? 'keyboard_arrow_up' : 'keyboard_arrow_down' }}</mat-icon>
                     </button>
                     <span class="user-tracks__population-name">
                       {{ group.population }}

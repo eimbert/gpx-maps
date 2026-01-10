@@ -102,9 +102,9 @@
         </div>
 
         <div class="user-tracks__groups" *ngIf="paginatedUserTracks.length; else emptyGroups">
-          <table class="tabla-rutas" aria-label="Rutas guardadas agrupadas por población">
+          <table class="tabla-rutas"  aria-label="Rutas guardadas agrupadas por población">
             <thead>
-              <tr style="background-color: rgb(162, 245, 245); height: 33px;">
+              <tr class="head-tabla" >
                 <th scope="col" style="text-align: left; padding-left: 45px;">Población</th>
                 <th scope="col">Rutas</th>
                 <th scope="col" class="user-tracks__action-col">Cómo llegar</th>
@@ -131,10 +131,10 @@
                 </tr>
                 <tr *ngIf="isPopulationExpanded(group.population)" class="user-tracks__routes-row">
                   <td colspan="3">
-                    <table  class="user-tracks__nested-table" [attr.aria-label]="'Rutas en ' + group.population">
-                    
+                    <div style="width: 90%; margin: 0 auto;">
+                      <table  class="user-tracks__nested-table" [attr.aria-label]="'Rutas en ' + group.population">
                       <thead>
-                        <tr style="border-style: inset; border-width: 2px; border-color: lightgray;" class="tabla-in-head">
+                        <tr  style="border-style:solid; border-width: 1px; border-color: rgb(231, 228, 228);">
                           <th scope="col">Ruta</th>
                           <th scope="col" *ngIf="activeUserTracksTab === 'shared'">Nickname</th>
                           <th scope="col" *ngIf="activeUserTracksTab === 'shared'">Tipo bici</th>
@@ -179,7 +179,7 @@
                         </tr>
                       </thead>
                       <tbody>
-                        <tr style="border-style:inset; border-width: 2px; border-color: lightgray;" *ngFor="let row of group.routes" > <!-- class="user-tracks__route-row" -->
+                        <tr style="border-style:solid; border-width: 0.5px; border-color: lightgrey;" *ngFor="let row of group.routes" > <!-- class="user-tracks__route-row" -->
                           <td  > <!-- class="user-tracks__title-col" -->
                             <div  *ngIf="row.eventName && row.eventName !== '-'">
                               <span style="color: rgb(8, 8, 158);">{{ row.eventName }} (E)</span>
@@ -199,23 +199,26 @@
                           <td class="user-tracks__metric user-tracks__metric--center">{{ row.movingTimeLabel }}</td>
                           <td class="user-tracks__metric user-tracks__metric--center">{{ row.totalTimeLabel }}</td>
                           <td class="user-tracks__action-col">
-                            <button type="button" class="ghost ghost--small user-tracks__icon-button" [disabled]="isDownloadingTrack(row)" (click)="downloadUserTrack(row)" [attr.aria-label]="isDownloadingTrack(row) ? 'Descargando track' : 'Descargar track'">
-                              <mat-icon aria-hidden="true" style="color: blue;">{{ isDownloadingTrack(row) ? 'downloading' : 'file_download' }}</mat-icon>
-                            </button>
+                            <!-- <button type="button" class="ghost ghost--small user-tracks__icon-button" [disabled]="isDownloadingTrack(row)" (click)="downloadUserTrack(row)" [attr.aria-label]="isDownloadingTrack(row) ? 'Descargando track' : 'Descargar track'"> -->
+                              <mat-icon aria-hidden="true" style="color: blue; cursor: pointer;"
+                                 (click)="downloadUserTrack(row)" [attr.aria-label]="isDownloadingTrack(row) ? 'Descargando track' : 'Descargar track'"
+                              >{{ isDownloadingTrack(row) ? 'downloading' : 'file_download' }}</mat-icon>
+                            <!-- </button> -->
                           </td>
                           <td class="user-tracks__action-col">
-                            <button type="button" class="ghost ghost--small user-tracks__icon-button" (click)="animateUserTrack(row)" aria-label="Animar track">
-                              <mat-icon aria-hidden="true" style="color: orange;">play_arrow</mat-icon>
-                            </button>
+                            <!-- <button type="button" class="ghost ghost--small user-tracks__icon-button" (click)="animateUserTrack(row)" aria-label="Animar track"> -->
+                              <mat-icon aria-hidden="true" style="color: orange; cursor: pointer;" (click)="animateUserTrack(row)">play_arrow</mat-icon>
+                            <!-- </button> -->
                           </td>
                           <td class="user-tracks__action-col">
-                            <button type="button" class="ghost ghost--small ghost--danger user-tracks__icon-button" [disabled]="isDeletingTrack(row)" (click)="confirmDeleteUserTrack(row)" [attr.aria-label]="isDeletingTrack(row) ? 'Eliminando track' : 'Eliminar track'">
-                              <mat-icon aria-hidden="true" >{{ isDeletingTrack(row) ? 'hourglass_top' : 'delete' }}</mat-icon>
-                            </button>
+                            <!-- <button type="button" class="ghost ghost--small ghost--danger user-tracks__icon-button" [disabled]="isDeletingTrack(row)" (click)="confirmDeleteUserTrack(row)" [attr.aria-label]="isDeletingTrack(row) ? 'Eliminando track' : 'Eliminar track'"> -->
+                              <mat-icon aria-hidden="true" style="color: red; cursor: pointer;" (click)="confirmDeleteUserTrack(row)" [attr.aria-label]="isDeletingTrack(row) ? 'Eliminando track' : 'Eliminar track'">{{ isDeletingTrack(row) ? 'hourglass_top' : 'delete' }}</mat-icon>
+                            <!-- </button> -->
                           </td>
                         </tr>
                       </tbody>
-                    </table>
+                      </table>
+                    </div>
                   </td>
                 </tr>
               </ng-container>

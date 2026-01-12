@@ -589,6 +589,17 @@
   text-decoration: none;
 }
 
+.user-tracks__maps-link--icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+
+.user-tracks__maps-link--icon mat-icon {
+  font-size: 18px;
+}
+
 .user-tracks__maps-link:hover,
 .user-tracks__maps-link:focus-visible {
   text-decoration: underline;
@@ -1628,4 +1639,3 @@ input[type="file"] {
 :host ::ng-deep td {
     font-weight:100;
 }
-

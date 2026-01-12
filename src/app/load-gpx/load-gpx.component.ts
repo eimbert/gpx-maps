@@ -1584,6 +1584,8 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
     const province = trackLocation.province ?? event?.province ?? null;
     const startLatitude = trackLocation.startLatitude ?? null;
     const startLongitude = trackLocation.startLongitude ?? null;
+    const startLat = startLatitude;
+    const startLon = startLongitude;
 
     const newTrack: CreateTrackPayload = {
       routeId,
@@ -1601,6 +1603,8 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
       province,
       startLatitude,
       startLongitude,
+      startLat,
+      startLon,
       routeXml: gpxData,
       fileName: upload.file!.name,
       duracionRecorrido: this.formatDurationAsLocalTime(timeSeconds),
@@ -2375,6 +2379,8 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
     const province = trackLocation.province ?? null;
     const startLatitude = trackLocation.startLatitude ?? null;
     const startLongitude = trackLocation.startLongitude ?? null;
+    const startLat = startLatitude;
+    const startLon = startLongitude;
 
     const payload: CreateTrackPayload = {
       routeId: null,
@@ -2396,6 +2402,8 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
       province,
       startLatitude,
       startLongitude,
+      startLat,
+      startLon,
       title: result.title,
       shared: result.shared
     };

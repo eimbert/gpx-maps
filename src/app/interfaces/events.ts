@@ -89,6 +89,8 @@ export interface CreateTrackPayload {
   province?: string | null;
   startLatitude?: number | null;
   startLongitude?: number | null;
+  startLat?: number | null;
+  startLon?: number | null;
   gpxAsset?: string;
   routeXml?: string;
   fileName?: string;

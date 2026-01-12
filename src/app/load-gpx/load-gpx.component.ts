@@ -1569,6 +1569,7 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
       return;
     }
     const trackLocation = await this.resolveTrackLocationFromGpx(gpxData);
+    const startPoint = this.extractFirstPointFromGpx(gpxData);
     const activeDurationSeconds = this.calculateActiveDurationSeconds(track.data.trkpts) || durationSeconds;
     const totalDurationSeconds = this.calculateTotalDurationSeconds(track.data.trkpts) || durationSeconds;
     if (!activeDurationSeconds) {
@@ -1582,10 +1583,10 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
     const population = trackLocation.population ?? event?.population ?? null;
     const autonomousCommunity = trackLocation.autonomousCommunity ?? event?.autonomousCommunity ?? null;
     const province = trackLocation.province ?? event?.province ?? null;
-    const startLatitude = trackLocation.startLatitude ?? null;
-    const startLongitude = trackLocation.startLongitude ?? null;
-    const startLat = startLatitude;
-    const startLon = startLongitude;
+    const startLatitude = trackLocation.startLatitude ?? startPoint?.lat ?? null;
+    const startLongitude = trackLocation.startLongitude ?? startPoint?.lon ?? null;
+    const startLat = startPoint?.lat ?? startLatitude;
+    const startLon = startPoint?.lon ?? startLongitude;
 
     const newTrack: CreateTrackPayload = {
       routeId,

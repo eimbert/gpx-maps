@@ -1584,17 +1584,29 @@ input[type="file"] {
   background: #f1f5f9;
 } */
 
-.user-tracks__nested-table > table > tbody > tr:hover {
-  background-color: rgb(44, 62, 62) !important;
-}
+
 
 
 .user-tracks__nested-table  thead  th {
     background: rgb(231, 228, 228);
     font-weight: 100;
 }
+/* 
+.user-tracks__nested-table tbody tr:hover {
+  background-color: rgba(255, 255, 255, 0.06); 
+}
 
+.user-tracks__nested-table tbody tr:hover td {
+  background-color: rgba(255, 255, 255, 0.06);
+}
 
+.user-tracks__table .p-datatable-wrapper > table > tbody > tr:hover {
+  background-color: rgb(73, 137, 137) !important;
+}*/
+
+.user-tracks__nested-table tbody tr.nested-row:hover > td {
+  background-color: rgb(126, 189, 189) !important; 
+} 
 
 
 .tabla-rutas{

@@ -8,7 +8,5 @@ body { margin: 0; font-family: Roboto, "Helvetica Neue", sans-serif; }
   background-color: red !important;
 } */
 
-.user-tracks__table .p-datatable-wrapper > table > tbody > tr:hover {
-  background-color: rgb(160, 248, 248) !important;
-}
+
 

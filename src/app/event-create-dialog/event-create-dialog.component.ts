@@ -191,7 +191,9 @@ export class EventCreateDialogComponent {
 
   private async populateLocationFromReverseGeocode(lat: number, lon: number): Promise<void> {
     try {
-      const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lon)}&addressdetails=1`;
+      const url = `https://nominatim.openstreetmap.org/reverse?format=geocodejson&lat=${encodeURIComponent(
+        lat
+      )}&lon=${encodeURIComponent(lon)}&zoom=15&addressdetails=1&layer=address`;
       const response = await fetch(url, {
         headers: {
           'Accept': 'application/json'
@@ -199,10 +201,10 @@ export class EventCreateDialogComponent {
       });
       if (!response.ok) return;
       const data = await response.json();
-      const address = data?.address || {};
-      this.newEvent.population = address.village || address.town || address.city || this.newEvent.population;
-      this.newEvent.autonomousCommunity = address.state || this.newEvent.autonomousCommunity;
-      this.newEvent.province = address.province || this.newEvent.province;
+      const geocoding = data?.features?.[0]?.properties?.geocoding || {};
+      this.newEvent.population = geocoding.city || this.newEvent.population;
+      this.newEvent.autonomousCommunity = geocoding.state || this.newEvent.autonomousCommunity;
+      this.newEvent.province = geocoding.county || geocoding.state || this.newEvent.province;
     } catch {
       // Ignorar fallos de geocodificación silenciosamente
     }

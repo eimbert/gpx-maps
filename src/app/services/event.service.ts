@@ -264,6 +264,7 @@ export class EventService {
     const title = this.normalizeTextField((track as any).title ?? (track as any).trackTitle ?? (track as any).track_title);
     const description = this.normalizeTextField((track as any).description ?? (track as any).trackDescription ?? (track as any).track_description);
     const shared = Boolean((track as any).shared);
+    const gpxData = track.gpxData ?? (track as any).routeXml ?? (track as any).route_xml ?? null;
 
     return {
       ...track,
@@ -285,7 +286,8 @@ export class EventService {
       ,
       shared,
       title,
-      description
+      description,
+      gpxData
     };
   }
 

@@ -1926,15 +1926,15 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
 
   private async reverseGeocode(lat: number, lon: number): Promise<TrackLocationDetails | null> {
     try {
-      const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${encodeURIComponent(
+      const url = `https://nominatim.openstreetmap.org/reverse?format=geocodejson&lat=${encodeURIComponent(
         lat
-      )}&lon=${encodeURIComponent(lon)}&addressdetails=1`;
+      )}&lon=${encodeURIComponent(lon)}&zoom=15&addressdetails=1&layer=address`;
       const result: any = await firstValueFrom(this.http.get(url, { headers: { Accept: 'application/json' } }));
-      const address = result?.address || {};
+      const geocoding = result?.features?.[0]?.properties?.geocoding || {};
       return {
-        population: address.village || address.town || address.city || null,
-        autonomousCommunity: address.state || null,
-        province: address.province || address.county || null
+        population: geocoding.city || null,
+        autonomousCommunity: geocoding.state || null,
+        province: geocoding.county || geocoding.state || null
       };
     } catch {
       return null;

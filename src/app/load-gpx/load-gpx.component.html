@@ -96,16 +96,16 @@
           <div class="user-tracks__counts">
             <span class="user-tracks__count">{{ filteredUserTracks.length }} rutas</span>
             <span class="user-tracks__range" *ngIf="groupedUserTracks.length && groupedUserTracks.length !== paginatedUserTracks.length">
-              Poblaciones {{ userTracksRangeStart }}-{{ userTracksRangeEnd }} de {{ groupedUserTracks.length }}
+              Provincias {{ userTracksRangeStart }}-{{ userTracksRangeEnd }} de {{ groupedUserTracks.length }}
             </span>
           </div>
         </div>
 
         <div class="user-tracks__groups" *ngIf="paginatedUserTracks.length; else emptyGroups">
-          <table class="tabla-rutas"  aria-label="Rutas guardadas agrupadas por población">
+          <table class="tabla-rutas"  aria-label="Rutas guardadas agrupadas por provincia">
             <thead>
               <tr class="head-tabla" >
-                <th scope="col" style="text-align: left; padding-left: 45px;">Población</th>
+                <th scope="col" style="text-align: left; padding-left: 45px;">Provincia</th>
                 <th scope="col">Rutas</th>
                 <th scope="col" class="user-tracks__action-col">Cómo llegar</th>
               </tr>
@@ -114,25 +114,25 @@
               <ng-container *ngFor="let group of paginatedUserTracks">
                 <tr >
                   <td>
-                    <button type="button" class="user-tracks__expand" (click)="togglePopulationExpansion(group.population)" [attr.aria-expanded]="isPopulationExpanded(group.population)" [attr.aria-label]="isPopulationExpanded(group.population) ? 'Ocultar rutas en ' + group.population : 'Mostrar rutas en ' + group.population">
-                      <mat-icon class="user-tracks__expand-icon" aria-hidden="true">{{ isPopulationExpanded(group.population) ? 'keyboard_arrow_up' : 'keyboard_arrow_down' }}</mat-icon>
+                    <button type="button" class="user-tracks__expand" (click)="toggleProvinceExpansion(group.province)" [attr.aria-expanded]="isProvinceExpanded(group.province)" [attr.aria-label]="isProvinceExpanded(group.province) ? 'Ocultar rutas en ' + group.province : 'Mostrar rutas en ' + group.province">
+                      <mat-icon class="user-tracks__expand-icon" aria-hidden="true">{{ isProvinceExpanded(group.province) ? 'keyboard_arrow_up' : 'keyboard_arrow_down' }}</mat-icon>
                     </button>
                     <span class="user-tracks__population-name">
-                      {{ group.population }}
-                      <span class="user-tracks__population-meta">— {{ group.province || '—' }} <span class="user-tracks__population-community">({{ group.autonomousCommunity || '—' }})</span></span>
+                      {{ group.province }}
+                      <span class="user-tracks__population-meta">— <span class="user-tracks__population-community">({{ group.autonomousCommunity || '—' }})</span></span>
                     </span>
                   </td>
                   <td class="user-tracks__metric user-tracks__metric--center">{{ group.count }}</td>
                   <td class="user-tracks__action-col">
-                    <a class="user-tracks__maps-link" [href]="buildGoogleMapsLink(group.population, group.province, group.autonomousCommunity)" target="_blank" rel="noopener noreferrer" (click)="$event.stopPropagation()">
+                    <a class="user-tracks__maps-link" [href]="buildGoogleMapsLinkForProvince(group.province, group.autonomousCommunity)" target="_blank" rel="noopener noreferrer" (click)="$event.stopPropagation()">
                       Ver en Maps
                     </a>
                   </td>
                 </tr>
-                <tr *ngIf="isPopulationExpanded(group.population)" class="user-tracks__routes-row">
+                <tr *ngIf="isProvinceExpanded(group.province)" class="user-tracks__routes-row">
                   <td colspan="3">
                     <div style="width: 90%; margin: 0 auto;">
-                      <table  class="user-tracks__nested-table" [attr.aria-label]="'Rutas en ' + group.population">
+                      <table  class="user-tracks__nested-table" [attr.aria-label]="'Rutas en ' + group.province">
                       <thead>
                         <tr  style="border-style:solid; border-width: 1px; border-color: rgb(231, 228, 228); font-size: 11px;">
                           <th scope="col">Ruta</th>

@@ -194,18 +194,15 @@
                           <td style="text-align: left;">{{ row.province || '—' }}</td>
                           <td>{{ row.population || '—' }}</td>
                           <td class="user-tracks__action-col">
-                            <ng-container *ngIf="hasStartCoordinates(row); else noStartLocation">
-                              <a class="user-tracks__maps-link user-tracks__maps-link--icon"
-                                [href]="buildGoogleMapsLinkForTrack(row)"
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                aria-label="Cómo llegar al inicio de la ruta en Google Maps"
-                                title="Cómo llegar al inicio de la ruta"
-                                (click)="$event.stopPropagation()">
-                                <mat-icon aria-hidden="true">map</mat-icon>
-                              </a>
-                            </ng-container>
-                            <ng-template #noStartLocation>—</ng-template>
+                            <a class="user-tracks__maps-link user-tracks__maps-link--icon"
+                              [href]="buildGoogleMapsLinkForTrack(row)"
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              aria-label="Cómo llegar al inicio de la ruta en Google Maps"
+                              title="Cómo llegar al inicio de la ruta"
+                              (click)="$event.stopPropagation()">
+                              <mat-icon aria-hidden="true">map</mat-icon>
+                            </a>
                           </td>
                           <td class="user-tracks__metric user-tracks__metric--right">{{ row.distanceLabel }}</td>
                           <td class="user-tracks__metric user-tracks__metric--center">{{ row.movingTimeLabel }}</td>

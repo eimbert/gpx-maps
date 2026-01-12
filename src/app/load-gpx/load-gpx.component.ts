@@ -1842,8 +1842,10 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
     const distanceKm = this.toNumber(track.distanceKm);
     const timeSeconds = this.toNumber(track.timeSeconds);
     const totalTimeSeconds = this.resolveTotalTimeSeconds(track);
-    const startLatitude = track.startLatitude ?? null;
-    const startLongitude = track.startLongitude ?? null;
+    const decodedGpx = this.decodeGpxContent(track.gpxData);
+    const startPoint = decodedGpx ? this.extractFirstPointFromGpx(decodedGpx) : null;
+    const startLatitude = track.startLatitude ?? startPoint?.lat ?? null;
+    const startLongitude = track.startLongitude ?? startPoint?.lon ?? null;
 
     const title = this.pickFirstText(track as any, ['title', 'trackTitle', 'track_title']);
     const description = this.pickFirstText(track as any, ['description', 'trackDescription', 'track_description']);
@@ -1866,7 +1868,7 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
       distanceLabel: Number.isFinite(distanceKm) && distanceKm > 0 ? `${distanceKm.toFixed(1)} km` : '—',
       movingTimeLabel: this.formatDurationHms(timeSeconds),
       totalTimeLabel: this.formatDurationHms(totalTimeSeconds),
-      gpxData: track.gpxData,
+      gpxData: decodedGpx ?? track.gpxData,
       gpxAsset: track.gpxAsset,
       fileName: track.fileName,
       canDelete: this.canDeleteTrack(track),

@@ -107,7 +107,6 @@
               <tr class="head-tabla" >
                 <th scope="col" style="text-align: left; padding-left: 45px;">Provincia</th>
                 <th scope="col">Rutas</th>
-                <th scope="col" class="user-tracks__action-col">Cómo llegar</th>
               </tr>
             </thead>
             <tbody>
@@ -123,14 +122,9 @@
                     </span>
                   </td>
                   <td class="user-tracks__metric user-tracks__metric--center">{{ group.count }}</td>
-                  <td class="user-tracks__action-col">
-                    <a class="user-tracks__maps-link" [href]="buildGoogleMapsLinkForProvince(group.province, group.autonomousCommunity)" target="_blank" rel="noopener noreferrer" (click)="$event.stopPropagation()">
-                      Ver en Maps
-                    </a>
-                  </td>
                 </tr>
                 <tr *ngIf="isProvinceExpanded(group.province)" class="user-tracks__routes-row">
-                  <td colspan="3">
+                  <td colspan="2">
                     <div style="width: 90%; margin: 0 auto;">
                       <table  class="user-tracks__nested-table" [attr.aria-label]="'Rutas en ' + group.province">
                       <thead>
@@ -158,6 +152,7 @@
                               Población <span class="user-tracks__sort-indicator">{{ resolveUserTracksSortIndicator('population') }}</span>
                             </button>
                           </th>
+                          <th scope="col" class="user-tracks__action-col">Cómo llegar</th>
                           <th scope="col">
                             <button type="button" class="user-tracks__sort" (click)="sortUserTracksBy('distanceKm')" aria-label="Ordenar por distancia">
                               Distancia <span class="user-tracks__sort-indicator">{{ resolveUserTracksSortIndicator('distanceKm') }}</span>
@@ -198,6 +193,20 @@
                           <td style="text-align: left;">{{ row.autonomousCommunity || '—' }}</td>
                           <td style="text-align: left;">{{ row.province || '—' }}</td>
                           <td>{{ row.population || '—' }}</td>
+                          <td class="user-tracks__action-col">
+                            <ng-container *ngIf="hasStartCoordinates(row); else noStartLocation">
+                              <a class="user-tracks__maps-link user-tracks__maps-link--icon"
+                                [href]="buildGoogleMapsLinkForTrack(row)"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                aria-label="Cómo llegar al inicio de la ruta en Google Maps"
+                                title="Cómo llegar al inicio de la ruta"
+                                (click)="$event.stopPropagation()">
+                                <mat-icon aria-hidden="true">map</mat-icon>
+                              </a>
+                            </ng-container>
+                            <ng-template #noStartLocation>—</ng-template>
+                          </td>
                           <td class="user-tracks__metric user-tracks__metric--right">{{ row.distanceLabel }}</td>
                           <td class="user-tracks__metric user-tracks__metric--center">{{ row.movingTimeLabel }}</td>
                           <td class="user-tracks__metric user-tracks__metric--center">{{ row.totalTimeLabel }}</td>

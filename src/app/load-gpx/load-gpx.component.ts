@@ -92,6 +92,8 @@ interface UserTrackRow {
   autonomousCommunity: string | null;
   province: string | null;
   population: string | null;
+  startLatitude: number | null;
+  startLongitude: number | null;
   distanceKm: number;
   timeSeconds: number;
   totalTimeSeconds: number;
@@ -1840,6 +1842,8 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
     const distanceKm = this.toNumber(track.distanceKm);
     const timeSeconds = this.toNumber(track.timeSeconds);
     const totalTimeSeconds = this.resolveTotalTimeSeconds(track);
+    const startLatitude = track.startLatitude ?? null;
+    const startLongitude = track.startLongitude ?? null;
 
     const title = this.pickFirstText(track as any, ['title', 'trackTitle', 'track_title']);
     const description = this.pickFirstText(track as any, ['description', 'trackDescription', 'track_description']);
@@ -1854,6 +1858,8 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
       autonomousCommunity,
       province,
       population,
+      startLatitude,
+      startLongitude,
       distanceKm,
       timeSeconds,
       totalTimeSeconds,
@@ -2214,12 +2220,21 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
     expanded.add(province);
   }
 
-  buildGoogleMapsLinkForProvince(
-    province: string,
-    autonomousCommunity?: string | null
-  ): string {
-    const query = [province, autonomousCommunity].filter(Boolean).join(', ');
-    return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
+  hasStartCoordinates(row: UserTrackRow): boolean {
+    return Number.isFinite(row.startLatitude) && Number.isFinite(row.startLongitude);
+  }
+
+  buildGoogleMapsLinkForTrack(row: UserTrackRow): string {
+    if (this.hasStartCoordinates(row)) {
+      const destination = `${row.startLatitude},${row.startLongitude}`;
+      return `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(destination)}`;
+    }
+
+    const query = [row.population, row.province, row.autonomousCommunity]
+      .filter(Boolean)
+      .join(', ');
+    const fallbackQuery = query || row.title || row.eventName || 'Inicio de ruta';
+    return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(fallbackQuery)}`;
   }
 
   async animateUserTrack(row: UserTrackRow): Promise<void> {

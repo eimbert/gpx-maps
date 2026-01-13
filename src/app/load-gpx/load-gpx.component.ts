@@ -92,8 +92,8 @@ interface UserTrackRow {
   autonomousCommunity: string | null;
   province: string | null;
   population: string | null;
-  startLatitude: number | null;
-  startLongitude: number | null;
+  startLat?: number | null;
+  startLon?: number | null;
   distanceKm: number;
   timeSeconds: number;
   totalTimeSeconds: number;
@@ -1847,8 +1847,8 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
     const totalTimeSeconds = this.resolveTotalTimeSeconds(track);
     const decodedGpx = this.decodeGpxContent(track.gpxData);
     const startPoint = decodedGpx ? this.extractFirstPointFromGpx(decodedGpx) : null;
-    const startLatitude = track.startLatitude ?? startPoint?.lat ?? null;
-    const startLongitude = track.startLongitude ?? startPoint?.lon ?? null;
+    const startLat = track.startLat ?? startPoint?.lat ?? null;
+    const startLon = track.startLon ?? startPoint?.lon ?? null;
 
     const title = this.pickFirstText(track as any, ['title', 'trackTitle', 'track_title']);
     const description = this.pickFirstText(track as any, ['description', 'trackDescription', 'track_description']);
@@ -1863,8 +1863,8 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
       autonomousCommunity,
       province,
       population,
-      startLatitude,
-      startLongitude,
+      startLat,
+      startLon,
       distanceKm,
       timeSeconds,
       totalTimeSeconds,
@@ -2226,12 +2226,14 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
   }
 
   hasStartCoordinates(row: UserTrackRow): boolean {
-    return Number.isFinite(row.startLatitude) && Number.isFinite(row.startLongitude);
+    return Number.isFinite(row.startLat) && Number.isFinite(row.startLon);
   }
 
+  //Enlace a google maps
   buildGoogleMapsLinkForTrack(row: UserTrackRow): string {
     if (this.hasStartCoordinates(row)) {
-      const destination = `${row.startLatitude},${row.startLongitude}`;
+      const destination = `${row.startLat},${row.startLon}`;
+      console.log("destino por coordenadas")
       return `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(destination)}`;
     }
 
@@ -2399,8 +2401,6 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
       population,
       autonomousCommunity,
       province,
-      startLatitude,
-      startLongitude,
       startLat,
       startLon,
       title: result.title,

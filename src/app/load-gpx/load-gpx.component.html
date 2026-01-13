@@ -208,7 +208,8 @@
                                 [href]="buildGoogleMapsLinkForTrack(row)" target="_blank" rel="noopener noreferrer"
                                 aria-label="Cómo llegar al inicio de la ruta en Google Maps"
                                 title="Cómo llegar al inicio de la ruta" (click)="$event.stopPropagation()">
-                                <mat-icon aria-hidden="true">map</mat-icon>
+                                <mat-icon aria-hidden="true">directions_car</mat-icon>
+                                <mat-icon class="user-tracks__maps-pin" aria-hidden="true">location_on</mat-icon>
                               </a>
                             </td>
                             <td class="user-tracks__metric user-tracks__metric--right">{{ row.distanceLabel }}</td>

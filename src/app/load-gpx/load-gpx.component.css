@@ -600,6 +600,11 @@
   font-size: 18px;
 }
 
+.user-tracks__maps-link--icon .user-tracks__maps-pin {
+  font-size: 16px;
+  margin-left: -4px;
+}
+
 .user-tracks__maps-link:hover,
 .user-tracks__maps-link:focus-visible {
   text-decoration: underline;

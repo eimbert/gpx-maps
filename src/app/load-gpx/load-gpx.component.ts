@@ -1602,8 +1602,6 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
       population,
       autonomousCommunity,
       province,
-      startLatitude,
-      startLongitude,
       startLat,
       startLon,
       routeXml: gpxData,

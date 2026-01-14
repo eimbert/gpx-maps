@@ -3,7 +3,7 @@
   <main class="home__content">
     <p class="eyebrow">Te damos la Bienvenida</p>
     <h1 class="headline">¿Qué te apetece hacer ahora?</h1>
-    <p class="lead">Elige entre animar tus archivos GPX o descubrir eventos y rankings para competir</p>
+    <p class="lead">Elige entre animar tus archivos GPX, planificar tus próximas salidas o descubrir eventos y rankings para competir</p>
 
     <div class="home__actions">
       <a class="action-card action-card--primary" [routerLink]="['/load']" [queryParams]="{ mode: 'routes' }">
@@ -13,6 +13,15 @@
           <p class="action-card__subtitle">Carga tus rutas, visualízalas y comparte animaciones llamativas</p>
         </div>
         <span class="action-card__cta">Empezar</span>
+      </a>
+
+      <a class="action-card action-card--planner" [routerLink]="['/plan']">
+        <div class="action-card__icon">🗺️📅</div>
+        <div class="action-card__texts">
+          <p class="action-card__title">Planifica tus próximas salidas</p>
+          <p class="action-card__subtitle">Organiza recorridos, guarda ideas y arma tu calendario de aventuras</p>
+        </div>
+        <span class="action-card__cta">Planificar</span>
       </a>
 
       <a class="action-card action-card--secondary" [routerLink]="['/events']">

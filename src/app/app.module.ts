@@ -32,6 +32,7 @@ import { AuthInterceptor } from './services/auth.interceptor';
 import { MyTracksDialogComponent } from './my-tracks-dialog/my-tracks-dialog.component';
 import { EventTrackUploadDialogComponent } from './event-track-upload-dialog/event-track-upload-dialog.component';
 import { StandaloneTrackUploadDialogComponent } from './standalone-track-upload-dialog/standalone-track-upload-dialog.component';
+import { PlanOutingComponent } from './plan-outing/plan-outing.component';
 
 @NgModule({
   declarations: [
@@ -50,7 +51,8 @@ import { StandaloneTrackUploadDialogComponent } from './standalone-track-upload-
     VerificationDialogComponent,
     MyTracksDialogComponent,
     EventTrackUploadDialogComponent,
-    StandaloneTrackUploadDialogComponent
+    StandaloneTrackUploadDialogComponent,
+    PlanOutingComponent
   ],
   imports: [
     MatCheckboxModule,

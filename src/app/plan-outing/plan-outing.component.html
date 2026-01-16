@@ -1,0 +1,177 @@
+<div class="plan">
+  <header class="plan__toolbar">
+    <div class="plan__search">
+      <mat-icon aria-hidden="true">search</mat-icon>
+      <input
+        type="text"
+        [(ngModel)]="folderSearch"
+        (input)="applyFolderFilter()"
+        placeholder="Buscar carpeta"
+        aria-label="Buscar carpeta">
+    </div>
+    <button class="plan__primary" type="button" (click)="toggleNewFolderForm()">
+      Nueva carpeta
+    </button>
+  </header>
+
+  <section class="plan__new" *ngIf="showNewFolderForm">
+    <div class="plan__new-fields">
+      <label>
+        Nombre de carpeta
+        <input type="text" [(ngModel)]="newFolderName" placeholder="Ej: Salida al Montseny">
+      </label>
+      <label>
+        Fecha prevista
+        <input type="date" [(ngModel)]="newFolderDate">
+      </label>
+    </div>
+    <label>
+      Observaciones
+      <textarea rows="2" [(ngModel)]="newFolderNotes" placeholder="Notas rápidas"></textarea>
+    </label>
+    <div class="plan__new-actions">
+      <button class="plan__secondary" type="button" (click)="toggleNewFolderForm()">Cancelar</button>
+      <button class="plan__primary" type="button" (click)="createFolder()">Crear carpeta</button>
+    </div>
+  </section>
+
+  <div class="plan__layout">
+    <section class="plan__details" *ngIf="activeFolder && editFolder; else emptyState">
+      <div class="plan__details-header">
+        <div>
+          <p class="eyebrow">Carpeta abierta</p>
+          <h2>Planifica tu salida</h2>
+        </div>
+        <button class="plan__primary" type="button" (click)="saveFolder()" [disabled]="isSavingFolder">
+          Guardar
+        </button>
+      </div>
+
+      <div class="plan__fields">
+        <label>
+          Título
+          <input type="text" [(ngModel)]="editFolder.name">
+        </label>
+        <label>
+          Fecha
+          <input type="date" [(ngModel)]="editFolder.plannedDate">
+        </label>
+      </div>
+
+      <label>
+        Observaciones
+        <textarea rows="3" [(ngModel)]="editFolder.observations" placeholder="Añade información útil"></textarea>
+      </label>
+
+      <section class="plan__invite">
+        <div class="plan__section-header">
+          <h3>Invitar</h3>
+        </div>
+        <div class="plan__invite-row">
+          <input
+            type="text"
+            [(ngModel)]="inviteQuery"
+            placeholder="Busca por nombre o email"
+            aria-label="Buscar usuarios">
+          <button class="plan__secondary" type="button" (click)="searchInvite()">Buscar</button>
+        </div>
+        <p class="plan__hint" *ngIf="inviteStatusMessage">{{ inviteStatusMessage }}</p>
+        <div class="plan__invite-results" *ngIf="inviteResults.length">
+          <div class="plan__invite-item" *ngFor="let user of inviteResults">
+            <div>
+              <p>{{ user.name || 'Usuario' }}</p>
+              <span>{{ user.email }}</span>
+            </div>
+            <button class="plan__primary" type="button" (click)="inviteUser(user)">Invitar</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="plan__tracks">
+        <div class="plan__section-header">
+          <h3>Tracks</h3>
+          <button class="plan__secondary" type="button" (click)="onTrackImportClick()" [disabled]="isImportingTrack">
+            Importar track
+          </button>
+          <input #trackInput type="file" accept=".gpx" hidden (change)="onTrackFileSelected($event)">
+        </div>
+
+        <p class="plan__hint" *ngIf="!editFolder.plannedDate">Añade una fecha para ver la predicción del tiempo por track.</p>
+
+        <div class="plan__table-wrapper" *ngIf="tracks.length; else emptyTracks">
+          <table class="plan__table" aria-label="Tracks planificados">
+            <thead>
+              <tr>
+                <th scope="col">Track</th>
+                <th scope="col">Votos</th>
+                <th scope="col">Distancia</th>
+                <th scope="col">Tiempo</th>
+                <th scope="col">Meteo</th>
+                <th scope="col"></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let track of tracks">
+                <td>
+                  <div class="plan__track-title">{{ track.name }}</div>
+                  <span class="plan__track-meta">{{ track.startPopulation || 'Ubicación por definir' }}</span>
+                </td>
+                <td class="plan__center">{{ votesByTrackId.get(track.id) || 0 }}</td>
+                <td class="plan__center">{{ formatDistance(track.distanceKm) }}</td>
+                <td class="plan__center">{{ formatDuration(track.movingTimeSec) }}</td>
+                <td class="plan__center">
+                  <span [attr.title]="resolveWeatherHint(track.id)">{{ resolveWeatherLabel(track.id) }}</span>
+                </td>
+                <td class="plan__actions">
+                  <button class="plan__ghost" type="button" (click)="toggleVote(track)">
+                    {{ resolveVoteLabel(track) }}
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <ng-template #emptyTracks>
+          <p class="plan__hint">Todavía no hay tracks en esta carpeta.</p>
+        </ng-template>
+      </section>
+    </section>
+
+    <aside class="plan__folders">
+      <div class="plan__section-header">
+        <h3>Carpetas</h3>
+        <span class="plan__hint" *ngIf="isLoadingFolders">Cargando...</span>
+      </div>
+      <div class="plan__folders-list" *ngIf="filteredFolders.length; else emptyFolders">
+        <button
+          class="plan__folder-card"
+          type="button"
+          *ngFor="let folder of filteredFolders"
+          (click)="selectFolder(folder)"
+          [class.plan__folder-card--active]="activeFolder?.id === folder.id">
+          <div>
+            <p>{{ folder.name }}</p>
+            <span>{{ folder.plannedDate ? (folder.plannedDate | date: 'longDate') : 'Sin fecha' }}</span>
+          </div>
+          <button
+            class="plan__icon-button"
+            type="button"
+            aria-label="Eliminar carpeta"
+            (click)="confirmDeleteFolder(folder); $event.stopPropagation();">
+            <mat-icon aria-hidden="true">delete</mat-icon>
+          </button>
+        </button>
+      </div>
+      <ng-template #emptyFolders>
+        <p class="plan__hint">No hay carpetas creadas todavía.</p>
+      </ng-template>
+    </aside>
+  </div>
+</div>
+
+<ng-template #emptyState>
+  <div class="plan__empty">
+    <h2>Crea una carpeta para empezar</h2>
+    <p>Organiza tracks, invita a tu grupo y empieza a votar rutas.</p>
+  </div>
+</ng-template>

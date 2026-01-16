@@ -4,11 +4,13 @@ import { HomeComponent } from './home/home.component';
 import { LoadGpxComponent } from './load-gpx/load-gpx.component';
 import { MapComponent } from './map/map.component';
 import { AuthGuard } from './services/auth.guard';
+import { PlanOutingComponent } from './plan-outing/plan-outing.component';
 
 const routes: Routes = [
   { path: '', component: HomeComponent },
   { path: 'load', component: LoadGpxComponent },
   { path: 'events', component: LoadGpxComponent, canActivate: [AuthGuard], data: { mode: 'events' } },
+  { path: 'plan', component: PlanOutingComponent, canActivate: [AuthGuard] },
   { path: 'map', component: MapComponent },
   { path: '**', redirectTo: '' }
 ];

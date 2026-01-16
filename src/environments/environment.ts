@@ -9,7 +9,9 @@ export const environment = {
   resendVerificationUrl: 'http://localhost:8080/api/auth/resend-verification',
   meUrl: 'http://localhost:8080/api/tracks/me',
   routesApiBase: 'http://localhost:8080/api/routes',
-  tracksApiBase: 'http://localhost:8080/api/tracks'
+  tracksApiBase: 'http://localhost:8080/api/tracks',
+  planApiBase: 'http://localhost:8080/api/plan-folders',
+  usersApiBase: 'http://localhost:8080/api/users'
 };
 
 /*

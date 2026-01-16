@@ -1,16 +1,21 @@
 import { Injectable } from '@angular/core';
 import { CanActivate, Router, UrlTree } from '@angular/router';
 import { map } from 'rxjs/operators';
-import { Observable } from 'rxjs';
+import { Observable, of } from 'rxjs';
 import { MatDialog } from '@angular/material/dialog';
 import { InfoDialogComponent, InfoDialogData } from '../info-dialog/info-dialog.component';
 import { AuthService } from './auth.service';
+import { environment } from '../../environments/environment';
 
 @Injectable({ providedIn: 'root' })
 export class AuthGuard implements CanActivate {
   constructor(private authService: AuthService, private router: Router, private dialog: MatDialog) {}
 
   canActivate(): Observable<boolean | UrlTree> {
+    if (environment.devBypassAuthGuard) {
+      return of(true);
+    }
+
     const hadStoredSession = !!this.authService.getSession();
 
     return this.authService.validateSessionWithBackend().pipe(

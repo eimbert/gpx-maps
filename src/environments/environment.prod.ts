@@ -1,5 +1,6 @@
 export const environment = {
   production: true,
+  devBypassAuthGuard: false,
   loginUrl: '/api/auth/login',
   registerUrl: '/api/auth/register',
   resendVerificationUrl: '/api/auth/resend-verification',

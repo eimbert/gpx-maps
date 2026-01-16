@@ -28,6 +28,19 @@ type VoteResponse = {
   userVoteTrackId?: number | null;
 };
 
+export type PlanTrackImportPayload = {
+  folder_id: number;
+  created_by_user_id: number;
+  name: string;
+  start_lat: number | null;
+  start_lon: number | null;
+  start_population: string | null;
+  distance_km: number | null;
+  moving_time_sec: number | null;
+  total_time_sec: number | null;
+  route_xml: string;
+};
+
 @Injectable({ providedIn: 'root' })
 export class PlanService {
   private readonly planApiBase = environment.planApiBase;
@@ -65,10 +78,9 @@ export class PlanService {
     );
   }
 
-  importTrack(folderId: number, file: File): Observable<PlanTrack> {
-    const formData = new FormData();
-    formData.append('file', file);
-    return this.http.post<PlanTrack>(`${this.planApiBase}/${folderId}/tracks/import`, formData).pipe(
+  importTrack(folderId: number, payload: PlanTrackImportPayload): Observable<PlanTrack> {
+    console.log('Plan track import payload:', payload);
+    return this.http.post<PlanTrack>(`${this.planApiBase}/${folderId}/tracks/import`, payload).pipe(
       map(track => this.normalizeTrack(track))
     );
   }

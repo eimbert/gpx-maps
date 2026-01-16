@@ -235,9 +235,31 @@
   text-decoration: none;
 }
 
+.plan__animate-link {
+  color: #f97316;
+  background: transparent;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+}
+
+.plan__animate-link:disabled {
+  color: #cbd5f5;
+  cursor: not-allowed;
+}
+
 .plan__maps-link:hover,
 .plan__maps-link:focus-visible {
   color: #1d4ed8;
+}
+
+.plan__animate-link:hover,
+.plan__animate-link:focus-visible {
+  color: #ea580c;
+}
+
+.plan__muted {
+  color: #94a3b8;
 }
 
 .plan__weather {

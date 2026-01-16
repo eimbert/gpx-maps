@@ -133,6 +133,7 @@
             <thead>
               <tr>
                 <th scope="col">Track</th>
+                <th scope="col">Cómo llegar</th>
                 <th scope="col">Votos</th>
                 <th scope="col">Distancia</th>
                 <th scope="col">Tiempo</th>
@@ -146,11 +147,26 @@
                   <div class="plan__track-title">{{ track.name }}</div>
                   <span class="plan__track-meta">{{ track.startPopulation || 'Ubicación por definir' }}</span>
                 </td>
+                <td class="plan__center">
+                  <ng-container *ngIf="resolveMapsLink(track) as mapsLink; else noMapsLink">
+                    <a class="plan__maps-link" [href]="mapsLink" target="_blank" rel="noopener noreferrer"
+                      aria-label="Ver ubicación en Google Maps">
+                      <mat-icon aria-hidden="true">location_on</mat-icon>
+                    </a>
+                  </ng-container>
+                  <ng-template #noMapsLink>—</ng-template>
+                </td>
                 <td class="plan__center">{{ votesByTrackId.get(track.id) || 0 }}</td>
                 <td class="plan__center">{{ formatDistance(track.distanceKm) }}</td>
                 <td class="plan__center">{{ formatDuration(track.movingTimeSec) }}</td>
                 <td class="plan__center">
-                  <span [attr.title]="resolveWeatherHint(track.id)">{{ resolveWeatherLabel(track.id) }}</span>
+                  <div class="plan__weather" [attr.title]="resolveWeatherHint(track.id)">
+                    <mat-icon class="plan__weather-icon" aria-hidden="true">
+                      {{ resolveWeatherIcon(track.id) }}
+                    </mat-icon>
+                    <span class="plan__weather-label">{{ resolveWeatherCategory(track.id) }}</span>
+                    <span class="plan__weather-temp">{{ resolveWeatherTemperature(track.id) }}</span>
+                  </div>
                 </td>
                 <td class="plan__actions">
                   <button class="plan__ghost" type="button" (click)="toggleVote(track)">

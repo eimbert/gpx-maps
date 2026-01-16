@@ -161,9 +161,9 @@
                 <td class="plan__center">{{ formatDuration(track.movingTimeSec) }}</td>
                 <td class="plan__center">
                   <div class="plan__weather" [attr.title]="resolveWeatherHint(track.id)">
-                    <mat-icon class="plan__weather-icon" aria-hidden="true">
+                    <span class="plan__weather-icon" aria-hidden="true">
                       {{ resolveWeatherIcon(track.id) }}
-                    </mat-icon>
+                    </span>
                     <span class="plan__weather-label">{{ resolveWeatherCategory(track.id) }}</span>
                     <span class="plan__weather-temp">{{ resolveWeatherTemperature(track.id) }}</span>
                   </div>

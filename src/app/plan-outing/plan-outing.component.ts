@@ -1,6 +1,7 @@
 import { Component, ElementRef, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { MatDialog } from '@angular/material/dialog';
+import { Router } from '@angular/router';
 import { Subject, debounceTime, firstValueFrom, map, switchMap, takeUntil } from 'rxjs';
 import { InfoDialogComponent, InfoDialogData, InfoDialogResult } from '../info-dialog/info-dialog.component';
 import { PlanService } from '../services/plan.service';
@@ -70,6 +71,7 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
     private http: HttpClient,
     private dialog: MatDialog,
     private gpxImportService: GpxImportService,
+    private router: Router,
     identityService: UserIdentityService
   ) {
     this.userId = identityService.getUserId();
@@ -340,6 +342,57 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
     return hours ? `${hours}h ${minutes}m` : `${minutes}m`;
   }
 
+  canVoteOnTracks(): boolean {
+    if (!this.activeFolder) return false;
+    if (this.tracks.length < 2) return false;
+    const hasOtherUserTracks = this.tracks.some(track => track.createdByUserId !== this.userId);
+    const isOwner = this.activeFolder.ownerUserId === this.userId;
+    return !isOwner || hasOtherUserTracks;
+  }
+
+  canAnimateTrack(track: PlanTrack): boolean {
+    return !!track.gpxStoragePath;
+  }
+
+  async animateTrack(track: PlanTrack): Promise<void> {
+    if (!track.gpxStoragePath) {
+      this.showMessage('No hay un GPX disponible para este track.');
+      return;
+    }
+
+    let gpxData: string;
+    try {
+      gpxData = await firstValueFrom(this.http.get(track.gpxStoragePath, { responseType: 'text' }));
+    } catch {
+      this.showMessage('No se pudo descargar el GPX.');
+      return;
+    }
+
+    const trkpts = this.parseTrackPointsFromGpx(gpxData);
+    if (!trkpts.length) {
+      this.showMessage('El GPX no contiene puntos válidos.');
+      return;
+    }
+
+    const payload = {
+      names: [track.name || 'Track'],
+      colors: [],
+      tracks: [{ trkpts }],
+      logo: null,
+      rmstops: false,
+      marcarPausasLargas: false,
+      umbralPausaSegundos: 60,
+      activarMusica: true,
+      grabarAnimacion: false,
+      relacionAspectoGrabacion: '16:9',
+      modoVisualizacion: 'general',
+      mostrarPerfil: true
+    };
+
+    sessionStorage.setItem('gpxViewerPayload', JSON.stringify(payload));
+    this.router.navigate(['/map'], { queryParams: { from: 'plan' } });
+  }
+
   private refreshForecasts(): void {
     this.weatherByTrackId.clear();
     const plannedDate = this.editFolder?.plannedDate;
@@ -471,6 +524,23 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
       total_time_sec: Number.isFinite(totalTimeSec) ? totalTimeSec : null,
       route_xml: gpxData
     };
+  }
+
+  private parseTrackPointsFromGpx(gpxData: string): { lat: number; lon: number; ele: number; time: string }[] {
+    try {
+      const parser = new DOMParser();
+      const gpx = parser.parseFromString(gpxData, 'application/xml');
+      const trkpts = Array.from(gpx.getElementsByTagName('trkpt'));
+      if (gpx.getElementsByTagName('parsererror').length || !trkpts.length) return [];
+      return trkpts.map(trkpt => ({
+        lat: parseFloat(trkpt.getAttribute('lat') || '0'),
+        lon: parseFloat(trkpt.getAttribute('lon') || '0'),
+        ele: parseFloat(trkpt.getElementsByTagName('ele')[0]?.textContent || '0'),
+        time: trkpt.getElementsByTagName('time')[0]?.textContent || ''
+      }));
+    } catch {
+      return [];
+    }
   }
 
   private openInfoDialog(data: InfoDialogData): Promise<InfoDialogResult | undefined> {

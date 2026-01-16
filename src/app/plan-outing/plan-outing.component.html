@@ -137,6 +137,7 @@
                 <th scope="col">Votos</th>
                 <th scope="col">Distancia</th>
                 <th scope="col">Tiempo</th>
+                <th scope="col">Animar GPX</th>
                 <th scope="col">Meteo</th>
                 <th scope="col"></th>
               </tr>
@@ -160,6 +161,13 @@
                 <td class="plan__center">{{ formatDistance(track.distanceKm) }}</td>
                 <td class="plan__center">{{ formatDuration(track.movingTimeSec) }}</td>
                 <td class="plan__center">
+                  <button class="plan__maps-link plan__animate-link" type="button"
+                    [disabled]="!canAnimateTrack(track)" (click)="animateTrack(track)"
+                    [attr.aria-label]="canAnimateTrack(track) ? 'Animar GPX en el mapa' : 'GPX no disponible'">
+                    <mat-icon aria-hidden="true">directions_bike</mat-icon>
+                  </button>
+                </td>
+                <td class="plan__center">
                   <div class="plan__weather" [attr.title]="resolveWeatherHint(track.id)">
                     <span class="plan__weather-icon" aria-hidden="true">
                       {{ resolveWeatherIcon(track.id) }}
@@ -168,9 +176,14 @@
                   </div>
                 </td>
                 <td class="plan__actions">
-                  <button class="plan__ghost" type="button" (click)="toggleVote(track)">
-                    {{ resolveVoteLabel(track) }}
-                  </button>
+                  <ng-container *ngIf="canVoteOnTracks(); else noVote">
+                    <button class="plan__ghost" type="button" (click)="toggleVote(track)">
+                      {{ resolveVoteLabel(track) }}
+                    </button>
+                  </ng-container>
+                  <ng-template #noVote>
+                    <span class="plan__muted">—</span>
+                  </ng-template>
                 </td>
               </tr>
             </tbody>

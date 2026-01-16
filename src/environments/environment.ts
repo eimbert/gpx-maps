@@ -4,7 +4,7 @@
 
 export const environment = {
   production: false,
-  devBypassAuthGuard: true,
+  devBypassAuthGuard: false,
   loginUrl: 'http://localhost:8080/api/auth/login',
   registerUrl: 'http://localhost:8080/api/auth/register',
   resendVerificationUrl: 'http://localhost:8080/api/auth/resend-verification',

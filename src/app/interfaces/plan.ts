@@ -21,9 +21,9 @@ export interface PlanTrack {
   totalTimeSec: number | null;
   howToGetUrl: string | null;
   sourceType: string | null;
-  gpxStoragePath: string | null;
   sortOrder: number | null;
   createdAt: string;
+  routeXml: string;
   votesCount?: number;
 }
 

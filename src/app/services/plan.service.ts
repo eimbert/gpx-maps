@@ -157,7 +157,7 @@ export class PlanService {
       totalTimeSec: track.totalTimeSec ?? (track as any).total_time_sec ?? null,
       howToGetUrl: track.howToGetUrl ?? (track as any).how_to_get_url ?? null,
       sourceType: track.sourceType ?? (track as any).source_type ?? null,
-      gpxStoragePath: track.gpxStoragePath ?? (track as any).gpx_storage_path ?? null,
+      routeXml: track.routeXml ?? (track as any).routeXml ?? null,
       sortOrder: track.sortOrder ?? (track as any).sort_order ?? null,
       createdAt: track.createdAt ?? (track as any).created_at
     };

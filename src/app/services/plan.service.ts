@@ -78,9 +78,9 @@ export class PlanService {
     );
   }
 
-  importTrack(folderId: number, payload: PlanTrackImportPayload): Observable<PlanTrack> {
+  importTrack(payload: PlanTrackImportPayload): Observable<PlanTrack> {
     console.log('Plan track import payload:', payload);
-    return this.http.post<PlanTrack>(`${this.planApiBase}/${folderId}/tracks/import`, payload).pipe(
+    return this.http.post<PlanTrack>(`${this.planApiBase}/tracks/import`, payload).pipe(
       map(track => this.normalizeTrack(track))
     );
   }

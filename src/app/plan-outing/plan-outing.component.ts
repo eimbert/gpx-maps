@@ -244,7 +244,7 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
         if (input) input.value = '';
         return;
       }
-      this.planService.importTrack(this.activeFolder.id, payload).subscribe(track => {
+      this.planService.importTrack(payload).subscribe(track => {
         this.tracks = [...this.tracks, track];
         this.isImportingTrack = false;
         this.refreshForecasts();

@@ -48,9 +48,15 @@
           *ngFor="let folder of filteredFolders"
           (click)="selectFolder(folder)"
           [class.plan__folder-card--active]="activeFolder?.id === folder.id">
-          <div>
+          <div class="plan__folder-content">
             <p>{{ folder.name }}</p>
             <span>{{ folder.plannedDate ? (folder.plannedDate | date: 'longDate') : 'Sin fecha' }}</span>
+            <span class="plan__folder-divider" aria-hidden="true"></span>
+            <div class="plan__folder-meta">
+              <span>{{ resolveFolderTrackLabel(folder) }}</span>
+              <span class="plan__folder-dot">·</span>
+              <span>{{ resolveFolderVisibility(folder) }}</span>
+            </div>
           </div>
           <button
             class="plan__icon-button"

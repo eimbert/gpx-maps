@@ -6,6 +6,8 @@ export interface PlanFolder {
   observations: string | null;
   createdAt: string;
   updatedAt: string;
+  tracksCount?: number;
+  shared?: boolean;
 }
 
 export interface PlanTrack {

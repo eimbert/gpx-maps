@@ -11,7 +11,7 @@
 :host {
   display: block;
   min-height: 100vh;
-  background: #f8fafc;
+  background: #e2e8f0;
 }
 
 .plan__toolbar {
@@ -214,8 +214,13 @@
 .plan__table th,
 .plan__table td {
   padding: 12px;
-  text-align: left;
+  text-align: center;
   border-bottom: 1px solid #e2e8f0;
+}
+
+.plan__table th:first-child,
+.plan__table td:first-child {
+  text-align: left;
 }
 
 .plan__center {
@@ -241,6 +246,7 @@
   justify-content: center;
   gap: 6px;
   flex-wrap: wrap;
+  flex-direction: column;
 }
 
 .plan__weather-icon {
@@ -248,10 +254,6 @@
   line-height: 1;
   height: 20px;
   width: 20px;
-}
-
-.plan__weather-label {
-  font-weight: 600;
 }
 
 .plan__weather-temp {
@@ -269,7 +271,7 @@
 }
 
 .plan__actions {
-  text-align: right;
+  text-align: center;
 }
 
 .plan__folders {

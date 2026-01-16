@@ -305,6 +305,29 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
     return `Predicción ${summary.date}`;
   }
 
+  resolveWeatherIcon(trackId: number): string {
+    const summary = this.weatherByTrackId.get(trackId);
+    if (!summary) return 'help_outline';
+    return this.mapWeatherIcon(summary.weatherCode);
+  }
+
+  resolveWeatherCategory(trackId: number): string {
+    const summary = this.weatherByTrackId.get(trackId);
+    if (!summary) return 'Sin datos';
+    return this.mapWeatherCategory(summary.weatherCode);
+  }
+
+  resolveWeatherTemperature(trackId: number): string {
+    const summary = this.weatherByTrackId.get(trackId);
+    if (!summary) return '—';
+    return `${summary.minTemp}°/${summary.maxTemp}°`;
+  }
+
+  resolveMapsLink(track: PlanTrack): string | null {
+    if (track.startLat === null || track.startLon === null) return null;
+    return `https://www.google.com/maps/search/?api=1&query=${track.startLat},${track.startLon}`;
+  }
+
   formatDistance(distance: number | null): string {
     if (!distance) return '—';
     return `${distance.toFixed(1)} km`;
@@ -387,6 +410,22 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
       99: 'Tormenta intensa'
     };
     return map[code] ?? 'Meteo';
+  }
+
+  private mapWeatherIcon(code: number): string {
+    if (code === 0 || code === 1) return 'wb_sunny';
+    if ([2, 3, 45, 48].includes(code)) return 'cloud';
+    if ((code >= 51 && code <= 65) || (code >= 80 && code <= 82) || (code >= 71 && code <= 75)) return 'grain';
+    if (code >= 95) return 'thunderstorm';
+    return 'cloud';
+  }
+
+  private mapWeatherCategory(code: number): string {
+    if (code === 0 || code === 1) return 'Sol';
+    if ([2, 3, 45, 48].includes(code)) return 'Nublado';
+    if ((code >= 51 && code <= 65) || (code >= 80 && code <= 82) || (code >= 71 && code <= 75)) return 'Chubascos';
+    if (code >= 95) return 'Tormenta';
+    return 'Nublado';
   }
 
   private applyVotes(response: PlanFolderVotesResponse): void {

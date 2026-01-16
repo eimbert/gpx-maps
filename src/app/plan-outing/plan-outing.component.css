@@ -222,6 +222,42 @@
   text-align: center;
 }
 
+.plan__maps-link {
+  color: #2563eb;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+}
+
+.plan__maps-link:hover,
+.plan__maps-link:focus-visible {
+  color: #1d4ed8;
+}
+
+.plan__weather {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.plan__weather-icon {
+  font-size: 18px;
+  height: 18px;
+  width: 18px;
+}
+
+.plan__weather-label {
+  font-weight: 600;
+}
+
+.plan__weather-temp {
+  color: #64748b;
+  font-size: 12px;
+}
+
 .plan__track-title {
   font-weight: 600;
 }

@@ -183,6 +183,11 @@ export class MapComponent implements OnInit, AfterViewInit {
       return;
     }
 
+    if (origin === 'plan') {
+      this.router.navigate(['/plan']);
+      return;
+    }
+
     this.router.navigate(['/']);
   }
 

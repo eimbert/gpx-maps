@@ -130,6 +130,12 @@ export class PlanService {
 
   private normalizeFolder(folder: PlanFolder): PlanFolder {
     const ownerUserId = Number(folder.ownerUserId ?? (folder as any).owner_user_id);
+    const tracksCountRaw = (folder as any).tracksCount
+      ?? (folder as any).trackCount
+      ?? (folder as any).tracks_count
+      ?? (folder as any).track_count;
+    const tracksCount = Number.isFinite(Number(tracksCountRaw)) ? Number(tracksCountRaw) : undefined;
+    const sharedRaw = (folder as any).shared ?? (folder as any).isShared ?? (folder as any).is_shared;
     return {
       ...folder,
       id: Number(folder.id),
@@ -137,7 +143,9 @@ export class PlanService {
       plannedDate: folder.plannedDate ?? (folder as any).planned_date ?? null,
       observations: folder.observations ?? (folder as any).observations ?? null,
       createdAt: folder.createdAt ?? (folder as any).created_at,
-      updatedAt: folder.updatedAt ?? (folder as any).updated_at
+      updatedAt: folder.updatedAt ?? (folder as any).updated_at,
+      tracksCount,
+      shared: sharedRaw === undefined || sharedRaw === null ? undefined : Boolean(sharedRaw)
     };
   }
 

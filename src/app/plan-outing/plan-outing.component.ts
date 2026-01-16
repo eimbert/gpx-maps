@@ -330,6 +330,31 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
     return `https://www.google.com/maps/search/?api=1&query=${track.startLat},${track.startLon}`;
   }
 
+  resolveFolderTrackCount(folder: PlanFolder): number {
+    if (Number.isFinite(folder.tracksCount ?? NaN)) {
+      return Number(folder.tracksCount);
+    }
+
+    if (this.activeFolder?.id === folder.id) {
+      return this.tracks.length;
+    }
+
+    return 0;
+  }
+
+  resolveFolderTrackLabel(folder: PlanFolder): string {
+    const count = this.resolveFolderTrackCount(folder);
+    return `${count} ${count === 1 ? 'track' : 'tracks'}`;
+  }
+
+  resolveFolderVisibility(folder: PlanFolder): string {
+    if (folder.shared !== undefined) {
+      return folder.shared ? 'Compartida' : 'Privada';
+    }
+
+    return folder.ownerUserId !== this.userId ? 'Compartida' : 'Privada';
+  }
+
   formatDistance(distance: number | null): string {
     if (!distance) return '—';
     return `${distance.toFixed(1)} km`;

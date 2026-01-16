@@ -376,18 +376,18 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
   }
 
   canAnimateTrack(track: PlanTrack): boolean {
-    return !!track.gpxStoragePath;
+    return !!track.routeXml;
   }
 
   async animateTrack(track: PlanTrack): Promise<void> {
-    if (!track.gpxStoragePath) {
+    if (!track.routeXml) {
       this.showMessage('No hay un GPX disponible para este track.');
       return;
     }
 
     let gpxData: string;
     try {
-      gpxData = await firstValueFrom(this.http.get(track.gpxStoragePath, { responseType: 'text' }));
+      gpxData = track.routeXml // await firstValueFrom(this.http.get(track.routeXml, { responseType: 'text' }));
     } catch {
       this.showMessage('No se pudo descargar el GPX.');
       return;

@@ -2,11 +2,7 @@
   <header class="plan__toolbar">
     <div class="plan__search">
       <mat-icon aria-hidden="true">search</mat-icon>
-      <input
-        type="text"
-        [(ngModel)]="folderSearch"
-        (input)="applyFolderFilter()"
-        placeholder="Buscar carpeta"
+      <input type="text" [(ngModel)]="folderSearch" (input)="applyFolderFilter()" placeholder="Buscar carpeta"
         aria-label="Buscar carpeta">
     </div>
     <button class="plan__primary" type="button" (click)="toggleNewFolderForm()">
@@ -58,10 +54,7 @@
               <span>{{ resolveFolderVisibility(folder) }}</span>
             </div>
           </div>
-          <button
-            class="plan__icon-button"
-            type="button"
-            aria-label="Eliminar carpeta"
+          <button class="plan__icon-button" type="button" aria-label="Eliminar carpeta"
             (click)="confirmDeleteFolder(folder); $event.stopPropagation();">
             <mat-icon aria-hidden="true">delete</mat-icon>
           </button>
@@ -104,10 +97,7 @@
           <h3>Invitar</h3>
         </div>
         <div class="plan__invite-row">
-          <input
-            type="text"
-            [(ngModel)]="inviteQuery"
-            placeholder="Busca por nombre o email"
+          <input type="text" [(ngModel)]="inviteQuery" placeholder="Busca por nombre o email"
             aria-label="Buscar usuarios">
           <button class="plan__secondary" type="button" (click)="searchInvite()">Buscar</button>
         </div>
@@ -132,7 +122,8 @@
           <input #trackInput type="file" accept=".gpx" hidden (change)="onTrackFileSelected($event)">
         </div>
 
-        <p class="plan__hint" *ngIf="!editFolder.plannedDate">Añade una fecha para ver la predicción del tiempo por track.</p>
+        <p class="plan__hint" *ngIf="!editFolder.plannedDate">Añade una fecha para ver la predicción del tiempo por
+          track.</p>
 
         <div class="plan__table-wrapper" *ngIf="tracks.length; else emptyTracks">
           <table class="plan__table" aria-label="Tracks planificados">
@@ -143,7 +134,7 @@
                 <th scope="col">Votos</th>
                 <th scope="col">Distancia</th>
                 <th scope="col">Tiempo</th>
-                <th scope="col">Animar GPX</th>
+                <th scope="col">Ver ruta</th>
                 <th scope="col">Meteo</th>
                 <th scope="col"></th>
               </tr>
@@ -167,8 +158,8 @@
                 <td class="plan__center">{{ formatDistance(track.distanceKm) }}</td>
                 <td class="plan__center">{{ formatDuration(track.movingTimeSec) }}</td>
                 <td class="plan__center">
-                  <button class="plan__maps-link plan__animate-link" type="button"
-                    [disabled]="!canAnimateTrack(track)" (click)="animateTrack(track)"
+                  <button class="plan__maps-link plan__animate-link" type="button" [disabled]="!canAnimateTrack(track)"
+                    (click)="animateTrack(track)"
                     [attr.aria-label]="canAnimateTrack(track) ? 'Animar GPX en el mapa' : 'GPX no disponible'">
                     <mat-icon aria-hidden="true">directions_bike</mat-icon>
                   </button>

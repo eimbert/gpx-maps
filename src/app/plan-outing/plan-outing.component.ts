@@ -4,6 +4,8 @@ import { MatDialog } from '@angular/material/dialog';
 import { Subject, debounceTime, firstValueFrom, map, switchMap, takeUntil } from 'rxjs';
 import { InfoDialogComponent, InfoDialogData, InfoDialogResult } from '../info-dialog/info-dialog.component';
 import { PlanService } from '../services/plan.service';
+import { GpxImportService } from '../services/gpx-import.service';
+import { UserIdentityService } from '../services/user-identity.service';
 import {
   PlanFolder,
   PlanFolderVotesResponse,
@@ -61,12 +63,17 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
 
   private readonly destroy$ = new Subject<void>();
   private readonly inviteSearch$ = new Subject<string>();
+  private readonly userId: number;
 
   constructor(
     private planService: PlanService,
     private http: HttpClient,
-    private dialog: MatDialog
-  ) {}
+    private dialog: MatDialog,
+    private gpxImportService: GpxImportService,
+    identityService: UserIdentityService
+  ) {
+    this.userId = identityService.getUserId();
+  }
 
   ngOnInit(): void {
     this.loadFolders();
@@ -217,19 +224,37 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
     this.trackInput?.nativeElement?.click();
   }
 
-  onTrackFileSelected(event: Event): void {
+  async onTrackFileSelected(event: Event): Promise<void> {
     if (!this.activeFolder) return;
     const input = event.target as HTMLInputElement;
     const file = input.files?.[0];
     if (!file) return;
 
-    this.isImportingTrack = true;
-    this.planService.importTrack(this.activeFolder.id, file).subscribe(track => {
-      this.tracks = [...this.tracks, track];
-      this.isImportingTrack = false;
-      this.refreshForecasts();
+    if (!file.name.toLowerCase().endsWith('.gpx')) {
+      this.showMessage('Selecciona un archivo GPX válido.');
       if (input) input.value = '';
-    });
+      return;
+    }
+
+    this.isImportingTrack = true;
+    try {
+      const payload = await this.buildTrackImportPayload(this.activeFolder.id, file);
+      if (!payload) {
+        this.isImportingTrack = false;
+        if (input) input.value = '';
+        return;
+      }
+      this.planService.importTrack(this.activeFolder.id, payload).subscribe(track => {
+        this.tracks = [...this.tracks, track];
+        this.isImportingTrack = false;
+        this.refreshForecasts();
+        if (input) input.value = '';
+      });
+    } catch {
+      this.isImportingTrack = false;
+      this.showMessage('No se pudo preparar el track para importar.');
+      if (input) input.value = '';
+    }
   }
 
   searchInvite(): void {
@@ -373,6 +398,35 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
   private toDateInput(value: string | null): string | null {
     if (!value) return null;
     return value.split('T')[0];
+  }
+
+  private async buildTrackImportPayload(folderId: number, file: File) {
+    const gpxData = await this.gpxImportService.readFileAsText(file);
+    const trkpts = this.gpxImportService.parseTrackPointsFromString(gpxData);
+    if (!trkpts.length) {
+      this.showMessage('El archivo no es un GPX válido.');
+      return null;
+    }
+
+    const location = await this.gpxImportService.resolveTrackLocationFromGpx(gpxData);
+    const startLat = location.startLatitude ?? trkpts[0].lat;
+    const startLon = location.startLongitude ?? trkpts[0].lon;
+    const distanceKm = this.gpxImportService.calculateTotalDistanceKm(trkpts);
+    const movingTimeSec = this.gpxImportService.calculateActiveDurationSeconds(trkpts);
+    const totalTimeSec = this.gpxImportService.calculateTotalDurationSeconds(trkpts);
+
+    return {
+      folder_id: folderId,
+      created_by_user_id: this.userId,
+      name: file.name,
+      start_lat: Number.isFinite(startLat) ? startLat : null,
+      start_lon: Number.isFinite(startLon) ? startLon : null,
+      start_population: location.population,
+      distance_km: Number.isFinite(distanceKm) ? distanceKm : null,
+      moving_time_sec: Number.isFinite(movingTimeSec) ? movingTimeSec : null,
+      total_time_sec: Number.isFinite(totalTimeSec) ? totalTimeSec : null,
+      route_xml: gpxData
+    };
   }
 
   private openInfoDialog(data: InfoDialogData): Promise<InfoDialogResult | undefined> {

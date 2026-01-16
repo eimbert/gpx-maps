@@ -4,6 +4,14 @@
   gap: 24px;
   padding: 32px 40px 48px;
   color: #0f172a;
+  width: 90%;
+  margin: 0 auto;
+}
+
+:host {
+  display: block;
+  min-height: 100vh;
+  background: #f8fafc;
 }
 
 .plan__toolbar {
@@ -110,7 +118,7 @@
 
 .plan__layout {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 320px;
+  grid-template-columns: 320px minmax(0, 1fr);
   gap: 24px;
 }
 
@@ -295,6 +303,7 @@
 @media (max-width: 1024px) {
   .plan {
     padding: 24px;
+    width: 100%;
   }
 
   .plan__layout {

@@ -428,6 +428,7 @@ export class MapComponent implements OnInit, AfterViewInit {
   }
 
   private loadTracksFromSessionOrQuery(): void {
+    this.resetPlaybackState();
     let payload: any = null;
     try { payload = JSON.parse(sessionStorage.getItem('gpxViewerPayload') || 'null'); } catch { payload = null; }
 
@@ -476,6 +477,7 @@ export class MapComponent implements OnInit, AfterViewInit {
   }
 
   private loadTracksFromBackend(routeId: number): void {
+    this.resetPlaybackState();
     this.http.get<RaceEvent>(`${environment.routesApiBase}/${routeId}`).subscribe({
       next: async (event) => {
         const normalizedEvent = this.normalizeEventFromBackend(event);
@@ -634,6 +636,56 @@ export class MapComponent implements OnInit, AfterViewInit {
 
     const marker = L.marker([pause.anchor.lat, pause.anchor.lon], { icon, interactive: false });
     group.addLayer(marker);
+  }
+
+  private resetPlaybackState(): void {
+    this.clearCountdownTimer();
+    if (this.rafId) {
+      cancelAnimationFrame(this.rafId);
+      this.rafId = 0;
+    }
+    this.audio?.pause();
+    this.countdownAudio?.pause();
+    if (this.audio) this.audio.currentTime = 0;
+    if (this.countdownAudio) this.countdownAudio.currentTime = 0;
+
+    this.showStartOverlay = true;
+    this.countdownValue = null;
+    this.startArmed = false;
+    this.autoStartDone = false;
+    this.hasTracksReady = false;
+    this.countdownInProgress = false;
+    this.startSequenceLaunched = false;
+    this.showRanking = false;
+    this.ranking = [];
+    this.relMs = 0;
+    this.started = false;
+    this.zoomPhase = 'focus';
+    this.lastZoomSwitch = 0;
+    this.midOverviewShown = false;
+    this.midOverviewActive = false;
+    this.firstFinisherSeen = false;
+    this.lastLeaderPan = 0;
+    this.leaderAnimationRunning = false;
+    this.lastLeaderTarget = null;
+    this.allTracksBounds = null;
+    this.maxRaceDurationMs = 0;
+    this.profileCursorX = 0;
+
+    this.clearTrackLayers();
+    this.trackMetas = [];
+  }
+
+  private clearTrackLayers(): void {
+    if (!this.map) return;
+
+    this.trackMetas.forEach(meta => {
+      if (meta.full) this.map.removeLayer(meta.full);
+      if (meta.prog) this.map.removeLayer(meta.prog);
+      if (meta.mark) this.map.removeLayer(meta.mark);
+      if (meta.ticks) this.map.removeLayer(meta.ticks);
+      if (meta.pauseLayer) this.map.removeLayer(meta.pauseLayer);
+    });
   }
 
   // ---------- lifecycle ----------

@@ -17,7 +17,7 @@ import {
 
 type EditableFolder = {
   name: string;
-  plannedDate: string | null;
+  plannedDate: Date | null;
   observations: string | null;
 };
 
@@ -52,7 +52,7 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
   folderSearch = '';
   showNewFolderForm = false;
   newFolderName = '';
-  newFolderDate: string | null = null;
+  newFolderDate: Date | null = null;
   newFolderNotes = '';
 
   inviteQuery = '';
@@ -143,7 +143,7 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
     this.planService
       .createFolder({
         name: this.newFolderName.trim(),
-        plannedDate: this.newFolderDate || null,
+        plannedDate: this.formatDateForApi(this.newFolderDate),
         observations: this.newFolderNotes.trim() || null
       })
       .subscribe(folder => {
@@ -162,7 +162,7 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
     this.activeFolder = folder;
     this.editFolder = {
       name: folder.name,
-      plannedDate: this.toDateInput(folder.plannedDate),
+      plannedDate: this.toDateValue(folder.plannedDate),
       observations: folder.observations
     };
     this.loadTracks(folder.id);
@@ -180,7 +180,7 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
     this.planService
       .updateFolder(this.activeFolder.id, {
         name: this.editFolder.name.trim(),
-        plannedDate: this.editFolder.plannedDate || null,
+        plannedDate: this.formatDateForApi(this.editFolder.plannedDate),
         observations: this.editFolder.observations?.trim() || null
       })
       .subscribe(updated => {
@@ -189,7 +189,7 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
         this.activeFolder = updated;
         this.editFolder = {
           name: updated.name,
-          plannedDate: this.toDateInput(updated.plannedDate),
+          plannedDate: this.toDateValue(updated.plannedDate),
           observations: updated.observations
         };
         this.isSavingFolder = false;
@@ -575,9 +575,12 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
     this.userVoteTrackId = response.userVoteTrackId;
   }
 
-  private toDateInput(value: string | null): string | null {
+  private toDateValue(value: string | null): Date | null {
     if (!value) return null;
-    return value.split('T')[0];
+    const [datePart] = value.split('T');
+    const [year, month, day] = datePart.split('-');
+    if (!year || !month || !day) return null;
+    return new Date(Number(year), Number(month) - 1, Number(day));
   }
 
   private updateActiveFolderTrackCount(delta: number): void {

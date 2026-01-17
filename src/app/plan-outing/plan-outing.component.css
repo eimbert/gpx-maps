@@ -143,6 +143,10 @@
   font-weight: 400;
 }
 
+.plan__date-field {
+  width: 100%;
+}
+
 .plan__new-actions {
   display: flex;
   gap: 12px;

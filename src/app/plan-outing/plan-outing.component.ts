@@ -17,7 +17,7 @@ import {
 
 type EditableFolder = {
   name: string;
-  plannedDate: string | null;
+  plannedDate: Date | null;
   observations: string | null;
 };
 
@@ -46,11 +46,12 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
   votesByTrackId = new Map<number, number>();
   userVoteTrackId: number | null = null;
   weatherByTrackId = new Map<number, TrackWeatherSummary>();
+  folderTrackCounts = new Map<number, number>();
 
   folderSearch = '';
   showNewFolderForm = false;
   newFolderName = '';
-  newFolderDate: string | null = null;
+  newFolderDate: Date | null = null;
   newFolderNotes = '';
 
   inviteQuery = '';
@@ -105,6 +106,12 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
     this.isLoadingFolders = true;
     this.planService.getFolders().subscribe(folders => {
       this.folders = folders;
+      this.folderTrackCounts.clear();
+      folders.forEach(folder => {
+        if (Number.isFinite(folder.tracksCount ?? NaN)) {
+          this.folderTrackCounts.set(folder.id, Number(folder.tracksCount));
+        }
+      });
       this.applyFolderFilter();
       if (!this.activeFolder && folders.length) {
         this.selectFolder(folders[0]);
@@ -135,11 +142,12 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
     this.planService
       .createFolder({
         name: this.newFolderName.trim(),
-        plannedDate: this.newFolderDate || null,
+        plannedDate: this.formatDateForApi(this.newFolderDate),
         observations: this.newFolderNotes.trim() || null
       })
       .subscribe(folder => {
         this.folders = [folder, ...this.folders];
+        this.folderTrackCounts.set(folder.id, 0);
         this.applyFolderFilter();
         this.selectFolder(folder);
         this.newFolderName = '';
@@ -153,7 +161,7 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
     this.activeFolder = folder;
     this.editFolder = {
       name: folder.name,
-      plannedDate: this.toDateInput(folder.plannedDate),
+      plannedDate: this.toDateValue(folder.plannedDate),
       observations: folder.observations
     };
     this.loadTracks(folder.id);
@@ -171,7 +179,7 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
     this.planService
       .updateFolder(this.activeFolder.id, {
         name: this.editFolder.name.trim(),
-        plannedDate: this.editFolder.plannedDate || null,
+        plannedDate: this.formatDateForApi(this.editFolder.plannedDate),
         observations: this.editFolder.observations?.trim() || null
       })
       .subscribe(updated => {
@@ -180,7 +188,7 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
         this.activeFolder = updated;
         this.editFolder = {
           name: updated.name,
-          plannedDate: this.toDateInput(updated.plannedDate),
+          plannedDate: this.toDateValue(updated.plannedDate),
           observations: updated.observations
         };
         this.isSavingFolder = false;
@@ -199,6 +207,7 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
     if (decision !== 'confirm') return;
     this.planService.deleteFolder(folder.id).subscribe(() => {
       this.folders = this.folders.filter(current => current.id !== folder.id);
+      this.folderTrackCounts.delete(folder.id);
       this.applyFolderFilter();
       if (this.activeFolder?.id === folder.id) {
         this.activeFolder = null;
@@ -239,6 +248,7 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
     this.planService.getTracks(folderId).subscribe(tracks => {
       this.tracks = tracks;
       this.isLoadingTracks = false;
+      this.updateFolderTrackCountCache(folderId, tracks.length);
       this.refreshForecasts();
     });
   }
@@ -363,6 +373,11 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
       return Number(folder.tracksCount);
     }
 
+    const cachedCount = this.folderTrackCounts.get(folder.id);
+    if (cachedCount !== undefined) {
+      return cachedCount;
+    }
+
     if (this.activeFolder?.id === folder.id) {
       return this.tracks.length;
     }
@@ -448,7 +463,7 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
 
   private refreshForecasts(): void {
     this.weatherByTrackId.clear();
-    const plannedDate = this.editFolder?.plannedDate;
+    const plannedDate = this.formatDateForApi(this.editFolder?.plannedDate ?? null);
     if (!plannedDate) return;
 
     this.tracks.forEach(track => {
@@ -545,17 +560,43 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
     this.userVoteTrackId = response.userVoteTrackId;
   }
 
-  private toDateInput(value: string | null): string | null {
+  private toDateValue(value: string | null): Date | null {
     if (!value) return null;
-    return value.split('T')[0];
+    const [datePart] = value.split('T');
+    const [year, month, day] = datePart.split('-');
+    if (!year || !month || !day) return null;
+    return new Date(Number(year), Number(month) - 1, Number(day));
   }
 
   private updateActiveFolderTrackCount(delta: number): void {
-    if (!this.activeFolder || !Number.isFinite(this.activeFolder.tracksCount ?? NaN)) return;
-    const updatedCount = Math.max(0, (this.activeFolder.tracksCount ?? 0) + delta);
-    const updatedFolder = { ...this.activeFolder, tracksCount: updatedCount };
-    this.activeFolder = updatedFolder;
-    this.folders = this.folders.map(folder => (folder.id === updatedFolder.id ? updatedFolder : folder));
+    if (!this.activeFolder) return;
+    const currentCount = this.resolveFolderTrackCount(this.activeFolder);
+    const updatedCount = Math.max(0, currentCount + delta);
+    this.updateFolderTrackCountCache(this.activeFolder.id, updatedCount);
+  }
+
+  private updateFolderTrackCountCache(folderId: number, count: number): void {
+    this.folderTrackCounts.set(folderId, count);
+    this.folders = this.folders.map(folder =>
+      folder.id === folderId ? { ...folder, tracksCount: count } : folder
+    );
+    if (this.activeFolder?.id === folderId) {
+      this.activeFolder = { ...this.activeFolder, tracksCount: count };
+    }
+  }
+
+  private formatDateForApi(date: Date | null): string | null {
+    if (!date) return null;
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
+
+  onPlannedDateChange(date: Date | null): void {
+    if (!this.editFolder) return;
+    this.editFolder.plannedDate = date;
+    this.refreshForecasts();
   }
 
   private async buildTrackImportPayload(folderId: number, file: File) {

@@ -26,7 +26,11 @@
       </label>
       <label>
         Fecha prevista
-        <input type="date" [(ngModel)]="newFolderDate">
+        <mat-form-field class="plan__date-field" appearance="fill">
+          <input matInput [matDatepicker]="newFolderPicker" [(ngModel)]="newFolderDate">
+          <mat-datepicker-toggle matIconSuffix [for]="newFolderPicker"></mat-datepicker-toggle>
+          <mat-datepicker #newFolderPicker></mat-datepicker>
+        </mat-form-field>
       </label>
     </div>
     <label>
@@ -91,7 +95,12 @@
         </label>
         <label>
           Fecha
-          <input type="date" [(ngModel)]="editFolder.plannedDate">
+          <mat-form-field class="plan__date-field" appearance="fill">
+            <input matInput [matDatepicker]="plannedDatePicker" [(ngModel)]="editFolder.plannedDate"
+              (ngModelChange)="onPlannedDateChange($event)">
+            <mat-datepicker-toggle matIconSuffix [for]="plannedDatePicker"></mat-datepicker-toggle>
+            <mat-datepicker #plannedDatePicker></mat-datepicker>
+          </mat-form-field>
         </label>
       </div>
 

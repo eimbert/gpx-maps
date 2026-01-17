@@ -17,7 +17,7 @@ import {
 
 type EditableFolder = {
   name: string;
-  plannedDate: Date | null;
+  plannedDate: string | null;
   observations: string | null;
 };
 
@@ -575,12 +575,23 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
     this.userVoteTrackId = response.userVoteTrackId;
   }
 
-  private toDateValue(value: string | null): Date | null {
+  private toDateValue(value: string | null): string | null {
     if (!value) return null;
     const [datePart] = value.split('T');
     const [year, month, day] = datePart.split('-');
     if (!year || !month || !day) return null;
-    return new Date(Number(year), Number(month) - 1, Number(day));
+    return `${year}-${month}-${day}`;
+  }
+
+  private formatDateForApi(date: Date | string | null): string | null {
+    if (!date) return null;
+    if (typeof date === 'string') {
+      return date.split('T')[0] ?? null;
+    }
+    const year = date.getFullYear();
+    const month = `${date.getMonth() + 1}`.padStart(2, '0');
+    const day = `${date.getDate()}`.padStart(2, '0');
+    return `${year}-${month}-${day}`;
   }
 
   private updateActiveFolderTrackCount(delta: number): void {

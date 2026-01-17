@@ -5,9 +5,15 @@
       <input type="text" [(ngModel)]="folderSearch" (input)="applyFolderFilter()" placeholder="Buscar carpeta"
         aria-label="Buscar carpeta">
     </div>
-    <button class="plan__primary" type="button" (click)="toggleNewFolderForm()">
-      Nueva carpeta
-    </button>
+    <div class="plan__toolbar-actions">
+      <button class="plan__home-button" type="button" (click)="goHome()" aria-label="Volver al inicio">
+        <mat-icon aria-hidden="true">home</mat-icon>
+        Inicio
+      </button>
+      <button class="plan__primary" type="button" (click)="toggleNewFolderForm()">
+        Nueva carpeta
+      </button>
+    </div>
   </header>
 
   <section class="plan__new" *ngIf="showNewFolderForm">

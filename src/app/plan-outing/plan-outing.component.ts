@@ -213,6 +213,27 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
     });
   }
 
+  async confirmDeleteTrack(track: PlanTrack): Promise<void> {
+    if (!this.activeFolder) return;
+    const decision = await this.openInfoDialog({
+      title: 'Eliminar track',
+      message: `¿Seguro que quieres eliminar “${track.name}” de esta carpeta?`,
+      confirmLabel: 'Eliminar',
+      cancelLabel: 'Cancelar'
+    });
+
+    if (decision !== 'confirm') return;
+    this.planService.deleteTrack(track.id).subscribe(() => {
+      this.tracks = this.tracks.filter(current => current.id !== track.id);
+      this.votesByTrackId.delete(track.id);
+      if (this.userVoteTrackId === track.id) {
+        this.userVoteTrackId = null;
+      }
+      this.updateActiveFolderTrackCount(-1);
+      this.refreshForecasts();
+    });
+  }
+
   loadTracks(folderId: number): void {
     this.isLoadingTracks = true;
     this.planService.getTracks(folderId).subscribe(tracks => {
@@ -254,6 +275,7 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
       }
       this.planService.importTrack(payload).subscribe(track => {
         this.tracks = [...this.tracks, track];
+        this.updateActiveFolderTrackCount(1);
         this.isImportingTrack = false;
         this.refreshForecasts();
         if (input) input.value = '';
@@ -526,6 +548,14 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
   private toDateInput(value: string | null): string | null {
     if (!value) return null;
     return value.split('T')[0];
+  }
+
+  private updateActiveFolderTrackCount(delta: number): void {
+    if (!this.activeFolder || !Number.isFinite(this.activeFolder.tracksCount ?? NaN)) return;
+    const updatedCount = Math.max(0, (this.activeFolder.tracksCount ?? 0) + delta);
+    const updatedFolder = { ...this.activeFolder, tracksCount: updatedCount };
+    this.activeFolder = updatedFolder;
+    this.folders = this.folders.map(folder => (folder.id === updatedFolder.id ? updatedFolder : folder));
   }
 
   private async buildTrackImportPayload(folderId: number, file: File) {

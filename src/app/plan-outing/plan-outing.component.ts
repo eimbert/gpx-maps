@@ -47,6 +47,7 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
   userVoteTrackId: number | null = null;
   weatherByTrackId = new Map<number, TrackWeatherSummary>();
   folderTrackCounts = new Map<number, number>();
+  forecastNotice = '';
 
   folderSearch = '';
   showNewFolderForm = false;
@@ -463,17 +464,31 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
 
   private refreshForecasts(): void {
     this.weatherByTrackId.clear();
-    const plannedDate = this.formatDateForApi(this.editFolder?.plannedDate ?? null);
+    this.forecastNotice = '';
+    const plannedDate = this.editFolder?.plannedDate;
     if (!plannedDate) return;
 
-    this.tracks.forEach(track => {
+    const tracksWithCoords = this.tracks.filter(track => track.startLat !== null && track.startLon !== null);
+    if (!tracksWithCoords.length) return;
+    let pending = tracksWithCoords.length;
+    let hasAnyForecast = false;
+    let hasMissingForecast = false;
+
+    tracksWithCoords.forEach(track => {
       if (track.startLat === null || track.startLon === null) return;
 
       this.fetchForecast(track.startLat, track.startLon, plannedDate)
         .pipe(takeUntil(this.destroy$))
         .subscribe(summary => {
           if (summary) {
+            hasAnyForecast = true;
             this.weatherByTrackId.set(track.id, summary);
+          } else {
+            hasMissingForecast = true;
+          }
+          pending -= 1;
+          if (pending === 0 && !hasAnyForecast && hasMissingForecast) {
+            this.forecastNotice = 'La predicción no está disponible para la fecha seleccionada (demasiado futura).';
           }
         });
     });
@@ -585,15 +600,7 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
     }
   }
 
-  private formatDateForApi(date: Date | null): string | null {
-    if (!date) return null;
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
-  }
-
-  onPlannedDateChange(date: Date | null): void {
+  onPlannedDateChange(date: string | null): void {
     if (!this.editFolder) return;
     this.editFolder.plannedDate = date;
     this.refreshForecasts();

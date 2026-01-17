@@ -95,12 +95,7 @@
         </label>
         <label>
           Fecha
-          <mat-form-field class="plan__date-field" appearance="fill">
-            <input matInput [matDatepicker]="plannedDatePicker" [(ngModel)]="editFolder.plannedDate"
-              (ngModelChange)="onPlannedDateChange($event)">
-            <mat-datepicker-toggle matIconSuffix [for]="plannedDatePicker"></mat-datepicker-toggle>
-            <mat-datepicker #plannedDatePicker></mat-datepicker>
-          </mat-form-field>
+          <input type="date" [(ngModel)]="editFolder.plannedDate" (ngModelChange)="onPlannedDateChange($event)">
         </label>
       </div>
 
@@ -141,6 +136,7 @@
 
         <p class="plan__hint" *ngIf="!editFolder.plannedDate">Añade una fecha para ver la predicción del tiempo por
           track.</p>
+        <p class="plan__hint" *ngIf="forecastNotice">{{ forecastNotice }}</p>
 
         <div class="plan__table-wrapper" *ngIf="tracks.length; else emptyTracks">
           <table class="plan__table" aria-label="Tracks planificados">

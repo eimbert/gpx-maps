@@ -18,6 +18,8 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatIconModule } from '@angular/material/icon';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatDatepickerModule } from '@angular/material/datepicker';
+import { MatNativeDateModule } from '@angular/material/core';
 import { PrimengStubsModule } from './primeng-stubs/primeng-stubs.module';
 import { RouteMismatchDialogComponent } from './route-mismatch-dialog/route-mismatch-dialog.component';
 import { EventSearchDialogComponent } from './event-search-dialog/event-search-dialog.component';
@@ -59,6 +61,8 @@ import { PlanOutingComponent } from './plan-outing/plan-outing.component';
     MatMenuModule,
     MatIconModule,
     MatTooltipModule,
+    MatDatepickerModule,
+    MatNativeDateModule,
     PrimengStubsModule,
     MatButtonModule,
     MatFormFieldModule,

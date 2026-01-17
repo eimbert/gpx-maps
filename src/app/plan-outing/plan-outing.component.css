@@ -22,6 +22,12 @@
   flex-wrap: wrap;
 }
 
+.plan__toolbar-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+}
+
 .plan__search {
   display: flex;
   align-items: center;
@@ -54,6 +60,25 @@
 .plan__primary:disabled {
   opacity: 0.6;
   cursor: default;
+}
+
+.plan__home-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: 999px;
+  padding: 10px 16px;
+  border: 1px solid #d1d5db;
+  background: #fff;
+  font-weight: 600;
+  cursor: pointer;
+  color: #0f172a;
+}
+
+.plan__home-button mat-icon {
+  font-size: 20px;
+  height: 20px;
+  width: 20px;
 }
 
 .plan__secondary {

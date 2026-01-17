@@ -342,13 +342,13 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
 
   resolveWeatherHint(trackId: number): string {
     const summary = this.weatherByTrackId.get(trackId);
-    if (!summary) return '';
+    if (!summary) return 'Fecha demasiado lejana para la predicción';
     return `Predicción ${summary.date}`;
   }
 
   resolveWeatherIcon(trackId: number): string {
     const summary = this.weatherByTrackId.get(trackId);
-    if (!summary) return 'help_outline';
+    if (!summary) return '—';
     return this.mapWeatherIcon(summary.weatherCode);
   }
 
@@ -360,7 +360,7 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
 
   resolveWeatherTemperature(trackId: number): string {
     const summary = this.weatherByTrackId.get(trackId);
-    if (!summary) return '—';
+    if (!summary) return 'Fecha demasiado lejana';
     return `${summary.minTemp}°/${summary.maxTemp}°`;
   }
 

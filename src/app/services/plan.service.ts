@@ -85,6 +85,10 @@ export class PlanService {
     );
   }
 
+  deleteTrack(trackId: number): Observable<void> {
+    return this.http.delete<void>(`${this.planApiBase}/tracks/${trackId}`);
+  }
+
   getVotes(folderId: number): Observable<PlanFolderVotesResponse> {
     return this.http.get<VoteResponse>(`${this.planApiBase}/${folderId}/votes`).pipe(
       map(response => ({

@@ -1,15 +1,17 @@
 <div class="plan">
   <header class="plan__toolbar">
-    <div class="plan__search">
-      <mat-icon aria-hidden="true">search</mat-icon>
-      <input type="text" [(ngModel)]="folderSearch" (input)="applyFolderFilter()" placeholder="Buscar carpeta"
-        aria-label="Buscar carpeta">
-    </div>
-    <div class="plan__toolbar-actions">
+    <div class="plan__toolbar-left">
       <button class="plan__home-button" type="button" (click)="goHome()" aria-label="Volver al inicio">
         <mat-icon aria-hidden="true">home</mat-icon>
         Inicio
       </button>
+      <div class="plan__search">
+        <mat-icon aria-hidden="true">search</mat-icon>
+        <input type="text" [(ngModel)]="folderSearch" (input)="applyFolderFilter()" placeholder="Buscar carpeta"
+          aria-label="Buscar carpeta">
+      </div>
+    </div>
+    <div class="plan__toolbar-actions">
       <button class="plan__primary" type="button" (click)="toggleNewFolderForm()">
         Nueva carpeta
       </button>
@@ -179,14 +181,20 @@
                   </div>
                 </td>
                 <td class="plan__actions">
-                  <ng-container *ngIf="canVoteOnTracks(); else noVote">
-                    <button class="plan__ghost" type="button" (click)="toggleVote(track)">
-                      {{ resolveVoteLabel(track) }}
+                  <div class="plan__actions-group">
+                    <ng-container *ngIf="canVoteOnTracks(); else noVote">
+                      <button class="plan__ghost" type="button" (click)="toggleVote(track)">
+                        {{ resolveVoteLabel(track) }}
+                      </button>
+                    </ng-container>
+                    <ng-template #noVote>
+                      <span class="plan__muted">—</span>
+                    </ng-template>
+                    <button class="plan__icon-button plan__icon-button--danger" type="button"
+                      (click)="confirmDeleteTrack(track)" aria-label="Eliminar track">
+                      <mat-icon aria-hidden="true">delete</mat-icon>
                     </button>
-                  </ng-container>
-                  <ng-template #noVote>
-                    <span class="plan__muted">—</span>
-                  </ng-template>
+                  </div>
                 </td>
               </tr>
             </tbody>

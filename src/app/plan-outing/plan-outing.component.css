@@ -22,6 +22,14 @@
   flex-wrap: wrap;
 }
 
+.plan__toolbar-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex: 1;
+  min-width: 280px;
+}
+
 .plan__toolbar-actions {
   display: inline-flex;
   align-items: center;
@@ -321,6 +329,13 @@
   text-align: center;
 }
 
+.plan__actions-group {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
 .plan__folders {
   background: #fff;
   border-radius: 20px;
@@ -398,6 +413,10 @@
   border: none;
   padding: 4px;
   cursor: pointer;
+  color: #ef4444;
+}
+
+.plan__icon-button--danger {
   color: #ef4444;
 }
 

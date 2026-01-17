@@ -77,6 +77,10 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
     this.userId = identityService.getUserId();
   }
 
+  goHome(): void {
+    this.router.navigate(['/']);
+  }
+
   ngOnInit(): void {
     this.loadFolders();
 

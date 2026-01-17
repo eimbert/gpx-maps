@@ -176,21 +176,32 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
       return;
     }
 
+    const sanitizedName = this.editFolder.name.trim();
+    const sanitizedDate = this.formatDateForApi(this.editFolder.plannedDate);
+    const sanitizedObservations = this.editFolder.observations?.trim() || null;
+
     this.isSavingFolder = true;
     this.planService
       .updateFolder(this.activeFolder.id, {
-        name: this.editFolder.name.trim(),
-        plannedDate: this.formatDateForApi(this.editFolder.plannedDate),
-        observations: this.editFolder.observations?.trim() || null
+        name: sanitizedName,
+        plannedDate: sanitizedDate,
+        observations: sanitizedObservations
       })
       .subscribe(updated => {
-        this.folders = this.folders.map(folder => (folder.id === updated.id ? updated : folder));
+        const mergedFolder: PlanFolder = {
+          ...this.activeFolder,
+          ...updated,
+          name: updated.name ?? sanitizedName,
+          plannedDate: updated.plannedDate ?? sanitizedDate,
+          observations: updated.observations ?? sanitizedObservations
+        };
+        this.folders = this.folders.map(folder => (folder.id === mergedFolder.id ? mergedFolder : folder));
         this.applyFolderFilter();
-        this.activeFolder = updated;
+        this.activeFolder = mergedFolder;
         this.editFolder = {
-          name: updated.name,
-          plannedDate: this.toDateValue(updated.plannedDate),
-          observations: updated.observations
+          name: mergedFolder.name,
+          plannedDate: this.toDateValue(mergedFolder.plannedDate),
+          observations: mergedFolder.observations
         };
         this.isSavingFolder = false;
         this.refreshForecasts();

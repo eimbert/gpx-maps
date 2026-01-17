@@ -91,7 +91,7 @@
         </label>
         <label>
           Fecha
-          <input type="date" [(ngModel)]="editFolder.plannedDate">
+          <input type="date" [(ngModel)]="editFolder.plannedDate" (ngModelChange)="onPlannedDateChange($event)">
         </label>
       </div>
 
@@ -132,6 +132,7 @@
 
         <p class="plan__hint" *ngIf="!editFolder.plannedDate">Añade una fecha para ver la predicción del tiempo por
           track.</p>
+        <p class="plan__hint" *ngIf="forecastNotice">{{ forecastNotice }}</p>
 
         <div class="plan__table-wrapper" *ngIf="tracks.length; else emptyTracks">
           <table class="plan__table" aria-label="Tracks planificados">

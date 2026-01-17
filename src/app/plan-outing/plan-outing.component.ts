@@ -46,6 +46,8 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
   votesByTrackId = new Map<number, number>();
   userVoteTrackId: number | null = null;
   weatherByTrackId = new Map<number, TrackWeatherSummary>();
+  folderTrackCounts = new Map<number, number>();
+  forecastNotice = '';
 
   folderSearch = '';
   showNewFolderForm = false;
@@ -105,6 +107,12 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
     this.isLoadingFolders = true;
     this.planService.getFolders().subscribe(folders => {
       this.folders = folders;
+      this.folderTrackCounts.clear();
+      folders.forEach(folder => {
+        if (Number.isFinite(folder.tracksCount ?? NaN)) {
+          this.folderTrackCounts.set(folder.id, Number(folder.tracksCount));
+        }
+      });
       this.applyFolderFilter();
       if (!this.activeFolder && folders.length) {
         this.selectFolder(folders[0]);
@@ -140,6 +148,7 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
       })
       .subscribe(folder => {
         this.folders = [folder, ...this.folders];
+        this.folderTrackCounts.set(folder.id, 0);
         this.applyFolderFilter();
         this.selectFolder(folder);
         this.newFolderName = '';
@@ -199,6 +208,7 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
     if (decision !== 'confirm') return;
     this.planService.deleteFolder(folder.id).subscribe(() => {
       this.folders = this.folders.filter(current => current.id !== folder.id);
+      this.folderTrackCounts.delete(folder.id);
       this.applyFolderFilter();
       if (this.activeFolder?.id === folder.id) {
         this.activeFolder = null;
@@ -239,6 +249,7 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
     this.planService.getTracks(folderId).subscribe(tracks => {
       this.tracks = tracks;
       this.isLoadingTracks = false;
+      this.updateFolderTrackCountCache(folderId, tracks.length);
       this.refreshForecasts();
     });
   }
@@ -363,6 +374,11 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
       return Number(folder.tracksCount);
     }
 
+    const cachedCount = this.folderTrackCounts.get(folder.id);
+    if (cachedCount !== undefined) {
+      return cachedCount;
+    }
+
     if (this.activeFolder?.id === folder.id) {
       return this.tracks.length;
     }
@@ -448,17 +464,31 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
 
   private refreshForecasts(): void {
     this.weatherByTrackId.clear();
+    this.forecastNotice = '';
     const plannedDate = this.editFolder?.plannedDate;
     if (!plannedDate) return;
 
-    this.tracks.forEach(track => {
+    const tracksWithCoords = this.tracks.filter(track => track.startLat !== null && track.startLon !== null);
+    if (!tracksWithCoords.length) return;
+    let pending = tracksWithCoords.length;
+    let hasAnyForecast = false;
+    let hasMissingForecast = false;
+
+    tracksWithCoords.forEach(track => {
       if (track.startLat === null || track.startLon === null) return;
 
       this.fetchForecast(track.startLat, track.startLon, plannedDate)
         .pipe(takeUntil(this.destroy$))
         .subscribe(summary => {
           if (summary) {
+            hasAnyForecast = true;
             this.weatherByTrackId.set(track.id, summary);
+          } else {
+            hasMissingForecast = true;
+          }
+          pending -= 1;
+          if (pending === 0 && !hasAnyForecast && hasMissingForecast) {
+            this.forecastNotice = 'La predicción no está disponible para la fecha seleccionada (demasiado futura).';
           }
         });
     });
@@ -551,11 +581,26 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
   }
 
   private updateActiveFolderTrackCount(delta: number): void {
-    if (!this.activeFolder || !Number.isFinite(this.activeFolder.tracksCount ?? NaN)) return;
-    const updatedCount = Math.max(0, (this.activeFolder.tracksCount ?? 0) + delta);
-    const updatedFolder = { ...this.activeFolder, tracksCount: updatedCount };
-    this.activeFolder = updatedFolder;
-    this.folders = this.folders.map(folder => (folder.id === updatedFolder.id ? updatedFolder : folder));
+    if (!this.activeFolder) return;
+    const currentCount = this.resolveFolderTrackCount(this.activeFolder);
+    const updatedCount = Math.max(0, currentCount + delta);
+    this.updateFolderTrackCountCache(this.activeFolder.id, updatedCount);
+  }
+
+  private updateFolderTrackCountCache(folderId: number, count: number): void {
+    this.folderTrackCounts.set(folderId, count);
+    this.folders = this.folders.map(folder =>
+      folder.id === folderId ? { ...folder, tracksCount: count } : folder
+    );
+    if (this.activeFolder?.id === folderId) {
+      this.activeFolder = { ...this.activeFolder, tracksCount: count };
+    }
+  }
+
+  onPlannedDateChange(date: string | null): void {
+    if (!this.editFolder) return;
+    this.editFolder.plannedDate = date;
+    this.refreshForecasts();
   }
 
   private async buildTrackImportPayload(folderId: number, file: File) {

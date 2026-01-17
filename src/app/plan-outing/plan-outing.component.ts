@@ -110,11 +110,13 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
   }
 
   applyFolderFilter(): void {
-    const search = this.folderSearch.trim().toLowerCase();
-    this.filteredFolders = this.folders.filter(folder =>
-      folder.name.toLowerCase().includes(search)
+    const search = (this.folderSearch ?? '').trim().toLowerCase();
+
+    this.filteredFolders = (this.folders ?? []).filter(folder =>
+      (folder?.name ?? '').toLowerCase().includes(search)
     );
   }
+
 
   toggleNewFolderForm(): void {
     this.showNewFolderForm = !this.showNewFolderForm;

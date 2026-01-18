@@ -55,7 +55,9 @@
           type="button"
           *ngFor="let folder of filteredFolders"
           (click)="selectFolder(folder)"
-          [class.plan__folder-card--active]="activeFolder?.id === folder.id">
+          [class.plan__folder-card--active]="activeFolder?.id === folder.id"
+          [class.plan__folder-card--owner]="isFolderOwner(folder)"
+          [class.plan__folder-card--guest]="!isFolderOwner(folder)">
           <div class="plan__folder-content">
             <p>{{ folder.name }}</p>
             <span>{{ folder.plannedDate ? (folder.plannedDate | date: 'longDate') : 'Sin fecha' }}</span>
@@ -66,7 +68,7 @@
               <span>{{ resolveFolderVisibility(folder) }}</span>
             </div>
           </div>
-          <button class="plan__icon-button" type="button" aria-label="Eliminar carpeta"
+          <button *ngIf="isFolderOwner(folder)" class="plan__icon-button" type="button" aria-label="Eliminar carpeta"
             (click)="confirmDeleteFolder(folder); $event.stopPropagation();">
             <mat-icon aria-hidden="true">delete</mat-icon>
           </button>

@@ -503,6 +503,10 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
     return folder.ownerUserId !== this.userId ? 'Compartida' : 'Privada';
   }
 
+  isFolderOwner(folder: PlanFolder): boolean {
+    return folder.ownerUserId === this.userId;
+  }
+
   formatDistance(distance: number | null): string {
     if (!distance) return '—';
     return `${distance.toFixed(1)} km`;

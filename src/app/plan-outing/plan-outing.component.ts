@@ -380,6 +380,7 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
     const statusMap: Record<PlanInvitation['status'], string> = {
       accepted: 'Aceptó',
       pending: 'Pendiente',
+      sending: 'Enviando',
       declined: 'Rechazó',
       revoked: 'Revocada',
       expired: 'Caducada'
@@ -389,12 +390,12 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
 
   canSendInvite(user: PlanUserSearchResult): boolean {
     const invitation = this.resolveInvitation(user);
-    return !invitation || ['revoked', 'expired'].includes(invitation.status);
+    return !invitation || ['pending', 'declined', 'revoked', 'expired'].includes(invitation.status);
   }
 
   canRemoveInvite(user: PlanUserSearchResult): boolean {
     const invitation = this.resolveInvitation(user);
-    return !!invitation && !['revoked', 'expired'].includes(invitation.status);
+    return !!invitation && invitation.status === 'accepted';
   }
 
   toggleVote(track: PlanTrack): void {
@@ -671,25 +672,54 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
 
   private resolveInvitation(user: PlanUserSearchResult): PlanInvitation | undefined {
     return this.folderInvitations.find(invite =>
-      (invite.invitedUserId && invite.invitedUserId === user.id) || invite.invitedEmail === user.email
+      (invite.invitedUserId && invite.invitedUserId === user.id)
+      || (invite.userId && invite.userId === user.id)
+      || invite.invitedEmail === user.email
+      || invite.email === user.email
     );
   }
 
   resolveInvitationLabel(invitation: PlanInvitation): string {
-    if (invitation.invitedEmail) return invitation.invitedEmail;
-    if (invitation.invitedUserId) return `Usuario #${invitation.invitedUserId}`;
+    const nickname = invitation.nickname?.trim();
+    if (nickname) return nickname;
+    const name = invitation.name?.trim();
+    if (name) return name;
+    const email = invitation.email?.trim() ?? invitation.invitedEmail?.trim();
+    if (email) return email;
+    const userId = invitation.invitedUserId ?? invitation.userId;
+    if (userId) return `Usuario #${userId}`;
     return 'Usuario sin identificar';
+  }
+
+  resolveInvitationSecondary(invitation: PlanInvitation): string | null {
+    const primary = this.resolveInvitationLabel(invitation);
+    const email = invitation.email?.trim() ?? invitation.invitedEmail?.trim();
+    if (!email || email === primary) return null;
+    return email;
   }
 
   resolveInvitationStatusLabel(invitation: PlanInvitation): string {
     const statusMap: Record<PlanInvitation['status'], string> = {
       accepted: 'Aceptó',
       pending: 'Pendiente',
+      sending: 'Enviando',
       declined: 'Rechazó',
       revoked: 'Revocada',
       expired: 'Caducada'
     };
     return statusMap[invitation.status] ?? 'Pendiente';
+  }
+
+  resolveInvitationStatusDate(invitation: PlanInvitation): string | null {
+    const rawDate = invitation.respondedAt || invitation.createdAt || invitation.expiresAt;
+    if (!rawDate) return null;
+    const date = new Date(rawDate);
+    if (Number.isNaN(date.getTime())) return null;
+    return date.toLocaleDateString('es-ES', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric'
+    });
   }
 
   private toDateValue(value: string | null): string | null {

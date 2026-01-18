@@ -110,7 +110,9 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
 
   loadFolders(): void {
     this.isLoadingFolders = true;
-    this.planService.getFolders().subscribe(folders => {
+   this.planService.getFolders().subscribe(folders => {
+      console.log("carpetas: ", folders)
+      //folders.forEach(f => f.isOwner = true);
       this.folders = folders;
       this.folderTrackCounts.clear();
       folders.forEach(folder => {

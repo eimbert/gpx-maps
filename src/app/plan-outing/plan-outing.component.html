@@ -68,7 +68,7 @@
               <span>{{ resolveFolderVisibility(folder) }}</span>
             </div>
           </div>
-          <button *ngIf="isFolderOwner(folder)" class="plan__icon-button" type="button" aria-label="Eliminar carpeta"
+          <button *ngIf="folder.isOwner" class="plan__icon-button" type="button" aria-label="Eliminar carpeta"
             (click)="confirmDeleteFolder(folder); $event.stopPropagation();">
             <mat-icon aria-hidden="true">delete</mat-icon>
           </button>

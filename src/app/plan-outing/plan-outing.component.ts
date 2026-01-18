@@ -4,7 +4,7 @@ import { MatDialog } from '@angular/material/dialog';
 import { Router } from '@angular/router';
 import { Subject, debounceTime, firstValueFrom, forkJoin, map, switchMap, takeUntil } from 'rxjs';
 import { InfoDialogComponent, InfoDialogData, InfoDialogResult } from '../info-dialog/info-dialog.component';
-import { PlanService } from '../services/plan.service';
+import { PlanService, PlanTrackImportPayload } from '../services/plan.service';
 import { GpxImportService } from '../services/gpx-import.service';
 import { UserIdentityService } from '../services/user-identity.service';
 import {
@@ -309,7 +309,8 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
         return;
       }
       this.planService.importTrack(payload).subscribe(track => {
-        this.tracks = [...this.tracks, track];
+        const mergedTrack = this.mergeTrackWithPayload(track, payload);
+        this.tracks = [...this.tracks, mergedTrack];
         this.updateActiveFolderTrackCount(1);
         this.isImportingTrack = false;
         this.refreshForecasts();
@@ -817,6 +818,21 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
     const month = `${date.getMonth() + 1}`.padStart(2, '0');
     const day = `${date.getDate()}`.padStart(2, '0');
     return `${year}-${month}-${day}`;
+  }
+
+  private mergeTrackWithPayload(track: PlanTrack, payload: PlanTrackImportPayload): PlanTrack {
+    return {
+      ...track,
+      name: track.name || payload.name,
+      startLat: track.startLat ?? payload.start_lat,
+      startLon: track.startLon ?? payload.start_lon,
+      startPopulation: track.startPopulation ?? payload.start_population,
+      distanceKm: track.distanceKm ?? payload.distance_km,
+      movingTimeSec: track.movingTimeSec ?? payload.moving_time_sec,
+      totalTimeSec: track.totalTimeSec ?? payload.total_time_sec,
+      desnivel: track.desnivel ?? payload.desnivel,
+      routeXml: track.routeXml ?? payload.route_xml
+    };
   }
 
   private updateActiveFolderTrackCount(delta: number): void {

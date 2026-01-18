@@ -399,21 +399,41 @@
 }
 
 .plan__folder-card {
+  position: relative;
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
   gap: 12px;
   border-radius: 14px;
-  padding: 12px 14px;
+  padding: 12px 14px 12px 20px;
   border: 1px solid #e2e8f0;
   background: #f8fafc;
   cursor: pointer;
   text-align: left;
+  overflow: hidden;
 }
 
 .plan__folder-card--active {
   border-color: #2563eb;
   background: #eef2ff;
+}
+
+.plan__folder-card::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 6px;
+  background: transparent;
+}
+
+.plan__folder-card--owner::before {
+  background: #22c55e;
+}
+
+.plan__folder-card--guest::before {
+  background: #facc15;
 }
 
 .plan__folder-content {

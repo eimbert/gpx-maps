@@ -4,6 +4,7 @@ import { Observable, catchError, map, of, tap } from 'rxjs';
 import { environment } from '../../environments/environment';
 import {
   PlanFolder,
+  PlanFolderMember,
   PlanFolderVotesResponse,
   PlanInvitation,
   PlanTrack,
@@ -25,6 +26,13 @@ type InvitePayload = {
   created_at: string;
   modified_at: string;
   invited_by: number;
+};
+
+type FolderMemberPayload = {
+  folder_id: number;
+  user_id: number;
+  nickname: string;
+  email: string | null;
 };
 
 type VoteResponse = {
@@ -123,6 +131,7 @@ export class PlanService {
 
   searchUsers(query: string): Observable<{ users: PlanUserSearchResult[]; notFound: boolean }> {
     if (!query.trim()) return of({ users: [], notFound: false });
+    const nickname = query.trim();
     return this.http
       .get<PlanUserSearchResult | PlanUserSearchResult[]>(`${this.usersApiBase}/search`, { params: { q: query } })
       .pipe(
@@ -132,13 +141,19 @@ export class PlanService {
           return {
             users: list.map(user => ({
               ...user,
-              id: Number(user.id)
+              id: Number(user.id),
+              name: user.name ?? nickname
             })),
             notFound: list.length === 0
           };
         }),
         catchError(error => of({ users: [], notFound: error?.status === 403 }))
       );
+  }
+
+  addFolderMember(folderId: number, payload: FolderMemberPayload): Observable<PlanFolderMember> {
+    console.log('Plan folder member payload:', payload);
+    return this.http.post<PlanFolderMember>(`${this.planApiBase}/${folderId}/members`, payload);
   }
 
   inviteUser(folderId: number, payload: InvitePayload): Observable<PlanInvitation> {

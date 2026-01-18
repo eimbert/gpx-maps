@@ -172,6 +172,15 @@ export class PlanService {
     return this.http.delete<void>(`${this.planApiBase}/${folderId}/invitations/${invitationId}`);
   }
 
+  removeFolderMember(folderId: number, userId: number): Observable<void> {
+    return this.http.delete<void>(`${this.planApiBase}/members`, {
+      body: {
+        folderId,
+        userId
+      }
+    });
+  }
+
   private normalizeFolder(folder: PlanFolder): PlanFolder {
     const ownerUserId = Number(folder.ownerUserId ?? (folder as any).owner_user_id);
     const tracksCountRaw = (folder as any).tracksCount

@@ -353,8 +353,18 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
   removeInvitation(invitation: PlanInvitation): void {
     if (!this.activeFolder) return;
 
-    this.planService.revokeInvitation(this.activeFolder.id, invitation.id).subscribe(() => {
-      this.inviteStatusMessage = `Invitación revocada para ${this.resolveInvitationLabel(invitation)}.`;
+    const userId = invitation.invitedUserId ?? invitation.userId;
+    if (!userId) {
+      this.showMessage('No se pudo quitar el acceso porque falta el usuario.');
+      return;
+    }
+    const confirmed = window.confirm(
+      'Se quitará el acceso de este usuario a la carpeta. ¿Quieres continuar?'
+    );
+    if (!confirmed) return;
+
+    this.planService.removeFolderMember(this.activeFolder.id, userId).subscribe(() => {
+      this.inviteStatusMessage = `Se quitó el acceso de ${this.resolveInvitationLabel(invitation)}.`;
       this.loadInvitations(this.activeFolder?.id ?? 0);
     });
   }
@@ -398,18 +408,6 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
   canSendInvite(user: PlanUserSearchResult): boolean {
     const invitation = this.resolveInvitation(user);
     return !invitation || ['pending', 'declined', 'revoked', 'expired'].includes(invitation.status);
-  }
-
-  canRemoveInvite(user: PlanUserSearchResult): boolean {
-    const invitation = this.resolveInvitation(user);
-    if (!invitation) return false;
-    const normalizedStatus = invitation.status.toLowerCase();
-    return normalizedStatus === 'accepted' || normalizedStatus === 'aceptado';
-  }
-
-  canRemoveInvitation(invitation: PlanInvitation): boolean {
-    const normalizedStatus = invitation.status.toLowerCase();
-    return normalizedStatus === 'accepted' || normalizedStatus === 'aceptado';
   }
 
   toggleVote(track: PlanTrack): void {

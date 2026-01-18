@@ -50,6 +50,7 @@ export type PlanTrackImportPayload = {
   distance_km: number | null;
   moving_time_sec: number | null;
   total_time_sec: number | null;
+  desnivel: number | null;
   route_xml: string;
 };
 
@@ -227,6 +228,7 @@ export class PlanService {
       distanceKm: track.distanceKm ?? (track as any).distance_km ?? null,
       movingTimeSec: track.movingTimeSec ?? (track as any).moving_time_sec ?? null,
       totalTimeSec: track.totalTimeSec ?? (track as any).total_time_sec ?? null,
+      desnivel: track.desnivel ?? (track as any).desnivel ?? (track as any).elevation_gain ?? (track as any).elevationGain ?? null,
       howToGetUrl: track.howToGetUrl ?? (track as any).how_to_get_url ?? null,
       sourceType: track.sourceType ?? (track as any).source_type ?? null,
       routeXml: track.routeXml ?? (track as any).routeXml ?? null,

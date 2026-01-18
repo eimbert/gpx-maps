@@ -23,6 +23,7 @@ export interface PlanTrack {
   distanceKm: number | null;
   movingTimeSec: number | null;
   totalTimeSec: number | null;
+  desnivel: number | null;
   howToGetUrl: string | null;
   sourceType: string | null;
   sortOrder: number | null;

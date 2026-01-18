@@ -8,6 +8,8 @@ export interface PlanFolder {
   updatedAt: string;
   tracksCount?: number;
   shared?: boolean;
+  sourceTable?: string | null;
+  isOwner?: boolean;
 }
 
 export interface PlanTrack {

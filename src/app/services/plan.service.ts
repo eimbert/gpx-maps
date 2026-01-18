@@ -183,6 +183,14 @@ export class PlanService {
 
   private normalizeFolder(folder: PlanFolder): PlanFolder {
     const ownerUserId = Number(folder.ownerUserId ?? (folder as any).owner_user_id);
+    const sourceTable = (folder as any).sourceTable
+      ?? (folder as any).source_table
+      ?? (folder as any).originTable
+      ?? (folder as any).origin_table
+      ?? (folder as any).tableName
+      ?? (folder as any).table_name;
+    const isOwnerRaw = (folder as any).isOwner ?? (folder as any).is_owner;
+    const isOwner = isOwnerRaw === undefined || isOwnerRaw === null ? undefined : Boolean(isOwnerRaw);
     const tracksCountRaw = (folder as any).tracksCount
       ?? (folder as any).trackCount
       ?? (folder as any).tracks_count
@@ -198,7 +206,9 @@ export class PlanService {
       createdAt: folder.createdAt ?? (folder as any).created_at,
       updatedAt: folder.updatedAt ?? (folder as any).updated_at,
       tracksCount,
-      shared: sharedRaw === undefined || sharedRaw === null ? undefined : Boolean(sharedRaw)
+      shared: sharedRaw === undefined || sharedRaw === null ? undefined : Boolean(sharedRaw),
+      sourceTable: sourceTable ?? null,
+      isOwner
     };
   }
 

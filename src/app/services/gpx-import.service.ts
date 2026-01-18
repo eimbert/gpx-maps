@@ -6,6 +6,7 @@ type TrackPoint = {
   lat: number;
   lon: number;
   time: string;
+  ele?: number;
 };
 
 type TrackLocationDetails = {
@@ -43,7 +44,8 @@ export class GpxImportService {
       return trkpts.map(trkpt => ({
         lat: parseFloat(trkpt.getAttribute('lat') || '0'),
         lon: parseFloat(trkpt.getAttribute('lon') || '0'),
-        time: trkpt.getElementsByTagName('time')[0]?.textContent || ''
+        time: trkpt.getElementsByTagName('time')[0]?.textContent || '',
+        ele: parseFloat(trkpt.getElementsByTagName('ele')[0]?.textContent || '0')
       }));
     } catch {
       return [];

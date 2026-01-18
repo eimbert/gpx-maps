@@ -849,6 +849,7 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
     const distanceKm = this.gpxImportService.calculateTotalDistanceKm(trkpts);
     const movingTimeSec = this.gpxImportService.calculateActiveDurationSeconds(trkpts);
     const totalTimeSec = this.gpxImportService.calculateTotalDurationSeconds(trkpts);
+    const desnivel = this.calculateTotalAscent(trkpts);
 
     return {
       folder_id: folderId,
@@ -860,8 +861,31 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
       distance_km: Number.isFinite(distanceKm) ? distanceKm : null,
       moving_time_sec: Number.isFinite(movingTimeSec) ? movingTimeSec : null,
       total_time_sec: Number.isFinite(totalTimeSec) ? totalTimeSec : null,
+      desnivel: Number.isFinite(desnivel) ? desnivel : null,
       route_xml: gpxData
     };
+  }
+
+  private calculateTotalAscent(
+    trkpts: { ele?: number }[]
+  ): number {
+    if (!trkpts.length) return 0;
+    let totalAscent = 0;
+    let previousElevation = Number.isFinite(trkpts[0].ele) ? (trkpts[0].ele as number) : null;
+
+    for (let i = 1; i < trkpts.length; i++) {
+      const current = trkpts[i].ele;
+      if (!Number.isFinite(current)) continue;
+      if (previousElevation !== null) {
+        const diff = current - previousElevation;
+        if (diff > 0) {
+          totalAscent += diff;
+        }
+      }
+      previousElevation = current;
+    }
+
+    return totalAscent;
   }
 
   private parseTrackPointsFromGpx(gpxData: string): { lat: number; lon: number; ele: number; time: string }[] {

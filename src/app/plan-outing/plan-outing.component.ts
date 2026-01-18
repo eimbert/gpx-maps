@@ -868,7 +868,7 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
       distance_km: Number.isFinite(distanceKm) ? distanceKm : null,
       moving_time_sec: Number.isFinite(movingTimeSec) ? movingTimeSec : null,
       total_time_sec: Number.isFinite(totalTimeSec) ? totalTimeSec : null,
-      desnivel: Number.isFinite(desnivel) ? desnivel : null,
+      desnivel: Number.isFinite(desnivel) ? Math.trunc(desnivel) : null,
       route_xml: gpxData
     };
   }

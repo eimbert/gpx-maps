@@ -29,8 +29,8 @@ type InvitePayload = {
 };
 
 type FolderMemberPayload = {
-  folder_id: number;
-  user_id: number;
+  folderId: number;
+  userId: number;
   nickname: string;
   email: string | null;
 };

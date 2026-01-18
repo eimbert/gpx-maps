@@ -360,8 +360,8 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
     users.forEach(user => {
       this.planService
         .addFolderMember(this.activeFolder!.id, {
-          folder_id: this.activeFolder!.id,
-          user_id: user.id,
+          folderId: this.activeFolder!.id,
+          userId: user.id,
           nickname,
           email: user.email
         })

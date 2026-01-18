@@ -114,6 +114,27 @@
           <button class="plan__secondary" type="button" (click)="searchInvite()">Buscar</button>
         </div>
         <p class="plan__hint" *ngIf="inviteStatusMessage">{{ inviteStatusMessage }}</p>
+        <p class="plan__hint" *ngIf="!folderInvitations.length">
+          No hay invitados. Esta carpeta no está compartida.
+        </p>
+        <div class="plan__invite-table-wrapper" *ngIf="folderInvitations.length">
+          <table class="plan__invite-table" aria-label="Invitaciones enviadas">
+            <thead>
+              <tr>
+                <th scope="col">Invitado</th>
+                <th scope="col">Estado</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let invitation of folderInvitations">
+                <td>
+                  <div class="plan__invite-name">{{ resolveInvitationLabel(invitation) }}</div>
+                </td>
+                <td class="plan__center">{{ resolveInvitationStatusLabel(invitation) }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
         <div class="plan__invite-table-wrapper" *ngIf="inviteResults.length">
           <table class="plan__invite-table" aria-label="Usuarios encontrados">
             <thead>

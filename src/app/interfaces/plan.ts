@@ -1,6 +1,6 @@
 export interface PlanFolder {
   id: number;
-  ownerUserId: number;
+  ownerId: number;
   name: string;
   plannedDate: string | null;
   observations: string | null;

@@ -182,7 +182,7 @@ export class PlanService {
   }
 
   private normalizeFolder(folder: PlanFolder): PlanFolder {
-    const ownerUserId = Number(folder.ownerUserId ?? (folder as any).owner_user_id);
+    const ownerUserId = Number(folder.ownerId ?? (folder as any).owner_user_id);
     const sourceTable = (folder as any).sourceTable
       ?? (folder as any).source_table
       ?? (folder as any).originTable
@@ -200,7 +200,8 @@ export class PlanService {
     return {
       ...folder,
       id: Number(folder.id),
-      ownerUserId: Number.isFinite(ownerUserId) ? ownerUserId : 0,
+      
+      ownerId: Number.isFinite(ownerUserId) ? ownerUserId : 0,
       plannedDate: folder.plannedDate ?? (folder as any).planned_date ?? null,
       observations: folder.observations ?? (folder as any).observations ?? null,
       createdAt: folder.createdAt ?? (folder as any).created_at,

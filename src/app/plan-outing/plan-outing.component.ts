@@ -111,9 +111,14 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
   loadFolders(): void {
     this.isLoadingFolders = true;
    this.planService.getFolders().subscribe(folders => {
-      console.log("carpetas: ", folders)
-      //folders.forEach(f => f.isOwner = true);
+      const userId = JSON.parse(localStorage.getItem('gpxAuthSession') ?? 'null')?.id;
+      console.log("mi id: ", userId )
+      
+      folders.forEach(f => {
+        if(userId == f.ownerId) f.isOwner = true
+      });
       this.folders = folders;
+      console.log("carpetas: ", folders)
       this.folderTrackCounts.clear();
       folders.forEach(folder => {
         if (Number.isFinite(folder.tracksCount ?? NaN)) {
@@ -502,7 +507,7 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
       return folder.shared ? 'Compartida' : 'Privada';
     }
 
-    return folder.ownerUserId !== this.userId ? 'Compartida' : 'Privada';
+    return folder.ownerId !== this.userId ? 'Compartida' : 'Privada';
   }
 
   isFolderOwner(folder: PlanFolder): boolean {
@@ -513,7 +518,7 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
     if (folder.isOwner !== undefined) {
       return folder.isOwner;
     }
-    return folder.ownerUserId === this.userId;
+    return folder.ownerId === this.userId;
   }
 
   formatDistance(distance: number | null): string {
@@ -532,7 +537,7 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
     if (!this.activeFolder) return false;
     if (this.tracks.length < 2) return false;
     const hasOtherUserTracks = this.tracks.some(track => track.createdByUserId !== this.userId);
-    const isOwner = this.activeFolder.ownerUserId === this.userId;
+    const isOwner = this.activeFolder.ownerId === this.userId;
     return !isOwner || hasOtherUserTracks;
   }
 

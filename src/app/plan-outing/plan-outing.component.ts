@@ -57,7 +57,6 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
   newFolderNotes = '';
 
   inviteQuery = '';
-  inviteResults: PlanUserSearchResult[] = [];
   inviteStatusMessage = '';
   folderInvitations: PlanInvitation[] = [];
 
@@ -95,7 +94,6 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
         takeUntil(this.destroy$)
       )
       .subscribe(response => {
-        this.inviteResults = response.users;
         this.inviteStatusMessage = response.notFound
           ? 'No se encuentra ningún usuario con ese nick.'
           : (response.users.length ? '' : (this.inviteQuery ? 'No se encontraron usuarios.' : ''));

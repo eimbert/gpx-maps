@@ -176,41 +176,6 @@
             </tbody>
           </table>
         </div>
-        <div class="plan__invite-table-wrapper" *ngIf="inviteResults.length">
-          <table class="plan__invite-table" aria-label="Usuarios encontrados">
-            <thead>
-              <tr>
-                <th scope="col">Usuario</th>
-                <th scope="col">Quitar</th>
-                <th scope="col">Enviar</th>
-                <th scope="col">Estado</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr *ngFor="let user of inviteResults">
-                <td>
-                  <div class="plan__invite-name-row">
-                    <span class="plan__invite-icon" aria-hidden="true">👤</span>
-                    <div class="plan__invite-name">{{ resolveInviteNickname(user) }}</div>
-                  </div>
-                </td>
-                <td class="plan__center">
-                  <button class="plan__primary plan__primary--small" type="button"
-                    (click)="revokeInvite(user)" [disabled]="!canRemoveInvite(user)">
-                    Quitar
-                  </button>
-                </td>
-                <td class="plan__center">
-                  <button class="plan__primary plan__primary--small" type="button"
-                    (click)="inviteUser(user)" [disabled]="!canSendInvite(user)">
-                    Enviar
-                  </button>
-                </td>
-                <td class="plan__center">{{ resolveInviteStatus(user) }}</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
       </section>
 
       <section class="plan__tracks">

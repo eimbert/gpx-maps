@@ -685,7 +685,7 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
     const name = invitation.name?.trim();
     if (name) return name;
     const email = invitation.email?.trim() ?? invitation.invitedEmail?.trim();
-    if (email) return email;
+    if (email) return this.obfuscateEmail(email);
     const userId = invitation.invitedUserId ?? invitation.userId;
     if (userId) return `Usuario #${userId}`;
     return 'Usuario sin identificar';
@@ -694,8 +694,10 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
   resolveInvitationSecondary(invitation: PlanInvitation): string | null {
     const primary = this.resolveInvitationLabel(invitation);
     const email = invitation.email?.trim() ?? invitation.invitedEmail?.trim();
-    if (!email || email === primary) return null;
-    return email;
+    if (!email) return null;
+    const obfuscated = this.obfuscateEmail(email);
+    if (obfuscated === primary) return null;
+    return obfuscated;
   }
 
   resolveInvitationStatusLabel(invitation: PlanInvitation): string {
@@ -712,14 +714,41 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
 
   resolveInvitationStatusDate(invitation: PlanInvitation): string | null {
     const rawDate = invitation.respondedAt || invitation.createdAt || invitation.expiresAt;
-    if (!rawDate) return null;
-    const date = new Date(rawDate);
-    if (Number.isNaN(date.getTime())) return null;
-    return date.toLocaleDateString('es-ES', {
-      day: '2-digit',
-      month: 'short',
-      year: 'numeric'
-    });
+    return this.formatInvitationDate(rawDate);
+  }
+
+  resolveInvitationModifiedDate(invitation: PlanInvitation): string | null {
+    const rawDate = invitation.modifiedAt ?? (invitation as { modified_at?: string | null }).modified_at ?? null;
+    return this.formatInvitationDate(rawDate);
+  }
+
+  resendInvitation(invitation: PlanInvitation): void {
+    if (!this.activeFolder) return;
+    const userId = invitation.invitedUserId ?? invitation.userId;
+    if (!userId) {
+      this.showMessage('No se pudo reenviar la invitación porque falta el usuario.');
+      return;
+    }
+    const now = new Date().toISOString();
+    this.planService
+      .inviteUser(this.activeFolder.id, {
+        folder_id: this.activeFolder.id,
+        user_id: userId,
+        status: 'pending',
+        invited_email: invitation.email ?? invitation.invitedEmail ?? null,
+        created_at: invitation.createdAt,
+        modified_at: now,
+        invited_by: this.userId
+      })
+      .subscribe(() => {
+        this.inviteStatusMessage = `Invitación reenviada a ${this.resolveInvitationLabel(invitation)}.`;
+        this.loadInvitations(this.activeFolder?.id ?? 0);
+      });
+  }
+
+  canResendInvitation(invitation: PlanInvitation): boolean {
+    const userId = invitation.invitedUserId ?? invitation.userId;
+    return invitation.status === 'pending' && !!userId;
   }
 
   private toDateValue(value: string | null): string | null {
@@ -824,5 +853,37 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
       title,
       message
     });
+  }
+
+  private formatInvitationDate(rawDate?: string | null): string | null {
+    if (!rawDate) return null;
+    const date = new Date(rawDate);
+    if (Number.isNaN(date.getTime())) return null;
+    return date.toLocaleDateString('es-ES', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric'
+    });
+  }
+
+  private obfuscateEmail(email: string): string {
+    const trimmed = email.trim();
+    const [local, domain] = trimmed.split('@');
+    if (!domain) return trimmed;
+    const safeLocal = this.maskSegment(local);
+    const [domainName, ...domainParts] = domain.split('.');
+    const safeDomainName = this.maskSegment(domainName);
+    const safeDomain = [safeDomainName, ...domainParts].filter(Boolean).join('.');
+    return `${safeLocal}@${safeDomain}`;
+  }
+
+  private maskSegment(segment: string): string {
+    if (!segment) return segment;
+    if (segment.length <= 2) {
+      return `${segment[0]}***`;
+    }
+    const first = segment[0];
+    const last = segment[segment.length - 1];
+    return `${first}***${last}`;
   }
 }

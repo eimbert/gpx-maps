@@ -123,6 +123,8 @@
               <tr>
                 <th scope="col">Invitado</th>
                 <th scope="col">Estado</th>
+                <th scope="col">Actualizado</th>
+                <th scope="col">Enviar</th>
               </tr>
             </thead>
             <tbody>
@@ -145,6 +147,20 @@
                       {{ statusDate }}
                     </div>
                   </div>
+                </td>
+                <td class="plan__center">
+                  <div class="plan__invite-status-date" *ngIf="resolveInvitationModifiedDate(invitation) as modifiedDate">
+                    {{ modifiedDate }}
+                  </div>
+                </td>
+                <td class="plan__center">
+                  <button
+                    class="plan__primary plan__primary--small"
+                    type="button"
+                    (click)="resendInvitation(invitation)"
+                    [disabled]="!canResendInvitation(invitation)">
+                    Enviar invitación
+                  </button>
                 </td>
               </tr>
             </tbody>

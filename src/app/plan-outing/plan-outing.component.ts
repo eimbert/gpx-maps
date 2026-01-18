@@ -658,13 +658,38 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
     if (!folderId) return;
     this.planService.getInvitations(folderId).subscribe(invitations => {
       this.folderInvitations = invitations;
+      this.updateFolderSharedState(folderId, invitations.length > 0);
     });
+  }
+
+  private updateFolderSharedState(folderId: number, shared: boolean): void {
+    this.folders = this.folders.map(folder => (folder.id === folderId ? { ...folder, shared } : folder));
+    if (this.activeFolder?.id === folderId) {
+      this.activeFolder = { ...this.activeFolder, shared };
+    }
   }
 
   private resolveInvitation(user: PlanUserSearchResult): PlanInvitation | undefined {
     return this.folderInvitations.find(invite =>
       (invite.invitedUserId && invite.invitedUserId === user.id) || invite.invitedEmail === user.email
     );
+  }
+
+  resolveInvitationLabel(invitation: PlanInvitation): string {
+    if (invitation.invitedEmail) return invitation.invitedEmail;
+    if (invitation.invitedUserId) return `Usuario #${invitation.invitedUserId}`;
+    return 'Usuario sin identificar';
+  }
+
+  resolveInvitationStatusLabel(invitation: PlanInvitation): string {
+    const statusMap: Record<PlanInvitation['status'], string> = {
+      accepted: 'Aceptó',
+      pending: 'Pendiente',
+      declined: 'Rechazó',
+      revoked: 'Revocada',
+      expired: 'Caducada'
+    };
+    return statusMap[invitation.status] ?? 'Pendiente';
   }
 
   private toDateValue(value: string | null): string | null {

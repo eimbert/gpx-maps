@@ -153,7 +153,7 @@ export class PlanService {
 
   addFolderMember(folderId: number, payload: FolderMemberPayload): Observable<PlanFolderMember> {
     console.log('Plan folder member payload:', payload);
-    return this.http.post<PlanFolderMember>(`${this.planApiBase}/${folderId}/members`, payload);
+    return this.http.post<PlanFolderMember>(`${this.planApiBase}/members`, payload);
   }
 
   inviteUser(folderId: number, payload: InvitePayload): Observable<PlanInvitation> {

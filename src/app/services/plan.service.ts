@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, catchError, map, of } from 'rxjs';
+import { Observable, catchError, map, of, tap } from 'rxjs';
 import { environment } from '../../environments/environment';
 import {
   PlanFolder,
@@ -122,6 +122,7 @@ export class PlanService {
     return this.http
       .get<PlanUserSearchResult | PlanUserSearchResult[]>(`${this.usersApiBase}/search`, { params: { q: query } })
       .pipe(
+        tap(response => console.log('Plan user search response:', response)),
         map(response => {
           const list = Array.isArray(response) ? response : response ? [response] : [];
           return {

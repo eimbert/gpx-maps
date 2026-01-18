@@ -380,7 +380,7 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
     const statusMap: Record<PlanInvitation['status'], string> = {
       accepted: 'Aceptó',
       pending: 'Pendiente',
-      sending: 'Enviando',
+      sending: 'Enviado',
       declined: 'Rechazó',
       revoked: 'Revocada',
       expired: 'Caducada'
@@ -395,7 +395,9 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
 
   canRemoveInvite(user: PlanUserSearchResult): boolean {
     const invitation = this.resolveInvitation(user);
-    return !!invitation && invitation.status === 'accepted';
+    if (!invitation) return false;
+    const normalizedStatus = invitation.status.toLowerCase();
+    return normalizedStatus === 'accepted' || normalizedStatus === 'aceptado';
   }
 
   toggleVote(track: PlanTrack): void {
@@ -704,7 +706,7 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
     const statusMap: Record<PlanInvitation['status'], string> = {
       accepted: 'Aceptó',
       pending: 'Pendiente',
-      sending: 'Enviando',
+      sending: 'Enviado',
       declined: 'Rechazó',
       revoked: 'Revocada',
       expired: 'Caducada'

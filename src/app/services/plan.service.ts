@@ -117,19 +117,38 @@ export class PlanService {
     );
   }
 
-  searchUsers(query: string): Observable<PlanUserSearchResult[]> {
-    if (!query.trim()) return of([]);
-    return this.http.get<PlanUserSearchResult[]>(`${this.usersApiBase}/search`, { params: { q: query } }).pipe(
-      map(list => (list || []).map(user => ({
-        ...user,
-        id: Number(user.id)
-      }))),
-      catchError(() => of([]))
-    );
+  searchUsers(query: string): Observable<{ users: PlanUserSearchResult[]; notFound: boolean }> {
+    if (!query.trim()) return of({ users: [], notFound: false });
+    return this.http
+      .get<PlanUserSearchResult | PlanUserSearchResult[]>(`${this.usersApiBase}/search`, { params: { q: query } })
+      .pipe(
+        map(response => {
+          const list = Array.isArray(response) ? response : response ? [response] : [];
+          return {
+            users: list.map(user => ({
+              ...user,
+              id: Number(user.id)
+            })),
+            notFound: list.length === 0
+          };
+        }),
+        catchError(error => of({ users: [], notFound: error?.status === 403 }))
+      );
   }
 
   inviteUser(folderId: number, payload: InvitePayload): Observable<PlanInvitation> {
     return this.http.post<PlanInvitation>(`${this.planApiBase}/${folderId}/invitations`, payload);
+  }
+
+  getInvitations(folderId: number): Observable<PlanInvitation[]> {
+    return this.http.get<PlanInvitation[]>(`${this.planApiBase}/${folderId}/invitations`).pipe(
+      map(list => list ?? []),
+      catchError(() => of([]))
+    );
+  }
+
+  revokeInvitation(folderId: number, invitationId: number): Observable<void> {
+    return this.http.delete<void>(`${this.planApiBase}/${folderId}/invitations/${invitationId}`);
   }
 
   private normalizeFolder(folder: PlanFolder): PlanFolder {

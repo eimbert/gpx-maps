@@ -10,6 +10,7 @@ import { UserIdentityService } from '../services/user-identity.service';
 import {
   PlanFolder,
   PlanFolderVotesResponse,
+  PlanInvitation,
   PlanTrack,
   PlanUserSearchResult,
   TrackWeatherSummary
@@ -58,6 +59,7 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
   inviteQuery = '';
   inviteResults: PlanUserSearchResult[] = [];
   inviteStatusMessage = '';
+  folderInvitations: PlanInvitation[] = [];
 
   isLoadingFolders = false;
   isSavingFolder = false;
@@ -92,9 +94,11 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
         switchMap(query => this.planService.searchUsers(query)),
         takeUntil(this.destroy$)
       )
-      .subscribe(results => {
-        this.inviteResults = results;
-        this.inviteStatusMessage = results.length ? '' : (this.inviteQuery ? 'No se encontraron usuarios.' : '');
+      .subscribe(response => {
+        this.inviteResults = response.users;
+        this.inviteStatusMessage = response.notFound
+          ? 'No se encuentra ningún usuario con ese nick.'
+          : (response.users.length ? '' : (this.inviteQuery ? 'No se encontraron usuarios.' : ''));
       });
   }
 
@@ -167,6 +171,7 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
     };
     this.loadTracks(folder.id);
     this.loadVotes(folder.id);
+    this.loadInvitations(folder.id);
   }
 
   saveFolder(): void {
@@ -324,9 +329,49 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
       })
       .subscribe(() => {
         this.inviteStatusMessage = `Invitación enviada a ${user.name || user.email}.`;
-        this.inviteResults = [];
-        this.inviteQuery = '';
+        this.loadInvitations(this.activeFolder?.id ?? 0);
       });
+  }
+
+  revokeInvite(user: PlanUserSearchResult): void {
+    if (!this.activeFolder) return;
+    const invitation = this.resolveInvitation(user);
+    if (!invitation) return;
+
+    this.planService.revokeInvitation(this.activeFolder.id, invitation.id).subscribe(() => {
+      this.inviteStatusMessage = `Invitación revocada para ${user.name || user.email}.`;
+      this.loadInvitations(this.activeFolder?.id ?? 0);
+    });
+  }
+
+  resolveInviteActionLabel(user: PlanUserSearchResult): string {
+    return this.canSendInvite(user) ? 'Enviar' : 'Revocar';
+  }
+
+  resolveInviteStatus(user: PlanUserSearchResult): string {
+    const invitation = this.resolveInvitation(user);
+    if (!invitation) return 'Sin enviar';
+    const statusMap: Record<PlanInvitation['status'], string> = {
+      accepted: 'Aceptó',
+      pending: 'Pendiente',
+      declined: 'Rechazó',
+      revoked: 'Revocada',
+      expired: 'Caducada'
+    };
+    return statusMap[invitation.status] ?? 'Pendiente';
+  }
+
+  canSendInvite(user: PlanUserSearchResult): boolean {
+    const invitation = this.resolveInvitation(user);
+    return !invitation || ['revoked', 'expired'].includes(invitation.status);
+  }
+
+  handleInviteAction(user: PlanUserSearchResult): void {
+    if (this.canSendInvite(user)) {
+      this.inviteUser(user);
+      return;
+    }
+    this.revokeInvite(user);
   }
 
   toggleVote(track: PlanTrack): void {
@@ -584,6 +629,19 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
     this.votesByTrackId.clear();
     response.votes.forEach(vote => this.votesByTrackId.set(vote.trackId, vote.votes));
     this.userVoteTrackId = response.userVoteTrackId;
+  }
+
+  private loadInvitations(folderId: number): void {
+    if (!folderId) return;
+    this.planService.getInvitations(folderId).subscribe(invitations => {
+      this.folderInvitations = invitations;
+    });
+  }
+
+  private resolveInvitation(user: PlanUserSearchResult): PlanInvitation | undefined {
+    return this.folderInvitations.find(invite =>
+      (invite.invitedUserId && invite.invitedUserId === user.id) || invite.invitedEmail === user.email
+    );
   }
 
   private toDateValue(value: string | null): string | null {

@@ -114,14 +114,31 @@
           <button class="plan__secondary" type="button" (click)="searchInvite()">Buscar</button>
         </div>
         <p class="plan__hint" *ngIf="inviteStatusMessage">{{ inviteStatusMessage }}</p>
-        <div class="plan__invite-results" *ngIf="inviteResults.length">
-          <div class="plan__invite-item" *ngFor="let user of inviteResults">
-            <div>
-              <p>{{ user.name || 'Usuario' }}</p>
-              <span>{{ user.email }}</span>
-            </div>
-            <button class="plan__primary" type="button" (click)="inviteUser(user)">Invitar</button>
-          </div>
+        <div class="plan__invite-table-wrapper" *ngIf="inviteResults.length">
+          <table class="plan__invite-table" aria-label="Usuarios encontrados">
+            <thead>
+              <tr>
+                <th scope="col">Usuario</th>
+                <th scope="col">Acción</th>
+                <th scope="col">Estado</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let user of inviteResults">
+                <td>
+                  <div class="plan__invite-name">{{ user.name || 'Usuario' }}</div>
+                  <div class="plan__invite-email">{{ user.email }}</div>
+                </td>
+                <td class="plan__center">
+                  <button class="plan__primary plan__primary--small" type="button"
+                    (click)="handleInviteAction(user)">
+                    {{ resolveInviteActionLabel(user) }}
+                  </button>
+                </td>
+                <td class="plan__center">{{ resolveInviteStatus(user) }}</td>
+              </tr>
+            </tbody>
+          </table>
         </div>
       </section>
 

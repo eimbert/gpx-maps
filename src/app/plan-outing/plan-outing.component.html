@@ -206,6 +206,7 @@
                 <th scope="col">Votos</th>
                 <th scope="col">Distancia</th>
                 <th scope="col">Tiempo</th>
+                <th scope="col">Desnivel</th>
                 <th scope="col">Ver ruta</th>
                 <th scope="col">Meteo</th>
                 <th scope="col"></th>
@@ -229,6 +230,7 @@
                 <td class="plan__center">{{ votesByTrackId.get(track.id) || 0 }}</td>
                 <td class="plan__center">{{ formatDistance(track.distanceKm) }}</td>
                 <td class="plan__center">{{ formatDuration(track.movingTimeSec) }}</td>
+                <td class="plan__center">{{ formatDesnivel(track.desnivel) }}</td>
                 <td class="plan__center">
                   <button class="plan__maps-link plan__animate-link" type="button" [disabled]="!canAnimateTrack(track)"
                     (click)="animateTrack(track)"

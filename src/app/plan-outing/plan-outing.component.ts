@@ -533,6 +533,13 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
     return hours ? `${hours}h ${minutes}m` : `${minutes}m`;
   }
 
+  formatDesnivel(desnivel: number | null): string {
+    if (desnivel === null || desnivel === undefined || !Number.isFinite(desnivel)) {
+      return '-';
+    }
+    return `${Math.round(desnivel)} m`;
+  }
+
   canVoteOnTracks(): boolean {
     if (!this.activeFolder) return false;
     if (this.tracks.length < 2) return false;

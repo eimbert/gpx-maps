@@ -47,7 +47,12 @@
     <aside class="plan__folders">
       <div class="plan__section-header">
         <h3>Carpetas</h3>
-        <span class="plan__hint" *ngIf="isLoadingFolders">Cargando...</span>
+        <div class="plan__section-actions">
+          <button class="plan__notification-button" type="button" aria-label="Avisos de carpetas" disabled>
+            <mat-icon aria-hidden="true">notifications</mat-icon>
+          </button>
+          <span class="plan__hint" *ngIf="isLoadingFolders">Cargando...</span>
+        </div>
       </div>
       <div class="plan__folders-list" *ngIf="filteredFolders.length; else emptyFolders">
         <button

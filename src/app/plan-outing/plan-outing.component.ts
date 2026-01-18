@@ -2,7 +2,7 @@ import { Component, ElementRef, OnDestroy, OnInit, ViewChild } from '@angular/co
 import { HttpClient } from '@angular/common/http';
 import { MatDialog } from '@angular/material/dialog';
 import { Router } from '@angular/router';
-import { Subject, debounceTime, firstValueFrom, map, switchMap, takeUntil } from 'rxjs';
+import { Subject, debounceTime, firstValueFrom, forkJoin, map, switchMap, takeUntil } from 'rxjs';
 import { InfoDialogComponent, InfoDialogData, InfoDialogResult } from '../info-dialog/info-dialog.component';
 import { PlanService } from '../services/plan.service';
 import { GpxImportService } from '../services/gpx-import.service';
@@ -376,16 +376,25 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
     if (!this.activeFolder) return;
     const nickname = this.inviteQuery.trim();
     if (!nickname) return;
-
-    users.forEach(user => {
+    const folderId = this.activeFolder.id;
+    const addRequests = users.map(user =>
       this.planService
-        .addFolderMember(this.activeFolder!.id, {
-          folderId: this.activeFolder!.id,
+        .addFolderMember(folderId, {
+          folderId,
           userId: user.id,
           nickname,
           email: user.email
         })
-        .subscribe();
+        .pipe(map(() => user))
+    );
+    if (!addRequests.length) return;
+
+    forkJoin(addRequests).subscribe(addedUsers => {
+      const label = addedUsers.length === 1
+        ? this.resolveInviteNickname(addedUsers[0])
+        : `${addedUsers.length} usuarios`;
+      this.inviteStatusMessage = `Se añadió acceso a ${label}.`;
+      this.loadInvitations(folderId);
     });
   }
 

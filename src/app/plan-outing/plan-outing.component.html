@@ -119,20 +119,26 @@
             <thead>
               <tr>
                 <th scope="col">Usuario</th>
-                <th scope="col">Acción</th>
+                <th scope="col">Quitar</th>
+                <th scope="col">Enviar</th>
                 <th scope="col">Estado</th>
               </tr>
             </thead>
             <tbody>
               <tr *ngFor="let user of inviteResults">
                 <td>
-                  <div class="plan__invite-name">{{ user.name || 'Usuario' }}</div>
-                  <div class="plan__invite-email">{{ user.email }}</div>
+                  <div class="plan__invite-name">{{ resolveInviteNickname(user) }}</div>
                 </td>
                 <td class="plan__center">
                   <button class="plan__primary plan__primary--small" type="button"
-                    (click)="handleInviteAction(user)">
-                    {{ resolveInviteActionLabel(user) }}
+                    (click)="revokeInvite(user)" [disabled]="!canRemoveInvite(user)">
+                    Quitar
+                  </button>
+                </td>
+                <td class="plan__center">
+                  <button class="plan__primary plan__primary--small" type="button"
+                    (click)="inviteUser(user)" [disabled]="!canSendInvite(user)">
+                    Enviar
                   </button>
                 </td>
                 <td class="plan__center">{{ resolveInviteStatus(user) }}</td>

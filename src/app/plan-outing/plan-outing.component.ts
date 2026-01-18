@@ -321,14 +321,19 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
   inviteUser(user: PlanUserSearchResult): void {
     if (!this.activeFolder) return;
 
+    const now = new Date().toISOString();
     this.planService
       .inviteUser(this.activeFolder.id, {
-        invitedUserId: user.id,
-        invitedEmail: user.email,
-        role: 'editor'
+        folder_id: this.activeFolder.id,
+        user_id: user.id,
+        status: 'pending',
+        invited_email: user.email,
+        created_at: now,
+        modified_at: now,
+        invited_by: this.userId
       })
       .subscribe(() => {
-        this.inviteStatusMessage = `Invitación enviada a ${user.name || user.email}.`;
+        this.inviteStatusMessage = `Invitación enviada a ${this.resolveInviteNickname(user)}.`;
         this.loadInvitations(this.activeFolder?.id ?? 0);
       });
   }
@@ -339,13 +344,14 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
     if (!invitation) return;
 
     this.planService.revokeInvitation(this.activeFolder.id, invitation.id).subscribe(() => {
-      this.inviteStatusMessage = `Invitación revocada para ${user.name || user.email}.`;
+      this.inviteStatusMessage = `Invitación revocada para ${this.resolveInviteNickname(user)}.`;
       this.loadInvitations(this.activeFolder?.id ?? 0);
     });
   }
 
-  resolveInviteActionLabel(user: PlanUserSearchResult): string {
-    return this.canSendInvite(user) ? 'Enviar' : 'Revocar';
+  resolveInviteNickname(user: PlanUserSearchResult): string {
+    const nickname = user.name?.trim();
+    return nickname ? nickname : 'Sin nick';
   }
 
   resolveInviteStatus(user: PlanUserSearchResult): string {
@@ -366,12 +372,9 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
     return !invitation || ['revoked', 'expired'].includes(invitation.status);
   }
 
-  handleInviteAction(user: PlanUserSearchResult): void {
-    if (this.canSendInvite(user)) {
-      this.inviteUser(user);
-      return;
-    }
-    this.revokeInvite(user);
+  canRemoveInvite(user: PlanUserSearchResult): boolean {
+    const invitation = this.resolveInvitation(user);
+    return !!invitation && !['revoked', 'expired'].includes(invitation.status);
   }
 
   toggleVote(track: PlanTrack): void {

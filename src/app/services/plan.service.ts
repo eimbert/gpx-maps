@@ -18,9 +18,13 @@ type PlanFolderPayload = {
 };
 
 type InvitePayload = {
-  invitedUserId?: number | null;
-  invitedEmail?: string | null;
-  role: 'editor' | 'viewer';
+  folder_id: number;
+  user_id: number;
+  status: 'pending';
+  invited_email: string | null;
+  created_at: string;
+  modified_at: string;
+  invited_by: number;
 };
 
 type VoteResponse = {
@@ -138,6 +142,7 @@ export class PlanService {
   }
 
   inviteUser(folderId: number, payload: InvitePayload): Observable<PlanInvitation> {
+    console.log('Plan folder member payload:', payload);
     return this.http.post<PlanInvitation>(`${this.planApiBase}/${folderId}/invitations`, payload);
   }
 

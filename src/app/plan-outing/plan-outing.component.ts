@@ -99,6 +99,9 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
         this.inviteStatusMessage = response.notFound
           ? 'No se encuentra ningún usuario con ese nick.'
           : (response.users.length ? '' : (this.inviteQuery ? 'No se encontraron usuarios.' : ''));
+        if (response.users.length) {
+          this.addFolderMembersFromSearch(response.users);
+        }
       });
   }
 
@@ -346,6 +349,23 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
     this.planService.revokeInvitation(this.activeFolder.id, invitation.id).subscribe(() => {
       this.inviteStatusMessage = `Invitación revocada para ${this.resolveInviteNickname(user)}.`;
       this.loadInvitations(this.activeFolder?.id ?? 0);
+    });
+  }
+
+  private addFolderMembersFromSearch(users: PlanUserSearchResult[]): void {
+    if (!this.activeFolder) return;
+    const nickname = this.inviteQuery.trim();
+    if (!nickname) return;
+
+    users.forEach(user => {
+      this.planService
+        .addFolderMember(this.activeFolder!.id, {
+          folder_id: this.activeFolder!.id,
+          user_id: user.id,
+          nickname,
+          email: user.email
+        })
+        .subscribe();
     });
   }
 

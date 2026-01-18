@@ -866,44 +866,57 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
     };
   }
 
-  private calculateTotalAscent(
-    trkpts: { ele?: number }[]
-  ): number {
+  private toFiniteOrNull(v: unknown): number | null {
+    return Number.isFinite(v) ? (v as number) : null;
+  }
+
+  private calculateTotalAscent(trkpts: { ele?: number }[]): number {
     if (!trkpts.length) return 0;
+
     let totalAscent = 0;
-    let previousElevation = Number.isFinite(trkpts[0].ele) ? (trkpts[0].ele as number) : null;
+    let previousElevation: number | null = this.toFiniteOrNull(trkpts[0].ele);
 
     for (let i = 1; i < trkpts.length; i++) {
-      const current = trkpts[i].ele;
-      if (!Number.isFinite(current)) continue;
+      const currentElevation: number | null = this.toFiniteOrNull(trkpts[i].ele);
+
+      if (currentElevation === null) continue;
+
       if (previousElevation !== null) {
-        const diff = current - previousElevation;
-        if (diff > 0) {
-          totalAscent += diff;
-        }
+        const diff = currentElevation - previousElevation;
+        if (diff > 0) totalAscent += diff;
       }
-      previousElevation = current;
+
+      previousElevation = currentElevation;
     }
 
     return totalAscent;
   }
 
-  private parseTrackPointsFromGpx(gpxData: string): { lat: number; lon: number; ele: number; time: string }[] {
+  private parseTrackPointsFromGpx(
+    gpxData: string
+    ): { lat: number; lon: number; ele?: number; time: string }[] {
     try {
       const parser = new DOMParser();
-      const gpx = parser.parseFromString(gpxData, 'application/xml');
-      const trkpts = Array.from(gpx.getElementsByTagName('trkpt'));
-      if (gpx.getElementsByTagName('parsererror').length || !trkpts.length) return [];
-      return trkpts.map(trkpt => ({
-        lat: parseFloat(trkpt.getAttribute('lat') || '0'),
-        lon: parseFloat(trkpt.getAttribute('lon') || '0'),
-        ele: parseFloat(trkpt.getElementsByTagName('ele')[0]?.textContent || '0'),
-        time: trkpt.getElementsByTagName('time')[0]?.textContent || ''
-      }));
+      const gpx = parser.parseFromString(gpxData, "application/xml");
+      const trkpts = Array.from(gpx.getElementsByTagName("trkpt"));
+      if (gpx.getElementsByTagName("parsererror").length || !trkpts.length) return [];
+
+      return trkpts.map(trkpt => {
+        const eleText = trkpt.getElementsByTagName("ele")[0]?.textContent ?? "";
+        const eleNum = parseFloat(eleText);
+
+        return {
+          lat: parseFloat(trkpt.getAttribute("lat") ?? "0"),
+          lon: parseFloat(trkpt.getAttribute("lon") ?? "0"),
+          ...(Number.isFinite(eleNum) ? { ele: eleNum } : {}),
+          time: trkpt.getElementsByTagName("time")[0]?.textContent ?? ""
+        };
+      });
     } catch {
       return [];
     }
   }
+
 
   private openInfoDialog(data: InfoDialogData): Promise<InfoDialogResult | undefined> {
     const dialogRef = this.dialog.open<InfoDialogComponent, InfoDialogData, InfoDialogResult>(InfoDialogComponent, {

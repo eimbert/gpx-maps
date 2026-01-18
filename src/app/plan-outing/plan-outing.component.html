@@ -128,9 +128,24 @@
             <tbody>
               <tr *ngFor="let invitation of folderInvitations">
                 <td>
-                  <div class="plan__invite-name">{{ resolveInvitationLabel(invitation) }}</div>
+                  <div class="plan__invite-name-row">
+                    <span class="plan__invite-icon" aria-hidden="true">👤</span>
+                    <div>
+                      <div class="plan__invite-name">{{ resolveInvitationLabel(invitation) }}</div>
+                      <div class="plan__invite-email" *ngIf="resolveInvitationSecondary(invitation) as invitationSecondary">
+                        {{ invitationSecondary }}
+                      </div>
+                    </div>
+                  </div>
                 </td>
-                <td class="plan__center">{{ resolveInvitationStatusLabel(invitation) }}</td>
+                <td class="plan__center">
+                  <div class="plan__invite-status">
+                    <div>{{ resolveInvitationStatusLabel(invitation) }}</div>
+                    <div class="plan__invite-status-date" *ngIf="resolveInvitationStatusDate(invitation) as statusDate">
+                      {{ statusDate }}
+                    </div>
+                  </div>
+                </td>
               </tr>
             </tbody>
           </table>
@@ -148,7 +163,10 @@
             <tbody>
               <tr *ngFor="let user of inviteResults">
                 <td>
-                  <div class="plan__invite-name">{{ resolveInviteNickname(user) }}</div>
+                  <div class="plan__invite-name-row">
+                    <span class="plan__invite-icon" aria-hidden="true">👤</span>
+                    <div class="plan__invite-name">{{ resolveInviteNickname(user) }}</div>
+                  </div>
                 </td>
                 <td class="plan__center">
                   <button class="plan__primary plan__primary--small" type="button"

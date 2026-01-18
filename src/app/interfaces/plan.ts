@@ -41,11 +41,15 @@ export interface PlanFolderMember {
 export interface PlanInvitation {
   id: number;
   folderId: number;
+  userId?: number | null;
+  name?: string | null;
+  email?: string | null;
+  nickname?: string | null;
   invitedUserId?: number | null;
   invitedEmail?: string | null;
   invitedByUserId: number;
   role: 'editor' | 'viewer';
-  status: 'pending' | 'accepted' | 'declined' | 'revoked' | 'expired';
+  status: 'pending' | 'sending' | 'accepted' | 'declined' | 'revoked' | 'expired';
   token: string;
   createdAt: string;
   respondedAt?: string | null;

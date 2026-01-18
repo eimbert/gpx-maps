@@ -52,6 +52,7 @@ export interface PlanInvitation {
   status: 'pending' | 'sending' | 'accepted' | 'declined' | 'revoked' | 'expired';
   token: string;
   createdAt: string;
+  modifiedAt?: string | null;
   respondedAt?: string | null;
   expiresAt?: string | null;
 }

@@ -352,6 +352,15 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
     });
   }
 
+  removeInvitation(invitation: PlanInvitation): void {
+    if (!this.activeFolder) return;
+
+    this.planService.revokeInvitation(this.activeFolder.id, invitation.id).subscribe(() => {
+      this.inviteStatusMessage = `Invitación revocada para ${this.resolveInvitationLabel(invitation)}.`;
+      this.loadInvitations(this.activeFolder?.id ?? 0);
+    });
+  }
+
   private addFolderMembersFromSearch(users: PlanUserSearchResult[]): void {
     if (!this.activeFolder) return;
     const nickname = this.inviteQuery.trim();
@@ -396,6 +405,11 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
   canRemoveInvite(user: PlanUserSearchResult): boolean {
     const invitation = this.resolveInvitation(user);
     if (!invitation) return false;
+    const normalizedStatus = invitation.status.toLowerCase();
+    return normalizedStatus === 'accepted' || normalizedStatus === 'aceptado';
+  }
+
+  canRemoveInvitation(invitation: PlanInvitation): boolean {
     const normalizedStatus = invitation.status.toLowerCase();
     return normalizedStatus === 'accepted' || normalizedStatus === 'aceptado';
   }

@@ -231,7 +231,7 @@ export class PlanService {
       desnivel: track.desnivel ?? (track as any).desnivel ?? (track as any).elevation_gain ?? (track as any).elevationGain ?? null,
       howToGetUrl: track.howToGetUrl ?? (track as any).how_to_get_url ?? null,
       sourceType: track.sourceType ?? (track as any).source_type ?? null,
-      routeXml: track.routeXml ?? (track as any).routeXml ?? null,
+      routeXml: track.routeXml ?? (track as any).routeXml ?? (track as any).route_xml ?? null,
       sortOrder: track.sortOrder ?? (track as any).sort_order ?? null,
       createdAt: track.createdAt ?? (track as any).created_at
     };

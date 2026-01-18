@@ -325,6 +325,22 @@
   border-bottom: 1px solid #e2e8f0;
 }
 
+.plan__info-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  margin-left: 6px;
+  border-radius: 999px;
+  border: 1px solid #94a3b8;
+  color: #64748b;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
+  cursor: help;
+}
+
 .plan__table th:first-child,
 .plan__table td:first-child {
   text-align: left;

@@ -350,7 +350,7 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
     });
   }
 
-  removeInvitation(invitation: PlanInvitation): void {
+  async removeInvitation(invitation: PlanInvitation): Promise<void> {
     if (!this.activeFolder) return;
 
     const userId = invitation.invitedUserId ?? invitation.userId;
@@ -358,10 +358,13 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
       this.showMessage('No se pudo quitar el acceso porque falta el usuario.');
       return;
     }
-    const confirmed = window.confirm(
-      'Se quitará el acceso de este usuario a la carpeta. ¿Quieres continuar?'
-    );
-    if (!confirmed) return;
+    const confirmResult = await this.openInfoDialog({
+      title: 'Confirmar acción',
+      message: 'Se quitará el acceso de este usuario a la carpeta. ¿Quieres continuar?',
+      confirmLabel: 'Quitar acceso',
+      cancelLabel: 'Cancelar'
+    });
+    if (confirmResult !== 'confirm') return;
 
     this.planService.removeFolderMember(this.activeFolder.id, userId).subscribe(() => {
       this.inviteStatusMessage = `Se quitó el acceso de ${this.resolveInvitationLabel(invitation)}.`;

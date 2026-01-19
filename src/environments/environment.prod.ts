@@ -8,5 +8,6 @@ export const environment = {
   routesApiBase: '/api/routes',
   tracksApiBase: '/api/tracks',
   planApiBase: '/api/plan-folders',
-  usersApiBase: '/api/users'
+  usersApiBase: '/api/users',
+  mensajesApiBase: '/api/mensajes'
 };

@@ -15,6 +15,7 @@ import {
   PlanUserSearchResult,
   TrackWeatherSummary
 } from '../interfaces/plan';
+import { environment } from 'src/environments/environment';
 
 type EditableFolder = {
   name: string;
@@ -153,9 +154,10 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
 
   loadPendingMessages(): void {
     this.isLoadingPendingMessages = true;
+    const userId = JSON.parse(localStorage.getItem('gpxAuthSession') ?? 'null')?.id;
     this.http
-      .get<PendingMessage[]>(`/api/mensajes/usuario/${this.userId}/pendientes`)
-      .subscribe({
+      .get<PendingMessage[]>(`${environment.mensajesApiBase}/usuario/${userId}/pendientes`)
+      .subscribe({ 
         next: response => {
           this.pendingMessages = response ?? [];
           this.isLoadingPendingMessages = false;
@@ -172,13 +174,13 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
   }
 
   markMessageAsSeen(message: PendingMessage): void {
-    this.http.delete(`/api/mensajes/${message.id}`).subscribe(() => {
+    this.http.delete(`${environment.mensajesApiBase}/${message.id}`).subscribe(() => {
       this.pendingMessages = this.pendingMessages.filter(item => item.id !== message.id);
     });
   }
 
   updateMessageStatus(message: PendingMessage, estado: number): void {
-    this.http.put(`/api/mensajes/${message.id}/estado`, { estado }).subscribe(() => {
+    this.http.put(`${environment.mensajesApiBase}/${message.id}/estado`, { estado }).subscribe(() => {
       this.pendingMessages = this.pendingMessages.filter(item => item.id !== message.id);
     });
   }

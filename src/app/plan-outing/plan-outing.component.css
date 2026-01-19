@@ -255,21 +255,37 @@
   transform: translate(25%, -25%);
 }
 
+.plan__notification-overlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 96px 20px 24px;
+  z-index: 20;
+}
+
+.plan__notification-backdrop {
+  position: fixed;
+  inset: 0;
+  border: none;
+  background: rgba(15, 23, 42, 0.45);
+  cursor: pointer;
+}
+
 .plan__notification-panel {
-  position: absolute;
-  right: 0;
-  top: 42px;
-  width: min(360px, 90vw);
+  position: relative;
+  width: min(520px, 92vw);
   margin: 0;
   background: #fff7ed;
   border: 1px solid #fdba74;
   border-radius: 16px;
-  padding: 12px;
+  padding: 16px;
   display: flex;
   flex-direction: column;
   gap: 10px;
-  box-shadow: 0 12px 24px rgba(124, 45, 18, 0.15);
-  z-index: 5;
+  box-shadow: 0 18px 32px rgba(124, 45, 18, 0.2);
+  z-index: 1;
 }
 
 .plan__notification-table-wrapper {

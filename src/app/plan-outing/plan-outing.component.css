@@ -307,7 +307,7 @@
   padding: 10px 12px;
   border-bottom: 1px solid #fed7aa;
   text-align: left;
-  vertical-align: top;
+  vertical-align: middle;
 }
 
 .plan__notification-table th:first-child,
@@ -318,13 +318,19 @@
 .plan__notification-table th:last-child,
 .plan__notification-table td:last-child {
   width: 32%;
+  text-align: right;
 }
 
 .plan__notification-actions {
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
   gap: 8px;
-  justify-content: flex-end;
+  align-items: flex-end;
+}
+
+.plan__notification-actions .plan__primary,
+.plan__notification-actions .plan__secondary {
+  width: 110px;
 }
 
 .plan__notification-text {

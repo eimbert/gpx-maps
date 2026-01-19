@@ -16,11 +16,7 @@ export class InfoMessageService {
       data,
       hasBackdrop: false,
       autoFocus: false,
-      panelClass: 'info-toast-dialog',
-      position: {
-        top: '24px',
-        right: '24px'
-      }
+      panelClass: 'info-toast-dialog'
     });
 
     this.messageRef = dialogRef;

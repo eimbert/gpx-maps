@@ -31,6 +31,20 @@ type ForecastResponse = {
   };
 };
 
+type PendingMessageUser = {
+  name: string;
+  nickname: string;
+};
+
+type PendingMessage = {
+  id: number;
+  user: PendingMessageUser | null;
+  mensaje: string;
+  tipoMsg: number;
+  estado: number;
+  createdAt: string;
+};
+
 @Component({
   selector: 'app-plan-outing',
   templateUrl: './plan-outing.component.html',
@@ -64,6 +78,9 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
   isSavingFolder = false;
   isLoadingTracks = false;
   isImportingTrack = false;
+  isLoadingPendingMessages = false;
+  showPendingMessages = false;
+  pendingMessages: PendingMessage[] = [];
 
   private readonly destroy$ = new Subject<void>();
   private readonly inviteSearch$ = new Subject<string>();
@@ -86,6 +103,7 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.loadFolders();
+    this.loadPendingMessages();
 
     this.inviteSearch$
       .pipe(
@@ -130,6 +148,38 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
         this.selectFolder(folders[0]);
       }
       this.isLoadingFolders = false;
+    });
+  }
+
+  loadPendingMessages(): void {
+    this.isLoadingPendingMessages = true;
+    this.http
+      .get<PendingMessage[]>(`/api/mensajes/usuario/${this.userId}/pendientes`)
+      .subscribe({
+        next: response => {
+          this.pendingMessages = response ?? [];
+          this.isLoadingPendingMessages = false;
+        },
+        error: () => {
+          this.pendingMessages = [];
+          this.isLoadingPendingMessages = false;
+        }
+      });
+  }
+
+  togglePendingMessages(): void {
+    this.showPendingMessages = !this.showPendingMessages;
+  }
+
+  markMessageAsSeen(message: PendingMessage): void {
+    this.http.delete(`/api/mensajes/${message.id}`).subscribe(() => {
+      this.pendingMessages = this.pendingMessages.filter(item => item.id !== message.id);
+    });
+  }
+
+  updateMessageStatus(message: PendingMessage, estado: number): void {
+    this.http.put(`/api/mensajes/${message.id}/estado`, { estado }).subscribe(() => {
+      this.pendingMessages = this.pendingMessages.filter(item => item.id !== message.id);
     });
   }
 

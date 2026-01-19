@@ -108,6 +108,12 @@
   font-weight: 600;
 }
 
+.plan__secondary--small {
+  padding: 6px 12px;
+  border-radius: 10px;
+  font-size: 13px;
+}
+
 .plan__ghost {
   background: transparent;
   border: 1px solid #d1d5db;
@@ -207,6 +213,7 @@
 }
 
 .plan__notification-button {
+  position: relative;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -217,10 +224,101 @@
   cursor: not-allowed;
 }
 
+.plan__notification-button--active {
+  color: #f97316;
+  cursor: pointer;
+  animation: plan-ring 1.4s ease-in-out infinite;
+}
+
 .plan__notification-button mat-icon {
   font-size: 20px;
   width: 20px;
   height: 20px;
+}
+
+.plan__notification-count {
+  position: absolute;
+  top: -6px;
+  right: -10px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: #ef4444;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 0 2px #f8fafc;
+}
+
+.plan__notification-panel {
+  margin: 12px 0 16px;
+  background: #fff7ed;
+  border: 1px solid #fdba74;
+  border-radius: 16px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.plan__notification-table-wrapper {
+  overflow-x: auto;
+}
+
+.plan__notification-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+  background: #fff;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.plan__notification-table th,
+.plan__notification-table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid #fed7aa;
+  text-align: left;
+}
+
+.plan__notification-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.plan__notification-text {
+  font-weight: 600;
+}
+
+.plan__notification-user {
+  font-size: 12px;
+  color: #7c2d12;
+  margin-top: 2px;
+}
+
+@keyframes plan-ring {
+  0%,
+  100% {
+    transform: rotate(0deg);
+  }
+  20% {
+    transform: rotate(-8deg);
+  }
+  40% {
+    transform: rotate(6deg);
+  }
+  60% {
+    transform: rotate(-4deg);
+  }
+  80% {
+    transform: rotate(4deg);
+  }
 }
 
 .plan__invite {

@@ -26,6 +26,7 @@ import { EventCreateDialogComponent, EventCreateDialogResult } from '../event-cr
 import { EventTrackUploadDialogComponent, EventTrackUploadDialogData, EventTrackUploadDialogResult } from '../event-track-upload-dialog/event-track-upload-dialog.component';
 import { UserIdentityService } from '../services/user-identity.service';
 import { AuthService } from '../services/auth.service';
+import { InfoMessageService } from '../services/info-message.service';
 import { InfoDialogComponent, InfoDialogData, InfoDialogResult } from '../info-dialog/info-dialog.component';
 import { MyTrackRow, MyTracksDialogComponent } from '../my-tracks-dialog/my-tracks-dialog.component';
 import { StandaloneTrackUploadDialogComponent, StandaloneTrackUploadResult } from '../standalone-track-upload-dialog/standalone-track-upload-dialog.component';
@@ -248,6 +249,7 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
     private eventService: EventService,
     private http: HttpClient,
     private authService: AuthService,
+    private infoMessageService: InfoMessageService,
     identityService: UserIdentityService
   ) {
     this.userId = identityService.getUserId();
@@ -263,7 +265,7 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
   }
 
   private showMessage(message: string, title = 'Aviso'): void {
-    void this.openInfoDialog({
+    this.infoMessageService.showMessage({
       title,
       message
     });

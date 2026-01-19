@@ -4,6 +4,7 @@ import { HttpClient } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 import { EventService } from '../services/event.service';
 import { InfoDialogComponent, InfoDialogData, InfoDialogResult } from '../info-dialog/info-dialog.component';
+import { InfoMessageService } from '../services/info-message.service';
 import { TrackGpxFile } from '../interfaces/events';
 
 export interface MyTrackRow {
@@ -49,10 +50,10 @@ export class MyTracksDialogComponent {
     @Inject(MAT_DIALOG_DATA) public data: MyTracksDialogData,
     private dialogRef: MatDialogRef<MyTracksDialogComponent>,
     private dialog: MatDialog,
+    private infoMessageService: InfoMessageService,
     private http: HttpClient,
     private eventService: EventService
   ) {
-    
     this.rows = [...data.tracks.filter(track => track.eventId != null && track.eventId != 0)];
   }
 
@@ -193,13 +194,10 @@ export class MyTracksDialogComponent {
   }
 
   private showInfo(message: string): void {
-    this.dialog.open<InfoDialogComponent, InfoDialogData, InfoDialogResult>(InfoDialogComponent, {
-      width: '420px',
-      data: {
-        title: 'Aviso',
-        message,
-        confirmLabel: 'Aceptar'
-      }
+    this.infoMessageService.showMessage({
+      title: 'Aviso',
+      message,
+      confirmLabel: 'Aceptar'
     });
   }
 

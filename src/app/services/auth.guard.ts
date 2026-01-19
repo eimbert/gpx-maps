@@ -2,14 +2,18 @@ import { Injectable } from '@angular/core';
 import { CanActivate, Router, UrlTree } from '@angular/router';
 import { map } from 'rxjs/operators';
 import { Observable, of } from 'rxjs';
-import { MatDialog } from '@angular/material/dialog';
-import { InfoDialogComponent, InfoDialogData } from '../info-dialog/info-dialog.component';
+import { InfoDialogData } from '../info-dialog/info-dialog.component';
 import { AuthService } from './auth.service';
 import { environment } from '../../environments/environment';
+import { InfoMessageService } from './info-message.service';
 
 @Injectable({ providedIn: 'root' })
 export class AuthGuard implements CanActivate {
-  constructor(private authService: AuthService, private router: Router, private dialog: MatDialog) {}
+  constructor(
+    private authService: AuthService,
+    private router: Router,
+    private infoMessageService: InfoMessageService
+  ) {}
 
   canActivate(): Observable<boolean | UrlTree> {
     if (environment.devBypassAuthGuard) {
@@ -42,10 +46,7 @@ export class AuthGuard implements CanActivate {
       confirmLabel: 'OK'
     };
 
-    this.dialog.open<InfoDialogComponent, InfoDialogData>(InfoDialogComponent, {
-      width: '420px',
-      data: dialogData
-    });
+    this.infoMessageService.showMessage(dialogData);
   }
 
   private showSessionExpiredDialog(): void {
@@ -55,9 +56,6 @@ export class AuthGuard implements CanActivate {
       confirmLabel: 'Volver al inicio'
     };
 
-    this.dialog.open<InfoDialogComponent, InfoDialogData>(InfoDialogComponent, {
-      width: '420px',
-      data: dialogData
-    });
+    this.infoMessageService.showMessage(dialogData);
   }
 }

@@ -6,6 +6,7 @@ import { Subject, debounceTime, firstValueFrom, forkJoin, map, switchMap, takeUn
 import { InfoDialogComponent, InfoDialogData, InfoDialogResult } from '../info-dialog/info-dialog.component';
 import { PlanService, PlanTrackImportPayload } from '../services/plan.service';
 import { GpxImportService } from '../services/gpx-import.service';
+import { InfoMessageService } from '../services/info-message.service';
 import { UserIdentityService } from '../services/user-identity.service';
 import {
   PlanFolder,
@@ -94,6 +95,7 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
     private dialog: MatDialog,
     private gpxImportService: GpxImportService,
     private router: Router,
+    private infoMessageService: InfoMessageService,
     identityService: UserIdentityService
   ) {
     this.userId = identityService.getUserId();
@@ -1011,7 +1013,7 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
   }
 
   private showMessage(message: string, title = 'Aviso'): void {
-    void this.openInfoDialog({
+    this.infoMessageService.showMessage({
       title,
       message
     });

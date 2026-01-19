@@ -80,10 +80,8 @@
             <tbody>
               <tr *ngFor="let pending of pendingMessages">
                 <td>
-                  <div class="plan__notification-text">{{ pending.mensaje }}</div>
-                  <div class="plan__notification-user" *ngIf="pending.user">
-                    {{ pending.user.name }} ({{ pending.user.nickname }})
-                  </div>
+                  <div class="plan__notification-text">{{ formatPendingMessageIntro(pending) }}</div>
+                  <div class="plan__notification-body">{{ pending.mensaje }}</div>
                 </td>
                 <td class="plan__notification-actions">
                   <button

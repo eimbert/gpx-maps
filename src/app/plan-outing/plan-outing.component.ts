@@ -40,6 +40,7 @@ type PendingMessageUser = {
 type PendingMessage = {
   id: number;
   user: PendingMessageUser | null;
+  userMsg?: PendingMessageUser | null;
   mensaje: string;
   tipoMsg: number;
   estado: number;
@@ -171,6 +172,13 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
 
   togglePendingMessages(): void {
     this.showPendingMessages = !this.showPendingMessages;
+  }
+
+  formatPendingMessageIntro(message: PendingMessage): string {
+    const sender = message.userMsg ?? message.user;
+    const nickname = sender?.nickname ?? 'un usuario';
+    const subject = message.tipoMsg === 1 ? 'la siguiente invitación' : 'el siguiente mensaje';
+    return `El usuario ${nickname} te envía ${subject}`;
   }
 
   markMessageAsSeen(message: PendingMessage): void {

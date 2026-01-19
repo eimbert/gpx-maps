@@ -238,24 +238,29 @@
 
 .plan__notification-count {
   position: absolute;
-  top: -6px;
-  right: -10px;
-  min-width: 18px;
-  height: 18px;
-  padding: 0 5px;
+  top: -8px;
+  right: -12px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
   border-radius: 999px;
   background: #ef4444;
   color: #fff;
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 600;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   box-shadow: 0 0 0 2px #f8fafc;
+  transform: translate(25%, -25%);
 }
 
 .plan__notification-panel {
-  margin: 12px 0 16px;
+  position: absolute;
+  right: 0;
+  top: 42px;
+  width: min(360px, 90vw);
+  margin: 0;
   background: #fff7ed;
   border: 1px solid #fdba74;
   border-radius: 16px;
@@ -263,6 +268,8 @@
   display: flex;
   flex-direction: column;
   gap: 10px;
+  box-shadow: 0 12px 24px rgba(124, 45, 18, 0.15);
+  z-index: 5;
 }
 
 .plan__notification-table-wrapper {
@@ -272,6 +279,7 @@
 .plan__notification-table {
   width: 100%;
   border-collapse: collapse;
+  table-layout: fixed;
   font-size: 14px;
   background: #fff;
   border-radius: 12px;
@@ -283,6 +291,17 @@
   padding: 10px 12px;
   border-bottom: 1px solid #fed7aa;
   text-align: left;
+  vertical-align: top;
+}
+
+.plan__notification-table th:first-child,
+.plan__notification-table td:first-child {
+  width: 68%;
+}
+
+.plan__notification-table th:last-child,
+.plan__notification-table td:last-child {
+  width: 32%;
 }
 
 .plan__notification-actions {
@@ -296,10 +315,11 @@
   font-weight: 600;
 }
 
-.plan__notification-user {
-  font-size: 12px;
+.plan__notification-body {
+  font-size: 13px;
   color: #7c2d12;
-  margin-top: 2px;
+  margin-top: 4px;
+  word-break: break-word;
 }
 
 @keyframes plan-ring {
@@ -532,6 +552,7 @@
   flex-direction: column;
   gap: 16px;
   box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+  position: relative;
 }
 
 .plan__folders-list {

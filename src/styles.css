@@ -10,3 +10,8 @@ body { margin: 0; font-family: Roboto, "Helvetica Neue", sans-serif; }
 
 
 
+
+.info-toast-dialog .mat-dialog-container {
+  width: min(420px, 92vw);
+  margin: 0;
+}

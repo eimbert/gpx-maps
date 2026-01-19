@@ -1,7 +1,7 @@
 import { Component, Inject, OnInit } from '@angular/core';
-import { MatDialog, MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
+import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
 import { BikeType, RaceCategory, RaceEvent } from '../interfaces/events';
-import { InfoDialogComponent } from '../info-dialog/info-dialog.component';
+import { InfoMessageService } from '../services/info-message.service';
 
 export interface EventTrackUploadDialogData {
   events: RaceEvent[];
@@ -33,7 +33,7 @@ export class EventTrackUploadDialogComponent implements OnInit {
   constructor(
     private dialogRef: MatDialogRef<EventTrackUploadDialogComponent, EventTrackUploadDialogResult | undefined>,
     @Inject(MAT_DIALOG_DATA) public data: EventTrackUploadDialogData,
-    private dialog: MatDialog
+    private infoMessageService: InfoMessageService
   ) {
     this.category = data.defaultCategory;
     this.bikeType = data.defaultBikeType;
@@ -101,12 +101,9 @@ export class EventTrackUploadDialogComponent implements OnInit {
   }
 
   private showMessage(message: string): void {
-    this.dialog.open(InfoDialogComponent, {
-      width: '420px',
-      data: {
-        title: 'Datos requeridos',
-        message
-      }
+    this.infoMessageService.showMessage({
+      title: 'Datos requeridos',
+      message
     });
   }
 }

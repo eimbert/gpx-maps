@@ -1,7 +1,7 @@
 import { Component } from '@angular/core';
-import { MatDialog, MatDialogRef } from '@angular/material/dialog';
+import { MatDialogRef } from '@angular/material/dialog';
 import { CreateEventPayload } from '../interfaces/events';
-import { InfoDialogComponent } from '../info-dialog/info-dialog.component';
+import { InfoMessageService } from '../services/info-message.service';
 
 export interface EventCreateDialogResult {
   event: CreateEventPayload;
@@ -29,16 +29,13 @@ export class EventCreateDialogComponent {
 
   constructor(
     private dialogRef: MatDialogRef<EventCreateDialogComponent, EventCreateDialogResult | undefined>,
-    private dialog: MatDialog
+    private infoMessageService: InfoMessageService
   ) { }
 
   private showMessage(message: string): void {
-    this.dialog.open(InfoDialogComponent, {
-      width: '420px',
-      data: {
-        title: 'Datos requeridos',
-        message
-      }
+    this.infoMessageService.showMessage({
+      title: 'Datos requeridos',
+      message
     });
   }
 

@@ -48,12 +48,71 @@
       <div class="plan__section-header">
         <h3>Carpetas</h3>
         <div class="plan__section-actions">
-          <button class="plan__notification-button" type="button" aria-label="Avisos de carpetas" disabled>
+          <button
+            class="plan__notification-button"
+            type="button"
+            aria-label="Avisos de carpetas"
+            [disabled]="!pendingMessages.length"
+            [class.plan__notification-button--active]="pendingMessages.length"
+            (click)="togglePendingMessages()"
+            [attr.aria-expanded]="showPendingMessages">
             <mat-icon aria-hidden="true">notifications</mat-icon>
+            <span class="plan__notification-count" *ngIf="pendingMessages.length">
+              {{ pendingMessages.length }}
+            </span>
           </button>
           <span class="plan__hint" *ngIf="isLoadingFolders">Cargando...</span>
         </div>
       </div>
+      <section class="plan__notification-panel" *ngIf="showPendingMessages">
+        <p class="plan__hint" *ngIf="isLoadingPendingMessages">Cargando avisos...</p>
+        <p class="plan__hint" *ngIf="!isLoadingPendingMessages && !pendingMessages.length">
+          No hay avisos pendientes.
+        </p>
+        <div class="plan__notification-table-wrapper" *ngIf="!isLoadingPendingMessages && pendingMessages.length">
+          <table class="plan__notification-table" aria-label="Avisos pendientes">
+            <thead>
+              <tr>
+                <th scope="col">Mensaje</th>
+                <th scope="col">Acción</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let pending of pendingMessages">
+                <td>
+                  <div class="plan__notification-text">{{ pending.mensaje }}</div>
+                  <div class="plan__notification-user" *ngIf="pending.user">
+                    {{ pending.user.name }} ({{ pending.user.nickname }})
+                  </div>
+                </td>
+                <td class="plan__notification-actions">
+                  <button
+                    *ngIf="pending.tipoMsg === 0"
+                    class="plan__secondary plan__secondary--small"
+                    type="button"
+                    (click)="markMessageAsSeen(pending)">
+                    Visto
+                  </button>
+                  <ng-container *ngIf="pending.tipoMsg === 1">
+                    <button
+                      class="plan__primary plan__primary--small"
+                      type="button"
+                      (click)="updateMessageStatus(pending, 1)">
+                      Aceptar
+                    </button>
+                    <button
+                      class="plan__secondary plan__secondary--small"
+                      type="button"
+                      (click)="updateMessageStatus(pending, 0)">
+                      Rechazar
+                    </button>
+                  </ng-container>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
       <div class="plan__folders-list" *ngIf="filteredFolders.length; else emptyFolders">
         <button
           class="plan__folder-card"

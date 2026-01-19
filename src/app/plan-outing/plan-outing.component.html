@@ -64,53 +64,6 @@
           <span class="plan__hint" *ngIf="isLoadingFolders">Cargando...</span>
         </div>
       </div>
-      <section class="plan__notification-panel" *ngIf="showPendingMessages">
-        <p class="plan__hint" *ngIf="isLoadingPendingMessages">Cargando avisos...</p>
-        <p class="plan__hint" *ngIf="!isLoadingPendingMessages && !pendingMessages.length">
-          No hay avisos pendientes.
-        </p>
-        <div class="plan__notification-table-wrapper" *ngIf="!isLoadingPendingMessages && pendingMessages.length">
-          <table class="plan__notification-table" aria-label="Avisos pendientes">
-            <thead>
-              <tr>
-                <th scope="col">Mensaje</th>
-                <th scope="col">Acción</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr *ngFor="let pending of pendingMessages">
-                <td>
-                  <div class="plan__notification-text">{{ formatPendingMessageIntro(pending) }}</div>
-                  <div class="plan__notification-body">{{ pending.mensaje }}</div>
-                </td>
-                <td class="plan__notification-actions">
-                  <button
-                    *ngIf="pending.tipoMsg === 0"
-                    class="plan__secondary plan__secondary--small"
-                    type="button"
-                    (click)="markMessageAsSeen(pending)">
-                    Visto
-                  </button>
-                  <ng-container *ngIf="pending.tipoMsg === 1">
-                    <button
-                      class="plan__primary plan__primary--small"
-                      type="button"
-                      (click)="updateMessageStatus(pending, 1)">
-                      Aceptar
-                    </button>
-                    <button
-                      class="plan__secondary plan__secondary--small"
-                      type="button"
-                      (click)="updateMessageStatus(pending, 0)">
-                      Rechazar
-                    </button>
-                  </ng-container>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </section>
       <div class="plan__folders-list" *ngIf="filteredFolders.length; else emptyFolders">
         <button
           class="plan__folder-card"
@@ -337,6 +290,62 @@
       </section>
     </section>
 
+  </div>
+
+  <div class="plan__notification-overlay" *ngIf="showPendingMessages">
+    <button
+      class="plan__notification-backdrop"
+      type="button"
+      aria-label="Cerrar avisos"
+      (click)="togglePendingMessages()">
+    </button>
+    <section class="plan__notification-panel" role="dialog" aria-modal="true" aria-label="Avisos pendientes">
+      <p class="plan__hint" *ngIf="isLoadingPendingMessages">Cargando avisos...</p>
+      <p class="plan__hint" *ngIf="!isLoadingPendingMessages && !pendingMessages.length">
+        No hay avisos pendientes.
+      </p>
+      <div class="plan__notification-table-wrapper" *ngIf="!isLoadingPendingMessages && pendingMessages.length">
+        <table class="plan__notification-table" aria-label="Avisos pendientes">
+          <thead>
+            <tr>
+              <th scope="col">Mensaje</th>
+              <th scope="col">Acción</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let pending of pendingMessages">
+              <td>
+                <div class="plan__notification-text">{{ formatPendingMessageIntro(pending) }}</div>
+                <div class="plan__notification-body">{{ pending.mensaje }}</div>
+              </td>
+              <td class="plan__notification-actions">
+                <button
+                  *ngIf="pending.tipoMsg === 0"
+                  class="plan__secondary plan__secondary--small"
+                  type="button"
+                  (click)="markMessageAsSeen(pending)">
+                  Visto
+                </button>
+                <ng-container *ngIf="pending.tipoMsg === 1">
+                  <button
+                    class="plan__primary plan__primary--small"
+                    type="button"
+                    (click)="updateMessageStatus(pending, 1)">
+                    Aceptar
+                  </button>
+                  <button
+                    class="plan__secondary plan__secondary--small"
+                    type="button"
+                    (click)="updateMessageStatus(pending, 0)">
+                    Rechazar
+                  </button>
+                </ng-container>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
   </div>
 </div>
 

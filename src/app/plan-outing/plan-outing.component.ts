@@ -16,6 +16,7 @@ import {
   PlanUserSearchResult,
   TrackWeatherSummary
 } from '../interfaces/plan';
+import { LoginSuccessResponse } from '../interfaces/auth';
 import { environment } from 'src/environments/environment';
 
 type EditableFolder = {
@@ -46,6 +47,14 @@ type PendingMessage = {
   tipoMsg: number;
   estado: number;
   createdAt: string;
+};
+
+type InvitationMessagePayload = {
+  userId: number;
+  userMsgId: number;
+  mensaje: string;
+  tipoMsg: number;
+  idInvitacion: number;
 };
 
 @Component({
@@ -847,6 +856,7 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
       .subscribe({
         next: () => {
           this.inviteStatusMessage = `Invitación enviada a ${this.resolveInvitationLabel(invitation)}.`;
+          this.createInvitationMessage(invitation);
         },
         error: () => {
           invitation.status = previousStatus;
@@ -877,6 +887,43 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
     const month = `${date.getMonth() + 1}`.padStart(2, '0');
     const day = `${date.getDate()}`.padStart(2, '0');
     return `${year}-${month}-${day}`;
+  }
+
+  private createInvitationMessage(invitation: PlanInvitation): void {
+    const recipientId = invitation.invitedUserId ?? invitation.userId;
+    if (!recipientId) return;
+    const folderName = this.activeFolder?.name?.trim();
+    if (!folderName) return;
+
+    const session = this.getAuthSession();
+    const senderName = session?.nickname?.trim() || session?.name?.trim() || 'Un usuario';
+    const senderId = session?.id ?? this.userId;
+    const mensaje = `${senderName}, te invita a compartir la carpeta de la proxima salida "${folderName}". ¿Aceptas?`;
+
+    const payload: InvitationMessagePayload = {
+      userId: recipientId,
+      userMsgId: senderId,
+      mensaje,
+      tipoMsg: 1,
+      idInvitacion: invitation.id
+    };
+
+    this.http.post(`${environment.mensajesApiBase}`, payload).subscribe({
+      error: () => {
+        this.showMessage('No se pudo registrar el mensaje de invitación.');
+      }
+    });
+  }
+
+  private getAuthSession(): LoginSuccessResponse | null {
+    if (typeof localStorage === 'undefined') return null;
+    try {
+      const stored = localStorage.getItem('gpxAuthSession');
+      if (!stored) return null;
+      return JSON.parse(stored) as LoginSuccessResponse;
+    } catch {
+      return null;
+    }
   }
 
   private mergeTrackWithPayload(track: PlanTrack, payload: PlanTrackImportPayload): PlanTrack {

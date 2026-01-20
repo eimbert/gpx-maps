@@ -209,6 +209,9 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
     }
     forkJoin(requests).subscribe(() => {
       this.pendingMessages = this.pendingMessages.filter(item => item.id !== message.id);
+      if (message.tipoMsg === 1 && estado === 1) {
+        this.loadFolders();
+      }
     });
   }
 
@@ -599,6 +602,11 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
       return folder.isOwner;
     }
     return folder.ownerId === this.userId;
+  }
+
+  canManageInvitations(): boolean {
+    if (!this.activeFolder) return false;
+    return this.isFolderOwner(this.activeFolder);
   }
 
   formatDistance(distance: number | null): string {

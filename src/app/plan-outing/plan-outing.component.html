@@ -141,8 +141,8 @@
                 <th scope="col">Invitado</th>
                 <th scope="col">Estado</th>
                 <th scope="col">Actualizado</th>
-                <th scope="col"></th>
-                <th scope="col"></th>
+                <th scope="col" *ngIf="canManageInvitations()"></th>
+                <th scope="col" *ngIf="canManageInvitations()"></th>
               </tr>
             </thead>
             <tbody>
@@ -171,7 +171,7 @@
                     {{ modifiedDate }}
                   </div>
                 </td>
-                <td class="plan__center">
+                <td class="plan__center" *ngIf="canManageInvitations()">
                   <button
                     class="plan__primary plan__primary--small"
                     type="button"
@@ -179,7 +179,7 @@
                     Quitar
                   </button>
                 </td>
-                <td class="plan__center">
+                <td class="plan__center" *ngIf="canManageInvitations()">
                   <button
                     class="plan__primary plan__primary--small"
                     type="button"

@@ -2,7 +2,7 @@ import { Component, ElementRef, OnDestroy, OnInit, ViewChild } from '@angular/co
 import { HttpClient } from '@angular/common/http';
 import { MatDialog } from '@angular/material/dialog';
 import { Router } from '@angular/router';
-import { Subject, debounceTime, firstValueFrom, forkJoin, map, switchMap, takeUntil } from 'rxjs';
+import { Observable, Subject, debounceTime, firstValueFrom, forkJoin, map, switchMap, takeUntil } from 'rxjs';
 import { InfoDialogComponent, InfoDialogData, InfoDialogResult } from '../info-dialog/info-dialog.component';
 import { PlanService, PlanTrackImportPayload } from '../services/plan.service';
 import { GpxImportService } from '../services/gpx-import.service';
@@ -47,6 +47,7 @@ type PendingMessage = {
   tipoMsg: number;
   estado: number;
   createdAt: string;
+  idInvitacion?: number | null;
 };
 
 type InvitationMessagePayload = {
@@ -199,7 +200,14 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
   }
 
   updateMessageStatus(message: PendingMessage, estado: number): void {
-    this.http.put(`${environment.mensajesApiBase}/${message.id}/estado`, { estado }).subscribe(() => {
+    const requests: Array<Observable<unknown>> = [
+      this.http.put(`${environment.mensajesApiBase}/${message.id}/estado`, { estado })
+    ];
+    if (message.tipoMsg === 1 && message.idInvitacion) {
+      const memberStatus = estado === 1 ? 'accepted' : 'rejected';
+      requests.push(this.planService.updateMemberStatus({ id: message.idInvitacion, status: memberStatus }));
+    }
+    forkJoin(requests).subscribe(() => {
       this.pendingMessages = this.pendingMessages.filter(item => item.id !== message.id);
     });
   }

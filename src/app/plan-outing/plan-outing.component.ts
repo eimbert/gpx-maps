@@ -479,7 +479,7 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
     const statusMap: Record<PlanInvitation['status'], string> = {
       accepted: 'Aceptó',
       pending: 'Pendiente',
-      sending: 'Enviado',
+      sending: 'Enviando',
       declined: 'Rechazó',
       revoked: 'Revocada',
       expired: 'Caducada'
@@ -816,7 +816,7 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
     const statusMap: Record<PlanInvitation['status'], string> = {
       accepted: 'Aceptó',
       pending: 'Pendiente',
-      sending: 'Enviado',
+      sending: 'Enviando',
       declined: 'Rechazó',
       revoked: 'Revocada',
       expired: 'Caducada'
@@ -835,26 +835,23 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
   }
 
   resendInvitation(invitation: PlanInvitation): void {
-    if (!this.activeFolder) return;
     const userId = invitation.invitedUserId ?? invitation.userId;
     if (!userId) {
       this.showMessage('No se pudo reenviar la invitación porque falta el usuario.');
       return;
     }
-    const now = new Date().toISOString();
+    const previousStatus = invitation.status;
+    invitation.status = 'sending';
     this.planService
-      .inviteUser(this.activeFolder.id, {
-        folder_id: this.activeFolder.id,
-        user_id: userId,
-        status: 'pending',
-        invited_email: invitation.email ?? invitation.invitedEmail ?? null,
-        created_at: invitation.createdAt,
-        modified_at: now,
-        invited_by: this.userId
-      })
-      .subscribe(() => {
-        this.inviteStatusMessage = `Invitación reenviada a ${this.resolveInvitationLabel(invitation)}.`;
-        this.loadInvitations(this.activeFolder?.id ?? 0);
+      .updateMemberStatus({ id: invitation.id, estado: 'sending' })
+      .subscribe({
+        next: () => {
+          this.inviteStatusMessage = `Invitación enviada a ${this.resolveInvitationLabel(invitation)}.`;
+        },
+        error: () => {
+          invitation.status = previousStatus;
+          this.showMessage('No se pudo enviar la invitación.');
+        }
       });
   }
 

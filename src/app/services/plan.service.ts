@@ -28,6 +28,11 @@ type InvitePayload = {
   invited_by: number;
 };
 
+type MemberStatusPayload = {
+  id: number;
+  estado: 'sending';
+};
+
 type FolderMemberPayload = {
   folderId: number;
   userId: number;
@@ -180,6 +185,10 @@ export class PlanService {
         userId
       }
     });
+  }
+
+  updateMemberStatus(payload: MemberStatusPayload): Observable<void> {
+    return this.http.put<void>(`${this.planApiBase}/members`, payload);
   }
 
   private normalizeFolder(folder: PlanFolder): PlanFolder {

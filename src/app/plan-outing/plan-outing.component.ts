@@ -47,6 +47,7 @@ type PendingMessage = {
   tipoMsg: number;
   estado: number;
   createdAt: string;
+  idInvitacion?: number | null;
 };
 
 type InvitationMessagePayload = {
@@ -199,7 +200,14 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
   }
 
   updateMessageStatus(message: PendingMessage, estado: number): void {
-    this.http.put(`${environment.mensajesApiBase}/${message.id}/estado`, { estado }).subscribe(() => {
+    const requests = [
+      this.http.put(`${environment.mensajesApiBase}/${message.id}/estado`, { estado })
+    ];
+    if (message.tipoMsg === 1 && message.idInvitacion) {
+      const memberStatus = estado === 1 ? 'accepted' : 'rejected';
+      requests.push(this.planService.updateMemberStatus({ id: message.idInvitacion, status: memberStatus }));
+    }
+    forkJoin(requests).subscribe(() => {
       this.pendingMessages = this.pendingMessages.filter(item => item.id !== message.id);
     });
   }

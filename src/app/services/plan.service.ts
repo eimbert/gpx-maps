@@ -30,7 +30,7 @@ type InvitePayload = {
 
 type MemberStatusPayload = {
   id: number;
-  status: 'sending';
+  status: 'sending' | 'accepted' | 'rejected';
 };
 
 type FolderMemberPayload = {

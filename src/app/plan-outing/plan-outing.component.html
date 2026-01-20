@@ -307,14 +307,14 @@
       <div class="plan__notification-table-wrapper" *ngIf="!isLoadingPendingMessages && pendingMessages.length">
         <table class="plan__notification-table" aria-label="Avisos pendientes">
           <thead>
-            <tr>
+            <tr >
               <th scope="col">Mensaje</th>
               <th scope="col">Acción</th>
             </tr>
           </thead>
           <tbody>
-            <tr *ngFor="let pending of pendingMessages">
-              <td>
+            <tr *ngFor="let pending of pendingMessages" style="border-bottom: 1px solid #fed7aa;">
+              <td >
                 <div class="plan__notification-text">{{ formatPendingMessageIntro(pending) }}</div>
                 <div class="plan__notification-body">{{ pending.mensaje }}</div>
               </td>

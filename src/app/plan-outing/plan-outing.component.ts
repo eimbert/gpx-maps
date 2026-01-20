@@ -843,7 +843,7 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
     const previousStatus = invitation.status;
     invitation.status = 'sending';
     this.planService
-      .updateMemberStatus({ id: invitation.id, estado: 'sending' })
+      .updateMemberStatus({ id: invitation.id, status: 'sending' })
       .subscribe({
         next: () => {
           this.inviteStatusMessage = `Invitación enviada a ${this.resolveInvitationLabel(invitation)}.`;

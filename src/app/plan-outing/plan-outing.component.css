@@ -305,7 +305,7 @@
 .plan__notification-table th,
 .plan__notification-table td {
   padding: 10px 12px;
-  border-bottom: 1px solid #fed7aa;
+  /* border-bottom: 1px solid #fed7aa; */
   text-align: left;
   vertical-align: middle;
 }
@@ -317,8 +317,8 @@
 
 .plan__notification-table th:last-child,
 .plan__notification-table td:last-child {
-  width: 32%;
-  text-align: right;
+  
+  text-align: center;
 }
 
 .plan__notification-actions {

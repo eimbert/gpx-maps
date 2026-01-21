@@ -664,11 +664,15 @@
   border: none;
   padding: 4px;
   cursor: pointer;
-  color: #ef4444;
+  color: #0f172a;
 }
 
 .plan__icon-button--danger {
   color: #ef4444;
+}
+
+.plan__icon-button--download {
+  color: #2563eb;
 }
 
 .plan__hint {

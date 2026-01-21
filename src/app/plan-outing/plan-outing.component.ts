@@ -997,9 +997,9 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
     const movingTimeSec = this.gpxImportService.calculateActiveDurationSeconds(trkpts);
     const totalTimeSec = this.gpxImportService.calculateTotalDurationSeconds(trkpts);
     const desnivel = this.calculateTotalAscent(trkpts, {
-      stepMeters: 15,
-      smoothWindowMeters: 150,
-      minStepUpMeters: 0.3
+      stepMeters: 30,
+      smoothWindowMeters: 100,
+      minStepUpMeters: 0.1
     });
 
     return {

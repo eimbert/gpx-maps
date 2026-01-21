@@ -83,7 +83,7 @@
               <span>{{ resolveFolderVisibility(folder) }}</span>
             </div>
           </div>
-          <button *ngIf="folder.isOwner" class="plan__icon-button" type="button" aria-label="Eliminar carpeta"
+          <button *ngIf="folder.isOwner" class="plan__icon-button plan__icon-button--danger" type="button" aria-label="Eliminar carpeta"
             (click)="confirmDeleteFolder(folder); $event.stopPropagation();">
             <mat-icon aria-hidden="true">delete</mat-icon>
           </button>
@@ -225,6 +225,7 @@
                     i
                   </span>
                 </th>
+                <th scope="col">Descargar</th>
                 <th scope="col">Ver ruta</th>
                 <th scope="col">Meteo</th>
                 <th scope="col"></th>
@@ -249,6 +250,13 @@
                 <td class="plan__center">{{ formatDistance(track.distanceKm) }}</td>
                 <td class="plan__center">{{ formatDuration(track.movingTimeSec) }}</td>
                 <td class="plan__center">{{ formatDesnivel(track.desnivel) }}</td>
+                <td class="plan__center">
+                  <button class="plan__icon-button plan__icon-button--download" type="button"
+                    [disabled]="!track.routeXml" (click)="downloadTrack(track)"
+                    [attr.aria-label]="track.routeXml ? 'Descargar track' : 'GPX no disponible'">
+                    <mat-icon aria-hidden="true">download</mat-icon>
+                  </button>
+                </td>
                 <td class="plan__center">
                   <button class="plan__maps-link plan__animate-link" type="button" [disabled]="!canAnimateTrack(track)"
                     (click)="animateTrack(track)"

@@ -642,6 +642,25 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
     return !!track.routeXml;
   }
 
+  downloadTrack(track: PlanTrack): void {
+    if (!track.routeXml) {
+      this.showMessage('No hay un GPX disponible para este track.');
+      return;
+    }
+
+    const fileName = this.buildTrackFileName(track);
+    const blob = new Blob([track.routeXml], { type: 'application/gpx+xml' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = fileName;
+    link.rel = 'noopener';
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+  }
+
   async animateTrack(track: PlanTrack): Promise<void> {
     if (!track.routeXml) {
       this.showMessage('No hay un GPX disponible para este track.');
@@ -679,6 +698,17 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
 
     sessionStorage.setItem('gpxViewerPayload', JSON.stringify(payload));
     this.router.navigate(['/map'], { queryParams: { from: 'plan' } });
+  }
+
+  private buildTrackFileName(track: PlanTrack): string {
+    const baseName = (track.name || 'track').trim();
+    const normalized = baseName.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    const sanitized = normalized
+      .replace(/[^a-zA-Z0-9-_]+/g, '-')
+      .replace(/^-+|-+$/g, '')
+      .toLowerCase();
+    const fallback = sanitized || `track-${track.id}`;
+    return `${fallback}.gpx`;
   }
 
   private refreshForecasts(): void {

@@ -58,6 +58,8 @@ type InvitationMessagePayload = {
   idInvitacion: number;
 };
 
+type Trkpt = { lat: number; lon: number; ele?: number };
+
 @Component({
   selector: 'app-plan-outing',
   templateUrl: './plan-outing.component.html',
@@ -994,7 +996,11 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
     const distanceKm = this.gpxImportService.calculateTotalDistanceKm(trkpts);
     const movingTimeSec = this.gpxImportService.calculateActiveDurationSeconds(trkpts);
     const totalTimeSec = this.gpxImportService.calculateTotalDurationSeconds(trkpts);
-    const desnivel = this.calculateTotalAscent(trkpts);
+    const desnivel = this.calculateTotalAscent(trkpts, {
+      stepMeters: 15,
+      smoothWindowMeters: 150,
+      minStepUpMeters: 0.3
+    });
 
     return {
       folder_id: folderId,
@@ -1011,31 +1017,151 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
     };
   }
 
-  private toFiniteOrNull(v: unknown): number | null {
-    return Number.isFinite(v) ? (v as number) : null;
+  //calcular desnivel
+private toFiniteOrNull(v: unknown): number | null {
+  return Number.isFinite(v) ? (v as number) : null;
+}
+
+private haversineMeters(a: { lat: number; lon: number }, b: { lat: number; lon: number }): number {
+  const R = 6371000;
+  const toRad = (deg: number) => (deg * Math.PI) / 180;
+
+  const dLat = toRad(b.lat - a.lat);
+  const dLon = toRad(b.lon - a.lon);
+  const lat1 = toRad(a.lat);
+  const lat2 = toRad(b.lat);
+
+  const sinDLat = Math.sin(dLat / 2);
+  const sinDLon = Math.sin(dLon / 2);
+
+  const h = sinDLat * sinDLat + Math.cos(lat1) * Math.cos(lat2) * sinDLon * sinDLon;
+  return 2 * R * Math.asin(Math.min(1, Math.sqrt(h)));
+}
+
+/** Remuestrea a paso fijo (m). Interpola elevación linealmente. */
+private resampleByDistance(trkpts: Trkpt[], stepMeters: number): { dist: number[]; ele: number[] } {
+  const n = trkpts.length;
+  if (n === 0) return { dist: [], ele: [] };
+  if (n === 1) return { dist: [0], ele: [this.toFiniteOrNull(trkpts[0].ele) ?? 0] };
+
+  // Elevaciones sin nulls (rellena con último válido)
+  const eleRaw: number[] = new Array(n);
+  let last = this.toFiniteOrNull(trkpts[0].ele) ?? 0;
+  for (let i = 0; i < n; i++) {
+    const e = this.toFiniteOrNull(trkpts[i].ele);
+    if (e !== null) last = e;
+    eleRaw[i] = last;
   }
 
-  private calculateTotalAscent(trkpts: { ele?: number }[]): number {
-    if (!trkpts.length) return 0;
-
-    let totalAscent = 0;
-    let previousElevation: number | null = this.toFiniteOrNull(trkpts[0].ele);
-
-    for (let i = 1; i < trkpts.length; i++) {
-      const currentElevation: number | null = this.toFiniteOrNull(trkpts[i].ele);
-
-      if (currentElevation === null) continue;
-
-      if (previousElevation !== null) {
-        const diff = currentElevation - previousElevation;
-        if (diff > 0) totalAscent += diff;
-      }
-
-      previousElevation = currentElevation;
-    }
-
-    return totalAscent;
+  // Distancia acumulada
+  const cum: number[] = new Array(n);
+  cum[0] = 0;
+  for (let i = 0; i < n - 1; i++) {
+    cum[i + 1] = cum[i] + this.haversineMeters(trkpts[i], trkpts[i + 1]);
   }
+
+  const total = cum[n - 1];
+  if (total <= 0) return { dist: [0], ele: [eleRaw[0]] };
+
+  const outDist: number[] = [];
+  const outEle: number[] = [];
+
+  let seg = 0;
+  for (let target = 0; target <= total; target += stepMeters) {
+    while (seg < n - 2 && cum[seg + 1] < target) seg++;
+
+    const d0 = cum[seg];
+    const d1 = cum[seg + 1];
+    const len = Math.max(1e-9, d1 - d0);
+    const t = (target - d0) / len;
+
+    const e0 = eleRaw[seg];
+    const e1 = eleRaw[seg + 1];
+    outDist.push(target);
+    outEle.push(e0 + (e1 - e0) * t);
+  }
+
+  // Asegura el último punto exacto
+  if (outDist[outDist.length - 1] < total) {
+    outDist.push(total);
+    outEle.push(eleRaw[n - 1]);
+  }
+
+  return { dist: outDist, ele: outEle };
+}
+
+/** Media móvil centrada (windowPoints impar) usando prefijos. */
+private movingAverageCentered(values: number[], windowPoints: number): number[] {
+  const n = values.length;
+  if (n === 0) return [];
+  if (windowPoints < 3) return values.slice();
+  if (windowPoints % 2 === 0) windowPoints += 1;
+
+  const half = Math.floor(windowPoints / 2);
+
+  // Padding por bordes (replica)
+  const padded: number[] = new Array(n + 2 * half);
+  for (let i = 0; i < half; i++) padded[i] = values[0];
+  for (let i = 0; i < n; i++) padded[half + i] = values[i];
+  for (let i = 0; i < half; i++) padded[half + n + i] = values[n - 1];
+
+  // Prefijos
+  const pref: number[] = new Array(padded.length + 1);
+  pref[0] = 0;
+  for (let i = 0; i < padded.length; i++) pref[i + 1] = pref[i] + padded[i];
+
+  const out: number[] = new Array(n);
+  for (let i = 0; i < n; i++) {
+    const start = i;
+    const end = i + windowPoints;
+    out[i] = (pref[end] - pref[start]) / windowPoints;
+  }
+  return out;
+}
+
+/**
+ * Versión robusta del desnivel acumulado.
+ * Por defecto, con muchos GPX ruidosos deja valores muy cercanos a lo esperado.
+ */
+private calculateTotalAscent(
+  trkpts: Trkpt[],
+  opts?: {
+    stepMeters?: number;         // remuestreo (m)
+    smoothWindowMeters?: number; // suavizado (m)
+    minStepUpMeters?: number;    // umbral por paso (m)
+    maxJumpMeters?: number;      // cap anti-picos (m)
+  }
+): number {
+  if (!trkpts?.length) return 0;
+
+  const stepMeters = opts?.stepMeters ?? 20;
+  const smoothWindowMeters = opts?.smoothWindowMeters ?? 200;
+  const minStepUpMeters = opts?.minStepUpMeters ?? 0.5;
+  const maxJumpMeters = opts?.maxJumpMeters ?? 50; // por seguridad ante picos absurdos
+
+  const { dist, ele } = this.resampleByDistance(trkpts, stepMeters);
+
+  const windowPoints = Math.max(3, Math.round(smoothWindowMeters / stepMeters));
+  const smooth = this.movingAverageCentered(ele, windowPoints);
+
+  let total = 0;
+  let prev = smooth[0];
+
+  for (let i = 1; i < smooth.length; i++) {
+    let diff = smooth[i] - prev;
+
+    // Anti-picos (por si hay valores raros puntuales)
+    if (diff > maxJumpMeters) diff = 0;
+    if (diff < -maxJumpMeters) diff = 0;
+
+    if (diff > minStepUpMeters) total += diff;
+    prev = smooth[i];
+  }
+
+  return total;
+}
+
+  //**********************************************************************
 
   private parseTrackPointsFromGpx(
     gpxData: string

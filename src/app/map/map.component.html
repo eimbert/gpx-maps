@@ -34,7 +34,7 @@
   </div>
 
   <!-- ⬇️ Overlay de inicio -->
-  <div class="start-overlay" *ngIf="showStartOverlay">
+  <div class="start-overlay" *ngIf="!viewOnly && showStartOverlay">
     <div class="countdown">
       <div class="countdown-number" [class.go]="countdownValue === 'GO'">
         {{ countdownValue || '...' }}
@@ -50,7 +50,7 @@
     </div>
   </div>
 
-  <div class="ranking-overlay" *ngIf="showRanking && ranking.length">
+  <div class="ranking-overlay" *ngIf="!viewOnly && showRanking && ranking.length">
     <div class="ranking-panel" aria-label="Clasificación final">
       <div class="ranking-title">🏁 Ranking final</div>
       <ol class="ranking-list">
@@ -76,6 +76,8 @@
         preserveAspectRatio="none"
         [style.--profile-color]="profileTrackColor"
         [style.--profile-cursor-color]="profileTrackColor"
+        (mousemove)="onProfileHover($event)"
+        (mouseleave)="onProfileHoverEnd()"
       >
         <ng-container *ngFor="let line of profileVisual.gridLines">
           <line

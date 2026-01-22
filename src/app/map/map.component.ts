@@ -27,6 +27,9 @@ interface TrackMeta {
   full?: L.Polyline;
   prog?: L.Polyline;
   mark?: L.Marker;
+  startMark?: L.CircleMarker;
+  endMark?: L.CircleMarker;
+  hoverMark?: L.CircleMarker;
   ticks?: L.LayerGroup;
   pauses: PauseInterval[];
   pauseLayer?: L.LayerGroup;
@@ -163,6 +166,7 @@ export class MapComponent implements OnInit, AfterViewInit {
   ];
   selectedBaseLayerId = this.baseLayerOptions.find((option) => option.id === 'street')?.id ?? this.baseLayerOptions[0]?.id ?? '';
   private baseLayer: L.TileLayer | null = null;
+  viewOnly = false;
 
   constructor(
     private route: ActivatedRoute,
@@ -368,9 +372,13 @@ export class MapComponent implements OnInit, AfterViewInit {
 
     if (this.map) {
       this.attachTrackLayers();
-      this.hasTracksReady = this.startIfReady();
-      this.startCountdown();
-      void this.autoStartIfRequested();
+      if (this.viewOnly) {
+        this.renderStaticTracks();
+      } else {
+        this.hasTracksReady = this.startIfReady();
+        this.startCountdown();
+        void this.autoStartIfRequested();
+      }
     }
   }
 
@@ -427,12 +435,70 @@ export class MapComponent implements OnInit, AfterViewInit {
     return ratio * this.profileWidth;
   }
 
+  onProfileHover(event: MouseEvent): void {
+    if (!this.viewOnly || !this.profileVisual) return;
+    const meta = this.trackMetas[this.profileTrackIndex];
+    if (!meta || !meta.has || !meta.sanitized.length || !meta.distances.length || meta.totalDistance <= 0) return;
+    if (!this.map || !meta.hoverMark) return;
+
+    const target = event.currentTarget as SVGElement | null;
+    if (!target) return;
+    const rect = target.getBoundingClientRect();
+    const offsetX = event.clientX - rect.left;
+    const clamped = Math.max(0, Math.min(offsetX, rect.width));
+    const ratio = rect.width ? clamped / rect.width : 0;
+    const distance = ratio * meta.totalDistance;
+
+    this.profileCursorX = ratio * this.profileWidth;
+    const position = this.positionAtDistance(meta, distance);
+    meta.hoverMark.setLatLng(position).addTo(this.map);
+  }
+
+  onProfileHoverEnd(): void {
+    if (!this.viewOnly) return;
+    const meta = this.trackMetas[this.profileTrackIndex];
+    if (!meta || !meta.hoverMark || !meta.has || !meta.sanitized.length) return;
+    const start = meta.sanitized[0];
+    meta.hoverMark.setLatLng([start.lat, start.lon]);
+    this.profileCursorX = 0;
+  }
+
+  private positionAtDistance(meta: TrackMeta, distance: number): L.LatLng {
+    const total = meta.totalDistance;
+    if (!meta.distances.length || !meta.sanitized.length || total <= 0) {
+      return L.latLng(0, 0);
+    }
+    const clamped = Math.max(0, Math.min(distance, total));
+    let index = meta.distances.findIndex(value => value >= clamped);
+    if (index <= 0) {
+      const start = meta.sanitized[0];
+      return L.latLng(start.lat, start.lon);
+    }
+    if (index === -1) {
+      const last = meta.sanitized[meta.sanitized.length - 1];
+      return L.latLng(last.lat, last.lon);
+    }
+
+    const prevIndex = index - 1;
+    const d0 = meta.distances[prevIndex];
+    const d1 = meta.distances[index];
+    const p0 = meta.sanitized[prevIndex];
+    const p1 = meta.sanitized[index];
+    const span = d1 - d0;
+    const ratio = span > 0 ? (clamped - d0) / span : 0;
+    return L.latLng(
+      p0.lat + (p1.lat - p0.lat) * ratio,
+      p0.lon + (p1.lon - p0.lon) * ratio
+    );
+  }
+
   private loadTracksFromSessionOrQuery(): void {
     this.resetPlaybackState();
     let payload: any = null;
     try { payload = JSON.parse(sessionStorage.getItem('gpxViewerPayload') || 'null'); } catch { payload = null; }
 
     if (payload) {
+      this.viewOnly = !!payload.viewOnly;
       this.names = Array.isArray(payload.names) ? payload.names : [];
       this.colors = Array.isArray(payload.colors) ? payload.colors : [];
       const trks = Array.isArray(payload.tracks) ? payload.tracks : [];
@@ -452,6 +518,11 @@ export class MapComponent implements OnInit, AfterViewInit {
       this.visualizationMode = payload.modoVisualizacion === 'zoomCabeza' ? 'zoomCabeza' : 'general';
       this.profileEnabled = payload.mostrarPerfil ?? true;
       this.isVerticalViewport = this.recordingAspect === '9:16';
+      if (this.viewOnly) {
+        this.musicEnabled = false;
+        this.countdownSoundEnabled = false;
+        this.recordingEnabled = false;
+      }
       this.applySanitization();
       return;
     }
@@ -660,6 +731,7 @@ export class MapComponent implements OnInit, AfterViewInit {
     this.ranking = [];
     this.relMs = 0;
     this.started = false;
+    this.viewOnly = false;
     this.zoomPhase = 'focus';
     this.lastZoomSwitch = 0;
     this.midOverviewShown = false;
@@ -683,9 +755,66 @@ export class MapComponent implements OnInit, AfterViewInit {
       if (meta.full) this.map.removeLayer(meta.full);
       if (meta.prog) this.map.removeLayer(meta.prog);
       if (meta.mark) this.map.removeLayer(meta.mark);
+      if (meta.startMark) this.map.removeLayer(meta.startMark);
+      if (meta.endMark) this.map.removeLayer(meta.endMark);
+      if (meta.hoverMark) this.map.removeLayer(meta.hoverMark);
       if (meta.ticks) this.map.removeLayer(meta.ticks);
       if (meta.pauseLayer) this.map.removeLayer(meta.pauseLayer);
     });
+  }
+
+  private renderStaticTracks(): void {
+    if (!this.map) return;
+
+    const boundsPts: L.LatLng[] = [];
+
+    this.trackMetas.forEach((meta) => {
+      meta.has = meta.sanitized.length >= 2;
+      meta.cursor = 0;
+      meta.nextTickRel = this.TICK_STEP_MS;
+      meta.finalAdded = false;
+
+      if (meta.has && meta.full && meta.prog && meta.ticks && meta.startMark && meta.endMark && meta.hoverMark) {
+        const latlngs = meta.sanitized.map(p => L.latLng(p.lat, p.lon));
+        const startLatLng = latlngs[0];
+        const endLatLng = latlngs[latlngs.length - 1];
+
+        meta.full.setLatLngs([]);
+        meta.prog.setLatLngs(latlngs);
+        meta.ticks.clearLayers();
+        meta.pauseLayer?.clearLayers();
+
+        meta.startMark.setLatLng(startLatLng).addTo(this.map);
+        meta.endMark.setLatLng(endLatLng).addTo(this.map);
+        meta.hoverMark.setLatLng(startLatLng).addTo(this.map);
+
+        const start = meta.sanitized[0].t;
+        const end = meta.sanitized[meta.sanitized.length - 1].t;
+        let tickAbs = start + this.TICK_STEP_MS;
+        while (tickAbs < end) {
+          this.addTickAtAbs(meta.sanitized, tickAbs, meta.color, meta.ticks, start);
+          tickAbs += this.TICK_STEP_MS;
+        }
+        this.addFinalTick(meta.sanitized, meta.color, meta.ticks, start);
+
+        boundsPts.push(...latlngs);
+      } else {
+        meta.full?.setLatLngs([]);
+        meta.prog?.setLatLngs([]);
+        meta.ticks?.clearLayers();
+        meta.pauseLayer?.clearLayers();
+      }
+    });
+
+    const union = L.latLngBounds(boundsPts);
+    this.allTracksBounds = union.isValid() ? union.pad(0.05) : null;
+    if (this.allTracksBounds) {
+      this.map.fitBounds(this.allTracksBounds, {
+        ...this.computeFitOptions(),
+        maxZoom: this.leaderZoomLevel - 1
+      });
+      this.map.invalidateSize();
+    }
   }
 
   // ---------- lifecycle ----------
@@ -711,9 +840,13 @@ export class MapComponent implements OnInit, AfterViewInit {
     setTimeout(() => {
       this.applyAspectViewport().then(() => {
         this.attachTrackLayers();
-        this.hasTracksReady = this.startIfReady();
-        this.startCountdown();
-        void this.autoStartIfRequested();
+        if (this.viewOnly) {
+          this.renderStaticTracks();
+        } else {
+          this.hasTracksReady = this.startIfReady();
+          this.startCountdown();
+          void this.autoStartIfRequested();
+        }
       });
     }, 0);
 
@@ -733,6 +866,9 @@ export class MapComponent implements OnInit, AfterViewInit {
   }
 
   private startCountdown(): void {
+    if (this.viewOnly) {
+      return;
+    }
     if (this.countdownInProgress || this.startSequenceLaunched || !this.hasTracksReady) {
       return;
     }
@@ -911,6 +1047,30 @@ export class MapComponent implements OnInit, AfterViewInit {
       full: meta.full ?? L.polyline([], ghost(meta.color)).addTo(this.map),
       prog: meta.prog ?? L.polyline([], prog(meta.color)).addTo(this.map),
       mark: meta.mark ?? L.marker([0, 0], { icon: mk(meta.color) }),
+      startMark: meta.startMark ?? L.circleMarker([0, 0], {
+        radius: 6,
+        color: '#22c55e',
+        weight: 2,
+        fillColor: '#22c55e',
+        fillOpacity: 0.9,
+        pane: 'overlayPane'
+      }),
+      endMark: meta.endMark ?? L.circleMarker([0, 0], {
+        radius: 6,
+        color: '#ef4444',
+        weight: 2,
+        fillColor: '#ef4444',
+        fillOpacity: 0.9,
+        pane: 'overlayPane'
+      }),
+      hoverMark: meta.hoverMark ?? L.circleMarker([0, 0], {
+        radius: 6,
+        color: meta.color,
+        weight: 2,
+        fillColor: '#fff',
+        fillOpacity: 1,
+        pane: 'overlayPane'
+      }),
       ticks: meta.ticks ?? L.layerGroup().addTo(this.map),
       pauseLayer: meta.pauseLayer ?? L.layerGroup().addTo(this.map)
     }));

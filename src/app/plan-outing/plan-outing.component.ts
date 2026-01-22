@@ -638,7 +638,7 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
     return !isOwner || hasOtherUserTracks;
   }
 
-  canAnimateTrack(track: PlanTrack): boolean {
+  canViewTrack(track: PlanTrack): boolean {
     return !!track.routeXml;
   }
 
@@ -661,7 +661,7 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
     URL.revokeObjectURL(url);
   }
 
-  async animateTrack(track: PlanTrack): Promise<void> {
+  async viewTrack(track: PlanTrack): Promise<void> {
     if (!track.routeXml) {
       this.showMessage('No hay un GPX disponible para este track.');
       return;
@@ -686,14 +686,15 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
       colors: [],
       tracks: [{ trkpts }],
       logo: null,
-      rmstops: false,
+      rmstops: true,
       marcarPausasLargas: false,
       umbralPausaSegundos: 60,
-      activarMusica: true,
+      activarMusica: false,
       grabarAnimacion: false,
       relacionAspectoGrabacion: '16:9',
       modoVisualizacion: 'general',
-      mostrarPerfil: true
+      mostrarPerfil: true,
+      viewOnly: true
     };
 
     sessionStorage.setItem('gpxViewerPayload', JSON.stringify(payload));

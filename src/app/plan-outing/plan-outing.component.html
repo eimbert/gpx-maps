@@ -258,10 +258,10 @@
                   </button>
                 </td>
                 <td class="plan__center">
-                  <button class="plan__maps-link plan__animate-link" type="button" [disabled]="!canAnimateTrack(track)"
-                    (click)="animateTrack(track)"
-                    [attr.aria-label]="canAnimateTrack(track) ? 'Animar GPX en el mapa' : 'GPX no disponible'">
-                    <mat-icon aria-hidden="true">directions_bike</mat-icon>
+                  <button class="plan__maps-link plan__animate-link" type="button" [disabled]="!canViewTrack(track)"
+                    (click)="viewTrack(track)"
+                    [attr.aria-label]="canViewTrack(track) ? 'Ver ruta en el mapa' : 'GPX no disponible'">
+                    <mat-icon aria-hidden="true">map</mat-icon>
                   </button>
                 </td>
                 <td class="plan__center">

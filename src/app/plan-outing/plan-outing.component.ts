@@ -1,7 +1,7 @@
 import { Component, ElementRef, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { MatDialog } from '@angular/material/dialog';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { Observable, Subject, debounceTime, firstValueFrom, forkJoin, map, switchMap, takeUntil } from 'rxjs';
 import { InfoDialogComponent, InfoDialogData, InfoDialogResult } from '../info-dialog/info-dialog.component';
 import { PlanService, PlanTrackImportPayload } from '../services/plan.service';
@@ -100,12 +100,14 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
   private readonly destroy$ = new Subject<void>();
   private readonly inviteSearch$ = new Subject<string>();
   private readonly userId: number;
+  private requestedFolderId: number | null = null;
 
   constructor(
     private planService: PlanService,
     private http: HttpClient,
     private dialog: MatDialog,
     private gpxImportService: GpxImportService,
+    private route: ActivatedRoute,
     private router: Router,
     private infoMessageService: InfoMessageService,
     identityService: UserIdentityService
@@ -118,6 +120,7 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
+    this.requestedFolderId = this.parseFolderId(this.route.snapshot.queryParamMap.get('folderId'));
     this.loadFolders();
     this.loadPendingMessages();
 
@@ -160,7 +163,13 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
         }
       });
       this.applyFolderFilter();
-      if (!this.activeFolder && folders.length) {
+      const requestedFolder = this.requestedFolderId
+        ? folders.find(folder => folder.id === this.requestedFolderId)
+        : null;
+      if (requestedFolder) {
+        this.selectFolder(requestedFolder);
+        this.requestedFolderId = null;
+      } else if (!this.activeFolder && folders.length) {
         this.selectFolder(folders[0]);
       }
       this.isLoadingFolders = false;
@@ -698,7 +707,7 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
     };
 
     sessionStorage.setItem('gpxViewerPayload', JSON.stringify(payload));
-    this.router.navigate(['/map'], { queryParams: { from: 'plan' } });
+    this.router.navigate(['/map'], { queryParams: { from: 'plan', folderId: this.activeFolder?.id } });
   }
 
   private buildTrackFileName(track: PlanTrack): string {
@@ -742,6 +751,12 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
           }
         });
     });
+  }
+
+  private parseFolderId(value: string | null): number | null {
+    if (!value) return null;
+    const parsed = Number(value);
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
   }
 
   private fetchForecast(lat: number, lon: number, date: string) {

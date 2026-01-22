@@ -178,6 +178,7 @@ export class MapComponent implements OnInit, AfterViewInit {
 
   goBack(): void {
     const origin = this.route.snapshot.queryParamMap.get('from');
+    const folderId = this.route.snapshot.queryParamMap.get('folderId');
 
     if (origin === 'events') {
       this.router.navigate(['/events']);
@@ -190,7 +191,12 @@ export class MapComponent implements OnInit, AfterViewInit {
     }
 
     if (origin === 'plan') {
-      this.router.navigate(['/plan']);
+      const parsedFolderId = folderId ? Number(folderId) : NaN;
+      if (Number.isFinite(parsedFolderId) && parsedFolderId > 0) {
+        this.router.navigate(['/plan'], { queryParams: { folderId: parsedFolderId } });
+      } else {
+        this.router.navigate(['/plan']);
+      }
       return;
     }
 

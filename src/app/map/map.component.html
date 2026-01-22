@@ -77,6 +77,10 @@
         [style.--profile-color]="profileTrackColor"
         [style.--profile-cursor-color]="profileTrackColor"
         (mousemove)="onProfileHover($event)"
+        (pointerdown)="onProfilePointerDown($event)"
+        (pointermove)="onProfilePointerMove($event)"
+        (pointerup)="onProfilePointerUp($event)"
+        (pointercancel)="onProfilePointerCancel($event)"
         (mouseleave)="onProfileHoverEnd()"
       >
         <ng-container *ngFor="let line of profileVisual.gridLines">

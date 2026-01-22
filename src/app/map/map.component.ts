@@ -819,6 +819,8 @@ export class MapComponent implements OnInit, AfterViewInit {
         const latlngs = meta.sanitized.map(p => L.latLng(p.lat, p.lon));
         const startLatLng = latlngs[0];
         const endLatLng = latlngs[latlngs.length - 1];
+        const endpointDistance = startLatLng.distanceTo(endLatLng);
+        const useCombinedEndpointLabel = endpointDistance <= 15;
 
         meta.full.setLatLngs([]);
         meta.prog.setLatLngs(latlngs);
@@ -827,7 +829,7 @@ export class MapComponent implements OnInit, AfterViewInit {
 
         meta.startMark
           .setLatLng(startLatLng)
-          .bindTooltip('Salida', {
+          .bindTooltip(useCombinedEndpointLabel ? 'Salida/Llegada' : 'Salida', {
             permanent: true,
             direction: 'top',
             offset: [0, -8],
@@ -836,13 +838,17 @@ export class MapComponent implements OnInit, AfterViewInit {
           .addTo(this.map);
         meta.endMark
           .setLatLng(endLatLng)
-          .bindTooltip('Llegada', {
+          .addTo(this.map);
+        if (useCombinedEndpointLabel) {
+          meta.endMark.unbindTooltip();
+        } else {
+          meta.endMark.bindTooltip('Llegada', {
             permanent: true,
             direction: 'top',
             offset: [0, -8],
             className: 'track-endpoint-label track-endpoint-label--end'
-          })
-          .addTo(this.map);
+          });
+        }
         meta.hoverMark.setLatLng(startLatLng).addTo(this.map);
 
         const start = meta.sanitized[0].t;

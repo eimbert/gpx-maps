@@ -130,6 +130,8 @@ export class MapComponent implements OnInit, AfterViewInit {
   profileCursorX = 0;
   profileTrackColor = '#f97316';
   private profileTrackIndex = 0;
+  private profileDragging = false;
+  private profilePointerId: number | null = null;
 
   // Ambos terminan aprox. en este tiempo de reproducción
   private desiredDurationSec = 30;
@@ -437,6 +439,46 @@ export class MapComponent implements OnInit, AfterViewInit {
 
   onProfileHover(event: MouseEvent): void {
     if (!this.viewOnly || !this.profileVisual) return;
+    if (this.profileDragging) return;
+    this.updateProfileFromPointer(event);
+  }
+
+  onProfilePointerDown(event: PointerEvent): void {
+    if (!this.viewOnly || !this.profileVisual) return;
+    this.profileDragging = true;
+    this.profilePointerId = event.pointerId;
+    const target = event.currentTarget as SVGElement | null;
+    if (target) {
+      target.setPointerCapture(event.pointerId);
+    }
+    this.updateProfileFromPointer(event);
+  }
+
+  onProfilePointerMove(event: PointerEvent): void {
+    if (!this.profileDragging) return;
+    if (this.profilePointerId !== null && event.pointerId !== this.profilePointerId) return;
+    this.updateProfileFromPointer(event);
+  }
+
+  onProfilePointerUp(event: PointerEvent): void {
+    if (!this.profileDragging) return;
+    if (this.profilePointerId !== null && event.pointerId !== this.profilePointerId) return;
+    const target = event.currentTarget as SVGElement | null;
+    if (target && this.profilePointerId !== null) {
+      target.releasePointerCapture(this.profilePointerId);
+    }
+    this.profileDragging = false;
+    this.profilePointerId = null;
+  }
+
+  onProfilePointerCancel(event: PointerEvent): void {
+    if (!this.profileDragging) return;
+    if (this.profilePointerId !== null && event.pointerId !== this.profilePointerId) return;
+    this.profileDragging = false;
+    this.profilePointerId = null;
+  }
+
+  private updateProfileFromPointer(event: MouseEvent | PointerEvent): void {
     const meta = this.trackMetas[this.profileTrackIndex];
     if (!meta || !meta.has || !meta.sanitized.length || !meta.distances.length || meta.totalDistance <= 0) return;
     if (!this.map || !meta.hoverMark) return;
@@ -447,20 +489,19 @@ export class MapComponent implements OnInit, AfterViewInit {
     const offsetX = event.clientX - rect.left;
     const clamped = Math.max(0, Math.min(offsetX, rect.width));
     const ratio = rect.width ? clamped / rect.width : 0;
-    const distance = ratio * meta.totalDistance;
+    this.syncProfilePosition(meta, ratio);
+  }
 
-    this.profileCursorX = ratio * this.profileWidth;
+  private syncProfilePosition(meta: TrackMeta, ratio: number): void {
+    const clampedRatio = Math.max(0, Math.min(1, ratio));
+    const distance = clampedRatio * meta.totalDistance;
+    this.profileCursorX = clampedRatio * this.profileWidth;
     const position = this.positionAtDistance(meta, distance);
-    meta.hoverMark.setLatLng(position).addTo(this.map);
+    meta.hoverMark?.setLatLng(position).addTo(this.map);
   }
 
   onProfileHoverEnd(): void {
-    if (!this.viewOnly) return;
-    const meta = this.trackMetas[this.profileTrackIndex];
-    if (!meta || !meta.hoverMark || !meta.has || !meta.sanitized.length) return;
-    const start = meta.sanitized[0];
-    meta.hoverMark.setLatLng([start.lat, start.lon]);
-    this.profileCursorX = 0;
+    if (!this.viewOnly || this.profileDragging) return;
   }
 
   private positionAtDistance(meta: TrackMeta, distance: number): L.LatLng {
@@ -778,14 +819,36 @@ export class MapComponent implements OnInit, AfterViewInit {
         const latlngs = meta.sanitized.map(p => L.latLng(p.lat, p.lon));
         const startLatLng = latlngs[0];
         const endLatLng = latlngs[latlngs.length - 1];
+        const endpointDistance = startLatLng.distanceTo(endLatLng);
+        const useCombinedEndpointLabel = endpointDistance <= 15;
 
         meta.full.setLatLngs([]);
         meta.prog.setLatLngs(latlngs);
         meta.ticks.clearLayers();
         meta.pauseLayer?.clearLayers();
 
-        meta.startMark.setLatLng(startLatLng).addTo(this.map);
-        meta.endMark.setLatLng(endLatLng).addTo(this.map);
+        meta.startMark
+          .setLatLng(startLatLng)
+          .bindTooltip(useCombinedEndpointLabel ? 'Salida/Llegada' : 'Salida', {
+            permanent: true,
+            direction: 'top',
+            offset: [0, -8],
+            className: 'track-endpoint-label track-endpoint-label--start'
+          })
+          .addTo(this.map);
+        meta.endMark
+          .setLatLng(endLatLng)
+          .addTo(this.map);
+        if (useCombinedEndpointLabel) {
+          meta.endMark.unbindTooltip();
+        } else {
+          meta.endMark.bindTooltip('Llegada', {
+            permanent: true,
+            direction: 'top',
+            offset: [0, -8],
+            className: 'track-endpoint-label track-endpoint-label--end'
+          });
+        }
         meta.hoverMark.setLatLng(startLatLng).addTo(this.map);
 
         const start = meta.sanitized[0].t;

@@ -421,6 +421,8 @@
   border-radius: 14px;
   box-shadow: 0 12px 26px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.08);
   overflow: hidden;
+  pointer-events: auto;
+  user-select: none;
 }
 
 .profile-chart{
@@ -431,6 +433,8 @@
   --profile-cursor-color: #f97316;
   background: radial-gradient(circle at 20% 20%, rgba(255,255,255,0.06), transparent 38%),
     linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02));
+  cursor: ew-resize;
+  touch-action: none;
 }
 
 .profile-grid{
@@ -472,4 +476,24 @@
   font: 700 14px/1.35 system-ui, -apple-system, Segoe UI, Roboto, Arial;
   border: 1px dashed rgba(255,255,255,0.2);
   box-shadow: 0 8px 18px rgba(0,0,0,0.28);
+}
+
+.track-endpoint-label.leaflet-tooltip{
+  background: rgba(15,23,42,0.92);
+  color: #e2e8f0;
+  border: 1px solid rgba(255,255,255,0.2);
+  border-radius: 10px;
+  padding: 2px 8px;
+  font: 700 11px/1.2 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, Arial;
+  box-shadow: 0 6px 16px rgba(0,0,0,0.3);
+}
+
+.track-endpoint-label--start{
+  border-color: rgba(34,197,94,0.7);
+  color: #bbf7d0;
+}
+
+.track-endpoint-label--end{
+  border-color: rgba(239,68,68,0.7);
+  color: #fecaca;
 }

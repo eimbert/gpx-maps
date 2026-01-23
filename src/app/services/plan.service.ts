@@ -59,6 +59,11 @@ export type PlanTrackImportPayload = {
   route_xml: string;
 };
 
+export type PlanTrackUpdatePayload = {
+  id: number;
+  routeXml: string;
+};
+
 @Injectable({ providedIn: 'root' })
 export class PlanService {
   private readonly planApiBase = environment.planApiBase;
@@ -105,6 +110,12 @@ export class PlanService {
 
   deleteTrack(trackId: number): Observable<void> {
     return this.http.delete<void>(`${this.planApiBase}/tracks/${trackId}`);
+  }
+
+  updateTrack(payload: PlanTrackUpdatePayload): Observable<PlanTrack> {
+    return this.http.put<PlanTrack>(`${this.planApiBase}/updateTrack`, payload).pipe(
+      map(track => this.normalizeTrack(track))
+    );
   }
 
   getVotes(folderId: number): Observable<PlanFolderVotesResponse> {

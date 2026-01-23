@@ -178,6 +178,7 @@ export class MapComponent implements OnInit, AfterViewInit {
   private originalTrackPoints: TrackPoint[] | null = null;
   private originalRouteXml: string | null = null;
   private originalPointsSnapshot: string | null = null;
+  private editPointsLayer: L.LayerGroup | null = null;
 
   constructor(
     private route: ActivatedRoute,
@@ -387,6 +388,7 @@ export class MapComponent implements OnInit, AfterViewInit {
     });
 
     this.updateProfileVisual();
+    this.updateEditPointsLayer();
 
     if (this.map) {
       this.attachTrackLayers();
@@ -629,8 +631,10 @@ export class MapComponent implements OnInit, AfterViewInit {
     this.editMode = !this.editMode;
     if (this.editMode) {
       this.setEditStatusMessage('Haz clic en un punto para eliminarlo.');
+      this.updateEditPointsLayer();
     } else {
       this.clearEditStatusMessage();
+      this.clearEditPointsLayer();
     }
   }
 
@@ -642,6 +646,7 @@ export class MapComponent implements OnInit, AfterViewInit {
     this.applySanitization();
     this.editMode = false;
     this.setEditStatusMessage('Cambios descartados.');
+    this.clearEditPointsLayer();
   }
 
   saveEdits(): void {
@@ -675,6 +680,7 @@ export class MapComponent implements OnInit, AfterViewInit {
         this.editMode = false;
         this.setEditStatusMessage('Cambios guardados.');
         this.isSavingEdits = false;
+        this.clearEditPointsLayer();
       },
       error: () => {
         this.isSavingEdits = false;
@@ -719,6 +725,32 @@ export class MapComponent implements OnInit, AfterViewInit {
     this.updateTrackRaw(0, updated);
     this.applySanitization();
     this.setEditStatusMessage('Punto eliminado.');
+  }
+
+  private updateEditPointsLayer(): void {
+    if (!this.editPointsLayer || !this.map) return;
+    if (!this.editMode || !this.canEditTrack) {
+      this.clearEditPointsLayer();
+      return;
+    }
+    this.editPointsLayer.clearLayers();
+    const meta = this.trackMetas[0];
+    if (!meta?.raw?.length) return;
+    meta.raw.forEach(point => {
+      const marker = L.circleMarker([point.lat, point.lon], {
+        radius: 4,
+        color: '#0f172a',
+        weight: 1,
+        fillColor: '#f8fafc',
+        fillOpacity: 1,
+        pane: 'overlayPane'
+      });
+      this.editPointsLayer?.addLayer(marker);
+    });
+  }
+
+  private clearEditPointsLayer(): void {
+    this.editPointsLayer?.clearLayers();
   }
 
   private updateTrackRaw(index: number, raw: TrackPoint[]): void {
@@ -1267,6 +1299,7 @@ export class MapComponent implements OnInit, AfterViewInit {
     this.applyBaseLayer();
     this.renderer = L.canvas({ padding: 0.25 }).addTo(this.map);
     this.attachTrackLayers();
+    this.editPointsLayer = L.layerGroup().addTo(this.map);
     this.map.on('click', (event: L.LeafletMouseEvent) => this.handleMapClick(event));
   }
 

@@ -703,7 +703,9 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
       relacionAspectoGrabacion: '16:9',
       modoVisualizacion: 'general',
       mostrarPerfil: true,
-      viewOnly: true
+      viewOnly: true,
+      trackId: track.id,
+      routeXml: track.routeXml
     };
 
     sessionStorage.setItem('gpxViewerPayload', JSON.stringify(payload));

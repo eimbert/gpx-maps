@@ -29,6 +29,26 @@
       </select>
     </div>
 
+    <div class="map-edit-controls" *ngIf="canEditTrack" role="group" aria-label="Edición del track">
+      <button type="button" class="map-edit-btn" (click)="toggleEditMode()">
+        {{ editMode ? 'Salir de edición' : 'Editar puntos' }}
+      </button>
+      <button
+        type="button"
+        class="map-edit-btn map-edit-btn--primary"
+        (click)="saveEdits()"
+        [disabled]="!hasEditChanges || isSavingEdits"
+      >
+        {{ isSavingEdits ? 'Guardando...' : 'Guardar' }}
+      </button>
+      <button type="button" class="map-edit-btn map-edit-btn--ghost" (click)="cancelEdits()" [disabled]="!hasEditChanges">
+        Cancelar
+      </button>
+    </div>
+
+    <div class="map-edit-hint" *ngIf="editMode">Haz clic en el punto que quieres eliminar.</div>
+    <div class="map-edit-status" *ngIf="editStatusMessage">{{ editStatusMessage }}</div>
+
     <button type="button" class="start-btn" (click)="goBack()">Anterior</button>
     <!-- <a class="stop-rec" (click)="stopRecordingAndDownload()" *ngIf="rec.isRecording">⏹ Stop & Download</a> -->
   </div>

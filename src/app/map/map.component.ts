@@ -5,6 +5,7 @@ import { firstValueFrom } from 'rxjs';
 
 import * as L from 'leaflet';
 import { RecorderService } from '../recording/recorder.service';
+import { PlanService } from '../services/plan.service';
 import { EventTrack, RaceEvent } from '../interfaces/events';
 import { environment } from '../../environments/environment';
 import { ProfileVisual, TrackPointWithElevation, buildCumulativeDistances, buildProfileVisual } from '../utils/profile-visual';
@@ -169,12 +170,22 @@ export class MapComponent implements OnInit, AfterViewInit {
   selectedBaseLayerId = this.baseLayerOptions.find((option) => option.id === 'street')?.id ?? this.baseLayerOptions[0]?.id ?? '';
   private baseLayer: L.TileLayer | null = null;
   viewOnly = false;
+  editMode = false;
+  isSavingEdits = false;
+  editStatusMessage: string | null = null;
+  private editStatusTimeout: number | null = null;
+  private editableTrackId: number | null = null;
+  private originalTrackPoints: TrackPoint[] | null = null;
+  private originalRouteXml: string | null = null;
+  private originalPointsSnapshot: string | null = null;
+  private editPointsLayer: L.LayerGroup | null = null;
 
   constructor(
     private route: ActivatedRoute,
     private router: Router,
     public rec: RecorderService,
-    private http: HttpClient) { }
+    private http: HttpClient,
+    private planService: PlanService) { }
 
   goBack(): void {
     const origin = this.route.snapshot.queryParamMap.get('from');
@@ -377,6 +388,7 @@ export class MapComponent implements OnInit, AfterViewInit {
     });
 
     this.updateProfileVisual();
+    this.updateEditPointsLayer();
 
     if (this.map) {
       this.attachTrackLayers();
@@ -546,10 +558,17 @@ export class MapComponent implements OnInit, AfterViewInit {
 
     if (payload) {
       this.viewOnly = !!payload.viewOnly;
+      this.editableTrackId = Number.isFinite(Number(payload.trackId)) ? Number(payload.trackId) : null;
+      this.originalRouteXml = typeof payload.routeXml === 'string' ? payload.routeXml : null;
       this.names = Array.isArray(payload.names) ? payload.names : [];
       this.colors = Array.isArray(payload.colors) ? payload.colors : [];
       const trks = Array.isArray(payload.tracks) ? payload.tracks : [];
       this.trackMetas = this.buildMetas(this.names, this.colors, trks);
+      if (trks.length && Array.isArray(trks[0]?.trkpts)) {
+        const originalPoints = trks[0].trkpts.map((point: TrackPoint) => ({ ...point }));
+        this.originalTrackPoints = originalPoints;
+        this.originalPointsSnapshot = this.serializeTrackPoints(originalPoints);
+      }
       this.logoDataUrl = payload.logo ?? null;
       this.removeStops = !!payload.rmstops;
       this.markLongPauses = payload.marcarPausasLargas ?? this.markLongPauses;
@@ -592,6 +611,226 @@ export class MapComponent implements OnInit, AfterViewInit {
         : this.pauseThresholdSeconds;
       this.applySanitization();
     });
+  }
+
+  get canEditTrack(): boolean {
+    return this.viewOnly
+      && this.trackMetas.length === 1
+      && Number.isFinite(this.editableTrackId ?? NaN)
+      && !!this.originalRouteXml;
+  }
+
+  get hasEditChanges(): boolean {
+    if (!this.canEditTrack) return false;
+    const raw = this.trackMetas[0]?.raw ?? [];
+    return this.serializeTrackPoints(raw) !== this.originalPointsSnapshot;
+  }
+
+  toggleEditMode(): void {
+    if (!this.canEditTrack) return;
+    this.editMode = !this.editMode;
+    if (this.editMode) {
+      this.setEditStatusMessage('Haz clic en un punto para eliminarlo.');
+      this.updateEditPointsLayer();
+    } else {
+      this.clearEditStatusMessage();
+      this.clearEditPointsLayer();
+    }
+  }
+
+  cancelEdits(): void {
+    if (!this.originalTrackPoints || !this.canEditTrack) {
+      return;
+    }
+    this.updateTrackRaw(0, this.originalTrackPoints.map(point => ({ ...point })));
+    this.applySanitization();
+    this.editMode = false;
+    this.setEditStatusMessage('Cambios descartados.');
+    this.clearEditPointsLayer();
+  }
+
+  saveEdits(): void {
+    if (!this.canEditTrack || !this.hasEditChanges || this.isSavingEdits) {
+      return;
+    }
+    const raw = this.trackMetas[0]?.raw ?? [];
+    if (raw.length < 2) {
+      this.setEditStatusMessage('El track necesita al menos dos puntos.');
+      return;
+    }
+
+    const gpxData = this.buildGpxFromPoints(raw, this.trackMetas[0]?.name ?? 'Track');
+    if (!this.isValidGpxData(gpxData)) {
+      this.setEditStatusMessage('El XML resultante no es un GPX válido.');
+      return;
+    }
+
+    if (!this.editableTrackId) {
+      this.setEditStatusMessage('No se encontró el identificador del track.');
+      return;
+    }
+
+    this.isSavingEdits = true;
+    this.setEditStatusMessage('Guardando cambios...');
+    this.planService.updateTrack({ id: this.editableTrackId, routeXml: gpxData }).subscribe({
+      next: () => {
+        this.originalTrackPoints = raw.map(point => ({ ...point }));
+        this.originalRouteXml = gpxData;
+        this.originalPointsSnapshot = this.serializeTrackPoints(raw);
+        this.editMode = false;
+        this.setEditStatusMessage('Cambios guardados.');
+        this.isSavingEdits = false;
+        this.clearEditPointsLayer();
+      },
+      error: () => {
+        this.isSavingEdits = false;
+        this.setEditStatusMessage('No se pudo guardar el track.');
+      }
+    });
+  }
+
+  private handleMapClick(event: L.LeafletMouseEvent): void {
+    if (!this.editMode || !this.canEditTrack) return;
+    const meta = this.trackMetas[0];
+    if (!meta?.raw?.length || meta.raw.length < 3) {
+      this.setEditStatusMessage('El track necesita al menos dos puntos.');
+      return;
+    }
+
+    const clickPoint = this.map.latLngToContainerPoint(event.latlng);
+    let closestIndex = -1;
+    let closestDistance = Number.POSITIVE_INFINITY;
+
+    meta.raw.forEach((point, index) => {
+      const layerPoint = this.map.latLngToContainerPoint([point.lat, point.lon]);
+      const distance = clickPoint.distanceTo(layerPoint);
+      if (distance < closestDistance) {
+        closestDistance = distance;
+        closestIndex = index;
+      }
+    });
+
+    const thresholdPx = 12;
+    if (closestIndex === -1 || closestDistance > thresholdPx) {
+      this.setEditStatusMessage('Haz clic más cerca del punto que quieres eliminar.');
+      return;
+    }
+
+    const updated = meta.raw.filter((_, index) => index !== closestIndex);
+    if (updated.length < 2) {
+      this.setEditStatusMessage('El track necesita al menos dos puntos.');
+      return;
+    }
+
+    this.updateTrackRaw(0, updated);
+    this.applySanitization();
+    this.setEditStatusMessage('Punto eliminado.');
+  }
+
+  private updateEditPointsLayer(): void {
+    if (!this.editPointsLayer || !this.map) return;
+    if (!this.editMode || !this.canEditTrack) {
+      this.clearEditPointsLayer();
+      return;
+    }
+    this.editPointsLayer.clearLayers();
+    const meta = this.trackMetas[0];
+    if (!meta?.raw?.length) return;
+    const points = this.buildEditPointMarkers(meta.raw);
+    points.forEach(point => {
+      const marker = L.circleMarker([point.lat, point.lon], {
+        radius: 4,
+        color: '#0f172a',
+        weight: 1,
+        fillColor: '#f8fafc',
+        fillOpacity: 1,
+        pane: 'overlayPane'
+      });
+      this.editPointsLayer?.addLayer(marker);
+    });
+  }
+
+  private buildEditPointMarkers(points: TrackPoint[]): TrackPoint[] {
+    const maxPoints = 300;
+    if (points.length <= maxPoints) return points;
+    const step = Math.ceil(points.length / maxPoints);
+    const sampled = points.filter((_, index) => index % step === 0);
+    const last = points[points.length - 1];
+    if (sampled[sampled.length - 1] !== last) {
+      sampled.push(last);
+    }
+    return sampled;
+  }
+
+  private clearEditPointsLayer(): void {
+    this.editPointsLayer?.clearLayers();
+  }
+
+  private updateTrackRaw(index: number, raw: TrackPoint[]): void {
+    this.trackMetas = this.trackMetas.map((meta, metaIndex) => {
+      if (metaIndex !== index) return meta;
+      return { ...meta, raw: raw.map(point => ({ ...point })) };
+    });
+  }
+
+  private buildGpxFromPoints(points: TrackPoint[], name: string): string {
+    const safeName = this.escapeXml(name || 'Track');
+    const trkpts = points.map(point => {
+      const lat = this.roundCoord(point.lat);
+      const lon = this.roundCoord(point.lon);
+      const ele = Number.isFinite(point.ele) ? `<ele>${point.ele}</ele>` : '';
+      const time = point.time ? `<time>${this.escapeXml(point.time)}</time>` : '';
+      return `<trkpt lat="${lat}" lon="${lon}">${ele}${time}</trkpt>`;
+    }).join('');
+
+    return [
+      '<?xml version="1.0" encoding="UTF-8"?>',
+      '<gpx version="1.1" creator="gpx-map-viewer" xmlns="http://www.topografix.com/GPX/1/1">',
+      `<trk><name>${safeName}</name><trkseg>${trkpts}</trkseg></trk>`,
+      '</gpx>'
+    ].join('');
+  }
+
+  private isValidGpxData(gpxData: string): boolean {
+    try {
+      const parser = new DOMParser();
+      const gpx = parser.parseFromString(gpxData, 'application/xml');
+      return !gpx.getElementsByTagName('parsererror').length && gpx.getElementsByTagName('trkpt').length > 0;
+    } catch {
+      return false;
+    }
+  }
+
+  private escapeXml(value: string): string {
+    return value
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&apos;');
+  }
+
+  private serializeTrackPoints(points: TrackPoint[]): string {
+    return JSON.stringify(points);
+  }
+
+  private setEditStatusMessage(message: string): void {
+    this.editStatusMessage = message;
+    if (this.editStatusTimeout !== null) {
+      window.clearTimeout(this.editStatusTimeout);
+    }
+    this.editStatusTimeout = window.setTimeout(() => {
+      this.editStatusMessage = null;
+      this.editStatusTimeout = null;
+    }, 3500);
+  }
+
+  private clearEditStatusMessage(): void {
+    if (this.editStatusTimeout !== null) {
+      window.clearTimeout(this.editStatusTimeout);
+      this.editStatusTimeout = null;
+    }
+    this.editStatusMessage = null;
   }
 
   private loadTracksFromBackend(routeId: number): void {
@@ -877,7 +1116,7 @@ export class MapComponent implements OnInit, AfterViewInit {
 
     const union = L.latLngBounds(boundsPts);
     this.allTracksBounds = union.isValid() ? union.pad(0.05) : null;
-    if (this.allTracksBounds) {
+    if (this.allTracksBounds && !this.editMode) {
       this.map.fitBounds(this.allTracksBounds, {
         ...this.computeFitOptions(),
         maxZoom: this.leaderZoomLevel - 1
@@ -1073,6 +1312,8 @@ export class MapComponent implements OnInit, AfterViewInit {
     this.applyBaseLayer();
     this.renderer = L.canvas({ padding: 0.25 }).addTo(this.map);
     this.attachTrackLayers();
+    this.editPointsLayer = L.layerGroup().addTo(this.map);
+    this.map.on('click', (event: L.LeafletMouseEvent) => this.handleMapClick(event));
   }
 
   onBaseLayerChange(baseLayerId: string): void {

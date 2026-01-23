@@ -736,7 +736,8 @@ export class MapComponent implements OnInit, AfterViewInit {
     this.editPointsLayer.clearLayers();
     const meta = this.trackMetas[0];
     if (!meta?.raw?.length) return;
-    meta.raw.forEach(point => {
+    const points = this.buildEditPointMarkers(meta.raw);
+    points.forEach(point => {
       const marker = L.circleMarker([point.lat, point.lon], {
         radius: 4,
         color: '#0f172a',
@@ -747,6 +748,18 @@ export class MapComponent implements OnInit, AfterViewInit {
       });
       this.editPointsLayer?.addLayer(marker);
     });
+  }
+
+  private buildEditPointMarkers(points: TrackPoint[]): TrackPoint[] {
+    const maxPoints = 300;
+    if (points.length <= maxPoints) return points;
+    const step = Math.ceil(points.length / maxPoints);
+    const sampled = points.filter((_, index) => index % step === 0);
+    const last = points[points.length - 1];
+    if (sampled[sampled.length - 1] !== last) {
+      sampled.push(last);
+    }
+    return sampled;
   }
 
   private clearEditPointsLayer(): void {
@@ -1103,7 +1116,7 @@ export class MapComponent implements OnInit, AfterViewInit {
 
     const union = L.latLngBounds(boundsPts);
     this.allTracksBounds = union.isValid() ? union.pad(0.05) : null;
-    if (this.allTracksBounds) {
+    if (this.allTracksBounds && !this.editMode) {
       this.map.fitBounds(this.allTracksBounds, {
         ...this.computeFitOptions(),
         maxZoom: this.leaderZoomLevel - 1

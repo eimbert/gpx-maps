@@ -9,6 +9,7 @@ import {
   PlanInvitation,
   PlanTrack,
   PlanUserSearchResult,
+  PlanTrackVotesSummary,
   PlanVoteSummary
 } from '../interfaces/plan';
 
@@ -125,6 +126,17 @@ export class PlanService {
         userVoteTrackId: response.userVoteTrackId ?? null
       })),
       catchError(() => of({ votes: [], userVoteTrackId: null }))
+    );
+  }
+
+  getTrackVotesSummary(trackId: number): Observable<PlanTrackVotesSummary> {
+    return this.http.get<PlanTrackVotesSummary>(`${this.planApiBase}/tracks/${trackId}/votes-summary`).pipe(
+      map(summary => ({
+        trackId: Number(summary.trackId ?? trackId),
+        totalVotes: Number(summary.totalVotes ?? 0),
+        votedByUser: Boolean(summary.votedByUser)
+      })),
+      catchError(() => of({ trackId, totalVotes: 0, votedByUser: false }))
     );
   }
 

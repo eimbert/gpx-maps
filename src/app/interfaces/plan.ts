@@ -70,6 +70,12 @@ export interface PlanFolderVotesResponse {
   userVoteTrackId: number | null;
 }
 
+export interface PlanTrackVotesSummary {
+  trackId: number;
+  totalVotes: number;
+  votedByUser: boolean;
+}
+
 export interface PlanUserSearchResult {
   id: number;
   name?: string | null;

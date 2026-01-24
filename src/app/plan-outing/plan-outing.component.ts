@@ -539,7 +539,7 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
     if (!this.activeFolder) return;
 
     const action$ = this.userVoteTrackId === track.id
-      ? this.planService.removeVote(this.activeFolder.id)
+      ? this.planService.removeVote(this.activeFolder.id, track.id)
       : this.planService.voteTrack(this.activeFolder.id, track.id);
 
     action$.subscribe(response => {

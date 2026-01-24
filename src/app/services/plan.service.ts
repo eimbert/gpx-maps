@@ -152,8 +152,13 @@ export class PlanService {
     );
   }
 
-  removeVote(folderId: number): Observable<PlanFolderVotesResponse> {
-    return this.http.delete<VoteResponse>(`${this.planApiBase}/${folderId}/votes`).pipe(
+  removeVote(folderId: number, trackId: number): Observable<PlanFolderVotesResponse> {
+    return this.http.delete<VoteResponse>(`${this.planApiBase}/votes`, {
+      body: {
+        idFolder: folderId,
+        idTrack: trackId
+      }
+    }).pipe(
       map(response => ({
         votes: response.votes ?? [],
         userVoteTrackId: response.userVoteTrackId ?? null

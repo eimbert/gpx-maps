@@ -2,7 +2,7 @@ import { Component, ElementRef, OnDestroy, OnInit, ViewChild } from '@angular/co
 import { HttpClient } from '@angular/common/http';
 import { MatDialog } from '@angular/material/dialog';
 import { ActivatedRoute, Router } from '@angular/router';
-import { Observable, Subject, debounceTime, firstValueFrom, forkJoin, map, switchMap, takeUntil } from 'rxjs';
+import { Observable, Subject, debounceTime, firstValueFrom, forkJoin, map, of, switchMap, takeUntil } from 'rxjs';
 import { InfoDialogComponent, InfoDialogData, InfoDialogResult } from '../info-dialog/info-dialog.component';
 import { PlanService, PlanTrackImportPayload } from '../services/plan.service';
 import { GpxImportService } from '../services/gpx-import.service';
@@ -13,6 +13,7 @@ import {
   PlanFolderVotesResponse,
   PlanInvitation,
   PlanTrack,
+  PlanTrackVotesSummary,
   PlanUserSearchResult,
   TrackWeatherSummary
 } from '../interfaces/plan';
@@ -271,7 +272,6 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
       observations: folder.observations
     };
     this.loadTracks(folder.id);
-    this.loadVotes(folder.id);
     this.loadInvitations(folder.id);
   }
 
@@ -363,11 +363,23 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
 
   loadTracks(folderId: number): void {
     this.isLoadingTracks = true;
-    this.planService.getTracks(folderId).subscribe(tracks => {
-      this.tracks = tracks;
+    this.planService.getTracks(folderId).pipe(
+      switchMap(tracks => {
+        this.tracks = tracks;
+        this.updateFolderTrackCountCache(folderId, tracks.length);
+        this.refreshForecasts();
+        if (!tracks.length) {
+          this.votesByTrackId.clear();
+          this.userVoteTrackId = null;
+          return of([]);
+        }
+        return forkJoin(tracks.map(track => this.planService.getTrackVotesSummary(track.id)));
+      })
+    ).subscribe(summaries => {
+      if (summaries.length) {
+        this.applyTrackVotesSummary(summaries);
+      }
       this.isLoadingTracks = false;
-      this.updateFolderTrackCountCache(folderId, tracks.length);
-      this.refreshForecasts();
     });
   }
 
@@ -528,7 +540,7 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
 
     const action$ = this.userVoteTrackId === track.id
       ? this.planService.removeVote(this.activeFolder.id)
-      : this.planService.voteTrack(this.activeFolder.id, this.userId, track.id);
+      : this.planService.voteTrack(this.activeFolder.id, track.id);
 
     action$.subscribe(response => {
       this.applyVotes(response);
@@ -840,6 +852,17 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
     this.votesByTrackId.clear();
     response.votes.forEach(vote => this.votesByTrackId.set(vote.trackId, vote.votes));
     this.userVoteTrackId = response.userVoteTrackId;
+  }
+
+  private applyTrackVotesSummary(summaries: PlanTrackVotesSummary[]): void {
+    this.votesByTrackId.clear();
+    this.userVoteTrackId = null;
+    summaries.forEach(summary => {
+      this.votesByTrackId.set(summary.trackId, Number(summary.totalVotes ?? 0));
+      if (summary.votedByUser) {
+        this.userVoteTrackId = summary.trackId;
+      }
+    });
   }
 
   private loadInvitations(folderId: number): void {

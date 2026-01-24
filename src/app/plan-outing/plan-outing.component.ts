@@ -542,9 +542,16 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
       ? this.planService.removeVote(this.activeFolder.id, track.id)
       : this.planService.voteTrack(this.activeFolder.id, track.id);
 
-    action$.subscribe(response => {
-      this.applyVotes(response);
-    });
+    action$
+      .pipe(switchMap(() => this.refreshTrackVotesSummary()))
+      .subscribe(summaries => {
+        if (summaries.length) {
+          this.applyTrackVotesSummary(summaries);
+        } else {
+          this.votesByTrackId.clear();
+          this.userVoteTrackId = null;
+        }
+      });
   }
 
   resolveVoteLabel(track: PlanTrack): string {
@@ -863,6 +870,13 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
         this.userVoteTrackId = summary.trackId;
       }
     });
+  }
+
+  private refreshTrackVotesSummary(): Observable<PlanTrackVotesSummary[]> {
+    if (!this.tracks.length) {
+      return of([]);
+    }
+    return forkJoin(this.tracks.map(track => this.planService.getTrackVotesSummary(track.id)));
   }
 
   private loadInvitations(folderId: number): void {

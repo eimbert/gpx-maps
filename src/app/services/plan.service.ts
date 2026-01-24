@@ -128,8 +128,12 @@ export class PlanService {
     );
   }
 
-  voteTrack(folderId: number, trackId: number): Observable<PlanFolderVotesResponse> {
-    return this.http.post<VoteResponse>(`${this.planApiBase}/${folderId}/votes`, { trackId }).pipe(
+  voteTrack(folderId: number, userId: number, trackId: number): Observable<PlanFolderVotesResponse> {
+    return this.http.post<VoteResponse>(`${this.planApiBase}/votes`, {
+      idFolder: folderId,
+      idUser: userId,
+      idTrack: trackId
+    }).pipe(
       map(response => ({
         votes: response.votes ?? [],
         userVoteTrackId: response.userVoteTrackId ?? trackId

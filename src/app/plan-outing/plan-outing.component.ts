@@ -528,7 +528,7 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
 
     const action$ = this.userVoteTrackId === track.id
       ? this.planService.removeVote(this.activeFolder.id)
-      : this.planService.voteTrack(this.activeFolder.id, track.id);
+      : this.planService.voteTrack(this.activeFolder.id, this.userId, track.id);
 
     action$.subscribe(response => {
       this.applyVotes(response);

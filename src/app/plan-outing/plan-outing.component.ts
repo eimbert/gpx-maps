@@ -149,15 +149,13 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
 
   loadFolders(): void {
     this.isLoadingFolders = true;
-   this.planService.getFolders().subscribe(folders => {
-      const userId = JSON.parse(localStorage.getItem('gpxAuthSession') ?? 'null')?.id;
-      console.log("mi id: ", userId )
-      
-      folders.forEach(f => {
-        if(userId == f.ownerId) f.isOwner = true
+    this.planService.getFolders().subscribe(folders => {
+      folders.forEach(folder => {
+        if (folder.isOwner === undefined) {
+          folder.isOwner = folder.ownerId === this.userId;
+        }
       });
       this.folders = folders;
-      console.log("carpetas: ", folders)
       this.folderTrackCounts.clear();
       folders.forEach(folder => {
         if (Number.isFinite(folder.tracksCount ?? NaN)) {
@@ -254,10 +252,11 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
         observations: this.newFolderNotes.trim() || null
       })
       .subscribe(folder => {
-        this.folders = [folder, ...this.folders];
-        this.folderTrackCounts.set(folder.id, 0);
+        const resolvedFolder = this.applyNewFolderOwnership(folder);
+        this.folders = [resolvedFolder, ...this.folders];
+        this.folderTrackCounts.set(resolvedFolder.id, 0);
         this.applyFolderFilter();
-        this.selectFolder(folder);
+        this.selectFolder(resolvedFolder);
         this.newFolderName = '';
         this.newFolderDate = null;
         this.newFolderNotes = '';
@@ -295,9 +294,13 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
         observations: sanitizedObservations
       })
       .subscribe(updated => {
+        const resolvedOwnerId = this.resolveUpdatedOwnerId(updated);
+        const resolvedIsOwner = this.resolveUpdatedIsOwner(updated, resolvedOwnerId);
         const mergedFolder: PlanFolder = {
           ...this.activeFolder,
           ...updated,
+          ownerId: resolvedOwnerId,
+          isOwner: resolvedIsOwner,
           name: updated.name ?? sanitizedName,
           plannedDate: updated.plannedDate ?? sanitizedDate,
           observations: updated.observations ?? sanitizedObservations
@@ -672,6 +675,33 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
 
   canViewTrack(track: PlanTrack): boolean {
     return !!track.routeXml;
+  }
+
+  private applyNewFolderOwnership(folder: PlanFolder): PlanFolder {
+    const resolvedOwnerId = Number.isFinite(folder.ownerId) && folder.ownerId > 0 ? folder.ownerId : this.userId;
+    const resolvedIsOwner = folder.isOwner ?? resolvedOwnerId === this.userId;
+    return {
+      ...folder,
+      ownerId: resolvedOwnerId,
+      isOwner: resolvedIsOwner
+    };
+  }
+
+  private resolveUpdatedOwnerId(updated: PlanFolder): number {
+    if (Number.isFinite(updated.ownerId) && updated.ownerId > 0) {
+      return updated.ownerId;
+    }
+    return this.activeFolder?.ownerId ?? this.userId;
+  }
+
+  private resolveUpdatedIsOwner(updated: PlanFolder, ownerId: number): boolean {
+    if (updated.isOwner !== undefined) {
+      return updated.isOwner;
+    }
+    if (this.activeFolder?.isOwner !== undefined) {
+      return this.activeFolder.isOwner;
+    }
+    return ownerId === this.userId;
   }
 
   get hasSelectedTracks(): boolean {

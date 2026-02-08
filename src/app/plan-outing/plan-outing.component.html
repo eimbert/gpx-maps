@@ -197,10 +197,16 @@
       <section class="plan__tracks">
         <div class="plan__section-header">
           <h3>Tracks</h3>
-          <button class="plan__secondary" type="button" (click)="onTrackImportClick()" [disabled]="isImportingTrack">
-            Importar track
-          </button>
-          <input #trackInput type="file" accept=".gpx" hidden (change)="onTrackFileSelected($event)">
+          <div class="plan__section-actions">
+            <button class="plan__secondary" type="button" (click)="viewSelectedTracks()"
+              [disabled]="!hasSelectedTracks">
+              Ver rutas seleccionadas
+            </button>
+            <button class="plan__secondary" type="button" (click)="onTrackImportClick()" [disabled]="isImportingTrack">
+              Importar track
+            </button>
+            <input #trackInput type="file" accept=".gpx" hidden (change)="onTrackFileSelected($event)">
+          </div>
         </div>
 
         <p class="plan__hint" *ngIf="!editFolder.plannedDate">Añade una fecha para ver la predicción del tiempo por
@@ -211,6 +217,16 @@
           <table class="plan__table" aria-label="Tracks planificados">
             <thead>
               <tr>
+                <th scope="col" class="plan__center plan__select-col">
+                  <input
+                    type="checkbox"
+                    class="plan__track-checkbox"
+                    [checked]="allSelectableTracksSelected"
+                    [indeterminate]="hasSelectedTracks && !allSelectableTracksSelected"
+                    [disabled]="!hasSelectableTracks"
+                    (change)="toggleAllTracksSelection($any($event.target).checked)"
+                    aria-label="Seleccionar todos los tracks con GPX disponible">
+                </th>
                 <th scope="col">Track</th>
                 <th scope="col">Cómo llegar</th>
                 <th scope="col">Votos</th>
@@ -233,6 +249,15 @@
             </thead>
             <tbody>
               <tr *ngFor="let track of tracks">
+                <td class="plan__center plan__select-col">
+                  <input
+                    type="checkbox"
+                    class="plan__track-checkbox"
+                    [checked]="selectedTrackIds.has(track.id)"
+                    [disabled]="!canViewTrack(track)"
+                    (change)="toggleTrackSelection(track, $any($event.target).checked)"
+                    [attr.aria-label]="canViewTrack(track) ? 'Seleccionar ' + track.name : 'GPX no disponible'">
+                </td>
                 <td>
                   <div class="plan__track-title">{{ track.name }}</div>
                   <span class="plan__track-meta">{{ track.startPopulation || 'Ubicación por definir' }}</span>

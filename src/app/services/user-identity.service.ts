@@ -1,43 +1,24 @@
 import { Injectable } from '@angular/core';
+import { LoginSuccessResponse } from '../interfaces/auth';
 
 @Injectable({ providedIn: 'root' })
 export class UserIdentityService {
-  private readonly storageKey = 'gpxUserId';
-  private cachedId: number | null = null;
+  private readonly sessionKey = 'gpxAuthSession';
 
   getUserId(): number {
-    if (this.cachedId) return this.cachedId;
-
-    const stored = this.readPersistedId();
-    if (stored) {
-      this.cachedId = stored;
-      return stored;
-    }
-
-    const generated = Date.now();
-    this.cachedId = generated;
-    this.persistId(generated);
-    return generated;
+    const session = this.readSession();
+    return session?.id ?? 0;
   }
 
-  private readPersistedId(): number | null {
+  private readSession(): LoginSuccessResponse | null {
     if (typeof localStorage === 'undefined') return null;
     try {
-      const stored = localStorage.getItem(this.storageKey);
+      const stored = localStorage.getItem(this.sessionKey);
       if (!stored) return null;
-      const parsed = Number(stored);
-      return Number.isFinite(parsed) ? parsed : null;
+      const parsed = JSON.parse(stored) as LoginSuccessResponse;
+      return typeof parsed?.id === 'number' ? parsed : null;
     } catch {
       return null;
-    }
-  }
-
-  private persistId(id: number): void {
-    if (typeof localStorage === 'undefined') return;
-    try {
-      localStorage.setItem(this.storageKey, String(id));
-    } catch {
-      // Ignore persistence errors to avoid breaking the flow.
     }
   }
 }

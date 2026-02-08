@@ -150,11 +150,6 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
   loadFolders(): void {
     this.isLoadingFolders = true;
     this.planService.getFolders().subscribe(folders => {
-      folders.forEach(folder => {
-        if (folder.isOwner === undefined) {
-          folder.isOwner = folder.ownerId === this.userId;
-        }
-      });
       this.folders = folders;
       this.folderTrackCounts.clear();
       folders.forEach(folder => {
@@ -691,7 +686,13 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
     if (Number.isFinite(updated.ownerId) && updated.ownerId > 0) {
       return updated.ownerId;
     }
-    return this.activeFolder?.ownerId ?? this.userId;
+    if (this.activeFolder?.ownerId && this.activeFolder.ownerId > 0) {
+      return this.activeFolder.ownerId;
+    }
+    if (this.activeFolder?.isOwner) {
+      return this.userId;
+    }
+    return 0;
   }
 
   private resolveUpdatedIsOwner(updated: PlanFolder, ownerId: number): boolean {
@@ -701,7 +702,10 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
     if (this.activeFolder?.isOwner !== undefined) {
       return this.activeFolder.isOwner;
     }
-    return ownerId === this.userId;
+    if (ownerId > 0) {
+      return ownerId === this.userId;
+    }
+    return false;
   }
 
   get hasSelectedTracks(): boolean {

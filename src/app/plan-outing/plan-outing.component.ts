@@ -318,7 +318,7 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
   async confirmDeleteFolder(folder: PlanFolder): Promise<void> {
     const decision = await this.openInfoDialog({
       title: 'Eliminar carpeta',
-      message: `¿Seguro que quieres eliminar “${folder.name}”? Se borrarán también sus tracks.`,
+      message: `¿Seguro que quieres eliminar “${folder.name}”? Se eliminará toda la información de la carpeta, incluidos sus tracks.`,
       confirmLabel: 'Eliminar',
       cancelLabel: 'Cancelar'
     });

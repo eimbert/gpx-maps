@@ -74,6 +74,7 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
   activeFolder: PlanFolder | null = null;
   editFolder: EditableFolder | null = null;
   tracks: PlanTrack[] = [];
+  selectedTrackIds = new Set<number>();
   votesByTrackId = new Map<number, number>();
   userVoteTrackId: number | null = null;
   weatherByTrackId = new Map<number, TrackWeatherSummary>();
@@ -331,6 +332,7 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
         this.activeFolder = null;
         this.editFolder = null;
         this.tracks = [];
+        this.clearTrackSelection();
         this.votesByTrackId.clear();
         this.userVoteTrackId = null;
       }
@@ -352,6 +354,7 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
     if (decision !== 'confirm') return;
     this.planService.deleteTrack(track.id).subscribe(() => {
       this.tracks = this.tracks.filter(current => current.id !== track.id);
+      this.selectedTrackIds.delete(track.id);
       this.votesByTrackId.delete(track.id);
       if (this.userVoteTrackId === track.id) {
         this.userVoteTrackId = null;
@@ -366,6 +369,7 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
     this.planService.getTracks(folderId).pipe(
       switchMap(tracks => {
         this.tracks = tracks;
+        this.clearTrackSelection();
         this.updateFolderTrackCountCache(folderId, tracks.length);
         this.refreshForecasts();
         if (!tracks.length) {
@@ -670,6 +674,38 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
     return !!track.routeXml;
   }
 
+  get hasSelectedTracks(): boolean {
+    return this.selectedTrackIds.size > 0;
+  }
+
+  get hasSelectableTracks(): boolean {
+    return this.getSelectableTracks().length > 0;
+  }
+
+  get allSelectableTracksSelected(): boolean {
+    const selectable = this.getSelectableTracks();
+    return selectable.length > 0 && selectable.every(track => this.selectedTrackIds.has(track.id));
+  }
+
+  toggleAllTracksSelection(checked: boolean): void {
+    const selectable = this.getSelectableTracks();
+    if (!selectable.length) return;
+    if (checked) {
+      selectable.forEach(track => this.selectedTrackIds.add(track.id));
+    } else {
+      selectable.forEach(track => this.selectedTrackIds.delete(track.id));
+    }
+  }
+
+  toggleTrackSelection(track: PlanTrack, checked: boolean): void {
+    if (!this.canViewTrack(track)) return;
+    if (checked) {
+      this.selectedTrackIds.add(track.id);
+    } else {
+      this.selectedTrackIds.delete(track.id);
+    }
+  }
+
   downloadTrack(track: PlanTrack): void {
     if (!track.routeXml) {
       this.showMessage('No hay un GPX disponible para este track.');
@@ -729,6 +765,68 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
 
     sessionStorage.setItem('gpxViewerPayload', JSON.stringify(payload));
     this.router.navigate(['/map'], { queryParams: { from: 'plan', folderId: this.activeFolder?.id } });
+  }
+
+  async viewSelectedTracks(): Promise<void> {
+    const selectedTracks = this.tracks.filter(track => this.selectedTrackIds.has(track.id) && this.canViewTrack(track));
+    if (!selectedTracks.length) {
+      this.showMessage('Selecciona al menos un track con GPX disponible.');
+      return;
+    }
+
+    const names: string[] = [];
+    const trks: Array<{ trkpts: Trkpt[] }> = [];
+    let skippedCount = 0;
+
+    selectedTracks.forEach(track => {
+      if (!track.routeXml) {
+        skippedCount += 1;
+        return;
+      }
+      const trkpts = this.parseTrackPointsFromGpx(track.routeXml);
+      if (!trkpts.length) {
+        skippedCount += 1;
+        return;
+      }
+      names.push(track.name || 'Track');
+      trks.push({ trkpts });
+    });
+
+    if (!trks.length) {
+      this.showMessage('No se pudieron cargar los tracks seleccionados.');
+      return;
+    }
+
+    if (skippedCount) {
+      this.showMessage('Algunos tracks seleccionados no tenían GPX válido y se omitieron.');
+    }
+
+    const payload = {
+      names,
+      colors: [],
+      tracks: trks,
+      logo: null,
+      rmstops: true,
+      marcarPausasLargas: false,
+      umbralPausaSegundos: 60,
+      activarMusica: false,
+      grabarAnimacion: false,
+      relacionAspectoGrabacion: '16:9',
+      modoVisualizacion: 'general',
+      mostrarPerfil: false,
+      viewOnly: true
+    };
+
+    sessionStorage.setItem('gpxViewerPayload', JSON.stringify(payload));
+    this.router.navigate(['/map'], { queryParams: { from: 'plan', folderId: this.activeFolder?.id } });
+  }
+
+  private getSelectableTracks(): PlanTrack[] {
+    return this.tracks.filter(track => this.canViewTrack(track));
+  }
+
+  private clearTrackSelection(): void {
+    this.selectedTrackIds.clear();
   }
 
   private buildTrackFileName(track: PlanTrack): string {

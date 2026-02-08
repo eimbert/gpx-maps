@@ -626,10 +626,13 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
   }
 
   isFolderOwner(folder: PlanFolder): boolean {
+    console.clear()
+    console.log(folder)
+    console.log(this.userId)
     const sourceTable = (folder.sourceTable ?? '').toLowerCase();
-    if (sourceTable) {
-      return sourceTable === 'pla_folders';
-    }
+    // if (sourceTable) {
+    //   return sourceTable === 'pla_folders';
+    // }
     if (folder.isOwner !== undefined) {
       return folder.isOwner;
     }

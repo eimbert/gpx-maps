@@ -74,6 +74,7 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
   activeFolder: PlanFolder | null = null;
   editFolder: EditableFolder | null = null;
   tracks: PlanTrack[] = [];
+  selectedTrackIds = new Set<number>();
   votesByTrackId = new Map<number, number>();
   userVoteTrackId: number | null = null;
   weatherByTrackId = new Map<number, TrackWeatherSummary>();
@@ -148,15 +149,8 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
 
   loadFolders(): void {
     this.isLoadingFolders = true;
-   this.planService.getFolders().subscribe(folders => {
-      const userId = JSON.parse(localStorage.getItem('gpxAuthSession') ?? 'null')?.id;
-      console.log("mi id: ", userId )
-      
-      folders.forEach(f => {
-        if(userId == f.ownerId) f.isOwner = true
-      });
+    this.planService.getFolders().subscribe(folders => {
       this.folders = folders;
-      console.log("carpetas: ", folders)
       this.folderTrackCounts.clear();
       folders.forEach(folder => {
         if (Number.isFinite(folder.tracksCount ?? NaN)) {
@@ -253,10 +247,11 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
         observations: this.newFolderNotes.trim() || null
       })
       .subscribe(folder => {
-        this.folders = [folder, ...this.folders];
-        this.folderTrackCounts.set(folder.id, 0);
+        const resolvedFolder = this.applyNewFolderOwnership(folder);
+        this.folders = [resolvedFolder, ...this.folders];
+        this.folderTrackCounts.set(resolvedFolder.id, 0);
         this.applyFolderFilter();
-        this.selectFolder(folder);
+        this.selectFolder(resolvedFolder);
         this.newFolderName = '';
         this.newFolderDate = null;
         this.newFolderNotes = '';
@@ -294,9 +289,13 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
         observations: sanitizedObservations
       })
       .subscribe(updated => {
+        const resolvedOwnerId = this.resolveUpdatedOwnerId(updated);
+        const resolvedIsOwner = this.resolveUpdatedIsOwner(updated, resolvedOwnerId);
         const mergedFolder: PlanFolder = {
           ...this.activeFolder,
           ...updated,
+          ownerId: resolvedOwnerId,
+          isOwner: resolvedIsOwner,
           name: updated.name ?? sanitizedName,
           plannedDate: updated.plannedDate ?? sanitizedDate,
           observations: updated.observations ?? sanitizedObservations
@@ -317,7 +316,7 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
   async confirmDeleteFolder(folder: PlanFolder): Promise<void> {
     const decision = await this.openInfoDialog({
       title: 'Eliminar carpeta',
-      message: `¿Seguro que quieres eliminar “${folder.name}”? Se borrarán también sus tracks.`,
+      message: `¿Seguro que quieres eliminar “${folder.name}”? Se eliminará toda la información de la carpeta, incluidos sus tracks.`,
       confirmLabel: 'Eliminar',
       cancelLabel: 'Cancelar'
     });
@@ -331,6 +330,7 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
         this.activeFolder = null;
         this.editFolder = null;
         this.tracks = [];
+        this.clearTrackSelection();
         this.votesByTrackId.clear();
         this.userVoteTrackId = null;
       }
@@ -352,6 +352,7 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
     if (decision !== 'confirm') return;
     this.planService.deleteTrack(track.id).subscribe(() => {
       this.tracks = this.tracks.filter(current => current.id !== track.id);
+      this.selectedTrackIds.delete(track.id);
       this.votesByTrackId.delete(track.id);
       if (this.userVoteTrackId === track.id) {
         this.userVoteTrackId = null;
@@ -366,6 +367,7 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
     this.planService.getTracks(folderId).pipe(
       switchMap(tracks => {
         this.tracks = tracks;
+        this.clearTrackSelection();
         this.updateFolderTrackCountCache(folderId, tracks.length);
         this.refreshForecasts();
         if (!tracks.length) {
@@ -624,10 +626,13 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
   }
 
   isFolderOwner(folder: PlanFolder): boolean {
+    console.clear()
+    console.log(folder)
+    console.log(this.userId)
     const sourceTable = (folder.sourceTable ?? '').toLowerCase();
-    if (sourceTable) {
-      return sourceTable === 'pla_folders';
-    }
+    // if (sourceTable) {
+    //   return sourceTable === 'pla_folders';
+    // }
     if (folder.isOwner !== undefined) {
       return folder.isOwner;
     }
@@ -668,6 +673,74 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
 
   canViewTrack(track: PlanTrack): boolean {
     return !!track.routeXml;
+  }
+
+  private applyNewFolderOwnership(folder: PlanFolder): PlanFolder {
+    const resolvedOwnerId = Number.isFinite(folder.ownerId) && folder.ownerId > 0 ? folder.ownerId : this.userId;
+    const resolvedIsOwner = folder.isOwner ?? resolvedOwnerId === this.userId;
+    return {
+      ...folder,
+      ownerId: resolvedOwnerId,
+      isOwner: resolvedIsOwner
+    };
+  }
+
+  private resolveUpdatedOwnerId(updated: PlanFolder): number {
+    if (Number.isFinite(updated.ownerId) && updated.ownerId > 0) {
+      return updated.ownerId;
+    }
+    if (this.activeFolder?.ownerId && this.activeFolder.ownerId > 0) {
+      return this.activeFolder.ownerId;
+    }
+    if (this.activeFolder?.isOwner) {
+      return this.userId;
+    }
+    return 0;
+  }
+
+  private resolveUpdatedIsOwner(updated: PlanFolder, ownerId: number): boolean {
+    if (updated.isOwner !== undefined) {
+      return updated.isOwner;
+    }
+    if (this.activeFolder?.isOwner !== undefined) {
+      return this.activeFolder.isOwner;
+    }
+    if (ownerId > 0) {
+      return ownerId === this.userId;
+    }
+    return false;
+  }
+
+  get hasSelectedTracks(): boolean {
+    return this.selectedTrackIds.size > 0;
+  }
+
+  get hasSelectableTracks(): boolean {
+    return this.getSelectableTracks().length > 0;
+  }
+
+  get allSelectableTracksSelected(): boolean {
+    const selectable = this.getSelectableTracks();
+    return selectable.length > 0 && selectable.every(track => this.selectedTrackIds.has(track.id));
+  }
+
+  toggleAllTracksSelection(checked: boolean): void {
+    const selectable = this.getSelectableTracks();
+    if (!selectable.length) return;
+    if (checked) {
+      selectable.forEach(track => this.selectedTrackIds.add(track.id));
+    } else {
+      selectable.forEach(track => this.selectedTrackIds.delete(track.id));
+    }
+  }
+
+  toggleTrackSelection(track: PlanTrack, checked: boolean): void {
+    if (!this.canViewTrack(track)) return;
+    if (checked) {
+      this.selectedTrackIds.add(track.id);
+    } else {
+      this.selectedTrackIds.delete(track.id);
+    }
   }
 
   downloadTrack(track: PlanTrack): void {
@@ -729,6 +802,68 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
 
     sessionStorage.setItem('gpxViewerPayload', JSON.stringify(payload));
     this.router.navigate(['/map'], { queryParams: { from: 'plan', folderId: this.activeFolder?.id } });
+  }
+
+  async viewSelectedTracks(): Promise<void> {
+    const selectedTracks = this.tracks.filter(track => this.selectedTrackIds.has(track.id) && this.canViewTrack(track));
+    if (!selectedTracks.length) {
+      this.showMessage('Selecciona al menos un track con GPX disponible.');
+      return;
+    }
+
+    const names: string[] = [];
+    const trks: Array<{ trkpts: Trkpt[] }> = [];
+    let skippedCount = 0;
+
+    selectedTracks.forEach(track => {
+      if (!track.routeXml) {
+        skippedCount += 1;
+        return;
+      }
+      const trkpts = this.parseTrackPointsFromGpx(track.routeXml);
+      if (!trkpts.length) {
+        skippedCount += 1;
+        return;
+      }
+      names.push(track.name || 'Track');
+      trks.push({ trkpts });
+    });
+
+    if (!trks.length) {
+      this.showMessage('No se pudieron cargar los tracks seleccionados.');
+      return;
+    }
+
+    if (skippedCount) {
+      this.showMessage('Algunos tracks seleccionados no tenían GPX válido y se omitieron.');
+    }
+
+    const payload = {
+      names,
+      colors: [],
+      tracks: trks,
+      logo: null,
+      rmstops: true,
+      marcarPausasLargas: false,
+      umbralPausaSegundos: 60,
+      activarMusica: false,
+      grabarAnimacion: false,
+      relacionAspectoGrabacion: '16:9',
+      modoVisualizacion: 'general',
+      mostrarPerfil: false,
+      viewOnly: true
+    };
+
+    sessionStorage.setItem('gpxViewerPayload', JSON.stringify(payload));
+    this.router.navigate(['/map'], { queryParams: { from: 'plan', folderId: this.activeFolder?.id } });
+  }
+
+  private getSelectableTracks(): PlanTrack[] {
+    return this.tracks.filter(track => this.canViewTrack(track));
+  }
+
+  private clearTrackSelection(): void {
+    this.selectedTrackIds.clear();
   }
 
   private buildTrackFileName(track: PlanTrack): string {

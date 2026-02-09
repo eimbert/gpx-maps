@@ -465,6 +465,20 @@
   border-bottom: 1px solid #e2e8f0;
 }
 
+.plan__select-col {
+  width: 44px;
+}
+
+.plan__track-checkbox {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+}
+
+.plan__track-checkbox:disabled {
+  cursor: not-allowed;
+}
+
 .plan__info-icon {
   display: inline-flex;
   align-items: center;

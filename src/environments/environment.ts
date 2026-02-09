@@ -2,19 +2,20 @@
 // `ng build` replaces `environment.ts` with `environment.prod.ts`.
 // The list of file replacements can be found in `angular.json`.
 
+const back = "localhost:8081"
 export const environment = {
   production: false,
-  devBypassAuthGuard: false,
-  loginUrl: 'http://localhost:8080/api/auth/login',
-  registerUrl: 'http://localhost:8080/api/auth/register',
-  resendVerificationUrl: 'http://localhost:8080/api/auth/resend-verification',
-  meUrl: 'http://localhost:8080/api/tracks/me',
-  routesApiBase: 'http://localhost:8080/api/routes',
-  tracksApiBase: 'http://localhost:8080/api/tracks',
-  planApiBase: 'http://localhost:8080/api/plan-folders',
-  usersApiBase: 'http://localhost:8080/api/users',
+  devBypassAuthGuard: true,
+  loginUrl: `http://${back}/api/auth/login`,
+  registerUrl: `http://${back}/api/auth/register`,
+  resendVerificationUrl: `http://${back}/api/auth/resend-verification`,
+  meUrl: `http://${back}/api/tracks/me`,
+  routesApiBase: `http://${back}/api/routes`,
+  tracksApiBase: `http://${back}/api/tracks`,
+  planApiBase: `http://${back}/api/plan-folders`,
+  usersApiBase: `http://${back}/api/users`,
 
-  mensajesApiBase: 'http://localhost:8080/api/mensajes'
+  mensajesApiBase: `http://${back}/api/mensajes`
 };
 
 /*

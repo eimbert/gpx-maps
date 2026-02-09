@@ -8,15 +8,7 @@ import { PlanService, PlanTrackImportPayload } from '../services/plan.service';
 import { GpxImportService } from '../services/gpx-import.service';
 import { InfoMessageService } from '../services/info-message.service';
 import { UserIdentityService } from '../services/user-identity.service';
-import {
-  PlanFolder,
-  PlanFolderVotesResponse,
-  PlanInvitation,
-  PlanTrack,
-  PlanTrackVotesSummary,
-  PlanUserSearchResult,
-  TrackWeatherSummary
-} from '../interfaces/plan';
+import { PlanFolder,  PlanFolderVotesResponse, PlanInvitation, PlanTrack, PlanTrackVotesSummary, PlanUserSearchResult, TrackWeatherSummary } from '../interfaces/plan';
 import { LoginSuccessResponse } from '../interfaces/auth';
 import { environment } from 'src/environments/environment';
 

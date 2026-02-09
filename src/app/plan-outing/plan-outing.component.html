@@ -227,7 +227,7 @@
                     (change)="toggleAllTracksSelection($any($event.target).checked)"
                     aria-label="Seleccionar todos los tracks con GPX disponible">
                 </th>
-                <th scope="col">Track</th>
+                <th scope="col" style="text-align: left;">Track</th>
                 <th scope="col">Cómo llegar</th>
                 <th scope="col">Votos</th>
                 <th scope="col">Distancia</th>
@@ -259,8 +259,19 @@
                     [attr.aria-label]="canViewTrack(track) ? 'Seleccionar ' + track.name : 'GPX no disponible'">
                 </td>
                 <td>
-                  <div class="plan__track-title">{{ track.name }}</div>
-                  <span class="plan__track-meta">{{ track.startPopulation || 'Ubicación por definir' }}</span>
+                  <!-- <div class="plan__track-title" style="text-align: left;">{{ track.name }}</div> -->
+                  <ng-container *ngIf="track?.name as name">
+                    <div
+                      class="plan__track-title"
+                      style="text-align:left; cursor:pointer"
+                      [attr.title]="name.length > 20 ? name : null"
+                    >
+                      {{ name.length > 20 ? (name | slice:0:20) + '…' : name }}
+                    </div>
+                  </ng-container>
+
+
+                  <span class="plan__track-meta" >{{ track.startPopulation || 'Ubicación por definir' }}</span>
                 </td>
                 <td class="plan__center">
                   <ng-container *ngIf="resolveMapsLink(track) as mapsLink; else noMapsLink">

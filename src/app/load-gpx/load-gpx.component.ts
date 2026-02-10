@@ -30,6 +30,8 @@ import { InfoMessageService } from '../services/info-message.service';
 import { InfoDialogComponent, InfoDialogData, InfoDialogResult } from '../info-dialog/info-dialog.component';
 import { MyTrackRow, MyTracksDialogComponent } from '../my-tracks-dialog/my-tracks-dialog.component';
 import { StandaloneTrackUploadDialogComponent, StandaloneTrackUploadResult } from '../standalone-track-upload-dialog/standalone-track-upload-dialog.component';
+import { PlanService, PlanTrackImportPayload } from '../services/plan.service';
+import { PlanTrackDialogComponent, PlanTrackDialogData, PlanTrackDialogResult } from '../plan-track-dialog/plan-track-dialog.component';
 
 interface TrackPoint {
   lat: number;
@@ -202,6 +204,7 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
 
   private readonly downloadingTracks = new Set<number>();
   private readonly deletingTracks = new Set<number>();
+  private readonly planningTracks = new Set<number>();
   private readonly downloadingMasterTracks = new Set<number>();
 
   standaloneUploadInProgress = false;
@@ -250,6 +253,7 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
     private http: HttpClient,
     private authService: AuthService,
     private infoMessageService: InfoMessageService,
+    private planService: PlanService,
     identityService: UserIdentityService
   ) {
     this.userId = identityService.getUserId();
@@ -1967,6 +1971,96 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
 
   isDeletingTrack(row: UserTrackRow): boolean {
     return this.deletingTracks.has(row.trackId);
+  }
+
+  isPlanningTrack(row: UserTrackRow): boolean {
+    return this.planningTracks.has(row.trackId);
+  }
+
+  async planUserTrack(row: UserTrackRow): Promise<void> {
+    if (!this.isAuthenticated) {
+      this.showMessage('Inicia sesión para planificar salidas.');
+      return;
+    }
+    if (this.isPlanningTrack(row)) return;
+
+    const routeName = (row.title || row.eventName || 'Nueva salida').trim();
+
+    this.planningTracks.add(row.trackId);
+    try {
+      const gpx = await this.resolveGpxContentForRow(row);
+      if (!gpx) {
+        this.showMessage('No se pudo cargar el track para planificarlo.');
+        return;
+      }
+
+      const folders = await firstValueFrom(this.planService.getFolders());
+      const dialogData: PlanTrackDialogData = { routeName, folders };
+      const dialogRef = this.dialog.open<PlanTrackDialogComponent, PlanTrackDialogData, PlanTrackDialogResult | undefined>(
+        PlanTrackDialogComponent,
+        { width: '520px', data: dialogData }
+      );
+      const result = await firstValueFrom(dialogRef.afterClosed());
+      if (!result) return;
+
+      let targetFolderId = result.folderId;
+      let targetFolderName = '';
+
+      if (result.mode === 'new') {
+        const createdFolder = await firstValueFrom(this.planService.createFolder({
+          name: (result.newFolderName || routeName).trim()
+        }));
+        targetFolderId = createdFolder.id;
+        targetFolderName = createdFolder.name;
+      } else {
+        const folder = folders.find(current => current.id === result.folderId);
+        targetFolderName = folder?.name ?? 'la carpeta seleccionada';
+      }
+
+      if (!targetFolderId) {
+        this.showMessage('No se pudo resolver la carpeta de destino.');
+        return;
+      }
+
+      let calculatedDesnivel: number | null = null;
+      try {
+        const { track } = this.parseGpxData(gpx, row.fileName || routeName || 'Track.gpx', this.tracks.length);
+        calculatedDesnivel = Number.isFinite(track.details.ascent) ? Math.round(track.details.ascent) : null;
+      } catch {
+        calculatedDesnivel = null;
+      }
+
+      const parsedStartLat = Number(row.startLat);
+      const parsedStartLon = Number(row.startLon);
+      const startPoint = this.extractFirstPointFromGpx(gpx);
+      const startLat = Number.isFinite(parsedStartLat)
+        ? parsedStartLat
+        : (startPoint?.lat ?? null);
+      const startLon = Number.isFinite(parsedStartLon)
+        ? parsedStartLon
+        : (startPoint?.lon ?? null);
+
+      const payload: PlanTrackImportPayload = {
+        folder_id: targetFolderId,
+        created_by_user_id: this.userId,
+        name: (row.fileName || routeName || 'Track').trim(),
+        start_lat: startLat,
+        start_lon: startLon,
+        start_population: row.population || null,
+        distance_km: Number.isFinite(row.distanceKm) ? row.distanceKm : null,
+        moving_time_sec: Number.isFinite(row.timeSeconds) ? row.timeSeconds : null,
+        total_time_sec: Number.isFinite(row.totalTimeSeconds) ? row.totalTimeSeconds : null,
+        desnivel: calculatedDesnivel,
+        route_xml: gpx
+      };
+
+      await firstValueFrom(this.planService.importTrack(payload));
+      this.showMessage(`Ruta añadida a ${targetFolderName || 'la carpeta seleccionada'}.`, 'Planificación guardada');
+    } catch {
+      this.showMessage('No se pudo planificar esta ruta. Inténtalo de nuevo.');
+    } finally {
+      this.planningTracks.delete(row.trackId);
+    }
   }
 
   async downloadUserTrack(row: UserTrackRow): Promise<void> {

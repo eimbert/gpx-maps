@@ -1,0 +1,35 @@
+<h2 mat-dialog-title>Planificar salida</h2>
+
+<div mat-dialog-content class="plan-track-dialog">
+  <p class="plan-track-dialog__hint">Elige si quieres crear una carpeta nueva o añadir este track a una existente.</p>
+
+  <label class="plan-track-dialog__option">
+    <input type="radio" name="planMode" [(ngModel)]="mode" value="new" />
+    <span>Crear carpeta nueva</span>
+  </label>
+
+  <div class="plan-track-dialog__block" *ngIf="mode === 'new'">
+    <mat-form-field appearance="fill">
+      <mat-label>Nombre de carpeta</mat-label>
+      <input matInput [(ngModel)]="newFolderName" />
+    </mat-form-field>
+  </div>
+
+  <label class="plan-track-dialog__option">
+    <input type="radio" name="planMode" [(ngModel)]="mode" value="existing" />
+    <span>Añadir a carpeta existente</span>
+  </label>
+
+  <div class="plan-track-dialog__block" *ngIf="mode === 'existing'">
+    <label class="plan-track-dialog__label" for="existingFolder">Carpeta</label>
+    <select id="existingFolder" [(ngModel)]="selectedFolderId" [disabled]="!data.folders.length">
+      <option *ngFor="let folder of data.folders" [ngValue]="folder.id">{{ folder.name }}</option>
+    </select>
+    <p class="plan-track-dialog__hint" *ngIf="!data.folders.length">No tienes carpetas aún. Crea una nueva.</p>
+  </div>
+</div>
+
+<div mat-dialog-actions align="end">
+  <button mat-button type="button" (click)="cancel()">Cancelar</button>
+  <button mat-flat-button color="primary" type="button" [disabled]="!canConfirm" (click)="confirm()">Guardar</button>
+</div>

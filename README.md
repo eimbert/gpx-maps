@@ -43,3 +43,51 @@ To get more help on the Angular CLI use `ng help` or go check out the [Angular C
 ## SMTP configuration quickstart
 
 Si necesitas configurar envío de correos (por ejemplo, para verificar cuentas en un backend Spring Boot), revisa `EMAIL_CONFIG.md`.
+
+## Clasificar tracks por dureza (propuesta recomendada)
+
+Para comparar rutas dentro de una carpeta (o entre carpetas) conviene separar la dificultad en **3 bloques** y luego mezclar:
+
+1. **Carga / volumen** (50%)
+   - Distancia total (`distance_km`)
+   - Desnivel positivo (`desnivel`)
+   - Tiempo en movimiento (`moving_time_sec`) cuando exista
+
+2. **Pendiente y picos** (35%)
+   - Pendiente media de subida
+   - Percentil 95 de pendiente en subida (`p95_uphill_grade`)
+   - Porcentaje de subida por encima del 10% y 15%
+   - Máxima subida sostenida por encima de un umbral (ej. ≥10%)
+
+3. **Rompepiernas / técnica estimada** (15%)
+   - `vertical_churn = (sumUp + |sumDown|) / distanceKm`
+   - Número de bloques de ascenso (repechos)
+   - Densidad de paradas `stop_density = (total - moving) / distanceKm`
+   - Curvatura (`twistiness`) como aproximación de trazado técnico
+
+### Cómo calcular bien la pendiente (evitando ruido GPS)
+
+- Suavizar elevación antes de derivar pendiente (media móvil o similar).
+- Calcular pendiente por ventanas de distancia (200 m por defecto en MTB, mínimo 100 m).
+- Ignorar segmentos con distancia muy pequeña o datos atípicos.
+- Aplicar límites razonables de pendiente para descartar outliers (p. ej. ±30%).
+
+### Regla de empates (equivalencias creíbles)
+
+Permitir empate entre rutas si:
+
+- diferencia del score total < 5%
+- **y** diferencia del subscore de pendiente/picos < 8%
+
+Así se evita declarar equivalentes dos tracks con el mismo desnivel, pero con rampas muy distintas.
+
+### Qué enseñar en la UI para que se entienda la clasificación
+
+Además de la etiqueta final (Suave / Media / Dura / Muy dura), mostrar:
+
+- Desnivel + distancia
+- P95 pendiente + metros en subida >10%
+- Máxima subida sostenida (ej. "1.2 km a ≥10%")
+- Índice rompepiernas (churn o nº de repechos)
+
+Con estos indicadores es fácil explicar por qué una ruta de **500 m en 5 km** suele ser más exigente que otra de **500 m en 15 km**.

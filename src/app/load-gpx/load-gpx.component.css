@@ -346,9 +346,9 @@
 .user-tracks__header {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-start;
   gap: 12px;
-  margin-bottom: 12px;
+  margin-bottom: 8px;
 }
 
 .user-tracks__header h3 {
@@ -359,13 +359,16 @@
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  padding: 10px 14px;
+  height: 42px;
+  padding: 0 14px;
   border-radius: 12px;
   border: 1px solid #cbd5e1;
   background: linear-gradient(120deg, #e0f2fe, #f5f3ff);
   font-weight: 800;
   cursor: pointer;
   color: #0f172a;
+  box-sizing: border-box;
+  margin-left: auto;
 }
 
 .cloud-upload:disabled {
@@ -373,18 +376,27 @@
   cursor: not-allowed;
 }
 
+.user-tracks__controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+
 .user-tracks__tabs {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
-  margin-bottom: 12px;
+  flex: 0 1 auto;
 }
 
 .user-tracks__tab {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  padding: 8px 12px;
+  height: 42px;
+  padding: 0 12px;
   border-radius: 10px;
   border: 1px solid #cbd5e1;
   background: #f8fafc;
@@ -392,6 +404,7 @@
   font-weight: 800;
   color: #0f172a;
   transition: background-color 0.15s ease, border-color 0.15s ease;
+  box-sizing: border-box;
 }
 
 .user-tracks__tab--active {
@@ -420,7 +433,7 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
   gap: 12px;
 }
 
@@ -428,10 +441,13 @@
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  padding: 8px 12px;
+  height: 42px;
+  padding: 0 12px;
   border-radius: 12px;
   border: 1px solid #8292a7;
   background: #f8fafc;
+  box-sizing: border-box;
+  flex: 0 0 auto;
 }
 
 .user-tracks__filter input {

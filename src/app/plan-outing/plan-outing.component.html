@@ -216,16 +216,10 @@
           track.</p>
         <p class="plan__hint" *ngIf="forecastNotice">{{ forecastNotice }}</p>
 
-        <div class="plan__difficulty-legend" *ngIf="tracks.length" aria-label="Leyenda de dureza">
-          <span class="plan__difficulty-legend-title">Dureza:</span>
-          <span
-            *ngFor="let level of difficultyLegend"
-            class="plan__difficulty-badge"
-            [ngClass]="'plan__difficulty-badge--' + level.key"
-            [attr.title]="level.description">
-            <mat-icon class="plan__difficulty-icon" aria-hidden="true">landscape</mat-icon>
-            {{ level.label }}
-          </span>
+        <div class="plan__difficulty-legend" *ngIf="tracks.length" aria-label="Escala de dureza">
+          <span class="plan__difficulty-legend-title">Suave</span>
+          <div class="plan__difficulty-scale" aria-hidden="true"></div>
+          <span class="plan__difficulty-legend-title">Muy dura</span>
         </div>
 
         <div class="plan__table-wrapper" *ngIf="tracks.length; else emptyTracks">
@@ -307,9 +301,9 @@
                     <span
                       class="plan__difficulty-pill"
                       [ngClass]="'plan__difficulty-pill--' + difficulty.key"
-                      [attr.title]="difficulty.description">
+                      [attr.title]="difficulty.label + ': ' + difficulty.description"
+                      [attr.aria-label]="'Dureza ' + difficulty.label">
                       <mat-icon class="plan__difficulty-icon" aria-hidden="true">landscape</mat-icon>
-                      {{ difficulty.label }}
                     </span>
                   </ng-container>
                 </td>

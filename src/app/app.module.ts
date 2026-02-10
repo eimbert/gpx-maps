@@ -35,6 +35,11 @@ import { MyTracksDialogComponent } from './my-tracks-dialog/my-tracks-dialog.com
 import { EventTrackUploadDialogComponent } from './event-track-upload-dialog/event-track-upload-dialog.component';
 import { StandaloneTrackUploadDialogComponent } from './standalone-track-upload-dialog/standalone-track-upload-dialog.component';
 import { PlanOutingComponent } from './plan-outing/plan-outing.component';
+import localeEs from '@angular/common/locales/es';
+import { LOCALE_ID } from '@angular/core';
+import { registerLocaleData } from '@angular/common';
+
+registerLocaleData(localeEs);
 
 @NgModule({
   declarations: [
@@ -79,7 +84,7 @@ import { PlanOutingComponent } from './plan-outing/plan-outing.component';
       provide: HTTP_INTERCEPTORS,
       useClass: AuthInterceptor,
       multi: true
-    }
+    }, { provide: LOCALE_ID, useValue: 'es-ES' }
   ],
   bootstrap: [AppComponent]
 })

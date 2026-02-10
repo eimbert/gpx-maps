@@ -1,0 +1,37 @@
+.plan-track-dialog {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.plan-track-dialog__hint {
+  margin: 0;
+  color: #60666f;
+  font-size: 13px;
+}
+
+.plan-track-dialog__option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+}
+
+.plan-track-dialog__block {
+  margin-left: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.plan-track-dialog__label {
+  font-size: 13px;
+  color: #333;
+}
+
+.plan-track-dialog__block select {
+  max-width: 320px;
+  padding: 8px;
+  border: 1px solid #cfd5dd;
+  border-radius: 4px;
+}

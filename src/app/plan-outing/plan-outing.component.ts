@@ -1211,8 +1211,8 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
     const reportedAscent = this.gpxImportService.extractReportedAscentMeters(gpxData);
     const computedAscent = this.calculateTotalAscent(trkpts, {
       stepMeters: 20,
-      smoothWindowMeters: 200,
-      minStepUpMeters: 0.5
+      smoothWindowMeters: 40,
+      minStepUpMeters: 0.25
     });
     const desnivel = reportedAscent ?? computedAscent;
 

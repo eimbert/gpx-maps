@@ -448,6 +448,77 @@
   gap: 12px;
 }
 
+
+.plan__difficulty-legend {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.plan__difficulty-legend-title {
+  font-size: 12px;
+  color: #475569;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.plan__difficulty-scale {
+  flex: 1;
+  min-width: 160px;
+  height: 10px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #22c55e 0%, #eab308 40%, #f97316 70%, #ef4444 100%);
+  border: 1px solid #e2e8f0;
+}
+
+.plan__difficulty-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+}
+
+.plan__difficulty-icon {
+  width: 18px;
+  height: 18px;
+  font-size: 18px;
+  line-height: 1;
+}
+
+.plan__difficulty-pill--easy {
+  background: #ecfdf5;
+  border-color: #86efac;
+  color: #166534;
+}
+
+.plan__difficulty-pill--medium {
+  background: #fefce8;
+  border-color: #fde047;
+  color: #854d0e;
+}
+
+.plan__difficulty-pill--hard {
+  background: #fff7ed;
+  border-color: #fdba74;
+  color: #9a3412;
+}
+
+.plan__difficulty-pill--very-hard {
+  background: #fef2f2;
+  border-color: #fca5a5;
+  color: #991b1b;
+}
+
+.plan__difficulty-pill--unknown {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+  color: #475569;
+}
+
 .plan__table-wrapper {
   overflow-x: auto;
 }

@@ -58,32 +58,41 @@
         <div>
           <p class="eyebrow">Rutas disponibles</p>
         </div>
+      </div>
+
+      <div class="user-tracks__controls">
+        <div class="user-tracks__filter">
+          <mat-icon aria-hidden="true">search</mat-icon>
+          <input type="text" [value]="userTracksFilter" (input)="onUserTracksFilter($any($event.target)?.value || '')"
+            placeholder="Buscar por título, evento o ubicación" aria-label="Filtrar rutas guardadas">
+        </div>
+
+        <!-- botones de totales -->
+        <div class="user-tracks__tabs">
+          <button type="button" class="user-tracks__tab"
+            [class.user-tracks__tab--active]="activeUserTracksTab === 'personal'" (click)="setUserTracksTab('personal')"
+            aria-label="Ver tus rutas personales">
+            <span>Tus rutas</span>
+            <span class="user-tracks__tab-count">{{ getUserTrackRows('personal').length }}</span>
+          </button>
+          <button type="button" class="user-tracks__tab"
+            [class.user-tracks__tab--active]="activeUserTracksTab === 'events'" (click)="setUserTracksTab('events')"
+            aria-label="Ver tus rutas de eventos">
+            <span>Tus rutas en eventos</span>
+            <span class="user-tracks__tab-count">{{ getUserTrackRows('events').length }}</span>
+          </button>
+          <button type="button" class="user-tracks__tab"
+            [class.user-tracks__tab--active]="activeUserTracksTab === 'shared'" (click)="setUserTracksTab('shared')"
+            aria-label="Ver rutas de otros usuarios">
+            <span>Rutas otros usuarios</span>
+            <span class="user-tracks__tab-count">{{ getUserTrackRows('shared').length }}</span>
+          </button>
+        </div>
+
         <button *ngIf="activeUserTracksTab === 'personal'" type="button" class="cloud-upload"
           (click)="openStandaloneUploadDialog()" [disabled]="standaloneUploadInProgress">
           <mat-icon aria-hidden="true">cloud_upload</mat-icon>
           <span>Subir ruta</span>
-        </button>
-      </div>
-
-      <!-- botones de totales -->
-      <div class="user-tracks__tabs">
-        <button type="button" class="user-tracks__tab"
-          [class.user-tracks__tab--active]="activeUserTracksTab === 'personal'" (click)="setUserTracksTab('personal')"
-          aria-label="Ver tus rutas personales">
-          <span>Tus rutas</span>
-          <span class="user-tracks__tab-count">{{ getUserTrackRows('personal').length }}</span>
-        </button>
-        <button type="button" class="user-tracks__tab"
-          [class.user-tracks__tab--active]="activeUserTracksTab === 'events'" (click)="setUserTracksTab('events')"
-          aria-label="Ver tus rutas de eventos">
-          <span>Tus rutas en eventos</span>
-          <span class="user-tracks__tab-count">{{ getUserTrackRows('events').length }}</span>
-        </button>
-        <button type="button" class="user-tracks__tab"
-          [class.user-tracks__tab--active]="activeUserTracksTab === 'shared'" (click)="setUserTracksTab('shared')"
-          aria-label="Ver rutas de otros usuarios">
-          <span>Rutas otros usuarios</span>
-          <span class="user-tracks__tab-count">{{ getUserTrackRows('shared').length }}</span>
         </button>
       </div>
 
@@ -92,11 +101,6 @@
 
       <div class="user-tracks__panel" *ngIf="!activeTracksLoading && getUserTrackRows(activeUserTracksTab).length">
         <div class="user-tracks__table-toolbar">
-          <div class="user-tracks__filter">
-            <mat-icon aria-hidden="true">search</mat-icon>
-            <input type="text" [value]="userTracksFilter" (input)="onUserTracksFilter($any($event.target)?.value || '')"
-              placeholder="Buscar por título, evento o ubicación" aria-label="Filtrar rutas guardadas">
-          </div>
           <div class="user-tracks__counts">
             <span class="user-tracks__count">{{ filteredUserTracks.length }} rutas</span>
             <span class="user-tracks__range" *ngIf="groupedUserTracks.length && groupedUserTracks.length !== paginatedUserTracks.length">

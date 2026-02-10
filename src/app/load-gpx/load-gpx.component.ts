@@ -2022,17 +2022,25 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
         return;
       }
 
+      let calculatedDesnivel: number | null = null;
+      try {
+        const { track } = this.parseGpxData(gpx, row.fileName || routeName || 'Track.gpx', this.tracks.length);
+        calculatedDesnivel = Number.isFinite(track.details.ascent) ? Math.round(track.details.ascent) : null;
+      } catch {
+        calculatedDesnivel = null;
+      }
+
       const payload: PlanTrackImportPayload = {
         folder_id: targetFolderId,
         created_by_user_id: this.userId,
-        name: routeName || 'Track',
+        name: (row.fileName || routeName || 'Track').trim(),
         start_lat: Number.isFinite(row.startLat) ? Number(row.startLat) : null,
         start_lon: Number.isFinite(row.startLon) ? Number(row.startLon) : null,
         start_population: row.population || null,
         distance_km: Number.isFinite(row.distanceKm) ? row.distanceKm : null,
         moving_time_sec: Number.isFinite(row.timeSeconds) ? row.timeSeconds : null,
         total_time_sec: Number.isFinite(row.totalTimeSeconds) ? row.totalTimeSeconds : null,
-        desnivel: null,
+        desnivel: calculatedDesnivel,
         route_xml: gpx
       };
 

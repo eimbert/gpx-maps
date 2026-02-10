@@ -52,6 +52,39 @@ export class GpxImportService {
     }
   }
 
+  extractReportedAscentMeters(gpxData: string): number | null {
+    try {
+      const parser = new DOMParser();
+      const gpx = parser.parseFromString(gpxData, 'application/xml');
+      if (gpx.getElementsByTagName('parsererror').length) return null;
+
+      const candidates = new Set([
+        'totalascent',
+        'ascent',
+        'elevationgain',
+        'totalascend'
+      ]);
+
+      const nodes = Array.from(gpx.getElementsByTagName('*'));
+      for (const node of nodes) {
+        const localName = (node.localName || node.nodeName || '').toLowerCase();
+        if (!candidates.has(localName)) continue;
+
+        const text = node.textContent?.trim() ?? '';
+        const value = Number.parseFloat(text.replace(',', '.'));
+        if (!Number.isFinite(value)) continue;
+
+        if (value >= 0 && value <= 20_000) {
+          return value;
+        }
+      }
+
+      return null;
+    } catch {
+      return null;
+    }
+  }
+
   calculateTotalDistanceKm(trkpts: TrackPoint[]): number {
     if (!trkpts.length) return 0;
     let totalDistance = 0;

@@ -35,6 +35,7 @@ import { MyTracksDialogComponent } from './my-tracks-dialog/my-tracks-dialog.com
 import { EventTrackUploadDialogComponent } from './event-track-upload-dialog/event-track-upload-dialog.component';
 import { StandaloneTrackUploadDialogComponent } from './standalone-track-upload-dialog/standalone-track-upload-dialog.component';
 import { PlanOutingComponent } from './plan-outing/plan-outing.component';
+import { PlanTrackDialogComponent } from './plan-track-dialog/plan-track-dialog.component';
 import localeEs from '@angular/common/locales/es';
 import { LOCALE_ID } from '@angular/core';
 import { registerLocaleData } from '@angular/common';
@@ -59,7 +60,8 @@ registerLocaleData(localeEs);
     MyTracksDialogComponent,
     EventTrackUploadDialogComponent,
     StandaloneTrackUploadDialogComponent,
-    PlanOutingComponent
+    PlanOutingComponent,
+    PlanTrackDialogComponent
   ],
   imports: [
     MatCheckboxModule,

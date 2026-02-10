@@ -182,6 +182,7 @@
                             </th>
                             <th scope="col" class="user-tracks__action-col">Descargar</th>
                             <th scope="col" class="user-tracks__action-col">Animar</th>
+                            <th scope="col" class="user-tracks__action-col">Planificar salida</th>
                             <th scope="col" class="user-tracks__action-col">Eliminar</th>
                           </tr>
                         </thead>
@@ -231,6 +232,12 @@
                               <mat-icon aria-hidden="true" style="color: orange; cursor: pointer;"
                                 (click)="animateUserTrack(row)">play_arrow</mat-icon>
                               <!-- </button> -->
+                            </td>
+                            <td class="user-tracks__action-col">
+                              <mat-icon aria-hidden="true" style="color: #7b1fa2; cursor: pointer;"
+                                (click)="planUserTrack(row)"
+                                [attr.aria-label]="isPlanningTrack(row) ? 'Guardando planificación' : 'Planificar salida'">{{
+                                isPlanningTrack(row) ? 'hourglass_top' : 'event_available' }}</mat-icon>
                             </td>
                             <td class="user-tracks__action-col">
                               <!-- <button type="button" class="ghost ghost--small ghost--danger user-tracks__icon-button" [disabled]="isDeletingTrack(row)" (click)="confirmDeleteUserTrack(row)" [attr.aria-label]="isDeletingTrack(row) ? 'Eliminando track' : 'Eliminar track'"> -->

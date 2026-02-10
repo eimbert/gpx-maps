@@ -223,7 +223,7 @@
             class="plan__difficulty-badge"
             [ngClass]="'plan__difficulty-badge--' + level.key"
             [attr.title]="level.description">
-            <span class="plan__difficulty-icon" aria-hidden="true">{{ level.icon }}</span>
+            <mat-icon class="plan__difficulty-icon" aria-hidden="true">landscape</mat-icon>
             {{ level.label }}
           </span>
         </div>
@@ -308,7 +308,7 @@
                       class="plan__difficulty-pill"
                       [ngClass]="'plan__difficulty-pill--' + difficulty.key"
                       [attr.title]="difficulty.description">
-                      <span class="plan__difficulty-icon" aria-hidden="true">{{ difficulty.icon }}</span>
+                      <mat-icon class="plan__difficulty-icon" aria-hidden="true">landscape</mat-icon>
                       {{ difficulty.label }}
                     </span>
                   </ng-container>

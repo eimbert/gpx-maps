@@ -57,7 +57,6 @@ type Trkpt = { lat: number; lon: number; ele?: number };
 type TrackDifficulty = {
   key: 'easy' | 'medium' | 'hard' | 'very-hard' | 'unknown';
   label: string;
-  icon: string;
   description: string;
 };
 
@@ -82,11 +81,11 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
   forecastNotice = '';
 
   readonly difficultyLegend: TrackDifficulty[] = [
-    { key: 'easy', label: 'Suave', icon: '🟢', description: 'Ruta con exigencia baja.' },
-    { key: 'medium', label: 'Media', icon: '🟡', description: 'Ruta con exigencia moderada.' },
-    { key: 'hard', label: 'Dura', icon: '🟠', description: 'Ruta exigente en forma física.' },
-    { key: 'very-hard', label: 'Muy dura', icon: '🔴', description: 'Ruta muy exigente; requiere muy buena forma física.' },
-    { key: 'unknown', label: 'Sin datos', icon: '⚪', description: 'No hay métricas suficientes para estimar dureza.' }
+    { key: 'easy', label: 'Suave', description: 'Ruta con exigencia baja.' },
+    { key: 'medium', label: 'Media', description: 'Ruta con exigencia moderada.' },
+    { key: 'hard', label: 'Dura', description: 'Ruta exigente en forma física.' },
+    { key: 'very-hard', label: 'Muy dura', description: 'Ruta muy exigente; requiere muy buena forma física.' },
+    { key: 'unknown', label: 'Sin datos', description: 'No hay métricas suficientes para estimar dureza.' }
   ];
 
   folderSearch = '';

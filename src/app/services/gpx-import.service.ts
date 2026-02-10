@@ -58,28 +58,51 @@ export class GpxImportService {
       const gpx = parser.parseFromString(gpxData, 'application/xml');
       if (gpx.getElementsByTagName('parsererror').length) return null;
 
-      const candidates = new Set([
-        'totalascent',
-        'ascent',
-        'elevationgain',
-        'totalascend'
-      ]);
+      const buckets: Record<'strong' | 'medium' | 'weak', number[]> = {
+        strong: [],
+        medium: [],
+        weak: []
+      };
 
       const nodes = Array.from(gpx.getElementsByTagName('*'));
       for (const node of nodes) {
-        const localName = (node.localName || node.nodeName || '').toLowerCase();
-        if (!candidates.has(localName)) continue;
+        const rawName = (node.localName || node.nodeName || '').toLowerCase();
+        const normalizedName = rawName.replace(/[^a-z]/g, '');
+
+        let bucket: keyof typeof buckets | null = null;
+        if (normalizedName === 'totalascent' || normalizedName === 'totalclimb') {
+          bucket = 'strong';
+        } else if (normalizedName === 'elevationgain' || normalizedName === 'totalascend') {
+          bucket = 'medium';
+        } else if (normalizedName === 'ascent') {
+          bucket = 'weak';
+        }
+
+        if (!bucket) continue;
 
         const text = node.textContent?.trim() ?? '';
-        const value = Number.parseFloat(text.replace(',', '.'));
+        let value = Number.parseFloat(text.replace(',', '.'));
         if (!Number.isFinite(value)) continue;
 
+        const unit = ((node.getAttribute('unit') || node.getAttribute('units') || node.getAttribute('uom') || '')
+          .toLowerCase()
+          .trim());
+        if (unit === 'ft' || unit === 'feet' || unit === 'foot') {
+          value *= 0.3048;
+        }
+
         if (value >= 0 && value <= 20_000) {
-          return value;
+          buckets[bucket].push(value);
         }
       }
 
-      return null;
+      const pick = (values: number[]): number | null => {
+        if (!values.length) return null;
+        // Muchos GPX repiten ascensos parciales; para total acumulado interesa el mayor valor válido.
+        return Math.max(...values);
+      };
+
+      return pick(buckets.strong) ?? pick(buckets.medium) ?? pick(buckets.weak);
     } catch {
       return null;
     }

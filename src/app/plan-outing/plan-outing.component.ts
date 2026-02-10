@@ -53,6 +53,14 @@ type InvitationMessagePayload = {
 
 type Trkpt = { lat: number; lon: number; ele?: number };
 
+
+type TrackDifficulty = {
+  key: 'easy' | 'medium' | 'hard' | 'very-hard' | 'unknown';
+  label: string;
+  icon: string;
+  description: string;
+};
+
 @Component({
   selector: 'app-plan-outing',
   templateUrl: './plan-outing.component.html',
@@ -72,6 +80,14 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
   weatherByTrackId = new Map<number, TrackWeatherSummary>();
   folderTrackCounts = new Map<number, number>();
   forecastNotice = '';
+
+  readonly difficultyLegend: TrackDifficulty[] = [
+    { key: 'easy', label: 'Suave', icon: '🟢', description: 'Ruta con exigencia baja.' },
+    { key: 'medium', label: 'Media', icon: '🟡', description: 'Ruta con exigencia moderada.' },
+    { key: 'hard', label: 'Dura', icon: '🟠', description: 'Ruta exigente en forma física.' },
+    { key: 'very-hard', label: 'Muy dura', icon: '🔴', description: 'Ruta muy exigente; requiere muy buena forma física.' },
+    { key: 'unknown', label: 'Sin datos', icon: '⚪', description: 'No hay métricas suficientes para estimar dureza.' }
+  ];
 
   folderSearch = '';
   showNewFolderForm = false;
@@ -653,6 +669,34 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
       return '-';
     }
     return `${Math.round(desnivel)} m`;
+  }
+
+
+  getTrackDifficulty(track: PlanTrack): TrackDifficulty {
+    const distanceKm = Number(track.distanceKm);
+    const desnivel = Number(track.desnivel);
+
+    if (!Number.isFinite(distanceKm) || distanceKm <= 0 || !Number.isFinite(desnivel) || desnivel < 0) {
+      return this.difficultyLegend.find(item => item.key === 'unknown')!;
+    }
+
+    const movingTimeHours = Number.isFinite(Number(track.movingTimeSec)) && Number(track.movingTimeSec) > 0
+      ? Number(track.movingTimeSec) / 3600
+      : null;
+
+    const ascentPerKm = desnivel / Math.max(distanceKm, 0.1);
+    const climbRate = movingTimeHours ? desnivel / movingTimeHours : 0;
+
+    let score = 0;
+    score += Math.min(distanceKm / 35, 1) * 30;
+    score += Math.min(desnivel / 1800, 1) * 35;
+    score += Math.min(ascentPerKm / 140, 1) * 25;
+    score += Math.min(climbRate / 900, 1) * 10;
+
+    if (score >= 75) return this.difficultyLegend.find(item => item.key === 'very-hard')!;
+    if (score >= 55) return this.difficultyLegend.find(item => item.key === 'hard')!;
+    if (score >= 35) return this.difficultyLegend.find(item => item.key === 'medium')!;
+    return this.difficultyLegend.find(item => item.key === 'easy')!;
   }
 
   canVoteOnTracks(): boolean {

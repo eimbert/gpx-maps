@@ -1208,11 +1208,13 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
     const distanceKm = this.gpxImportService.calculateTotalDistanceKm(trkpts);
     const movingTimeSec = this.gpxImportService.calculateActiveDurationSeconds(trkpts);
     const totalTimeSec = this.gpxImportService.calculateTotalDurationSeconds(trkpts);
-    const desnivel = this.calculateTotalAscent(trkpts, {
-      stepMeters: 30,
-      smoothWindowMeters: 100,
-      minStepUpMeters: 0.1
+    const reportedAscent = this.gpxImportService.extractReportedAscentMeters(gpxData);
+    const computedAscent = this.calculateTotalAscent(trkpts, {
+      stepMeters: 20,
+      smoothWindowMeters: 200,
+      minStepUpMeters: 0.5
     });
+    const desnivel = reportedAscent ?? computedAscent;
 
     return {
       folder_id: folderId,

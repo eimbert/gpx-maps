@@ -349,6 +349,10 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
 
   async confirmDeleteTrack(track: PlanTrack): Promise<void> {
     if (!this.activeFolder) return;
+    if (!this.canDeleteTracks()) {
+      this.showMessage('Solo el propietario de la carpeta puede eliminar tracks compartidos.');
+      return;
+    }
     const decision = await this.openInfoDialog({
       title: 'Eliminar track',
       message: `¿Seguro que quieres eliminar “${track.name}” de esta carpeta?`,
@@ -633,17 +637,15 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
   }
 
   isFolderOwner(folder: PlanFolder): boolean {
-    console.clear()
-    console.log(folder)
-    console.log(this.userId)
-    const sourceTable = (folder.sourceTable ?? '').toLowerCase();
-    // if (sourceTable) {
-    //   return sourceTable === 'pla_folders';
-    // }
     if (folder.isOwner !== undefined) {
       return folder.isOwner;
     }
     return folder.ownerId === this.userId;
+  }
+
+  canDeleteTracks(): boolean {
+    if (!this.activeFolder) return false;
+    return this.isFolderOwner(this.activeFolder);
   }
 
   canManageInvitations(): boolean {

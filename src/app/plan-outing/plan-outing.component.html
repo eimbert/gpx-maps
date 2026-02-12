@@ -339,10 +339,14 @@
                     <ng-template #noVote>
                       <span class="plan__muted">—</span>
                     </ng-template>
-                    <button class="plan__icon-button plan__icon-button--danger" type="button"
+                    <button *ngIf="canDeleteTracks(); else cannotDeleteTrack"
+                      class="plan__icon-button plan__icon-button--danger" type="button"
                       (click)="confirmDeleteTrack(track)" aria-label="Eliminar track">
                       <mat-icon aria-hidden="true">delete</mat-icon>
                     </button>
+                    <ng-template #cannotDeleteTrack>
+                      <span class="plan__muted">—</span>
+                    </ng-template>
                   </div>
                 </td>
               </tr>

@@ -217,3 +217,13 @@
     justify-self: start;
   }
 }
+
+.home__logo {
+  width: min(516px, 93vw);
+  height: auto;
+  align-self: center;
+  margin-top: -120px;
+  margin-bottom: -120px;
+  transform: translateY(-12px) rotate(-10deg);
+  transform-origin: center;
+}

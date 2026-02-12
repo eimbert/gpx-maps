@@ -5,7 +5,7 @@
 const back = "localhost:8081"
 export const environment = {
   production: false,
-  devBypassAuthGuard: true,
+  devBypassAuthGuard: false,
   loginUrl: `http://${back}/api/auth/login`,
   registerUrl: `http://${back}/api/auth/register`,
   resendVerificationUrl: `http://${back}/api/auth/resend-verification`,

@@ -6,16 +6,16 @@ const back = "localhost:8081"
 export const environment = {
   production: false,
   devBypassAuthGuard: false,
-  loginUrl: `http://${back}/api/auth/login`,
-  registerUrl: `http://${back}/api/auth/register`,
-  resendVerificationUrl: `http://${back}/api/auth/resend-verification`,
-  meUrl: `http://${back}/api/tracks/me`,
-  routesApiBase: `http://${back}/api/routes`,
-  tracksApiBase: `http://${back}/api/tracks`,
-  planApiBase: `http://${back}/api/plan-folders`,
-  usersApiBase: `http://${back}/api/users`,
+  loginUrl: `http://${back}/auth/login`,
+  registerUrl: `http://${back}/auth/register`,
+  resendVerificationUrl: `http://${back}/auth/resend-verification`,
+  meUrl: `http://${back}/tracks/me`,
+  routesApiBase: `http://${back}/routes`,
+  tracksApiBase: `http://${back}/tracks`,
+  planApiBase: `http://${back}/plan-folders`,
+  usersApiBase: `http://${back}/users`,
 
-  mensajesApiBase: `http://${back}/api/mensajes`
+  mensajesApiBase: `http://${back}/mensajes`
 };
 
 /*

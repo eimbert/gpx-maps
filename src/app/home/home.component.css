@@ -131,10 +131,12 @@
   transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
 }
 
-.action-card:hover {
-  transform: translateY(-3px) scale(1.01);
-  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.35);
-  border-color: rgba(122, 162, 255, 0.6);
+@media (hover: hover) and (pointer: fine) {
+  .action-card:hover {
+    transform: translateY(-3px) scale(1.01);
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.35);
+    border-color: rgba(122, 162, 255, 0.6);
+  }
 }
 
 .action-card__icon {
@@ -243,10 +245,12 @@
   .home__actions {
     display: grid;
     grid-template-columns: 1fr;
+    gap: 12px;
     margin-top: 6px;
   }
 
   .action-card {
+    height: auto;
     grid-template-columns: auto 1fr;
     grid-template-areas:
       'icon text'

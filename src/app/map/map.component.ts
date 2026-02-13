@@ -1,4 +1,4 @@
-import { Component, OnInit, AfterViewInit } from '@angular/core';
+import { Component, OnInit, AfterViewInit, HostListener } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
@@ -88,6 +88,7 @@ export class MapComponent implements OnInit, AfterViewInit {
   private startSequenceLaunched = false;
   private countdownAudio!: HTMLAudioElement;
   isVerticalViewport = false;
+  isMobileViewport = false;
   showRanking = false;
   ranking: RankingEntry[] = [];
 
@@ -1127,6 +1128,8 @@ export class MapComponent implements OnInit, AfterViewInit {
 
   // ---------- lifecycle ----------
   ngOnInit(): void {
+    this.updateViewportFlags();
+
     const startFlag = this.route.snapshot.queryParamMap.get('s');
     this.autoStartRequested = false // (startFlag === '1' || startFlag === 'true');
 
@@ -1171,6 +1174,20 @@ export class MapComponent implements OnInit, AfterViewInit {
     // };
     // window.addEventListener('pointerdown', unlock, { once: true });
     // window.addEventListener('keydown', unlock, { once: true });
+  }
+
+  @HostListener('window:resize')
+  onWindowResize(): void {
+    this.updateViewportFlags();
+  }
+
+  private updateViewportFlags(): void {
+    if (typeof window === 'undefined') {
+      this.isMobileViewport = false;
+      return;
+    }
+
+    this.isMobileViewport = window.matchMedia('(max-width: 768px)').matches;
   }
 
   private startCountdown(): void {

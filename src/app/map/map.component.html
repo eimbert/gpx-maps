@@ -3,11 +3,11 @@
 
   <!-- UI superpuesta -->
   <div class="map-ui" aria-label="Cabecera de comparación">
-    <div class="map-logo" *ngIf="logoDataUrl">
+    <div class="map-logo" *ngIf="logoDataUrl && !isMobileViewport">
       <img [src]="logoDataUrl" alt="logo carrera">
     </div>
 
-    <div class="map-title">
+    <div class="map-title" *ngIf="!isMobileViewport">
       <ng-container *ngFor="let track of trackMetas; let last = last">
         <span class="title-chip" [style.borderColor]="track.color" [style.color]="track.color" [title]="track.name">{{ track.name }}</span>
         <span class="vs" *ngIf="!last">VS</span>
@@ -29,7 +29,7 @@
       </select>
     </div>
 
-    <div class="map-edit-controls" *ngIf="canEditTrack" role="group" aria-label="Edición del track">
+    <div class="map-edit-controls" *ngIf="canEditTrack && !isMobileViewport" role="group" aria-label="Edición del track">
       <button type="button" class="map-edit-btn" (click)="toggleEditMode()">
         {{ editMode ? 'Salir de edición' : 'Editar puntos' }}
       </button>
@@ -46,10 +46,10 @@
       </button>
     </div>
 
-    <div class="map-edit-hint" *ngIf="editMode">Haz clic en el punto que quieres eliminar.</div>
-    <div class="map-edit-status" *ngIf="editStatusMessage">{{ editStatusMessage }}</div>
+    <div class="map-edit-hint" *ngIf="editMode && !isMobileViewport">Haz clic en el punto que quieres eliminar.</div>
+    <div class="map-edit-status" *ngIf="editStatusMessage && !isMobileViewport">{{ editStatusMessage }}</div>
 
-    <button type="button" class="start-btn" (click)="goBack()">Anterior</button>
+    <button type="button" class="start-btn" *ngIf="!isMobileViewport" (click)="goBack()">Anterior</button>
     <!-- <a class="stop-rec" (click)="stopRecordingAndDownload()" *ngIf="rec.isRecording">⏹ Stop & Download</a> -->
   </div>
 
@@ -88,7 +88,7 @@
     </div>
   </div>
 
-  <div class="profile-overlay" *ngIf="profileEnabled" aria-label="Perfil de elevación">
+  <div class="profile-overlay" *ngIf="profileEnabled && !isMobileViewport" aria-label="Perfil de elevación">
     <div class="profile-panel" *ngIf="profileVisual; else profileUnavailable">
       <svg
         class="profile-chart"

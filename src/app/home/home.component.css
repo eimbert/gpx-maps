@@ -85,7 +85,7 @@
   text-transform: uppercase;
   color: #7aa2ff;
   font-weight: 700;
-  font-size:24px;
+  font-size: 24px;
 }
 
 .headline {
@@ -193,31 +193,6 @@
   border-color: rgba(34, 197, 94, 0.4);
 }
 
-@media (max-width: 640px) {
-  .home__content {
-    padding: 16px;
-  }
-
-  .home__auth {
-    align-self: center;
-    justify-content: center;
-    width: 100%;
-  }
-
-  .auth-link {
-    justify-content: center;
-  }
-
-  .action-card {
-    grid-template-columns: 1fr;
-    text-align: left;
-  }
-
-  .action-card__cta {
-    justify-self: start;
-  }
-}
-
 .home__logo {
   width: min(516px, 93vw);
   height: auto;
@@ -226,4 +201,97 @@
   margin-bottom: -120px;
   transform: translateY(-12px) rotate(-10deg);
   transform-origin: center;
+}
+
+@media (max-width: 640px) {
+  .home {
+    min-height: 100dvh;
+    padding: 12px;
+  }
+
+  .home__background {
+    inset: 6px;
+    border-radius: 20px;
+  }
+
+  .home__content {
+    padding: 14px;
+    gap: 14px;
+  }
+
+  .home__logo {
+    width: min(360px, 82vw);
+    margin-top: -38px;
+    margin-bottom: -46px;
+    transform: translateY(-6px) rotate(-8deg);
+  }
+
+  .eyebrow {
+    font-size: 14px;
+    letter-spacing: 1.4px;
+  }
+
+  .headline {
+    font-size: clamp(26px, 8vw, 34px);
+  }
+
+  .lead {
+    font-size: 14px;
+    line-height: 1.45;
+  }
+
+  .home__actions {
+    display: grid;
+    grid-template-columns: 1fr;
+    margin-top: 6px;
+  }
+
+  .action-card {
+    grid-template-columns: auto 1fr;
+    grid-template-areas:
+      'icon text'
+      'cta cta';
+    gap: 10px 12px;
+    padding: 14px;
+    border-radius: 14px;
+  }
+
+  .action-card__icon {
+    grid-area: icon;
+    width: 44px;
+    height: 44px;
+    font-size: 22px;
+    border-radius: 12px;
+  }
+
+  .action-card__texts {
+    grid-area: text;
+  }
+
+  .action-card__title {
+    font-size: 16px;
+  }
+
+  .action-card__subtitle {
+    font-size: 13px;
+  }
+
+  .action-card__cta {
+    grid-area: cta;
+    justify-self: stretch;
+    text-align: center;
+    padding: 9px 12px;
+    font-size: 13px;
+  }
+
+  .home__auth {
+    align-self: center;
+    justify-content: center;
+    width: 100%;
+    font-size: 14px;
+  }
+
+  .auth-link {
+    justify-content: center;
+  }
 }

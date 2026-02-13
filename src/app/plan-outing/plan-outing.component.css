@@ -793,3 +793,123 @@
     align-items: flex-start;
   }
 }
+
+@media (max-width: 768px) {
+  .plan {
+    gap: 16px;
+    padding: 16px 12px 28px;
+  }
+
+  .plan__toolbar {
+    align-items: stretch;
+  }
+
+  .plan__toolbar-left {
+    min-width: 0;
+    width: 100%;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  .plan__toolbar-actions {
+    width: 100%;
+  }
+
+  .plan__toolbar-actions .plan__primary,
+  .plan__new-actions .plan__primary,
+  .plan__new-actions .plan__secondary {
+    width: 100%;
+  }
+
+  .plan__search {
+    min-width: 0;
+    width: 100%;
+    padding: 10px 12px;
+  }
+
+  .plan__home-button {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .plan__new,
+  .plan__folders,
+  .plan__details,
+  .plan__empty {
+    border-radius: 14px;
+    padding: 14px;
+  }
+
+  .plan__new-actions {
+    flex-direction: column-reverse;
+  }
+
+  .plan__section-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .plan__section-actions {
+    margin-left: 0;
+    width: 100%;
+    flex-wrap: wrap;
+  }
+
+  .plan__section-actions .plan__secondary {
+    flex: 1;
+    min-width: 140px;
+  }
+
+  .plan__table,
+  .plan__invite-table,
+  .plan__notification-table {
+    font-size: 12px;
+  }
+
+  .plan__table th,
+  .plan__table td,
+  .plan__invite-table th,
+  .plan__invite-table td,
+  .plan__notification-table th,
+  .plan__notification-table td {
+    padding: 8px;
+  }
+
+  .plan__difficulty-legend {
+    gap: 8px;
+  }
+
+  .plan__difficulty-legend-title {
+    font-size: 11px;
+  }
+}
+
+@media (max-width: 480px) {
+  .plan__folder-card {
+    padding: 10px 10px 10px 14px;
+    gap: 8px;
+  }
+
+  .plan__folder-meta {
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+
+  .plan__details h2 {
+    margin: 0;
+    font-size: 24px;
+    line-height: 1.15;
+  }
+
+  .plan__actions-group {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .plan__actions-group .plan__icon-button,
+  .plan__actions-group .plan__animate-link,
+  .plan__actions-group .plan__maps-link {
+    min-height: 28px;
+  }
+}

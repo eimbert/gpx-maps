@@ -7,13 +7,13 @@
       </button>
       <div class="plan__search">
         <mat-icon aria-hidden="true">search</mat-icon>
-        <input type="text" [(ngModel)]="folderSearch" (input)="applyFolderFilter()" placeholder="Buscar carpeta"
-          aria-label="Buscar carpeta">
+        <input type="text" [(ngModel)]="folderSearch" (input)="applyFolderFilter()" placeholder="Buscar salida"
+          aria-label="Buscar salida">
       </div>
     </div>
     <div class="plan__toolbar-actions">
       <button class="plan__primary" type="button" (click)="toggleNewFolderForm()">
-        Nueva carpeta
+        Nueva salida
       </button>
     </div>
   </header>
@@ -21,7 +21,7 @@
   <section class="plan__new" *ngIf="showNewFolderForm">
     <div class="plan__new-fields">
       <label>
-        Nombre de carpeta
+        Nombre de salida
         <input type="text" [(ngModel)]="newFolderName" placeholder="Ej: Salida al Montseny">
       </label>
       <label>
@@ -42,19 +42,19 @@
     </label>
     <div class="plan__new-actions">
       <button class="plan__secondary" type="button" (click)="toggleNewFolderForm()">Cancelar</button>
-      <button class="plan__primary" type="button" (click)="createFolder()">Crear carpeta</button>
+      <button class="plan__primary" type="button" (click)="createFolder()">Crear salida</button>
     </div>
   </section>
 
   <div class="plan__layout">
     <aside class="plan__folders">
       <div class="plan__section-header">
-        <h3>Carpetas</h3>
+        <h3>Salidas planificadas</h3>
         <div class="plan__section-actions">
           <button
             class="plan__notification-button"
             type="button"
-            aria-label="Avisos de carpetas"
+            aria-label="Avisos de salidas"
             [disabled]="!pendingMessages.length"
             [class.plan__notification-button--active]="pendingMessages.length"
             (click)="togglePendingMessages()"
@@ -93,14 +93,14 @@
         </button>
       </div>
       <ng-template #emptyFolders>
-        <p class="plan__hint">No hay carpetas creadas todavía.</p>
+        <p class="plan__hint">No hay salidas creadas todavía.</p>
       </ng-template>
     </aside>
 
     <section class="plan__details" *ngIf="activeFolder && editFolder; else emptyState">
       <div class="plan__details-header">
         <div>
-          <p class="eyebrow">Carpeta abierta</p>
+          <p class="eyebrow">Salida abierta</p>
           <h2>Planifica tu salida</h2>
         </div>
         <button class="plan__primary" type="button" (click)="saveFolder()" [disabled]="isSavingFolder">
@@ -135,7 +135,7 @@
         </div>
         <p class="plan__hint" *ngIf="inviteStatusMessage">{{ inviteStatusMessage }}</p>
         <p class="plan__hint" *ngIf="!folderInvitations.length">
-          No hay invitados. Esta carpeta no está compartida.
+          No hay invitados. Esta salida no está compartida.
         </p>
         <div class="plan__invite-table-wrapper" *ngIf="folderInvitations.length">
           <table class="plan__invite-table" aria-label="Invitaciones enviadas">

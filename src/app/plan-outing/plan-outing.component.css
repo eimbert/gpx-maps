@@ -797,7 +797,7 @@
 @media (max-width: 768px) {
   .plan {
     gap: 16px;
-    padding: 16px 12px 28px;
+    padding: 12px 8px 24px;
   }
 
   .plan__toolbar {
@@ -838,7 +838,24 @@
   .plan__details,
   .plan__empty {
     border-radius: 14px;
-    padding: 14px;
+    padding: 14px 12px;
+  }
+
+  .plan__details {
+    overflow-x: clip;
+  }
+
+  .plan__details-header {
+    width: 100%;
+    gap: 10px;
+  }
+
+  .plan__details-header .plan__primary {
+    width: 100%;
+  }
+
+  .plan__fields {
+    grid-template-columns: 1fr;
   }
 
   .plan__new-actions {
@@ -867,6 +884,10 @@
     font-size: 12px;
   }
 
+  .plan__notification-overlay {
+    padding: 72px 10px 16px;
+  }
+
   .plan__table th,
   .plan__table td,
   .plan__invite-table th,
@@ -886,6 +907,21 @@
 }
 
 @media (max-width: 480px) {
+  .plan {
+    gap: 12px;
+    padding: 8px 4px 18px;
+  }
+
+  .plan__toolbar {
+    gap: 10px;
+  }
+
+  .plan__home-button,
+  .plan__search,
+  .plan__toolbar-actions .plan__primary {
+    min-height: 44px;
+  }
+
   .plan__folder-card {
     padding: 10px 10px 10px 14px;
     gap: 8px;
@@ -898,8 +934,24 @@
 
   .plan__details h2 {
     margin: 0;
-    font-size: 24px;
+    font-size: 22px;
     line-height: 1.15;
+  }
+
+  .plan__invite-row {
+    gap: 8px;
+  }
+
+  .plan__invite-row .plan__secondary,
+  .plan__new-actions .plan__primary,
+  .plan__new-actions .plan__secondary {
+    width: 100%;
+  }
+
+  .plan__invite-table,
+  .plan__table,
+  .plan__notification-table {
+    font-size: 11px;
   }
 
   .plan__actions-group {

@@ -223,7 +223,7 @@
         </div>
 
         <div class="plan__table-wrapper" *ngIf="tracks.length; else emptyTracks">
-          <table class="plan__table" aria-label="Tracks planificados">
+          <table class="plan__table plan__table--desktop" aria-label="Tracks planificados">
             <thead>
               <tr>
                 <th scope="col" class="plan__center plan__select-col">
@@ -352,6 +352,73 @@
               </tr>
             </tbody>
           </table>
+
+          <div class="plan__track-cards" aria-label="Tracks planificados en móvil">
+            <article class="plan__track-card" *ngFor="let track of tracks">
+              <header class="plan__track-card-header">
+                <div class="plan__track-card-title-wrap">
+                  <input
+                    type="checkbox"
+                    class="plan__track-checkbox"
+                    [checked]="selectedTrackIds.has(track.id)"
+                    [disabled]="!canViewTrack(track)"
+                    (change)="toggleTrackSelection(track, $any($event.target).checked)"
+                    [attr.aria-label]="canViewTrack(track) ? 'Seleccionar ' + track.name : 'GPX no disponible'">
+                  <div>
+                    <div class="plan__track-title">{{ track.name }}</div>
+                    <span class="plan__track-meta">{{ track.startPopulation || 'Ubicación por definir' }}</span>
+                  </div>
+                </div>
+                <div class="plan__track-card-votes">{{ votesByTrackId.get(track.id) || 0 }} votos</div>
+              </header>
+
+              <div class="plan__track-card-grid">
+                <div><span class="plan__track-card-label">Distancia</span>{{ formatDistance(track.distanceKm) }}</div>
+                <div><span class="plan__track-card-label">Tiempo</span>{{ formatDuration(track.movingTimeSec) }}</div>
+                <div><span class="plan__track-card-label">Desnivel</span>{{ formatDesnivel(track.desnivel) }}</div>
+                <div>
+                  <span class="plan__track-card-label">Meteo</span>
+                  <span>{{ resolveWeatherIcon(track.id) }} {{ resolveWeatherTemperature(track.id) }}</span>
+                </div>
+              </div>
+
+              <div class="plan__track-card-actions">
+                <ng-container *ngIf="resolveMapsLink(track) as mapsLink; else noMobileMapsLink">
+                  <a class="plan__maps-link" [href]="mapsLink" target="_blank" rel="noopener noreferrer"
+                    aria-label="Ver ubicación en Google Maps">
+                    <mat-icon aria-hidden="true">location_on</mat-icon>
+                  </a>
+                </ng-container>
+                <ng-template #noMobileMapsLink>
+                  <span class="plan__muted">—</span>
+                </ng-template>
+                <button class="plan__icon-button plan__icon-button--download" type="button"
+                  [disabled]="!track.routeXml" (click)="downloadTrack(track)"
+                  [attr.aria-label]="track.routeXml ? 'Descargar track' : 'GPX no disponible'">
+                  <mat-icon aria-hidden="true">download</mat-icon>
+                </button>
+                <button class="plan__maps-link plan__animate-link" type="button" [disabled]="!canViewTrack(track)"
+                  (click)="viewTrack(track)"
+                  [attr.aria-label]="canViewTrack(track) ? 'Ver ruta en el mapa' : 'GPX no disponible'">
+                  <mat-icon aria-hidden="true">map</mat-icon>
+                </button>
+                <button class="plan__ghost" *ngIf="canVoteOnTracks(); else noVoteMobile" type="button" (click)="toggleVote(track)">
+                  {{ resolveVoteLabel(track) }}
+                </button>
+                <ng-template #noVoteMobile>
+                  <span class="plan__muted">—</span>
+                </ng-template>
+                <button *ngIf="canDeleteTracks(); else cannotDeleteTrackMobile"
+                  class="plan__icon-button plan__icon-button--danger" type="button"
+                  (click)="confirmDeleteTrack(track)" aria-label="Eliminar track">
+                  <mat-icon aria-hidden="true">delete</mat-icon>
+                </button>
+                <ng-template #cannotDeleteTrackMobile>
+                  <span class="plan__muted">—</span>
+                </ng-template>
+              </div>
+            </article>
+          </div>
         </div>
         <ng-template #emptyTracks>
           <p class="plan__hint">Todavía no hay tracks en esta carpeta.</p>

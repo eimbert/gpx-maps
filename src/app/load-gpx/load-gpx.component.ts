@@ -147,7 +147,7 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
   @ViewChild('masterGpxInput') masterGpxInputRef!: ElementRef<HTMLInputElement>;
 
   readonly maxTracks = 4;
-  readonly maxComparison = 4;
+  readonly maxComparison = 3;
   private readonly overlapThreshold = 0.65;
   private readonly overlapProximityMeters = 150;
 
@@ -1677,8 +1677,36 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
       this.selectedComparisonIds.delete(trackId);
       return;
     }
-    if (this.selectedComparisonIds.size >= this.maxComparison) return;
+    if (this.selectedComparisonIds.size >= this.maxComparison) {
+      this.showMessage(`Puedes seleccionar como máximo ${this.maxComparison} tracks para animar.`);
+      return;
+    }
     this.selectedComparisonIds.add(trackId);
+  }
+
+  isComparisonSelectionDisabled(trackId: number): boolean {
+    return !this.selectedComparisonIds.has(trackId) && this.selectedComparisonIds.size >= this.maxComparison;
+  }
+
+  async downloadComparisonTrack(trackId: number): Promise<void> {
+    try {
+      const trackGpx = await firstValueFrom(this.eventService.getTrackGpx(trackId));
+      const gpxData = trackGpx.routeXml ?? null;
+      if (!gpxData) {
+        this.showMessage('No se pudo descargar el track seleccionado.');
+        return;
+      }
+
+      const blob = new Blob([gpxData], { type: 'application/gpx+xml' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = trackGpx.fileName || `track-${trackId}.gpx`;
+      link.click();
+      setTimeout(() => URL.revokeObjectURL(url), 1500);
+    } catch {
+      this.showMessage('No se pudo descargar el track seleccionado.');
+    }
   }
 
   canDeleteTrack(track: EventTrack): boolean {

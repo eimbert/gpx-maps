@@ -778,7 +778,7 @@
 
 .events-layout {
   display: grid;
-  grid-template-columns: minmax(0, 1.35fr) minmax(320px, 0.95fr);
+  grid-template-columns: minmax(0, 1fr) minmax(420px, 1.25fr);
   gap: 18px;
   align-items: start;
 }
@@ -816,9 +816,14 @@
   margin: 14px auto 0;
 }
 
+.carousel-controls--inline {
+  justify-content: flex-start;
+  margin: 4px 0 0;
+}
+
 .carousel-button {
-  width: 46px;
-  height: 46px;
+  width: 40px;
+  height: 40px;
   border-radius: 12px;
   border: 1px solid #e2e8f0;
   background: #fff;
@@ -943,6 +948,7 @@
   flex-direction: column;
   gap: 8px;
   min-height: 100%;
+  padding-bottom: 6px;
 }
 
 .event-card__title-row {
@@ -962,12 +968,6 @@
 .event-card__subtitle {
   margin: 0;
   font-size: 14px;
-}
-
-.event-meta {
-  margin: 0;
-  color: #0f172a;
-  font-weight: 600;
 }
 
 .event-profile-row {
@@ -1377,7 +1377,7 @@ input[type="file"] {
 
 .ranking__header--event,
 .ranking__row--event {
-  grid-template-columns: 56px minmax(120px, 1fr) minmax(90px, auto) 84px 86px;
+  grid-template-columns: 56px minmax(160px, 1.2fr) minmax(90px, auto) 92px 86px;
 }
 
 .ranking__rider p,
@@ -1414,21 +1414,55 @@ input[type="file"] {
   width: 22px;
   height: 22px;
   border-radius: 6px;
-  border: 2px solid #cbd5e1;
+  border: 2px solid #64748b;
   background: #fff;
   display: inline-block;
   transition: all 0.15s ease;
 }
 
 .ranking__checkbox input:checked + .ranking__checkbox-box {
-  background: #16a34a;
-  border-color: #15803d;
-  box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.18);
+  background: #fff;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.18);
+}
+
+.ranking__checkbox input:checked + .ranking__checkbox-box::after {
+  content: '';
+  position: relative;
+  display: block;
+  width: 6px;
+  height: 12px;
+  border: solid #2563eb;
+  border-width: 0 2px 2px 0;
+  transform: translate(7px, 2px) rotate(45deg);
 }
 
 .panel__header--ranking {
+  display: flex;
   align-items: center;
   gap: 12px;
+  justify-content: space-between;
+  flex-wrap: wrap;
+}
+
+.ranking-category-filter {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 170px;
+}
+
+.ranking-category-filter span {
+  font-size: 12px;
+  font-weight: 700;
+  color: #334155;
+}
+
+.ranking-category-filter select {
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 1px solid #cbd5e1;
+  background: #fff;
 }
 
 .ranking-animate {

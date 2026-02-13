@@ -1661,25 +1661,66 @@ input[type="file"] {
 }
 
 
-
-
-/* Transición suave */
-/* :host ::ng-deep .user-tracks__table tbody > tr,
-:host ::ng-deep .user-tracks__table tbody > tr > td {
-  transition: background-color 160ms ease;
-} */
-
 .user-tracks__nested-table {
   width: 100%;
   border-collapse: collapse;
 }
 
+.user-tracks__mobile-list {
+  display: none;
+}
+
+.user-tracks__mobile-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 12px;
+  margin-bottom: 10px;
+}
+
+.user-tracks__mobile-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 10px;
+}
 
 
-/* .user-tracks__nested-table thead th {
-  background: #f1f5f9;
-} */
+.user-tracks__mobile-title {
+  font-weight: 700;
+  color: #0f172a;
+}
 
+.user-tracks__mobile-year {
+  min-width: 36px;
+  text-align: right;
+}
+
+.user-tracks__mobile-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.user-tracks__mobile-item {
+  display: flex;
+  flex-direction: column;
+  font-size: 12px;
+  color: #0f172a;
+}
+
+.user-tracks__mobile-label {
+  color: #64748b;
+  font-size: 11px;
+}
+
+.user-tracks__mobile-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 10px;
+}
 
 
 
@@ -1687,19 +1728,6 @@ input[type="file"] {
     background: rgb(231, 228, 228);
     font-weight: 100;
 }
-/* 
-.user-tracks__nested-table tbody tr:hover {
-  background-color: rgba(255, 255, 255, 0.06); 
-}
-
-.user-tracks__nested-table tbody tr:hover td {
-  background-color: rgba(255, 255, 255, 0.06);
-}
-
-.user-tracks__table .p-datatable-wrapper > table > tbody > tr:hover {
-  background-color: rgb(73, 137, 137) !important;
-}*/
-
 .user-tracks__nested-table tbody tr.nested-row:hover > td {
   background-color: rgb(126, 189, 189) !important; 
 } 
@@ -1754,5 +1782,15 @@ input[type="file"] {
 
   .events-layout__right {
     position: static;
+  }
+}
+
+@media (max-width: 768px) {
+  .user-tracks__nested-table--desktop {
+    display: none;
+  }
+
+  .user-tracks__mobile-list {
+    display: block;
   }
 }

@@ -358,16 +358,16 @@
                         </div>
                       </div>
                       <div class="carousel-controls carousel-controls--inline">
-                        <button type="button" class="carousel-button" (click)="prevEvent(true)" aria-label="Evento anterior"
+                        <button type="button" class="carousel-button" (click)="prevEvent(true); $event.stopPropagation()" aria-label="Evento anterior"
                           matTooltip="Ir al evento anterior del carrusel">
                           <mat-icon aria-hidden="true">skip_previous</mat-icon>
                         </button>
-                        <button type="button" class="carousel-button carousel-button--primary" (click)="toggleCarouselPlayback()"
+                        <button type="button" class="carousel-button carousel-button--primary" (click)="toggleCarouselPlayback(); $event.stopPropagation()"
                           [attr.aria-label]="isCarouselPaused ? 'Reanudar carrusel' : 'Pausar carrusel'"
                           [matTooltip]="isCarouselPaused ? 'Reanudar reproducción automática' : 'Pausar reproducción automática'">
                           <mat-icon aria-hidden="true">{{ isCarouselPaused ? 'play_arrow' : 'pause' }}</mat-icon>
                         </button>
-                        <button type="button" class="carousel-button" (click)="nextEvent(true)" aria-label="Siguiente evento"
+                        <button type="button" class="carousel-button" (click)="nextEvent(true); $event.stopPropagation()" aria-label="Siguiente evento"
                           matTooltip="Avanzar al siguiente evento del carrusel">
                           <mat-icon aria-hidden="true">skip_next</mat-icon>
                         </button>

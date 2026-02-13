@@ -635,11 +635,7 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
     const centerLat = (minLat + maxLat) / 2;
     const centerLon = (minLon + maxLon) / 2;
     const tileCoords = this.latLonToTile(centerLat, centerLon, zoom);
-    const streetTile = `https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/${zoom}/${tileCoords.y}/${tileCoords.x}`;
-    const imageryTile = `https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/${zoom}/${tileCoords.y}/${tileCoords.x}`;
-    const prefersImagery = zoom >= 15 && maxRange <= 0.02;
-
-    return prefersImagery ? imageryTile : streetTile;
+    return `https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/${zoom}/${tileCoords.y}/${tileCoords.x}`;
   }
 
   private latLonToTile(lat: number, lon: number, zoom: number): { x: number; y: number } {

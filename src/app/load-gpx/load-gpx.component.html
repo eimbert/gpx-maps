@@ -412,7 +412,8 @@
                     </div>
                   </div>
                 </div>
-                <div class="event-card__map">
+                <div class="event-card__map"
+                  [style.--event-map-url]="eventVisuals[event.id].mapTileUrl ? 'url(' + eventVisuals[event.id].mapTileUrl + ')' : 'none'">
                   <ng-container *ngIf="eventVisuals[event.id]?.trackPath; else missingTrack">
                     <svg viewBox="0 0 320 240" preserveAspectRatio="none" class="track-drawing">
                       <polyline [attr.points]="eventVisuals[event.id].trackPath"></polyline>

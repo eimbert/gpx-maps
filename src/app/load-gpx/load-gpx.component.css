@@ -776,6 +776,24 @@
   width: 100%;
 }
 
+.events-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(320px, 0.95fr);
+  gap: 18px;
+  align-items: start;
+}
+
+.events-layout__left {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.events-layout__right {
+  position: sticky;
+  top: 16px;
+}
+
 .carousel-window {
   position: relative;
   margin: 0 auto;
@@ -914,6 +932,10 @@
   grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
   gap: 14px;
   align-items: stretch;
+}
+
+.event-card__content--stacked {
+  grid-template-columns: 1fr;
 }
 
 .event-card__info {
@@ -1353,6 +1375,11 @@ input[type="file"] {
   border: 1px solid #e2e8f0;
 }
 
+.ranking__header--event,
+.ranking__row--event {
+  grid-template-columns: 56px minmax(120px, 1fr) minmax(90px, auto) 84px 86px;
+}
+
 .ranking__rider p,
 .ranking__meta span {
   margin: 0;
@@ -1662,4 +1689,36 @@ input[type="file"] {
 }
 :host ::ng-deep td {
     font-weight:100;
+}
+
+
+.ranking__download-col {
+  text-align: center;
+}
+
+.ranking__download {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  border: 1px solid #cbd5e1;
+  background: #fff;
+  color: #2563eb;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.ranking__download:hover {
+  background: #eff6ff;
+}
+
+@media (max-width: 1100px) {
+  .events-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .events-layout__right {
+    position: static;
+  }
 }

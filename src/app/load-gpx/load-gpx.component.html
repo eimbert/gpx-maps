@@ -357,9 +357,21 @@
                           <p class="muted event-card__subtitle">{{ getEventLocation(event) || 'Ubicación pendiente' }}</p>
                         </div>
                       </div>
-                      <p class="event-meta"><strong>Población:</strong> {{ event.population || 'Sin datos' }}</p>
-                      <p class="event-meta"><strong>Provincia:</strong> {{ event.province || 'Sin datos' }}</p>
-                      <p class="event-meta"><strong>Comunidad:</strong> {{ event.autonomousCommunity || 'Sin datos' }}</p>
+                      <div class="carousel-controls carousel-controls--inline">
+                        <button type="button" class="carousel-button" (click)="prevEvent(true)" aria-label="Evento anterior"
+                          matTooltip="Ir al evento anterior del carrusel">
+                          <mat-icon aria-hidden="true">skip_previous</mat-icon>
+                        </button>
+                        <button type="button" class="carousel-button carousel-button--primary" (click)="toggleCarouselPlayback()"
+                          [attr.aria-label]="isCarouselPaused ? 'Reanudar carrusel' : 'Pausar carrusel'"
+                          [matTooltip]="isCarouselPaused ? 'Reanudar reproducción automática' : 'Pausar reproducción automática'">
+                          <mat-icon aria-hidden="true">{{ isCarouselPaused ? 'play_arrow' : 'pause' }}</mat-icon>
+                        </button>
+                        <button type="button" class="carousel-button" (click)="nextEvent(true)" aria-label="Siguiente evento"
+                          matTooltip="Avanzar al siguiente evento del carrusel">
+                          <mat-icon aria-hidden="true">skip_next</mat-icon>
+                        </button>
+                      </div>
                     </div>
 
                     <div class="event-card__map"
@@ -436,21 +448,6 @@
             </div>
           </div>
 
-          <div class="carousel-controls">
-            <button type="button" class="carousel-button" (click)="prevEvent(true)" aria-label="Evento anterior"
-              matTooltip="Ir al evento anterior del carrusel">
-              <mat-icon aria-hidden="true">skip_previous</mat-icon>
-            </button>
-            <button type="button" class="carousel-button carousel-button--primary" (click)="toggleCarouselPlayback()"
-              [attr.aria-label]="isCarouselPaused ? 'Reanudar carrusel' : 'Pausar carrusel'"
-              [matTooltip]="isCarouselPaused ? 'Reanudar reproducción automática' : 'Pausar reproducción automática'">
-              <mat-icon aria-hidden="true">{{ isCarouselPaused ? 'play_arrow' : 'pause' }}</mat-icon>
-            </button>
-            <button type="button" class="carousel-button" (click)="nextEvent(true)" aria-label="Siguiente evento"
-              matTooltip="Avanzar al siguiente evento del carrusel">
-              <mat-icon aria-hidden="true">skip_next</mat-icon>
-            </button>
-          </div>
         </div>
 
         <article class="panel events-layout__right">
@@ -460,6 +457,13 @@
                 <h3>Ranking del evento</h3>
                 <p class="muted">Tracks ordenados por tiempo real (el más rápido primero).</p>
               </div>
+              <label class="ranking-category-filter" aria-label="Filtrar ranking por categoría">
+                <span>Categoría</span>
+                <select [value]="selectedRankingCategory" (change)="onRankingCategoryChange($any($event.target).value)">
+                  <option value="all">Todas</option>
+                  <option *ngFor="let category of rankingCategories" [value]="category">{{ category }}</option>
+                </select>
+              </label>
               <button class="ranking-animate" type="button" (click)="animateSelectedTracks()"
                 [disabled]="!selectedComparisonIds.size" aria-label="Animar tracks seleccionados"
                 matTooltip="Animar en el mapa los tracks seleccionados en la tabla">
@@ -475,7 +479,7 @@
                   <span class="ranking__select-col">Seleccionar</span>
                   <span class="ranking__download-col">Descargar</span>
                 </div>
-                <div class="ranking__row ranking__row--event" *ngFor="let track of routeTrackTimes; index as i">
+                <div class="ranking__row ranking__row--event" *ngFor="let track of filteredRouteTrackTimes; index as i">
                   <span class="position">#{{ i + 1 }}</span>
                   <div class="ranking__rider">
                     <p class="strong">{{ track.nickname }}</p>
@@ -495,6 +499,7 @@
                   </button>
                 </div>
               </div>
+              <p *ngIf="!filteredRouteTrackTimes.length" class="muted">No hay tracks en la categoría seleccionada.</p>
             </ng-container>
             <ng-template #emptyRouteTimes>
               <p class="muted">No hay tiempos registrados para este recorrido aún.</p>

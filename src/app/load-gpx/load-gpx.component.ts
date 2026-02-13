@@ -171,6 +171,7 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
   personalNickname = '';
   personalHistory: EventTrack[] = [];
   routeTrackTimes: RouteTrackTime[] = [];
+  selectedRankingCategory = 'all';
   eventVisuals: Record<number, EventVisuals> = {};
 
   readonly profileWidth = 240;
@@ -1688,6 +1689,27 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
     return !this.selectedComparisonIds.has(trackId) && this.selectedComparisonIds.size >= this.maxComparison;
   }
 
+  get rankingCategories(): string[] {
+    const categories = new Set<string>();
+    this.routeTrackTimes.forEach(track => {
+      if (track.category) {
+        categories.add(track.category);
+      }
+    });
+    return Array.from(categories).sort((a, b) => a.localeCompare(b, 'es'));
+  }
+
+  get filteredRouteTrackTimes(): RouteTrackTime[] {
+    if (this.selectedRankingCategory === 'all') {
+      return this.routeTrackTimes;
+    }
+    return this.routeTrackTimes.filter(track => track.category === this.selectedRankingCategory);
+  }
+
+  onRankingCategoryChange(category: string): void {
+    this.selectedRankingCategory = category || 'all';
+  }
+
   async downloadComparisonTrack(trackId: number): Promise<void> {
     try {
       const trackGpx = await firstValueFrom(this.eventService.getTrackGpx(trackId));
@@ -1778,6 +1800,7 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
   private loadRouteTrackTimes(routeId: number): void {
     this.eventService.getRouteTrackTimes(routeId).subscribe(times => {
       this.routeTrackTimes = (times || []).slice().sort((a, b) => a.tiempoReal - b.tiempoReal);
+      this.selectedRankingCategory = 'all';
     });
   }
 

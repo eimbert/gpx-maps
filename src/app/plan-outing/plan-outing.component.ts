@@ -242,19 +242,28 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
   }
 
   createFolder(): void {
-    if (!this.newFolderName.trim()) {
+    const sanitizedName = this.newFolderName.trim();
+    if (!sanitizedName) {
       this.showMessage('Añade un nombre para crear la carpeta.');
       return;
     }
 
+    const sanitizedDate = this.formatDateForApi(this.newFolderDate);
+    const sanitizedObservations = this.newFolderNotes.trim() || null;
+
     this.planService
       .createFolder({
-        name: this.newFolderName.trim(),
-        plannedDate: this.formatDateForApi(this.newFolderDate),
-        observations: this.newFolderNotes.trim() || null
+        name: sanitizedName,
+        plannedDate: sanitizedDate,
+        observations: sanitizedObservations
       })
       .subscribe(folder => {
-        const resolvedFolder = this.applyNewFolderOwnership(folder);
+        const resolvedFolder = this.applyNewFolderOwnership({
+          ...folder,
+          name: folder.name?.trim() ? folder.name : sanitizedName,
+          plannedDate: folder.plannedDate ?? sanitizedDate,
+          observations: folder.observations ?? sanitizedObservations
+        });
         this.folders = [resolvedFolder, ...this.folders];
         this.folderTrackCounts.set(resolvedFolder.id, 0);
         this.applyFolderFilter();

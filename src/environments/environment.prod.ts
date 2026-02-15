@@ -1,15 +1,17 @@
-const back = "tracketeo.bike"
+const apiBase = 'https://tracketeo.bike/api';
+
 export const environment = {
   production: true,
   devBypassAuthGuard: false,
-  loginUrl: `https://${back}/api/auth/login`,
-  registerUrl: `https://${back}/api/auth/register`,
-  resendVerificationUrl: `https://${back}/api/auth/resend-verification`,
-  meUrl: `https://${back}/api/tracks/me`,
-  routesApiBase: `https://${back}/api/routes`,
-  tracksApiBase: `https://${back}/api/tracks`,
-  planApiBase: `https://${back}/api/plan-folders`,
-  usersApiBase: `https://${back}/api/users`,
 
-  mensajesApiBase: `https://${back}/api/mensajes`
+  loginUrl: `${apiBase}/auth/login`,
+  registerUrl: `${apiBase}/auth/register`,
+  resendVerificationUrl: `${apiBase}/auth/resend-verification`,
+
+  meUrl: `${apiBase}/tracks/me`,
+  routesApiBase: `${apiBase}/routes`,
+  tracksApiBase: `${apiBase}/tracks`,
+  planApiBase: `${apiBase}/plan-folders`,
+  usersApiBase: `${apiBase}/users`,
+  mensajesApiBase: `${apiBase}/mensajes`,
 };

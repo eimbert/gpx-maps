@@ -20,7 +20,9 @@
             "tsConfig": "tsconfig.app.json",
             "assets": [
               "src/favicon.ico",
-              "src/assets"
+              "src/assets",
+              "src/manifest.webmanifest",
+              "src/sw.js"
             ],
             "styles": [
               "./node_modules/@angular/material/prebuilt-themes/purple-green.css",

@@ -138,6 +138,12 @@ interface GroupedUserTracks {
   count: number;
 }
 
+interface UserTracksDerivedData {
+  sorted: UserTrackRow[];
+  filtered: UserTrackRow[];
+  grouped: GroupedUserTracks[];
+}
+
 @Component({
   selector: 'app-load-gpx',
   templateUrl: './load-gpx.component.html',
@@ -187,6 +193,30 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
     personal: [],
     events: [],
     shared: []
+  };
+
+  private readonly userTracksDerived: Record<UserTracksTab, UserTracksDerivedData> = {
+    personal: { sorted: [], filtered: [], grouped: [] },
+    events: { sorted: [], filtered: [], grouped: [] },
+    shared: { sorted: [], filtered: [], grouped: [] }
+  };
+
+  private readonly userTracksDataVersion: Record<UserTracksTab, number> = {
+    personal: 0,
+    events: 0,
+    shared: 0
+  };
+
+  private readonly userTracksStateVersion: Record<UserTracksTab, number> = {
+    personal: 0,
+    events: 0,
+    shared: 0
+  };
+
+  private readonly userTracksDerivedVersion: Record<UserTracksTab, { data: number; state: number }> = {
+    personal: { data: -1, state: -1 },
+    events: { data: -1, state: -1 },
+    shared: { data: -1, state: -1 }
   };
 
   private readonly tableState: Record<UserTracksTab, TrackTableState> = {
@@ -1883,14 +1913,17 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
       this.sharedTracksLoading = true;
       try {
         const [tracks, sharedTracks] = await Promise.all([
-          firstValueFrom(this.eventService.getMyTracks()),
-          firstValueFrom(this.eventService.getSharedTracks())
+          firstValueFrom(this.eventService.getMyTracks(false)),
+          firstValueFrom(this.eventService.getSharedTracks(false))
         ]);
 
         const rows = tracks.map(track => this.toUserTrackRow(track, this.eventsById));
         this.userTrackRows.personal = rows.filter(row => !row.routeId);
         this.userTrackRows.events = rows.filter(row => !!row.routeId);
         this.userTrackRows.shared = (sharedTracks || []).map(track => this.toUserTrackRow(track, this.eventsById));
+        this.bumpUserTracksDataVersion('personal');
+        this.bumpUserTracksDataVersion('events');
+        this.bumpUserTracksDataVersion('shared');
       } catch {
         this.showMessage('No se pudieron cargar tus tracks. Inténtalo de nuevo más tarde.');
         this.resetUserTrackRows();
@@ -1908,6 +1941,7 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
   private resetUserTrackRows(): void {
     (Object.keys(this.userTrackRows) as UserTracksTab[]).forEach(tab => {
       this.userTrackRows[tab] = [];
+      this.bumpUserTracksDataVersion(tab);
     });
   }
 
@@ -2208,8 +2242,7 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
   }
 
   private getSortedUserTracksForTab(tab: UserTracksTab): UserTrackRow[] {
-    const state = this.getTableState(tab);
-    return [...this.userTrackRows[tab]].sort((a, b) => this.compareUserTrackRows(a, b, state));
+    return this.getDerivedUserTracksForTab(tab).sorted;
   }
 
   get filteredUserTracks(): UserTrackRow[] {
@@ -2221,12 +2254,7 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
   }
 
   private getFilteredUserTracksForTab(tab: UserTracksTab): UserTrackRow[] {
-    const state = this.getTableState(tab);
-    const query = state.filter.trim().toLowerCase();
-    const sorted = this.getSortedUserTracksForTab(tab);
-    if (!query) return sorted;
-
-    return sorted.filter(row => this.matchesUserTrackFilter(row, query));
+    return this.getDerivedUserTracksForTab(tab).filtered;
   }
 
   get paginatedUserTracks(): GroupedUserTracks[] {
@@ -2234,7 +2262,22 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
   }
 
   private getGroupedUserTracksForTab(tab: UserTracksTab): GroupedUserTracks[] {
-    const filtered = this.getFilteredUserTracksForTab(tab);
+    return this.getDerivedUserTracksForTab(tab).grouped;
+  }
+
+  private getDerivedUserTracksForTab(tab: UserTracksTab): UserTracksDerivedData {
+    const version = this.userTracksDerivedVersion[tab];
+    const dataVersion = this.userTracksDataVersion[tab];
+    const stateVersion = this.userTracksStateVersion[tab];
+    if (version.data === dataVersion && version.state === stateVersion) {
+      return this.userTracksDerived[tab];
+    }
+
+    const state = this.getTableState(tab);
+    const sorted = [...this.userTrackRows[tab]].sort((a, b) => this.compareUserTrackRows(a, b, state));
+    const query = state.filter.trim().toLowerCase();
+    const filtered = query ? sorted.filter(row => this.matchesUserTrackFilter(row, query)) : sorted;
+
     const map = new Map<
       string,
       { routes: UserTrackRow[]; autonomousCommunity: string | null }
@@ -2257,7 +2300,7 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
       });
     });
 
-    return Array.from(map.entries())
+    const grouped = Array.from(map.entries())
       .map(([province, data]) => ({
         province,
         routes: [...data.routes].sort((a, b) =>
@@ -2271,6 +2314,10 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
         autonomousCommunity: data.autonomousCommunity
       }))
       .sort((a, b) => a.province.localeCompare(b.province, 'es', { sensitivity: 'base' }));
+
+    this.userTracksDerived[tab] = { sorted, filtered, grouped };
+    this.userTracksDerivedVersion[tab] = { data: dataVersion, state: stateVersion };
+    return this.userTracksDerived[tab];
   }
 
   private getPaginatedUserTrackGroupsForTab(tab: UserTracksTab): GroupedUserTracks[] {
@@ -2315,11 +2362,13 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
     const state = this.getTableState(this.activeUserTracksTab);
     if (state.sortColumn === column) {
       state.sortDirection = state.sortDirection === 'asc' ? 'desc' : 'asc';
+      this.bumpUserTracksStateVersion(this.activeUserTracksTab);
       return;
     }
 
     state.sortColumn = column;
     state.sortDirection = 'asc';
+    this.bumpUserTracksStateVersion(this.activeUserTracksTab);
   }
 
   resolveUserTracksSortIndicator(column: UserTracksSortColumn): string {
@@ -2332,6 +2381,7 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
     const state = this.getTableState(this.activeUserTracksTab);
     state.filter = term;
     state.page = 0;
+    this.bumpUserTracksStateVersion(this.activeUserTracksTab);
   }
 
   onUserTracksRowsChange(rows: number): void {
@@ -2339,6 +2389,7 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
     const parsed = Number(rows);
     state.rows = Number.isFinite(parsed) && parsed > 0 ? parsed : this.userTracksRowsOptions[0];
     state.page = 0;
+    this.bumpUserTracksStateVersion(this.activeUserTracksTab);
   }
 
   changeUserTracksPage(delta: number): void {
@@ -2495,8 +2546,17 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
       }
       (Object.keys(this.userTrackRows) as UserTracksTab[]).forEach(tab => {
         this.userTrackRows[tab] = this.userTrackRows[tab].filter(current => current.trackId !== row.trackId);
+        this.bumpUserTracksDataVersion(tab);
       });
     });
+  }
+
+  private bumpUserTracksDataVersion(tab: UserTracksTab): void {
+    this.userTracksDataVersion[tab]++;
+  }
+
+  private bumpUserTracksStateVersion(tab: UserTracksTab): void {
+    this.userTracksStateVersion[tab]++;
   }
 
   private async resolveGpxContentForRow(row: UserTrackRow): Promise<string | null> {
@@ -2700,7 +2760,7 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
 
   private async buildMyTrackRows(): Promise<MyTrackRow[]> {
     try {
-      const tracks = await firstValueFrom(this.eventService.getMyTracks());
+      const tracks = await firstValueFrom(this.eventService.getMyTracks(false));
       // usa el Map precalculado
       const eventsById = this.eventsById;
 

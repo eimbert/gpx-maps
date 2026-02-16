@@ -14,7 +14,10 @@ export class InfoMessageService {
     const dialogRef = this.dialog.open<InfoDialogComponent, InfoDialogData, InfoDialogResult>(InfoDialogComponent, {
       width: '420px',
       data,
-      hasBackdrop: false,
+      // En móvil, sin backdrop los taps pueden "atravesar" el diálogo y volver
+      // a disparar acciones de la pantalla (p.ej. animar track), dando la sensación
+      // de que el botón "Aceptar" no cierra el aviso.
+      hasBackdrop: true,
       autoFocus: false,
       panelClass: 'info-toast-dialog'
     });

@@ -922,16 +922,6 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
     }
   }
 
-
-  private persistMapPayload(payload: unknown): void {
-    this.mapPayloadTransfer.set(payload);
-    try {
-      sessionStorage.setItem('gpxViewerPayload', JSON.stringify(payload));
-    } catch {
-      this.showMessage('No se pudo guardar temporalmente la visualización en el navegador. Se abrirá igualmente en esta pestaña.');
-    }
-  }
-
   private getSelectableTracks(): PlanTrack[] {
     return this.tracks.filter(track => this.canViewTrack(track));
   }

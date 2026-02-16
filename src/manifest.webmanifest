@@ -1,0 +1,22 @@
+{
+  "name": "tracketeo.bike",
+  "short_name": "tracketeo",
+  "theme_color": "#1B5E20",
+  "background_color": "#0E1116",
+  "display": "standalone",
+  "scope": "/",
+  "start_url": "/",
+  "icons": [
+    {
+      "src": "assets/plato.png",
+      "sizes": "1536x1024",
+      "type": "image/png"
+    },
+    {
+      "src": "assets/plato.png",
+      "sizes": "1536x1024",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

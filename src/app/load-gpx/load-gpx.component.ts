@@ -2436,8 +2436,9 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
         return;
       }
       this.tracks = updatedTracks;
+
       if (this.isMobileViewport) {
-        this.iniciarVisualizacion();
+        this.showMessage('Ruta añadida. Pulsa “Iniciar” para configurar y lanzar la animación.');
       }
     } catch {
       this.showMessage('No se pudo procesar el track.');

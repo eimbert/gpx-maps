@@ -153,3 +153,59 @@
   border: 1px dashed #c6d0e0;
   background: #fff;
 }
+
+.checkbox-grid mat-checkbox {
+  min-width: 0;
+}
+
+.checkbox-grid ::ng-deep .mat-checkbox-layout,
+.checkbox-grid ::ng-deep .mdc-form-field {
+  white-space: normal;
+  align-items: flex-start;
+}
+
+.checkbox-grid ::ng-deep .mat-checkbox-label,
+.checkbox-grid ::ng-deep .mdc-label {
+  white-space: normal;
+  line-height: 1.3;
+}
+
+@media (max-width: 768px) {
+  .dialog-header {
+    margin: -24px -24px 12px;
+    padding: 14px 16px;
+    font-size: 20px;
+  }
+
+  .dialog-subtitle {
+    font-size: 13px;
+  }
+
+  .option-section {
+    padding: 12px;
+    gap: 10px;
+  }
+
+  .checkbox-grid {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .pause-option {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+  }
+
+  .pause-threshold {
+    flex-wrap: wrap;
+    gap: 4px;
+    padding-left: 30px;
+  }
+
+  .virtual-time {
+    flex-direction: column;
+    align-items: flex-start;
+    padding-left: 0;
+  }
+}

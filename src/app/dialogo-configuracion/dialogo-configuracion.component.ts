@@ -8,6 +8,7 @@ import { DialogoConfiguracionData } from '../interfaces/estructuras';
   styleUrls: ['./dialogo-configuracion.component.scss']
 })
 export class DialogoConfiguracionComponent {
+  readonly esMovil = typeof window !== 'undefined' && window.matchMedia('(max-width: 768px)').matches;
   eliminarPausasLargas = true;
   marcarPausasLargas = false;
   umbralPausaMinutos = 4;
@@ -39,6 +40,12 @@ export class DialogoConfiguracionComponent {
       this.relacionAspectoGrabacion = data.relacionAspectoGrabacion ?? this.relacionAspectoGrabacion;
       this.modoVisualizacion = data.modoVisualizacion ?? this.modoVisualizacion;
       this.mostrarPerfil = data.mostrarPerfil ?? this.mostrarPerfil;
+    }
+
+    if (this.esMovil) {
+      this.grabarAnimacion = false;
+      this.relacionAspectoGrabacion = '16:9';
+      this.modoVisualizacion = 'general';
     }
   }
 

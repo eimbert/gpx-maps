@@ -1313,6 +1313,7 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
         DialogoConfiguracionComponent,
         {
           width: '520px',
+          maxWidth: '95vw',
           data: {
             eliminarPausasLargas: false,
             marcarPausasLargas: false,

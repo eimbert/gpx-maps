@@ -32,6 +32,7 @@ import { MyTrackRow, MyTracksDialogComponent } from '../my-tracks-dialog/my-trac
 import { StandaloneTrackUploadDialogComponent, StandaloneTrackUploadResult } from '../standalone-track-upload-dialog/standalone-track-upload-dialog.component';
 import { PlanService, PlanTrackImportPayload } from '../services/plan.service';
 import { PlanTrackDialogComponent, PlanTrackDialogData, PlanTrackDialogResult } from '../plan-track-dialog/plan-track-dialog.component';
+import { MapPayloadTransferService } from '../services/map-payload-transfer.service';
 
 interface TrackPoint {
   lat: number;
@@ -255,6 +256,7 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
     private authService: AuthService,
     private infoMessageService: InfoMessageService,
     private planService: PlanService,
+    private mapPayloadTransfer: MapPayloadTransferService,
     identityService: UserIdentityService
   ) {
     this.userId = identityService.getUserId();
@@ -1358,9 +1360,12 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
             modoVisualizacion: result.modoVisualizacion ?? 'general',
             mostrarPerfil: !!result.mostrarPerfil
           };
-          sessionStorage.setItem('gpxViewerPayload', JSON.stringify(payload));
+          this.persistMapPayload(payload);
 
-          this.router.navigate(['/map'], { queryParams: { s: '1', from: this.mode } });
+          this.router.navigate(['/map'], {
+            queryParams: { s: '1', from: this.mode },
+            state: { gpxViewerPayload: payload }
+          });
         };
 
         if (result.anadirLogoTitulos) {
@@ -1382,6 +1387,15 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
           afterLogo(null);
         }
       });
+  }
+
+  private persistMapPayload(payload: unknown): void {
+    this.mapPayloadTransfer.set(payload);
+    try {
+      sessionStorage.setItem('gpxViewerPayload', JSON.stringify(payload));
+    } catch {
+      this.showMessage('No se pudo guardar temporalmente la animación en el navegador. Se abrirá igualmente en esta pestaña.');
+    }
   }
 
   private downscaleImageFromFile(

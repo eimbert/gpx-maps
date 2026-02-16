@@ -6,6 +6,7 @@ import { firstValueFrom } from 'rxjs';
 import * as L from 'leaflet';
 import { RecorderService } from '../recording/recorder.service';
 import { PlanService } from '../services/plan.service';
+import { MapPayloadTransferService } from '../services/map-payload-transfer.service';
 import { EventTrack, RaceEvent } from '../interfaces/events';
 import { environment } from '../../environments/environment';
 import { ProfileVisual, TrackPointWithElevation, buildCumulativeDistances, buildProfileVisual } from '../utils/profile-visual';
@@ -186,7 +187,8 @@ export class MapComponent implements OnInit, AfterViewInit {
     private router: Router,
     public rec: RecorderService,
     private http: HttpClient,
-    private planService: PlanService) { }
+    private planService: PlanService,
+    private mapPayloadTransfer: MapPayloadTransferService) { }
 
   goBack(): void {
     const origin = this.route.snapshot.queryParamMap.get('from');
@@ -215,9 +217,25 @@ export class MapComponent implements OnInit, AfterViewInit {
     this.router.navigate(['/']);
   }
 
+
+  private readPayloadFromNavigationState(): any | null {
+    const fromCurrentNavigation = this.router.getCurrentNavigation()?.extras.state?.['gpxViewerPayload'] ?? null;
+    if (fromCurrentNavigation) {
+      return fromCurrentNavigation;
+    }
+
+    const fromHistoryState = (typeof window !== 'undefined' ? window.history.state?.gpxViewerPayload : null) ?? null;
+    return fromHistoryState;
+  }
+
   private hydrateRemoveStopsFlag(): void {
-    let payload: any = null;
-    try { payload = JSON.parse(sessionStorage.getItem('gpxViewerPayload') || 'null'); } catch { payload = null; }
+    let payload: any = this.readPayloadFromNavigationState();
+    if (!payload) {
+      payload = this.mapPayloadTransfer.get();
+    }
+    if (!payload) {
+      try { payload = JSON.parse(sessionStorage.getItem('gpxViewerPayload') || 'null'); } catch { payload = null; }
+    }
 
     if (payload && typeof payload.rmstops !== 'undefined') {
       this.removeStops = !!payload.rmstops;
@@ -554,10 +572,16 @@ export class MapComponent implements OnInit, AfterViewInit {
 
   private loadTracksFromSessionOrQuery(): void {
     this.resetPlaybackState();
-    let payload: any = null;
-    try { payload = JSON.parse(sessionStorage.getItem('gpxViewerPayload') || 'null'); } catch { payload = null; }
+    let payload: any = this.readPayloadFromNavigationState();
+    if (!payload) {
+      payload = this.mapPayloadTransfer.get();
+    }
+    if (!payload) {
+      try { payload = JSON.parse(sessionStorage.getItem('gpxViewerPayload') || 'null'); } catch { payload = null; }
+    }
 
     if (payload) {
+      this.mapPayloadTransfer.clear();
       this.viewOnly = !!payload.viewOnly;
       this.editableTrackId = Number.isFinite(Number(payload.trackId)) ? Number(payload.trackId) : null;
       this.originalRouteXml = typeof payload.routeXml === 'string' ? payload.routeXml : null;

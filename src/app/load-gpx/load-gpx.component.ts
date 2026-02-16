@@ -2137,12 +2137,22 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
         calculatedDesnivel = null;
       }
 
+      const parsedStartLat = Number(row.startLat);
+      const parsedStartLon = Number(row.startLon);
+      const startPoint = this.extractFirstPointFromGpx(gpx);
+      const startLat = Number.isFinite(parsedStartLat)
+        ? parsedStartLat
+        : (startPoint?.lat ?? null);
+      const startLon = Number.isFinite(parsedStartLon)
+        ? parsedStartLon
+        : (startPoint?.lon ?? null);
+
       const payload: PlanTrackImportPayload = {
         folder_id: targetFolderId,
         created_by_user_id: this.userId,
         name: (row.fileName || routeName || 'Track').trim(),
-        start_lat: Number.isFinite(row.startLat) ? Number(row.startLat) : null,
-        start_lon: Number.isFinite(row.startLon) ? Number(row.startLon) : null,
+        start_lat: startLat,
+        start_lon: startLon,
         start_population: row.population || null,
         distance_km: Number.isFinite(row.distanceKm) ? row.distanceKm : null,
         moving_time_sec: Number.isFinite(row.timeSeconds) ? row.timeSeconds : null,

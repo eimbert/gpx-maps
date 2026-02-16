@@ -1932,10 +1932,13 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
     const distanceKm = this.toNumber(track.distanceKm);
     const timeSeconds = this.toNumber(track.timeSeconds);
     const totalTimeSeconds = this.resolveTotalTimeSeconds(track);
-    const decodedGpx = this.decodeGpxContent(track.gpxData);
-    const startPoint = decodedGpx ? this.extractFirstPointFromGpx(decodedGpx) : null;
-    const startLat = track.startLat ?? startPoint?.lat ?? null;
-    const startLon = track.startLon ?? startPoint?.lon ?? null;
+    // IMPORTANTE (rendimiento móvil):
+    // Evitamos decodificar y parsear GPX al construir cada fila de la tabla.
+    // Esa operación (base64 + XML) para docenas/centenares de tracks bloquea la UI
+    // y acaba afectando clicks en botones/diálogos. El GPX se resuelve de forma
+    // diferida cuando realmente se necesita (animar/descargar).
+    const startLat = track.startLat ?? null;
+    const startLon = track.startLon ?? null;
 
     const title = this.pickFirstText(track as any, ['title', 'trackTitle', 'track_title']);
     const description = this.pickFirstText(track as any, ['description', 'trackDescription', 'track_description']);
@@ -1958,7 +1961,7 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
       distanceLabel: Number.isFinite(distanceKm) && distanceKm > 0 ? `${distanceKm.toFixed(1)} km` : '—',
       movingTimeLabel: this.formatDurationHms(timeSeconds),
       totalTimeLabel: this.formatDurationHms(totalTimeSeconds),
-      gpxData: decodedGpx ?? track.gpxData,
+      gpxData: track.gpxData,
       gpxAsset: track.gpxAsset,
       fileName: track.fileName,
       canDelete: this.canDeleteTrack(track),
@@ -2437,9 +2440,6 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
       }
       this.tracks = updatedTracks;
 
-      if (this.isMobileViewport) {
-        this.showMessage('Ruta añadida. Pulsa “Iniciar” para configurar y lanzar la animación.');
-      }
     } catch {
       this.showMessage('No se pudo procesar el track.');
     }

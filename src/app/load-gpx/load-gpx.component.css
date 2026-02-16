@@ -586,10 +586,6 @@
   color: #0f172a;
 }
 
-.user-tracks__population-name-mobile {
-  display: none;
-  color: #334155;
-}
 
 .user-tracks__population-meta {
   margin-left: 8px;
@@ -1636,16 +1632,21 @@ input[type="file"] {
     display: none;
   }
 
+  .container {
+    padding: 16px 8px 32px;
+  }
+
+  .load-wrapper,
+  .events-wrapper {
+    max-width: 100%;
+  }
+
   .user-tracks__filter {
     flex-basis: 100%;
   }
 
-  .user-tracks__population-name {
+  .user-tracks__population-meta {
     display: none;
-  }
-
-  .user-tracks__population-name-mobile {
-    display: inline;
   }
 }
 

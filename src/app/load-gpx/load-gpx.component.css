@@ -259,6 +259,7 @@
   display: flex;
   flex-direction: column;
   gap: 2px;
+  min-width: 0;
 }
 
 .file-name {
@@ -446,14 +447,16 @@
   border: 1px solid #8292a7;
   background: #f8fafc;
   box-sizing: border-box;
-  flex: 0 0 auto;
+  flex: 1 1 320px;
+  min-width: 0;
 }
 
 .user-tracks__filter input {
   border: none;
   outline: none;
   background: transparent;
-  min-width: 220px;
+  min-width: 0;
+  width: 100%;
   font-weight: 700;
   color: #0f172a;
 }
@@ -552,24 +555,19 @@
 }
 
 .user-tracks__expand {
-  border: 1px solid transparent;
-  background: linear-gradient(135deg, #ffffff, #f8fafc);
-  border-radius: 999px;
-  padding: 6px 8px;
+  border: none;
+  background: transparent;
+  padding: 2px;
   cursor: pointer;
-  margin-right: 10px;
-  box-shadow: 0 10px 18px rgba(15, 23, 42, 0.12);
+  margin-right: 6px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  transition: background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease,
-    transform 0.2s ease;
+  color: #1e293b;
 }
 
 .user-tracks__expand:hover {
-  background: linear-gradient(135deg, #e0f2fe, #e2e8f0);
-  border-color: #bae6fd;
-  box-shadow: 0 12px 20px rgba(30, 64, 175, 0.2);
+  color: #1d4ed8;
   transform: translateY(-1px);
 }
 
@@ -586,6 +584,11 @@
 .user-tracks__population-name {
   font-weight: 100;
   color: #0f172a;
+}
+
+.user-tracks__population-name-mobile {
+  display: none;
+  color: #334155;
 }
 
 .user-tracks__population-meta {
@@ -1627,16 +1630,31 @@ input[type="file"] {
     justify-self: end;
     grid-column: 2;
   }
+
+  .hero__home,
+  .events-actions .event-action-button--home {
+    display: none;
+  }
+
+  .user-tracks__filter {
+    flex-basis: 100%;
+  }
+
+  .user-tracks__population-name {
+    display: none;
+  }
+
+  .user-tracks__population-name-mobile {
+    display: inline;
+  }
 }
 
 .event-card--carousel {
+  position: relative;
+  overflow: hidden;
   background-size: contain;
   background-position: center;
   background-repeat: no-repeat;
-}
-.event-card--carousel {
-  position: relative;
-  overflow: hidden;
 }
 
 .event-card--carousel::before{

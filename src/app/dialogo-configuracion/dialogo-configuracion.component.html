@@ -42,7 +42,7 @@
         Activar la música
       </mat-checkbox>
 
-      <mat-checkbox [(ngModel)]="grabarAnimacion">
+      <mat-checkbox *ngIf="!esMovil" [(ngModel)]="grabarAnimacion">
         Grabar automáticamente la animación
       </mat-checkbox>
 
@@ -51,7 +51,7 @@
       </mat-checkbox>
     </div>
 
-    <div class="visualization-modes">
+    <div class="visualization-modes" *ngIf="!esMovil">
       <span class="orientation-label">Modo de visualización:</span>
       <label class="orientation-option">
         <input
@@ -73,7 +73,7 @@
       </label>
     </div>
 
-    <div class="recording-orientation">
+    <div class="recording-orientation" *ngIf="!esMovil">
       <span class="orientation-label">Relación de aspecto:</span>
       <label class="orientation-option">
         <input

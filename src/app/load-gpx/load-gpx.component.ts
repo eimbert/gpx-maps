@@ -1362,7 +1362,10 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
           };
           this.persistMapPayload(payload);
 
-          this.router.navigate(['/map'], { queryParams: { s: '1', from: this.mode } });
+          this.router.navigate(['/map'], {
+            queryParams: { s: '1', from: this.mode },
+            state: { gpxViewerPayload: payload }
+          });
         };
 
         if (result.anadirLogoTitulos) {

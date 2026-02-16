@@ -217,8 +217,22 @@ export class MapComponent implements OnInit, AfterViewInit {
     this.router.navigate(['/']);
   }
 
+
+  private readPayloadFromNavigationState(): any | null {
+    const fromCurrentNavigation = this.router.getCurrentNavigation()?.extras.state?.['gpxViewerPayload'] ?? null;
+    if (fromCurrentNavigation) {
+      return fromCurrentNavigation;
+    }
+
+    const fromHistoryState = (typeof window !== 'undefined' ? window.history.state?.gpxViewerPayload : null) ?? null;
+    return fromHistoryState;
+  }
+
   private hydrateRemoveStopsFlag(): void {
-    let payload: any = this.mapPayloadTransfer.get();
+    let payload: any = this.readPayloadFromNavigationState();
+    if (!payload) {
+      payload = this.mapPayloadTransfer.get();
+    }
     if (!payload) {
       try { payload = JSON.parse(sessionStorage.getItem('gpxViewerPayload') || 'null'); } catch { payload = null; }
     }
@@ -558,7 +572,10 @@ export class MapComponent implements OnInit, AfterViewInit {
 
   private loadTracksFromSessionOrQuery(): void {
     this.resetPlaybackState();
-    let payload: any = this.mapPayloadTransfer.get();
+    let payload: any = this.readPayloadFromNavigationState();
+    if (!payload) {
+      payload = this.mapPayloadTransfer.get();
+    }
     if (!payload) {
       try { payload = JSON.parse(sessionStorage.getItem('gpxViewerPayload') || 'null'); } catch { payload = null; }
     }

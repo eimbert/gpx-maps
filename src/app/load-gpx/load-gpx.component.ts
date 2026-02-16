@@ -214,6 +214,7 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
   private sessionExpiredNotified = false;
 
   hoveredUserTrack: any | null = null;
+  private readonly isMobileViewport = typeof window !== 'undefined' && window.matchMedia('(max-width: 768px)').matches;
 
   eventUpload: EventTrackUploadDraft = {
     eventId: null,
@@ -2417,6 +2418,9 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
         return;
       }
       this.tracks = updatedTracks;
+      if (this.isMobileViewport) {
+        this.iniciarVisualizacion();
+      }
     } catch {
       this.showMessage('No se pudo procesar el track.');
     }

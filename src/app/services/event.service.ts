@@ -254,26 +254,29 @@ export class EventService {
   }
 
   private normalizeTrack(track: EventTrack, routeId: number | null | undefined, includeGpxData = true): EventTrack {
+    const rawTrack = track as any;
+    const { routeXml, route_xml, ...trackWithoutRouteXml } = rawTrack;
+
     const timeSeconds = Number(track.timeSeconds);
     const tiempoReal = track.tiempoReal === undefined || track.tiempoReal === null
       ? track.tiempoReal ?? undefined
       : Number(track.tiempoReal);
     const distanceKm = Number(track.distanceKm);
-    const year = (track as any).year ?? (track as any).trackYear ?? track.year ?? null;
-    const population = this.normalizeTextField((track as any).population ?? (track as any).poblacion ?? track.population);
+    const year = rawTrack.year ?? rawTrack.trackYear ?? track.year ?? null;
+    const population = this.normalizeTextField(rawTrack.population ?? rawTrack.poblacion ?? track.population);
     const autonomousCommunity = this.normalizeTextField(
-      (track as any).autonomousCommunity ?? (track as any).comunidadAutonoma ?? track.autonomousCommunity
+      rawTrack.autonomousCommunity ?? rawTrack.comunidadAutonoma ?? track.autonomousCommunity
     );
-    const province = this.normalizeTextField((track as any).province ?? (track as any).provincia ?? track.province);
-    const title = this.normalizeTextField((track as any).title ?? (track as any).trackTitle ?? (track as any).track_title);
-    const description = this.normalizeTextField((track as any).description ?? (track as any).trackDescription ?? (track as any).track_description);
-    const shared = Boolean((track as any).shared);
+    const province = this.normalizeTextField(rawTrack.province ?? rawTrack.provincia ?? track.province);
+    const title = this.normalizeTextField(rawTrack.title ?? rawTrack.trackTitle ?? rawTrack.track_title);
+    const description = this.normalizeTextField(rawTrack.description ?? rawTrack.trackDescription ?? rawTrack.track_description);
+    const shared = Boolean(rawTrack.shared);
     const gpxData = includeGpxData
-      ? (track.gpxData ?? (track as any).routeXml ?? (track as any).route_xml ?? null)
+      ? (track.gpxData ?? routeXml ?? route_xml ?? null)
       : null;
 
     return {
-      ...track,
+      ...trackWithoutRouteXml,
       id: Number(track.id),
       timeSeconds: Number.isFinite(timeSeconds) ? timeSeconds : 0,
       tiempoReal: tiempoReal === undefined || Number.isFinite(tiempoReal) ? tiempoReal : undefined,

@@ -51,12 +51,14 @@
   background: #fff;
   min-width: 280px;
   flex: 1;
+  box-sizing: border-box;
 }
 
 .plan__search input {
   border: none;
   outline: none;
   flex: 1;
+  min-width: 0;
   font-size: 14px;
 }
 
@@ -652,6 +654,7 @@
   align-items: center;
   justify-content: center;
   gap: 8px;
+  flex-wrap: wrap;
 }
 
 .plan__folders {
@@ -894,8 +897,7 @@
   }
 
   .plan__home-button {
-    width: 100%;
-    justify-content: center;
+    display: none;
   }
 
   .plan__new,

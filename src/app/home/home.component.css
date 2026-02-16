@@ -205,6 +205,19 @@
   transform-origin: center;
 }
 
+.home__version {
+  position: absolute;
+  left: 18px;
+  bottom: 14px;
+  z-index: 2;
+  margin: 0;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.4px;
+  color: #14532d;
+  opacity: 0.95;
+}
+
 @media (max-width: 640px) {
   .home {
     min-height: 100dvh;
@@ -297,5 +310,11 @@
 
   .auth-link {
     justify-content: center;
+  }
+
+  .home__version {
+    left: 14px;
+    bottom: 12px;
+    font-size: 10px;
   }
 }

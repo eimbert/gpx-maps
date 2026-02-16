@@ -7,6 +7,7 @@ import { InfoDialogComponent, InfoDialogData, InfoDialogResult } from '../info-d
 import { PlanService, PlanTrackImportPayload } from '../services/plan.service';
 import { GpxImportService } from '../services/gpx-import.service';
 import { InfoMessageService } from '../services/info-message.service';
+import { MapPayloadTransferService } from '../services/map-payload-transfer.service';
 import { UserIdentityService } from '../services/user-identity.service';
 import { PlanFolder,  PlanFolderVotesResponse, PlanInvitation, PlanTrack, PlanTrackVotesSummary, PlanUserSearchResult, TrackWeatherSummary } from '../interfaces/plan';
 import { LoginSuccessResponse } from '../interfaces/auth';
@@ -119,6 +120,7 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
     private route: ActivatedRoute,
     private router: Router,
     private infoMessageService: InfoMessageService,
+    private mapPayloadTransfer: MapPayloadTransferService,
     identityService: UserIdentityService
   ) {
     this.userId = identityService.getUserId();
@@ -846,7 +848,7 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
       routeXml: track.routeXml
     };
 
-    sessionStorage.setItem('gpxViewerPayload', JSON.stringify(payload));
+    this.persistMapPayload(payload);
     this.router.navigate(['/map'], { queryParams: { from: 'plan', folderId: this.activeFolder?.id } });
   }
 
@@ -900,8 +902,18 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
       viewOnly: true
     };
 
-    sessionStorage.setItem('gpxViewerPayload', JSON.stringify(payload));
+    this.persistMapPayload(payload);
     this.router.navigate(['/map'], { queryParams: { from: 'plan', folderId: this.activeFolder?.id } });
+  }
+
+
+  private persistMapPayload(payload: unknown): void {
+    this.mapPayloadTransfer.set(payload);
+    try {
+      sessionStorage.setItem('gpxViewerPayload', JSON.stringify(payload));
+    } catch {
+      this.showMessage('No se pudo guardar temporalmente la visualización en el navegador. Se abrirá igualmente en esta pestaña.');
+    }
   }
 
   private getSelectableTracks(): PlanTrack[] {

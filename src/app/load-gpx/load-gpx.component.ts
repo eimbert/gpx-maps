@@ -217,6 +217,8 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
   private readonly isMobileViewport =
     typeof window !== 'undefined' &&
     (window.matchMedia('(max-width: 1024px)').matches || window.matchMedia('(pointer: coarse)').matches);
+  isUserTracksPanelCollapsed = false;
+  isEventRankingPanelCollapsed = false;
 
   eventUpload: EventTrackUploadDraft = {
     eventId: null,
@@ -402,6 +404,24 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
 
   selectMode(mode: 'routes' | 'events'): void {
     this.mode = mode;
+    this.restoreMobileAnimationPanels();
+  }
+
+  private restoreMobileAnimationPanels(): void {
+    this.isUserTracksPanelCollapsed = false;
+    this.isEventRankingPanelCollapsed = false;
+  }
+
+  private async collapseMobilePanelBeforeAnimation(panel: 'routes' | 'events'): Promise<void> {
+    if (!this.isMobileViewport) return;
+
+    if (panel === 'routes') {
+      this.isUserTracksPanelCollapsed = true;
+    } else {
+      this.isEventRankingPanelCollapsed = true;
+    }
+
+    await new Promise<void>(resolve => setTimeout(() => resolve(), 0));
   }
 
   selectEvent(eventId: number, modalityId?: number): void {
@@ -1279,21 +1299,26 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
       colors: this.tracks.map((t, i) => t.color || this.pickColor(i))
     };
 
-    this.dialog
-      .open<TrackMetadataDialogComponent, TrackMetadataDialogResult, TrackMetadataDialogResult>(
-        TrackMetadataDialogComponent,
-        {
-          width: this.isMobileViewport ? '95vw' : '520px',
-          maxWidth: '95vw',
-          data: metadataDefaults
-        }
-      )
-      .afterClosed()
-      .subscribe(meta => {
-        if (!meta) return;
-        this.applyMetadata(meta);
-        this.abrirCuadroConfiguracion(meta);
-      });
+    void this.collapseMobilePanelBeforeAnimation('routes').then(() => {
+      this.dialog
+        .open<TrackMetadataDialogComponent, TrackMetadataDialogResult, TrackMetadataDialogResult>(
+          TrackMetadataDialogComponent,
+          {
+            width: this.isMobileViewport ? '95vw' : '520px',
+            maxWidth: '95vw',
+            data: metadataDefaults
+          }
+        )
+        .afterClosed()
+        .subscribe(meta => {
+          if (!meta) {
+            this.restoreMobileAnimationPanels();
+            return;
+          }
+          this.applyMetadata(meta);
+          this.abrirCuadroConfiguracion(meta);
+        });
+    });
   }
 
   private abrirCuadroConfiguracion(meta: TrackMetadataDialogResult): void {
@@ -1672,6 +1697,8 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
       return;
     }
 
+    await this.collapseMobilePanelBeforeAnimation('events');
+
     const loaded: LoadedTrack[] = [];
     for (let i = 0; i < selectedIds.length; i++) {
 
@@ -1698,6 +1725,7 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
     }
 
     if (!loaded.length) {
+      this.restoreMobileAnimationPanels();
       this.showMessage('No se pudieron cargar los tracks seleccionados.');
       return;
     }

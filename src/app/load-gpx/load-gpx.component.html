@@ -53,7 +53,7 @@
       </button>
     </div>
 
-    <section *ngIf="isAuthenticated" class="user-tracks">
+    <section *ngIf="isAuthenticated && !isUserTracksPanelCollapsed" class="user-tracks">
       <div class="user-tracks__header">
         <div>
           <p class="eyebrow">Rutas disponibles</p>
@@ -524,7 +524,7 @@
 
         </div>
 
-        <article class="panel events-layout__right">
+        <article class="panel events-layout__right" *ngIf="!isEventRankingPanelCollapsed">
           <ng-container *ngIf="selectedEvent; else routeTimesPlaceholder">
             <div class="panel__header panel__header--ranking">
               <div>

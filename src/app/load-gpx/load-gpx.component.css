@@ -587,6 +587,7 @@
 }
 
 
+
 .user-tracks__population-meta {
   margin-left: 8px;
   color: #475569;
@@ -1648,6 +1649,7 @@ input[type="file"] {
   .user-tracks__population-meta {
     display: none;
   }
+
 }
 
 .event-card--carousel {

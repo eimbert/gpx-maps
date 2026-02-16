@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { BehaviorSubject, Observable, catchError, map, of, tap } from 'rxjs';
 import { CreateEventPayload, CreateTrackPayload, EventTrack, RaceEvent, RouteTrackTime, TrackGpxFile } from '../interfaces/events';
 import { environment } from '../../environments/environment';
@@ -160,18 +160,22 @@ export class EventService {
     );
   }
 
-  getMyTracks(): Observable<EventTrack[]> {
-    return this.http.get<EventTrack[]>(`${this.tracksApiBase}/me`).pipe(
+  getMyTracks(includeGpxData = true): Observable<EventTrack[]> {
+    return this.http.get<EventTrack[]>(`${this.tracksApiBase}/me`, {
+      params: this.buildTracksListParams(includeGpxData)
+    }).pipe(
       map(tracks => (tracks || []).map(track => {
         const routeId = this.resolveTrackRouteId(track);
-        return this.normalizeTrack(track, routeId);
+        return this.normalizeTrack(track, routeId, includeGpxData);
       }))
     );
   }
 
-  getSharedTracks(): Observable<EventTrack[]> {
-    return this.http.get<EventTrack[]>(`${this.tracksApiBase}/shared`).pipe(
-      map(tracks => (tracks || []).map(track => this.normalizeTrack(track, this.resolveTrackRouteId(track))))
+  getSharedTracks(includeGpxData = true): Observable<EventTrack[]> {
+    return this.http.get<EventTrack[]>(`${this.tracksApiBase}/shared`, {
+      params: this.buildTracksListParams(includeGpxData)
+    }).pipe(
+      map(tracks => (tracks || []).map(track => this.normalizeTrack(track, this.resolveTrackRouteId(track), includeGpxData)))
     );
   }
 
@@ -249,7 +253,7 @@ export class EventService {
     };
   }
 
-  private normalizeTrack(track: EventTrack, routeId: number | null | undefined): EventTrack {
+  private normalizeTrack(track: EventTrack, routeId: number | null | undefined, includeGpxData = true): EventTrack {
     const timeSeconds = Number(track.timeSeconds);
     const tiempoReal = track.tiempoReal === undefined || track.tiempoReal === null
       ? track.tiempoReal ?? undefined
@@ -264,7 +268,9 @@ export class EventService {
     const title = this.normalizeTextField((track as any).title ?? (track as any).trackTitle ?? (track as any).track_title);
     const description = this.normalizeTextField((track as any).description ?? (track as any).trackDescription ?? (track as any).track_description);
     const shared = Boolean((track as any).shared);
-    const gpxData = track.gpxData ?? (track as any).routeXml ?? (track as any).route_xml ?? null;
+    const gpxData = includeGpxData
+      ? (track.gpxData ?? (track as any).routeXml ?? (track as any).route_xml ?? null)
+      : null;
 
     return {
       ...track,
@@ -289,6 +295,14 @@ export class EventService {
       description,
       gpxData
     };
+  }
+
+  private buildTracksListParams(includeGpxData: boolean): HttpParams {
+    if (includeGpxData) return new HttpParams();
+
+    return new HttpParams()
+      .set('includeGpx', 'false')
+      .set('includeRouteXml', 'false');
   }
 
   private resolveTrackRouteId(track: EventTrack): number | null {

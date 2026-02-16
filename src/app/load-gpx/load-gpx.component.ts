@@ -1883,8 +1883,8 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
       this.sharedTracksLoading = true;
       try {
         const [tracks, sharedTracks] = await Promise.all([
-          firstValueFrom(this.eventService.getMyTracks()),
-          firstValueFrom(this.eventService.getSharedTracks())
+          firstValueFrom(this.eventService.getMyTracks(false)),
+          firstValueFrom(this.eventService.getSharedTracks(false))
         ]);
 
         const rows = tracks.map(track => this.toUserTrackRow(track, this.eventsById));
@@ -2700,7 +2700,7 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
 
   private async buildMyTrackRows(): Promise<MyTrackRow[]> {
     try {
-      const tracks = await firstValueFrom(this.eventService.getMyTracks());
+      const tracks = await firstValueFrom(this.eventService.getMyTracks(false));
       // usa el Map precalculado
       const eventsById = this.eventsById;
 

@@ -214,6 +214,9 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
   private sessionExpiredNotified = false;
 
   hoveredUserTrack: any | null = null;
+  private readonly isMobileViewport =
+    typeof window !== 'undefined' &&
+    (window.matchMedia('(max-width: 1024px)').matches || window.matchMedia('(pointer: coarse)').matches);
 
   eventUpload: EventTrackUploadDraft = {
     eventId: null,
@@ -1276,6 +1279,12 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
       colors: this.tracks.map((t, i) => t.color || this.pickColor(i))
     };
 
+    if (this.isMobileViewport) {
+      this.applyMetadata(metadataDefaults);
+      this.iniciarVisualizacionDirecta(metadataDefaults);
+      return;
+    }
+
     this.dialog
       .open<TrackMetadataDialogComponent, TrackMetadataDialogResult, TrackMetadataDialogResult>(
         TrackMetadataDialogComponent,
@@ -1290,6 +1299,42 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
         this.applyMetadata(meta);
         this.abrirCuadroConfiguracion(meta);
       });
+  }
+
+  private iniciarVisualizacionDirecta(meta: TrackMetadataDialogResult): void {
+    const tracksPayload = this.tracks.map(track => ({
+      trkpts: track.data.trkpts.map(p => ({
+        lat: p.lat,
+        lon: p.lon,
+        ele: p.ele,
+        time: p.time,
+        hr: p.hr ?? null
+      }))
+    }));
+
+    const namesPayload = meta.names.map((n, i) => n?.trim() || `Track ${i + 1}`);
+    const colorsPayload = meta.colors.map((c, i) => c || this.pickColor(i));
+
+    const payload = {
+      names: namesPayload,
+      colors: colorsPayload,
+      tracks: tracksPayload,
+      logo: null,
+      rmstops: false,
+      marcarPausasLargas: false,
+      umbralPausaSegundos: 60,
+      activarMusica: true,
+      grabarAnimacion: false,
+      relacionAspectoGrabacion: '16:9' as const,
+      modoVisualizacion: 'general' as const,
+      mostrarPerfil: true
+    };
+
+    this.persistMapPayload(payload);
+    this.router.navigate(['/map'], {
+      queryParams: { s: '1', from: this.mode },
+      state: { gpxViewerPayload: payload }
+    });
   }
 
   private abrirCuadroConfiguracion(meta: TrackMetadataDialogResult): void {
@@ -2417,6 +2462,9 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
         return;
       }
       this.tracks = updatedTracks;
+      if (this.isMobileViewport) {
+        this.iniciarVisualizacion();
+      }
     } catch {
       this.showMessage('No se pudo procesar el track.');
     }

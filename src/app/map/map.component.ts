@@ -228,6 +228,37 @@ export class MapComponent implements OnInit, AfterViewInit {
     return fromHistoryState;
   }
 
+  private readPayloadFromWindowName(): any | null {
+    if (typeof window === 'undefined' || typeof window.name !== 'string') {
+      return null;
+    }
+
+    const prefix = 'gpxViewerPayload:';
+    if (!window.name.startsWith(prefix)) {
+      return null;
+    }
+
+    const rawPayload = window.name.slice(prefix.length);
+    if (!rawPayload) {
+      return null;
+    }
+
+    try {
+      return JSON.parse(decodeURIComponent(rawPayload));
+    } catch {
+      return null;
+    }
+  }
+
+  private clearWindowNamePayload(): void {
+    if (typeof window === 'undefined' || typeof window.name !== 'string') {
+      return;
+    }
+    if (window.name.startsWith('gpxViewerPayload:')) {
+      window.name = '';
+    }
+  }
+
   private hydrateRemoveStopsFlag(): void {
     let payload: any = this.readPayloadFromNavigationState();
     if (!payload) {
@@ -235,6 +266,9 @@ export class MapComponent implements OnInit, AfterViewInit {
     }
     if (!payload) {
       try { payload = JSON.parse(sessionStorage.getItem('gpxViewerPayload') || 'null'); } catch { payload = null; }
+    }
+    if (!payload) {
+      payload = this.readPayloadFromWindowName();
     }
 
     if (payload && typeof payload.rmstops !== 'undefined') {
@@ -579,9 +613,13 @@ export class MapComponent implements OnInit, AfterViewInit {
     if (!payload) {
       try { payload = JSON.parse(sessionStorage.getItem('gpxViewerPayload') || 'null'); } catch { payload = null; }
     }
+    if (!payload) {
+      payload = this.readPayloadFromWindowName();
+    }
 
     if (payload) {
       this.mapPayloadTransfer.clear();
+      this.clearWindowNamePayload();
       this.viewOnly = !!payload.viewOnly;
       this.editableTrackId = Number.isFinite(Number(payload.trackId)) ? Number(payload.trackId) : null;
       this.originalRouteXml = typeof payload.routeXml === 'string' ? payload.routeXml : null;

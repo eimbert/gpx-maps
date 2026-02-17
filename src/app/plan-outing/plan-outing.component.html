@@ -129,7 +129,7 @@
           <h3>Invitar</h3>
         </div>
         <div class="plan__invite-row">
-          <input type="text" [(ngModel)]="inviteQuery" placeholder="Busca por nombre o email"
+          <input type="text" [(ngModel)]="inviteQuery" placeholder="Busca por nick o email"
             aria-label="Buscar usuarios">
           <button class="plan__secondary" type="button" (click)="searchInvite()">Buscar</button>
         </div>
@@ -188,7 +188,7 @@
                     type="button"
                     (click)="resendInvitation(invitation)"
                     [disabled]="!canResendInvitation(invitation)">
-                    Enviar invitación
+                    {{ resolveResendInvitationLabel(invitation) }}
                   </button>
                 </td>
               </tr>

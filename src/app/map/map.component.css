@@ -185,6 +185,26 @@
 .start-btn:hover{ transform: translateY(-1px); box-shadow: 0 8px 22px rgba(67,56,202,.45); }
 .start-btn:active{ transform: translateY(0); filter: brightness(.95); }
 
+
+.map-profile-toggle{
+  pointer-events: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: rgba(15,23,42,0.82);
+  color: #e2e8f0;
+  border: 1px solid rgba(255,255,255,0.14);
+  box-shadow: 0 6px 16px rgba(0,0,0,0.25);
+  font: 600 13px/1 system-ui,-apple-system,Segoe UI,Roboto,Arial;
+}
+
+.map-profile-toggle input{
+  margin: 0;
+  accent-color: #22c55e;
+}
+
 :host ::ng-deep .tick-label{
   position: relative;
   background: linear-gradient(180deg, #fff7e6, #ffe8c7);

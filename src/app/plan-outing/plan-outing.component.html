@@ -161,7 +161,7 @@
                     type="button"
                     (click)="inviteUser(user)"
                     [disabled]="!canSendInvite(user)">
-                    Enviar invitación
+                    {{ resolveInviteActionLabel(user) }}
                   </button>
                 </td>
               </tr>

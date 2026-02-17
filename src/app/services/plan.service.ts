@@ -167,24 +167,34 @@ export class PlanService {
   }
 
   searchUsers(query: string): Observable<{ users: PlanUserSearchResult[]; notFound: boolean }> {
-    if (!query.trim()) return of({ users: [], notFound: false });
-    const nickname = query.trim();
+    const trimmedQuery = query.trim();
+    if (!trimmedQuery) return of({ users: [], notFound: false });
+
     return this.http
-      .get<PlanUserSearchResult | PlanUserSearchResult[]>(`${this.usersApiBase}/search`, { params: { q: query } })
+      .get<PlanUserSearchResult | PlanUserSearchResult[] | { users?: PlanUserSearchResult[] }>(`${this.usersApiBase}/search`, {
+        params: { q: trimmedQuery }
+      })
       .pipe(
         tap(response => console.log('Plan user search response:', response)),
         map(response => {
-          const list = Array.isArray(response) ? response : response ? [response] : [];
+          const wrappedResponse = response as { users?: PlanUserSearchResult[] };
+          const list: PlanUserSearchResult[] = Array.isArray(response)
+            ? response
+            : Array.isArray(wrappedResponse.users)
+              ? wrappedResponse.users
+              : response
+                ? [response as PlanUserSearchResult]
+                : [];
           return {
-            users: list.map(user => ({
+            users: list.map((user: PlanUserSearchResult) => ({
               ...user,
               id: Number(user.id),
-              name: user.name ?? nickname
+              name: user.name ?? trimmedQuery
             })),
             notFound: list.length === 0
           };
         }),
-        catchError(error => of({ users: [], notFound: error?.status === 403 }))
+        catchError(error => of({ users: [], notFound: error?.status === 404 }))
       );
   }
 

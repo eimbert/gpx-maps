@@ -143,7 +143,7 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
       )
       .subscribe(response => {
         this.inviteStatusMessage = response.notFound
-          ? 'No se encuentra ningún usuario con ese nick.'
+          ? 'No se encuentra ningún usuario con ese nick o email.'
           : (response.users.length ? '' : (this.inviteQuery ? 'No se encontraron usuarios.' : ''));
         if (response.users.length) {
           this.addFolderMembersFromSearch(response.users);
@@ -1185,7 +1185,11 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
 
   canResendInvitation(invitation: PlanInvitation): boolean {
     const userId = invitation.invitedUserId ?? invitation.userId;
-    return invitation.status === 'pending' && !!userId;
+    return invitation.status === 'revoked' && !!userId;
+  }
+
+  resolveResendInvitationLabel(invitation: PlanInvitation): string {
+    return invitation.status === 'revoked' ? 'Enviar invitación' : 'Enviada';
   }
 
   private toDateValue(value: string | null): string | null {

@@ -535,6 +535,7 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
 
   resolveInviteStatus(user: PlanUserSearchResult): string {
     const invitation = this.resolveInvitation(user);
+
     if (!invitation) return this.sentInviteUserIds.has(user.id) ? 'Enviada' : 'Sin enviar';
     const statusMap: Record<string, string> = {
       accepted: 'Aceptó',

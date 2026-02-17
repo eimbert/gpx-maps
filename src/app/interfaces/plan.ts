@@ -52,7 +52,7 @@ export interface PlanInvitation {
   invitedEmail?: string | null;
   invitedByUserId: number;
   role: 'editor' | 'viewer';
-  status: 'pending' | 'sending' | 'accepted' | 'declined' | 'revoked' | 'expired';
+  status: 'pending' | 'sending' | 'accepted' | 'rejected' | 'declined' | 'revoked' | 'expired';
   token: string;
   createdAt: string;
   modifiedAt?: string | null;

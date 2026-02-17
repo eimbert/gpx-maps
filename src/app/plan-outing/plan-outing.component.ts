@@ -97,6 +97,7 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
 
   inviteQuery = '';
   inviteStatusMessage = '';
+  inviteSearchResults: PlanUserSearchResult[] = [];
   folderInvitations: PlanInvitation[] = [];
 
   isLoadingFolders = false;
@@ -142,12 +143,10 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
         takeUntil(this.destroy$)
       )
       .subscribe(response => {
+        this.inviteSearchResults = response.users;
         this.inviteStatusMessage = response.notFound
           ? 'No se encuentra ningún usuario con ese nick o email.'
           : (response.users.length ? '' : (this.inviteQuery ? 'No se encontraron usuarios.' : ''));
-        if (response.users.length) {
-          this.addFolderMembersFromSearch(response.users);
-        }
       });
   }
 
@@ -287,6 +286,8 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
     };
     this.loadTracks(folder.id);
     this.loadInvitations(folder.id);
+    this.inviteSearchResults = [];
+    this.inviteStatusMessage = '';
   }
 
   saveFolder(): void {
@@ -454,7 +455,8 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
   }
 
   searchInvite(): void {
-    this.inviteSearch$.next(this.inviteQuery);
+    this.inviteSearchResults = [];
+    this.inviteSearch$.next(this.inviteQuery.trim());
   }
 
   inviteUser(user: PlanUserSearchResult): void {
@@ -510,89 +512,15 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
     });
   }
 
-  private addFolderMembersFromSearch(users: PlanUserSearchResult[]): void {
-    if (!this.activeFolder) return;
-    const nickname = this.inviteQuery.trim();
-    if (!nickname) return;
-    const folderId = this.activeFolder.id;
-    const addRequests = users.map(user =>
-      this.planService
-        .addFolderMember(folderId, {
-          folderId,
-          userId: user.id,
-          nickname,
-          email: user.email
-        })
-        .pipe(map(() => user))
-    );
-    if (!addRequests.length) return;
-
-    forkJoin(addRequests).subscribe(addedUsers => {
-      const label = addedUsers.length === 1
-        ? this.resolveInviteNickname(addedUsers[0])
-        : `${addedUsers.length} usuarios`;
-      this.inviteStatusMessage = `Se añadió acceso a ${label}.`;
-      this.applyOptimisticInvitations(folderId, addedUsers);
-      this.refreshInvitationsAfterSearchAdd(folderId, addedUsers.map(user => user.id));
-    });
-  }
-
-  private applyOptimisticInvitations(folderId: number, users: PlanUserSearchResult[]): void {
-    if (!users.length) return;
-
-    const now = new Date().toISOString();
-    const existingUserIds = new Set(
-      this.folderInvitations
-        .map(invitation => invitation.invitedUserId ?? invitation.userId)
-        .filter((id): id is number => typeof id === 'number')
-    );
-
-    const optimisticInvitations = users
-      .filter(user => !existingUserIds.has(user.id))
-      .map((user, index) => ({
-        id: -(Date.now() + index),
-        folderId,
-        userId: user.id,
-        invitedUserId: user.id,
-        invitedByUserId: this.userId,
-        role: 'viewer' as const,
-        status: 'sending' as const,
-        token: `optimistic-${user.id}-${Date.now()}-${index}`,
-        createdAt: now,
-        modifiedAt: now,
-        nickname: user.name?.trim() || null,
-        name: user.name?.trim() || null,
-        email: user.email,
-        invitedEmail: user.email
-      }));
-
-    if (!optimisticInvitations.length) return;
-
-    this.folderInvitations = [...this.folderInvitations, ...optimisticInvitations];
-    this.updateFolderSharedState(folderId, true);
-  }
-
-  private refreshInvitationsAfterSearchAdd(folderId: number, expectedUserIds: number[], retries = 12): void {
-    this.planService.getInvitations(folderId).subscribe(invitations => {
-      this.folderInvitations = invitations;
-      this.updateFolderSharedState(folderId, invitations.length > 0);
-
-      const loadedIds = new Set(
-        invitations
-          .map(invitation => invitation.invitedUserId ?? invitation.userId)
-          .filter((id): id is number => typeof id === 'number')
-      );
-      const missingUsers = expectedUserIds.some(userId => !loadedIds.has(userId));
-
-      if (missingUsers && retries > 0) {
-        setTimeout(() => this.refreshInvitationsAfterSearchAdd(folderId, expectedUserIds, retries - 1), 400);
-      }
-    });
-  }
-
   resolveInviteNickname(user: PlanUserSearchResult): string {
     const nickname = user.name?.trim();
     return nickname ? nickname : 'Sin nick';
+  }
+
+  resolveInviteSecondary(user: PlanUserSearchResult): string | null {
+    const email = user.email?.trim();
+    if (!email) return null;
+    return this.obfuscateEmail(email);
   }
 
   resolveInviteStatus(user: PlanUserSearchResult): string {

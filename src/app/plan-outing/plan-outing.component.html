@@ -134,6 +134,40 @@
           <button class="plan__secondary" type="button" (click)="searchInvite()">Buscar</button>
         </div>
         <p class="plan__hint" *ngIf="inviteStatusMessage">{{ inviteStatusMessage }}</p>
+        <div class="plan__invite-table-wrapper" *ngIf="inviteSearchResults.length">
+          <table class="plan__invite-table" aria-label="Resultados de búsqueda de usuarios">
+            <thead>
+              <tr>
+                <th scope="col">Usuario</th>
+                <th scope="col">Estado</th>
+                <th scope="col" *ngIf="canManageInvitations()"></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let user of inviteSearchResults">
+                <td>
+                  <div class="plan__invite-name-row">
+                    <span class="plan__invite-icon" aria-hidden="true">👤</span>
+                    <div>
+                      <div class="plan__invite-name">{{ resolveInviteNickname(user) }}</div>
+                      <div class="plan__invite-email" *ngIf="resolveInviteSecondary(user) as inviteSecondary">{{ inviteSecondary }}</div>
+                    </div>
+                  </div>
+                </td>
+                <td class="plan__center">{{ resolveInviteStatus(user) }}</td>
+                <td class="plan__center" *ngIf="canManageInvitations()">
+                  <button
+                    class="plan__primary plan__primary--small"
+                    type="button"
+                    (click)="inviteUser(user)"
+                    [disabled]="!canSendInvite(user)">
+                    Enviar invitación
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
         <p class="plan__hint" *ngIf="!folderInvitations.length">
           No hay invitados. Esta salida no está compartida.
         </p>

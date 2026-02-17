@@ -29,6 +29,19 @@
       </select>
     </div>
 
+    <label
+      class="map-profile-toggle"
+      *ngIf="canToggleMobileProfile"
+      aria-label="Mostrar u ocultar el perfil de elevación"
+    >
+      <input
+        type="checkbox"
+        [checked]="mobileProfileVisible"
+        (change)="onMobileProfileToggle($any($event.target).checked)"
+      >
+      <span>Perfil</span>
+    </label>
+
     <div class="map-edit-controls" *ngIf="canEditTrack && !isMobileViewport" role="group" aria-label="Edición del track">
       <button type="button" class="map-edit-btn" (click)="toggleEditMode()">
         {{ editMode ? 'Salir de edición' : 'Editar puntos' }}
@@ -88,7 +101,7 @@
     </div>
   </div>
 
-  <div class="profile-overlay" *ngIf="profileEnabled && !isMobileViewport" aria-label="Perfil de elevación">
+  <div class="profile-overlay" *ngIf="shouldRenderProfileOverlay" aria-label="Perfil de elevación">
     <div class="profile-panel" *ngIf="profileVisual; else profileUnavailable">
       <svg
         class="profile-chart"

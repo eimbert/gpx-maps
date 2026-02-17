@@ -479,6 +479,7 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
         next: () => {
           this.sentInviteUserIds.add(user.id);
           this.inviteStatusMessage = `Invitación enviada a ${this.resolveInviteNickname(user)}.`;
+          this.inviteSearchResults = [];
           this.loadInvitations(this.activeFolder?.id ?? 0);
         },
         error: () => {

@@ -801,7 +801,7 @@
   position: relative;
   display: grid;
   grid-template-columns: 1fr;
-  width: 100%;
+  width: 97%;
   min-height: 35vh;
 }
 

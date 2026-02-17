@@ -150,7 +150,7 @@
                     <span class="plan__invite-icon" aria-hidden="true">👤</span>
                     <div>
                       <div class="plan__invite-name">{{ resolveInviteNickname(user) }}</div>
-                      <div class="plan__invite-email">{{ user.email }}</div>
+                      <div class="plan__invite-email" *ngIf="resolveInviteSecondary(user) as inviteSecondary">{{ inviteSecondary }}</div>
                     </div>
                   </div>
                 </td>

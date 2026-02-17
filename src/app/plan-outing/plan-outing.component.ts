@@ -517,6 +517,12 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
     return nickname ? nickname : 'Sin nick';
   }
 
+  resolveInviteSecondary(user: PlanUserSearchResult): string | null {
+    const email = user.email?.trim();
+    if (!email) return null;
+    return this.obfuscateEmail(email);
+  }
+
   resolveInviteStatus(user: PlanUserSearchResult): string {
     const invitation = this.resolveInvitation(user);
     if (!invitation) return 'Sin enviar';

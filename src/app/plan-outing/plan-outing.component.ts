@@ -532,11 +532,47 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
         ? this.resolveInviteNickname(addedUsers[0])
         : `${addedUsers.length} usuarios`;
       this.inviteStatusMessage = `Se añadió acceso a ${label}.`;
+      this.applyOptimisticInvitations(folderId, addedUsers);
       this.refreshInvitationsAfterSearchAdd(folderId, addedUsers.map(user => user.id));
     });
   }
 
-  private refreshInvitationsAfterSearchAdd(folderId: number, expectedUserIds: number[], retries = 5): void {
+  private applyOptimisticInvitations(folderId: number, users: PlanUserSearchResult[]): void {
+    if (!users.length) return;
+
+    const now = new Date().toISOString();
+    const existingUserIds = new Set(
+      this.folderInvitations
+        .map(invitation => invitation.invitedUserId ?? invitation.userId)
+        .filter((id): id is number => typeof id === 'number')
+    );
+
+    const optimisticInvitations = users
+      .filter(user => !existingUserIds.has(user.id))
+      .map((user, index) => ({
+        id: -(Date.now() + index),
+        folderId,
+        userId: user.id,
+        invitedUserId: user.id,
+        invitedByUserId: this.userId,
+        role: 'viewer' as const,
+        status: 'sending' as const,
+        token: `optimistic-${user.id}-${Date.now()}-${index}`,
+        createdAt: now,
+        modifiedAt: now,
+        nickname: user.name?.trim() || null,
+        name: user.name?.trim() || null,
+        email: user.email,
+        invitedEmail: user.email
+      }));
+
+    if (!optimisticInvitations.length) return;
+
+    this.folderInvitations = [...this.folderInvitations, ...optimisticInvitations];
+    this.updateFolderSharedState(folderId, true);
+  }
+
+  private refreshInvitationsAfterSearchAdd(folderId: number, expectedUserIds: number[], retries = 12): void {
     this.planService.getInvitations(folderId).subscribe(invitations => {
       this.folderInvitations = invitations;
       this.updateFolderSharedState(folderId, invitations.length > 0);
@@ -549,7 +585,7 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
       const missingUsers = expectedUserIds.some(userId => !loadedIds.has(userId));
 
       if (missingUsers && retries > 0) {
-        setTimeout(() => this.refreshInvitationsAfterSearchAdd(folderId, expectedUserIds, retries - 1), 300);
+        setTimeout(() => this.refreshInvitationsAfterSearchAdd(folderId, expectedUserIds, retries - 1), 400);
       }
     });
   }

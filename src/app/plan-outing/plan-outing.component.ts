@@ -462,16 +462,12 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
   inviteUser(user: PlanUserSearchResult): void {
     if (!this.activeFolder) return;
 
-    const now = new Date().toISOString();
     this.planService
       .inviteUser(this.activeFolder.id, {
-        folder_id: this.activeFolder.id,
-        user_id: user.id,
-        status: 'pending',
-        invited_email: user.email,
-        created_at: now,
-        modified_at: now,
-        invited_by: this.userId
+        folderId: this.activeFolder.id,
+        userId: user.id,
+        email: user.email,
+        nickname: this.resolveInviteNickname(user)
       })
       .subscribe(() => {
         this.inviteStatusMessage = `Invitación enviada a ${this.resolveInviteNickname(user)}.`;

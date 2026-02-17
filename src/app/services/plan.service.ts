@@ -20,13 +20,10 @@ type PlanFolderPayload = {
 };
 
 type InvitePayload = {
-  folder_id: number;
-  user_id: number;
-  status: 'pending';
-  invited_email: string | null;
-  created_at: string;
-  modified_at: string;
-  invited_by: number;
+  folderId: number;
+  userId?: number;
+  email?: string | null;
+  nickname?: string | null;
 };
 
 type MemberStatusPayload = {
@@ -205,7 +202,10 @@ export class PlanService {
 
   inviteUser(folderId: number, payload: InvitePayload): Observable<PlanInvitation> {
     console.log('Plan folder member payload:', payload);
-    return this.http.post<PlanInvitation>(`${this.planApiBase}/${folderId}/invitations`, payload);
+    return this.http.post<PlanInvitation>(`${this.planApiBase}/members`, {
+      ...payload,
+      folderId
+    });
   }
 
   getInvitations(folderId: number): Observable<PlanInvitation[]> {

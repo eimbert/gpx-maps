@@ -143,7 +143,7 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
       )
       .subscribe(response => {
         this.inviteStatusMessage = response.notFound
-          ? 'No se encuentra ningún usuario con ese nick.'
+          ? 'No se encuentra ningún usuario con ese nick o email.'
           : (response.users.length ? '' : (this.inviteQuery ? 'No se encontraron usuarios.' : ''));
         if (response.users.length) {
           this.addFolderMembersFromSearch(response.users);
@@ -532,7 +532,25 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
         ? this.resolveInviteNickname(addedUsers[0])
         : `${addedUsers.length} usuarios`;
       this.inviteStatusMessage = `Se añadió acceso a ${label}.`;
-      this.loadInvitations(folderId);
+      this.refreshInvitationsAfterSearchAdd(folderId, addedUsers.map(user => user.id));
+    });
+  }
+
+  private refreshInvitationsAfterSearchAdd(folderId: number, expectedUserIds: number[], retries = 5): void {
+    this.planService.getInvitations(folderId).subscribe(invitations => {
+      this.folderInvitations = invitations;
+      this.updateFolderSharedState(folderId, invitations.length > 0);
+
+      const loadedIds = new Set(
+        invitations
+          .map(invitation => invitation.invitedUserId ?? invitation.userId)
+          .filter((id): id is number => typeof id === 'number')
+      );
+      const missingUsers = expectedUserIds.some(userId => !loadedIds.has(userId));
+
+      if (missingUsers && retries > 0) {
+        setTimeout(() => this.refreshInvitationsAfterSearchAdd(folderId, expectedUserIds, retries - 1), 300);
+      }
     });
   }
 
@@ -1185,7 +1203,11 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
 
   canResendInvitation(invitation: PlanInvitation): boolean {
     const userId = invitation.invitedUserId ?? invitation.userId;
-    return invitation.status === 'pending' && !!userId;
+    return invitation.status === 'revoked' && !!userId;
+  }
+
+  resolveResendInvitationLabel(invitation: PlanInvitation): string {
+    return invitation.status === 'revoked' ? 'Enviar invitación' : 'Enviada';
   }
 
   private toDateValue(value: string | null): string | null {

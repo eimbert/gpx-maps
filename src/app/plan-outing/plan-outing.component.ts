@@ -166,6 +166,7 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
           this.folderTrackCounts.set(folder.id, Number(folder.tracksCount));
         }
       });
+      this.preloadMissingFolderTrackCounts(folders);
       this.applyFolderFilter();
       const requestedFolder = this.requestedFolderId
         ? folders.find(folder => folder.id === this.requestedFolderId)
@@ -712,11 +713,26 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
   }
 
   canVoteOnTracks(): boolean {
-    if (!this.activeFolder) return false;
-    if (this.tracks.length < 2) return false;
-    const hasOtherUserTracks = this.tracks.some(track => track.createdByUserId !== this.userId);
-    const isOwner = this.activeFolder.ownerId === this.userId;
-    return !isOwner || hasOtherUserTracks;
+    return !!this.activeFolder && this.tracks.length > 1;
+  }
+
+  private preloadMissingFolderTrackCounts(folders: PlanFolder[]): void {
+    const missingFolders = folders.filter(folder => !this.folderTrackCounts.has(folder.id));
+    if (!missingFolders.length) {
+      return;
+    }
+
+    forkJoin(
+      missingFolders.map(folder =>
+        this.planService.getTracks(folder.id).pipe(
+          map(tracks => ({ folderId: folder.id, count: tracks.length }))
+        )
+      )
+    ).subscribe(results => {
+      results.forEach(({ folderId, count }) => {
+        this.folderTrackCounts.set(folderId, count);
+      });
+    });
   }
 
   canViewTrack(track: PlanTrack): boolean {

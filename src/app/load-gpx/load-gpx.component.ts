@@ -2518,9 +2518,27 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
         return;
       }
       this.tracks = updatedTracks;
+      await this.promptStartAnimationOnMobile();
 
     } catch {
       this.showMessage('No se pudo procesar el track.');
+    }
+  }
+
+  private async promptStartAnimationOnMobile(): Promise<void> {
+    if (!this.isMobileViewport) {
+      return;
+    }
+
+    const decision = await this.openInfoDialog({
+      title: 'Ruta añadida',
+      message: '¿Quieres seleccionar otra ruta para añadir a la animación o iniciar la animación?',
+      confirmLabel: 'Iniciar animación',
+      cancelLabel: 'Seleccionar otra'
+    });
+
+    if (decision === 'confirm') {
+      this.iniciarVisualizacion();
     }
   }
 

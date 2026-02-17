@@ -1760,7 +1760,7 @@ input[type="file"] {
 
   .ranking__row,
   .ranking__row--event {
-    grid-template-columns: 1fr auto;
+    grid-template-columns: minmax(0, 1fr) auto auto;
     gap: 8px;
   }
 
@@ -1769,8 +1769,15 @@ input[type="file"] {
     min-width: 0;
   }
 
-  .ranking__row > :nth-child(n+4) {
+  .ranking__row > :nth-child(4) {
     grid-column: 2;
+    grid-row: 1;
+    justify-self: center;
+  }
+
+  .ranking__row > :nth-child(5) {
+    grid-column: 3;
+    grid-row: 1;
     justify-self: center;
   }
 }

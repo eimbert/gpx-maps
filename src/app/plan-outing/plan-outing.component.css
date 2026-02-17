@@ -784,6 +784,16 @@
   font-size: 11px;
 }
 
+.plan__track-card-difficulty {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.plan__track-card-weather {
+  grid-column: 1 / -1;
+}
+
 .plan__track-card-actions {
   display: flex;
   flex-wrap: wrap;
@@ -1030,7 +1040,8 @@
   }
 
   .plan__track-card-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px 8px;
   }
 
   .plan__actions-group {

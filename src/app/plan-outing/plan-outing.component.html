@@ -411,6 +411,20 @@
                 <div><span class="plan__track-card-label">Tiempo</span>{{ formatDuration(track.movingTimeSec) }}</div>
                 <div><span class="plan__track-card-label">Desnivel</span>{{ formatDesnivel(track.desnivel) }}</div>
                 <div>
+                  <span class="plan__track-card-label">Dureza</span>
+                  <ng-container *ngIf="getTrackDifficulty(track) as difficulty">
+                    <span
+                      class="plan__track-card-difficulty"
+                      [attr.title]="difficulty.label + ': ' + difficulty.description"
+                      [attr.aria-label]="'Dureza ' + difficulty.label">
+                      <span class="plan__difficulty-pill" [ngClass]="'plan__difficulty-pill--' + difficulty.key">
+                        <mat-icon class="plan__difficulty-icon" aria-hidden="true">landscape</mat-icon>
+                      </span>
+                      <span>{{ difficulty.label }}</span>
+                    </span>
+                  </ng-container>
+                </div>
+                <div class="plan__track-card-weather">
                   <span class="plan__track-card-label">Meteo</span>
                   <span>{{ resolveWeatherIcon(track.id) }} {{ resolveWeatherTemperature(track.id) }}</span>
                 </div>

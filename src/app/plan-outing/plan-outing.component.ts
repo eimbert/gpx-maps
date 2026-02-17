@@ -99,6 +99,7 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
   inviteStatusMessage = '';
   inviteSearchResults: PlanUserSearchResult[] = [];
   folderInvitations: PlanInvitation[] = [];
+  sentInviteUserIds = new Set<number>();
 
   isLoadingFolders = false;
   isSavingFolder = false;
@@ -462,20 +463,23 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
   inviteUser(user: PlanUserSearchResult): void {
     if (!this.activeFolder) return;
 
-    const now = new Date().toISOString();
     this.planService
       .inviteUser(this.activeFolder.id, {
-        folder_id: this.activeFolder.id,
-        user_id: user.id,
-        status: 'pending',
-        invited_email: user.email,
-        created_at: now,
-        modified_at: now,
-        invited_by: this.userId
+        folderId: this.activeFolder.id,
+        userId: user.id,
+        email: user.email,
+        nickname: this.resolveInviteNickname(user)
       })
-      .subscribe(() => {
-        this.inviteStatusMessage = `Invitación enviada a ${this.resolveInviteNickname(user)}.`;
-        this.loadInvitations(this.activeFolder?.id ?? 0);
+      .subscribe({
+        next: () => {
+          this.sentInviteUserIds.add(user.id);
+          this.inviteStatusMessage = `Invitación enviada a ${this.resolveInviteNickname(user)}.`;
+          this.loadInvitations(this.activeFolder?.id ?? 0);
+        },
+        error: () => {
+          this.sentInviteUserIds.delete(user.id);
+          this.inviteStatusMessage = `No se pudo enviar la invitación a ${this.resolveInviteNickname(user)}.`;
+        }
       });
   }
 
@@ -524,6 +528,7 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
   }
 
   resolveInviteStatus(user: PlanUserSearchResult): string {
+    if (this.sentInviteUserIds.has(user.id)) return 'Enviada';
     const invitation = this.resolveInvitation(user);
     if (!invitation) return 'Sin enviar';
     const statusMap: Record<PlanInvitation['status'], string> = {
@@ -538,8 +543,13 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
   }
 
   canSendInvite(user: PlanUserSearchResult): boolean {
+    if (this.sentInviteUserIds.has(user.id)) return false;
     const invitation = this.resolveInvitation(user);
-    return !invitation || ['pending', 'declined', 'revoked', 'expired'].includes(invitation.status);
+    return !invitation || ['declined', 'revoked', 'expired'].includes(invitation.status);
+  }
+
+  resolveInviteActionLabel(user: PlanUserSearchResult): string {
+    return this.canSendInvite(user) ? 'Enviar invitación' : 'Enviada';
   }
 
   toggleVote(track: PlanTrack): void {

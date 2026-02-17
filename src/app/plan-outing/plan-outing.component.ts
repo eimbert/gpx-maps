@@ -534,14 +534,15 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
   }
 
   resolveInviteStatus(user: PlanUserSearchResult): string {
-    if (this.sentInviteUserIds.has(user.id)) return 'Enviada';
     const invitation = this.resolveInvitation(user);
-    if (!invitation) return 'Sin enviar';
-    const statusMap: Record<PlanInvitation['status'], string> = {
+    if (!invitation) return this.sentInviteUserIds.has(user.id) ? 'Enviada' : 'Sin enviar';
+    const statusMap: Record<string, string> = {
       accepted: 'Aceptó',
       pending: 'Pendiente',
       sending: 'Enviando',
       declined: 'Rechazó',
+      rejected: 'Rechazó',
+      rejeted: 'Rechazó',
       revoked: 'Revocada',
       expired: 'Caducada'
     };
@@ -551,10 +552,15 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
   canSendInvite(user: PlanUserSearchResult): boolean {
     if (this.sentInviteUserIds.has(user.id)) return false;
     const invitation = this.resolveInvitation(user);
-    return !invitation || ['declined', 'revoked', 'expired'].includes(invitation.status);
+    if (!invitation) return true;
+    return this.isRejectedStatus(invitation.status) || ['revoked', 'expired'].includes(invitation.status);
   }
 
   resolveInviteActionLabel(user: PlanUserSearchResult): string {
+    const invitation = this.resolveInvitation(user);
+    if (invitation && this.isRejectedStatus(invitation.status)) {
+      return 'Rechazada';
+    }
     return this.canSendInvite(user) ? 'Enviar invitación' : 'Enviada';
   }
 
@@ -1096,6 +1102,7 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
     if (!folderId) return;
     this.planService.getInvitations(folderId).subscribe(invitations => {
       this.folderInvitations = invitations;
+      this.sentInviteUserIds.clear();
       this.updateFolderSharedState(folderId, invitations.length > 0);
     });
   }
@@ -1108,12 +1115,20 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
   }
 
   private resolveInvitation(user: PlanUserSearchResult): PlanInvitation | undefined {
-    return this.folderInvitations.find(invite =>
-      (invite.invitedUserId && invite.invitedUserId === user.id)
-      || (invite.userId && invite.userId === user.id)
-      || invite.invitedEmail === user.email
-      || invite.email === user.email
-    );
+    const normalizedUserId = Number(user.id);
+    const normalizedUserEmail = (user.email ?? '').trim().toLowerCase();
+
+    return this.folderInvitations.find(invite => {
+      const invitedUserId = Number(invite.invitedUserId);
+      const userId = Number(invite.userId);
+      const invitedEmail = (invite.invitedEmail ?? '').trim().toLowerCase();
+      const email = (invite.email ?? '').trim().toLowerCase();
+
+      return (Number.isFinite(invitedUserId) && invitedUserId === normalizedUserId)
+        || (Number.isFinite(userId) && userId === normalizedUserId)
+        || (normalizedUserEmail && invitedEmail === normalizedUserEmail)
+        || (normalizedUserEmail && email === normalizedUserEmail);
+    });
   }
 
   resolveInvitationLabel(invitation: PlanInvitation): string {
@@ -1138,15 +1153,22 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
   }
 
   resolveInvitationStatusLabel(invitation: PlanInvitation): string {
-    const statusMap: Record<PlanInvitation['status'], string> = {
+    const statusMap: Record<string, string> = {
       accepted: 'Aceptó',
       pending: 'Pendiente',
       sending: 'Enviando',
       declined: 'Rechazó',
+      rejected: 'Rechazó',
+      rejeted: 'Rechazó',
       revoked: 'Revocada',
       expired: 'Caducada'
     };
     return statusMap[invitation.status] ?? 'Pendiente';
+  }
+
+  private isRejectedStatus(status: string | null | undefined): boolean {
+    const normalizedStatus = (status ?? '').toLowerCase();
+    return normalizedStatus === 'declined' || normalizedStatus === 'rejected' || normalizedStatus === 'rejeted';
   }
 
   resolveInvitationStatusDate(invitation: PlanInvitation): string | null {

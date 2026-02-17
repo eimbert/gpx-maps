@@ -182,10 +182,15 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
   }
 
   loadPendingMessages(): void {
+    if (!this.userId) {
+      this.pendingMessages = [];
+      this.isLoadingPendingMessages = false;
+      return;
+    }
+
     this.isLoadingPendingMessages = true;
-    const userId = JSON.parse(localStorage.getItem('gpxAuthSession') ?? 'null')?.id;
     this.http
-      .get<PendingMessage[]>(`${environment.mensajesApiBase}/usuario/${userId}/pendientes`)
+      .get<PendingMessage[]>(`${environment.mensajesApiBase}/usuario/${this.userId}/pendientes`)
       .subscribe({ 
         next: response => {
           this.pendingMessages = response ?? [];

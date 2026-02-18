@@ -193,18 +193,82 @@ export class EventCreateDialogComponent {
       )}&lon=${encodeURIComponent(lon)}&zoom=15&addressdetails=1&layer=address`;
       const response = await fetch(url, {
         headers: {
-          'Accept': 'application/json'
+          Accept: 'application/json'
         }
       });
-      if (!response.ok) return;
+
+      if (!response.ok) {
+        const catalanLocation = await this.reverseGeocodeCatalan(lat, lon);
+        if (catalanLocation) {
+          this.newEvent.population = catalanLocation.population || this.newEvent.population;
+          this.newEvent.autonomousCommunity = catalanLocation.autonomousCommunity || this.newEvent.autonomousCommunity;
+          this.newEvent.province = catalanLocation.province || this.newEvent.province;
+        }
+        return;
+      }
+
       const data = await response.json();
       const geocoding = data?.features?.[0]?.properties?.geocoding || {};
+      const autonomousCommunity = geocoding.state || null;
+
+      if (this.isCatalonia(autonomousCommunity)) {
+        const catalanLocation = await this.reverseGeocodeCatalan(lat, lon);
+        if (catalanLocation) {
+          this.newEvent.population = catalanLocation.population || this.newEvent.population;
+          this.newEvent.autonomousCommunity = catalanLocation.autonomousCommunity || this.newEvent.autonomousCommunity;
+          this.newEvent.province = catalanLocation.province || this.newEvent.province;
+          return;
+        }
+      }
+
       this.newEvent.population = geocoding.city || this.newEvent.population;
-      this.newEvent.autonomousCommunity = geocoding.state || this.newEvent.autonomousCommunity;
+      this.newEvent.autonomousCommunity = autonomousCommunity || this.newEvent.autonomousCommunity;
       this.newEvent.province = geocoding.county || geocoding.state || this.newEvent.province;
     } catch {
-      // Ignorar fallos de geocodificación silenciosamente
+      const catalanLocation = await this.reverseGeocodeCatalan(lat, lon);
+      if (catalanLocation) {
+        this.newEvent.population = catalanLocation.population || this.newEvent.population;
+        this.newEvent.autonomousCommunity = catalanLocation.autonomousCommunity || this.newEvent.autonomousCommunity;
+        this.newEvent.province = catalanLocation.province || this.newEvent.province;
+      }
     }
+  }
+
+  private async reverseGeocodeCatalan(
+    lat: number,
+    lon: number
+  ): Promise<{ population: string | null; autonomousCommunity: string; province: string | null } | null> {
+    try {
+      const url = `https://eines.icgc.cat/geocodificador/invers?lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(
+        lon
+      )}&size=1&topo=1`;
+      const response = await fetch(url, {
+        headers: {
+          Accept: 'application/json'
+        }
+      });
+      if (!response.ok) return null;
+      const data = await response.json();
+      const properties = data?.features?.[0]?.properties;
+      if (!properties) return null;
+      return {
+        population: properties.municipi || null,
+        autonomousCommunity: 'Catalunya',
+        province: properties.comarca || null
+      };
+    } catch {
+      return null;
+    }
+  }
+
+  private isCatalonia(value: string | null | undefined): boolean {
+    if (!value) return false;
+    const normalized = value
+      .normalize('NFD')
+      .replace(/\p{M}/gu, '')
+      .toLowerCase()
+      .trim();
+    return normalized === 'cataluna' || normalized === 'catalunya';
   }
 
   private encodeBase64(content: string): string {

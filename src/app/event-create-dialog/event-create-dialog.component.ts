@@ -197,14 +197,6 @@ export class EventCreateDialogComponent {
         }
       });
 
-      if (response.status === 425) {
-        response = await fetch(url, {
-          headers: {
-            Accept: 'application/json'
-          }
-        });
-      }
-
       if (!response.ok) {
         const catalanLocation = await this.reverseGeocodeCatalan(lat, lon);
         if (catalanLocation) {

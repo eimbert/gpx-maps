@@ -210,7 +210,7 @@
                             <td>{{ row.population || '—' }}</td>
                             <td class="user-tracks__action-col">
                               <a class="user-tracks__maps-link user-tracks__maps-link--icon"
-                                [href]="buildGoogleMapsLinkForTrack(row)" target="_blank" rel="noopener noreferrer"
+                                [href]="row.googleMapsLink" target="_blank" rel="noopener noreferrer"
                                 aria-label="Cómo llegar al inicio de la ruta en Google Maps"
                                 title="Cómo llegar al inicio de la ruta" (click)="$event.stopPropagation()">
                                 <mat-icon aria-hidden="true">directions_car</mat-icon>
@@ -242,7 +242,7 @@
                             </td>
                             <td class="user-tracks__action-col">
                               <!-- <button type="button" class="ghost ghost--small ghost--danger user-tracks__icon-button" [disabled]="isDeletingTrack(row)" (click)="confirmDeleteUserTrack(row)" [attr.aria-label]="isDeletingTrack(row) ? 'Eliminando track' : 'Eliminar track'"> -->
-                              <mat-icon aria-hidden="true" style="color: red; cursor: pointer;"
+                              <mat-icon *ngIf="row.canDelete" aria-hidden="true" style="color: red; cursor: pointer;"
                                 (click)="confirmDeleteUserTrack(row)"
                                 [attr.aria-label]="isDeletingTrack(row) ? 'Eliminando track' : 'Eliminar track'">{{
                                 isDeletingTrack(row) ? 'hourglass_top' : 'delete' }}</mat-icon>
@@ -301,7 +301,7 @@
 
                           <div class="user-tracks__mobile-actions">
                             <a class="user-tracks__maps-link user-tracks__maps-link--icon"
-                              [href]="buildGoogleMapsLinkForTrack(row)" target="_blank" rel="noopener noreferrer"
+                              [href]="row.googleMapsLink" target="_blank" rel="noopener noreferrer"
                               aria-label="Cómo llegar al inicio de la ruta en Google Maps"
                               title="Cómo llegar al inicio de la ruta" (click)="$event.stopPropagation()">
                               <mat-icon aria-hidden="true">directions_car</mat-icon>
@@ -317,7 +317,7 @@
                               (click)="planUserTrack(row)"
                               [attr.aria-label]="isPlanningTrack(row) ? 'Guardando planificación' : 'Planificar salida'">{{
                               isPlanningTrack(row) ? 'hourglass_top' : 'event_available' }}</mat-icon>
-                            <mat-icon aria-hidden="true" style="color: red; cursor: pointer;"
+                            <mat-icon *ngIf="row.canDelete" aria-hidden="true" style="color: red; cursor: pointer;"
                               (click)="confirmDeleteUserTrack(row)"
                               [attr.aria-label]="isDeletingTrack(row) ? 'Eliminando track' : 'Eliminar track'">{{
                               isDeletingTrack(row) ? 'hourglass_top' : 'delete' }}</mat-icon>

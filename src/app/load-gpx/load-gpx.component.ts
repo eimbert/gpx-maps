@@ -2105,6 +2105,7 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
     } catch (error) {
       if (error instanceof HttpErrorResponse && error.status === 425) {
         try {
+          await this.delay(500);
           const retryResult: any = await firstValueFrom(this.http.get(url, { headers: { Accept: 'application/json' } }));
           const retryGeocoding = retryResult?.features?.[0]?.properties?.geocoding || {};
           return {
@@ -2148,6 +2149,12 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
       .toLowerCase()
       .trim();
     return normalized === 'cataluna' || normalized === 'catalunya';
+  }
+
+  private delay(ms: number): Promise<void> {
+    return new Promise((resolve) => {
+      setTimeout(resolve, ms);
+    });
   }
 
   formatDurationHms(seconds: number): string {

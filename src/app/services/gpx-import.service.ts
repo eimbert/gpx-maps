@@ -232,6 +232,7 @@ export class GpxImportService {
     } catch (error) {
       if (error instanceof HttpErrorResponse && error.status === 425) {
         try {
+          await this.delay(500);
           const retryResult: any = await firstValueFrom(this.http.get(url, { headers: { Accept: 'application/json' } }));
           const retryGeocoding = retryResult?.features?.[0]?.properties?.geocoding || {};
           return {
@@ -274,6 +275,12 @@ export class GpxImportService {
       .toLowerCase()
       .trim();
     return normalized === 'cataluna' || normalized === 'catalunya';
+  }
+
+  private delay(ms: number): Promise<void> {
+    return new Promise((resolve) => {
+      setTimeout(resolve, ms);
+    });
   }
 
   private calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {

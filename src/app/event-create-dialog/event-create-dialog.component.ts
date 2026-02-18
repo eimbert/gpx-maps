@@ -197,6 +197,15 @@ export class EventCreateDialogComponent {
         }
       });
 
+      if (response.status === 425) {
+        await this.delay(500);
+        response = await fetch(url, {
+          headers: {
+            Accept: 'application/json'
+          }
+        });
+      }
+
       if (!response.ok) {
         const catalanLocation = await this.reverseGeocodeCatalan(lat, lon);
         if (catalanLocation) {
@@ -269,6 +278,12 @@ export class EventCreateDialogComponent {
       .toLowerCase()
       .trim();
     return normalized === 'cataluna' || normalized === 'catalunya';
+  }
+
+  private delay(ms: number): Promise<void> {
+    return new Promise((resolve) => {
+      setTimeout(resolve, ms);
+    });
   }
 
   private encodeBase64(content: string): string {

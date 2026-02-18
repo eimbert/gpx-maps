@@ -2616,6 +2616,7 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
   }
 
   async confirmDeleteUserTrack(row: UserTrackRow): Promise<void> {
+    if (this.activeUserTracksTab === 'shared') return;
     if (!row.canDelete) return;
 
     const decision = await this.openInfoDialog({

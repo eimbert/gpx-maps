@@ -14,4 +14,5 @@ export const environment = {
   planApiBase: `${apiBase}/plan-folders`,
   usersApiBase: `${apiBase}/users`,
   mensajesApiBase: `${apiBase}/mensajes`,
+  geoCode: `${apiBase}/geocode/reverse`,
 };

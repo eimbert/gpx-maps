@@ -2,7 +2,7 @@
   <section *ngIf="mode === 'routes'" class="load-wrapper">
     <header class="hero">
       <div>
-        <h1>Organiza y Anima tus Rutas</h1>
+        <h1>Organiza y Anima tus Tracks</h1>
         <p>Arrastra y suelta hasta {{ maxTracks }} recorridos o pulsa para seleccionarlos.</p>
         <p *ngIf="!isAuthenticated" class="guest-note">Sin sesión iniciada solo puedes cargar un archivo GPX a la vez.
         </p>
@@ -31,7 +31,7 @@
     </div>
 
     <section class="tracks" *ngIf="tracks.length">
-      <h2>Rutas cargadas</h2>
+      <h2>Tracks cargadas</h2>
       <ul class="file-list">
         <li class="file-item" *ngFor="let track of tracks; index as i">
           <span class="file-pill">{{ i + 1 }}</span>
@@ -56,7 +56,7 @@
     <section *ngIf="isAuthenticated && !isUserTracksPanelCollapsed" class="user-tracks">
       <div class="user-tracks__header">
         <div>
-          <p class="eyebrow">Rutas disponibles</p>
+          <p class="eyebrow">Tracks disponibles</p>
         </div>
       </div>
 
@@ -64,27 +64,27 @@
         <div class="user-tracks__filter">
           <mat-icon aria-hidden="true">search</mat-icon>
           <input type="text" [value]="userTracksFilter" (input)="onUserTracksFilter($any($event.target)?.value || '')"
-            placeholder="Buscar por título, evento o ubicación" aria-label="Filtrar rutas guardadas">
+            placeholder="Buscar por título, evento o ubicación" aria-label="Filtrar tracks guardadas">
         </div>
 
         <!-- botones de totales -->
         <div class="user-tracks__tabs">
           <button type="button" class="user-tracks__tab"
             [class.user-tracks__tab--active]="activeUserTracksTab === 'personal'" (click)="setUserTracksTab('personal')"
-            aria-label="Ver tus rutas personales">
-            <span>Tus rutas</span>
+            aria-label="Ver tus tracks personales">
+            <span>Tus tracks</span>
             <span class="user-tracks__tab-count">{{ getUserTrackRows('personal').length }}</span>
           </button>
           <button type="button" class="user-tracks__tab"
             [class.user-tracks__tab--active]="activeUserTracksTab === 'events'" (click)="setUserTracksTab('events')"
-            aria-label="Ver tus rutas de eventos">
-            <span>Tus rutas en eventos</span>
+            aria-label="Ver tus tracks de eventos">
+            <span>Tus tracks en eventos</span>
             <span class="user-tracks__tab-count">{{ getUserTrackRows('events').length }}</span>
           </button>
           <button type="button" class="user-tracks__tab"
             [class.user-tracks__tab--active]="activeUserTracksTab === 'shared'" (click)="setUserTracksTab('shared')"
-            aria-label="Ver rutas de otros usuarios">
-            <span>Rutas otros usuarios</span>
+            aria-label="Ver tracks de otros usuarios">
+            <span>Tracks otros usuarios</span>
             <span class="user-tracks__tab-count">{{ getUserTrackRows('shared').length }}</span>
           </button>
         </div>
@@ -92,7 +92,7 @@
         <button *ngIf="activeUserTracksTab === 'personal'" type="button" class="cloud-upload"
           (click)="openStandaloneUploadDialog()" [disabled]="standaloneUploadInProgress">
           <mat-icon aria-hidden="true">cloud_upload</mat-icon>
-          <span>Subir ruta</span>
+          <span>Subir track</span>
         </button>
       </div>
 
@@ -102,7 +102,7 @@
       <div class="user-tracks__panel" *ngIf="!activeTracksLoading && getUserTrackRows(activeUserTracksTab).length">
         <div class="user-tracks__table-toolbar">
           <div class="user-tracks__counts">
-            <span class="user-tracks__count">{{ filteredUserTracks.length }} rutas</span>
+            <span class="user-tracks__count">{{ filteredUserTracks.length }} tracks</span>
             <span class="user-tracks__range" *ngIf="groupedUserTracks.length && groupedUserTracks.length !== paginatedUserTracks.length">
               Provincias {{ userTracksRangeStart }}-{{ userTracksRangeEnd }} de {{ groupedUserTracks.length }}
             </span>
@@ -110,11 +110,11 @@
         </div>
 
         <div class="user-tracks__groups" *ngIf="paginatedUserTracks.length; else emptyGroups">
-          <table class="tabla-rutas" aria-label="Rutas guardadas agrupadas por provincia">
+          <table class="tabla-rutas" aria-label="Tracks guardadas agrupadas por provincia">
             <thead>
               <tr class="head-tabla">
                 <th scope="col" style="text-align: left; padding-left: 45px;">Provincia</th>
-                <th scope="col">Rutas</th>
+                <th scope="col">Tracks</th>
               </tr>
             </thead>
             <tbody>
@@ -123,7 +123,7 @@
                   <td>
                     <button type="button" class="user-tracks__expand" (click)="toggleProvinceExpansion(group.province)"
                       [attr.aria-expanded]="isProvinceExpanded(group.province)"
-                      [attr.aria-label]="isProvinceExpanded(group.province) ? 'Ocultar rutas en ' + group.province : 'Mostrar rutas en ' + group.province">
+                      [attr.aria-label]="isProvinceExpanded(group.province) ? 'Ocultar tracks en ' + group.province : 'Mostrar tracks en ' + group.province">
                       <mat-icon class="user-tracks__expand-icon" aria-hidden="true">{{isProvinceExpanded(group.province) ? 'keyboard_arrow_up' : 'keyboard_arrow_down' }}</mat-icon>
                     </button>
                     <span class="user-tracks__population-name">{{ group.province }}
@@ -136,11 +136,11 @@
                 <tr *ngIf="isProvinceExpanded(group.province)" class="user-tracks__routes-row">
                   <td colspan="2">
                     <div style="width: 90%; margin: 0 auto;">
-                      <table class="user-tracks__nested-table user-tracks__nested-table--desktop" [attr.aria-label]="'Rutas en ' + group.province">
+                      <table class="user-tracks__nested-table user-tracks__nested-table--desktop" [attr.aria-label]="'Tracks en ' + group.province">
                         <thead>
                           <tr
                             style="border-style:solid; border-width: 1px; border-color: rgb(231, 228, 228); font-size: 11px;">
-                            <th scope="col">Ruta</th>
+                            <th scope="col">Track</th>
                             <th scope="col" *ngIf="activeUserTracksTab === 'shared'">Nickname</th>
                             <th scope="col" *ngIf="activeUserTracksTab === 'shared'">Tipo bici</th>
                             <th scope="col">
@@ -252,7 +252,7 @@
                         </tbody>
                       </table>
 
-                      <div class="user-tracks__mobile-list" [attr.aria-label]="'Rutas en ' + group.province + ' (móvil)'">
+                      <div class="user-tracks__mobile-list" [attr.aria-label]="'Tracks en ' + group.province + ' (móvil)'">
                         <article class="user-tracks__mobile-card" *ngFor="let row of group.routes">
                           <header class="user-tracks__mobile-header">
                             <div>
@@ -333,7 +333,7 @@
         </div>
 
         <ng-template #emptyGroups>
-          <div class="user-tracks__empty">No hay rutas que coincidan con la búsqueda.</div>
+          <div class="user-tracks__empty">No hay tracks que coincidan con la búsqueda.</div>
         </ng-template>
 
         <div class="user-tracks__pagination">
@@ -370,7 +370,7 @@
     </header>
     <div *ngIf="!isAuthenticated" class="events-locked">
       <p class="events-locked__title">Explora y anima eventos sin registrarte.</p>
-      <p class="muted">Inicia sesión o regístrate desde la pantalla principal si quieres subir o gestionar rutas.</p>
+      <p class="muted">Inicia sesión o regístrate desde la pantalla principal si quieres subir o gestionar tracks.</p>
       <button type="button" class="secondary" (click)="goHome()">Volver a la pantalla principal</button>
     </div>
 
@@ -380,8 +380,8 @@
           matTooltip="Volver al inicio" aria-label="Volver al inicio">
           <mat-icon aria-hidden="true">home</mat-icon>
         </button>
-        <button type="button" class="event-action-button" (click)="openUploadTrackDialog()" matTooltip="Subir ruta"
-          aria-label="Subir ruta">
+        <button type="button" class="event-action-button" (click)="openUploadTrackDialog()" matTooltip="Subir track"
+          aria-label="Subir track">
           <mat-icon aria-hidden="true">file_upload</mat-icon>
         </button>
         <button type="button" class="event-action-button" (click)="openCreateEventDialog()" matTooltip="Crear evento"

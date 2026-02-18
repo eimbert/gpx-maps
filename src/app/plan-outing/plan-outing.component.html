@@ -237,7 +237,7 @@
           <div class="plan__section-actions">
             <button class="plan__secondary" type="button" (click)="viewSelectedTracks()"
               [disabled]="!hasSelectedTracks">
-              Ver rutas seleccionadas
+              Ver tracks seleccionadas
             </button>
             <button class="plan__secondary" type="button" (click)="onTrackImportClick()" [disabled]="isImportingTrack">
               Importar track
@@ -278,15 +278,15 @@
                 <th scope="col">Desnivel
                   <span
                     class="plan__info-icon"
-                    title="El desnivel puede ser un dato poco fiable dependiendo del GPS con el que se haya registrado la ruta."
-                    aria-label="El desnivel puede ser un dato poco fiable dependiendo del GPS con el que se haya registrado la ruta."
+                    title="El desnivel puede ser un dato poco fiable dependiendo del GPS con el que se haya registrado el track."
+                    aria-label="El desnivel puede ser un dato poco fiable dependiendo del GPS con el que se haya registrado el track."
                     role="img">
                     i
                   </span>
                 </th>
                 <th scope="col">Dureza</th>
                 <th scope="col">Descargar</th>
-                <th scope="col">Ver ruta</th>
+                <th scope="col">Ver track</th>
                 <th scope="col">Meteo</th>
                 <th scope="col"></th>
               </tr>
@@ -351,7 +351,7 @@
                 <td class="plan__center">
                   <button class="plan__maps-link plan__animate-link" type="button" [disabled]="!canViewTrack(track)"
                     (click)="viewTrack(track)"
-                    [attr.aria-label]="canViewTrack(track) ? 'Ver ruta en el mapa' : 'GPX no disponible'">
+                    [attr.aria-label]="canViewTrack(track) ? 'Ver track en el mapa' : 'GPX no disponible'">
                     <mat-icon aria-hidden="true">map</mat-icon>
                   </button>
                 </td>
@@ -447,7 +447,7 @@
                 </button>
                 <button class="plan__maps-link plan__animate-link" type="button" [disabled]="!canViewTrack(track)"
                   (click)="viewTrack(track)"
-                  [attr.aria-label]="canViewTrack(track) ? 'Ver ruta en el mapa' : 'GPX no disponible'">
+                  [attr.aria-label]="canViewTrack(track) ? 'Ver track en el mapa' : 'GPX no disponible'">
                   <mat-icon aria-hidden="true">map</mat-icon>
                 </button>
                 <button class="plan__ghost" *ngIf="canVoteOnTracks(); else noVoteMobile" type="button" (click)="toggleVote(track)">
@@ -536,6 +536,6 @@
 <ng-template #emptyState>
   <div class="plan__empty">
     <h2>Crea una carpeta para empezar</h2>
-    <p>Organiza tracks, invita a tu grupo y empieza a votar rutas.</p>
+    <p>Organiza tracks, invita a tu grupo y empieza a votar por tu track preferido.</p>
   </div>
 </ng-template>

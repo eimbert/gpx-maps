@@ -191,7 +191,7 @@ export class EventCreateDialogComponent {
       const url = `https://nominatim.openstreetmap.org/reverse?format=geocodejson&lat=${encodeURIComponent(
         lat
       )}&lon=${encodeURIComponent(lon)}&zoom=15&addressdetails=1&layer=address`;
-      const response = await fetch(url, {
+      let response = await fetch(url, {
         headers: {
           Accept: 'application/json'
         }

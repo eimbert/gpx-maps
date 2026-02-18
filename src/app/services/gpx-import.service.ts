@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 
 type TrackPoint = {
@@ -228,6 +228,38 @@ export class GpxImportService {
         population: geocoding.city || null,
         autonomousCommunity,
         province: geocoding.county || geocoding.state || null
+      };
+    } catch (error) {
+      if (error instanceof HttpErrorResponse && error.status === 425) {
+        try {
+          const retryResult: any = await firstValueFrom(this.http.get(url, { headers: { Accept: 'application/json' } }));
+          const retryGeocoding = retryResult?.features?.[0]?.properties?.geocoding || {};
+          return {
+            population: retryGeocoding.city || null,
+            autonomousCommunity: retryGeocoding.state || null,
+            province: retryGeocoding.county || retryGeocoding.state || null
+          };
+        } catch {
+          return this.reverseGeocodeCatalan(lat, lon);
+        }
+      }
+
+      return this.reverseGeocodeCatalan(lat, lon);
+    }
+  }
+
+  private async reverseGeocodeCatalan(lat: number, lon: number): Promise<TrackLocationDetails | null> {
+    try {
+      const url = `https://eines.icgc.cat/geocodificador/invers?lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(
+        lon
+      )}&size=1&topo=1`;
+      const result: any = await firstValueFrom(this.http.get(url, { headers: { Accept: 'application/json' } }));
+      const properties = result?.features?.[0]?.properties;
+      if (!properties) return null;
+      return {
+        population: properties.municipi || null,
+        autonomousCommunity: 'Catalunya',
+        province: properties.comarca || null
       };
     } catch {
       return this.reverseGeocodeCatalan(lat, lon);

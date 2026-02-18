@@ -2,7 +2,7 @@
 // `ng build` replaces `environment.ts` with `environment.prod.ts`.
 // The list of file replacements can be found in `angular.json`.
 
-const back = "localhost:8081/api"
+const back = "localhost:8081"
 export const environment = {
   production: false,
   devBypassAuthGuard: false,
@@ -14,7 +14,7 @@ export const environment = {
   tracksApiBase: `http://${back}/tracks`,
   planApiBase: `http://${back}/plan-folders`,
   usersApiBase: `http://${back}/users`,
-
+  geoCode: `http://${back}/geocode/reverse`,
   mensajesApiBase: `http://${back}/mensajes`
 };
 

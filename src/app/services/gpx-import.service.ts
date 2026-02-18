@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
+import { environment } from 'src/environments/environment';
 
 type TrackPoint = {
   lat: number;
@@ -207,47 +208,23 @@ export class GpxImportService {
     }
   }
 
-  private async reverseGeocode(lat: number, lon: number): Promise<TrackLocationDetails | null> {
-    const url = `https://nominatim.openstreetmap.org/reverse?format=geocodejson&lat=${encodeURIComponent(
-      lat
-    )}&lon=${encodeURIComponent(lon)}&zoom=15&addressdetails=1&layer=address`;
-
-    try {
-      const result: any = await firstValueFrom(this.http.get(url, { headers: { Accept: 'application/json' } }));
-      const geocoding = result?.features?.[0]?.properties?.geocoding || {};
-      const autonomousCommunity = geocoding.state || null;
-
-      if (this.isCatalonia(autonomousCommunity)) {
-        const catalanLocation = await this.reverseGeocodeCatalan(lat, lon);
-        if (catalanLocation) {
-          return catalanLocation;
-        }
-      }
-
-      return {
-        population: geocoding.city || null,
-        autonomousCommunity,
-        province: geocoding.county || geocoding.state || null
-      };
-    } catch (error) {
-      if (error instanceof HttpErrorResponse && error.status === 425) {
-        try {
-          await this.delay(500);
-          const retryResult: any = await firstValueFrom(this.http.get(url, { headers: { Accept: 'application/json' } }));
-          const retryGeocoding = retryResult?.features?.[0]?.properties?.geocoding || {};
-          return {
-            population: retryGeocoding.city || null,
-            autonomousCommunity: retryGeocoding.state || null,
-            province: retryGeocoding.county || retryGeocoding.state || null
-          };
-        } catch {
-          return this.reverseGeocodeCatalan(lat, lon);
-        }
-      }
-
-      return this.reverseGeocodeCatalan(lat, lon);
-    }
-  }
+   private async reverseGeocode(lat: number, lon: number): Promise<TrackLocationDetails | null> {
+       const details = await firstValueFrom(
+         this.http.get<TrackLocationDetails>(environment.geoCode, { params: { lat, lon } })
+       );
+ 
+       console.log("details", details)
+       if (this.isCatalonia(details?.autonomousCommunity)) {
+         const catalan = await this.reverseGeocodeCatalan(lat, lon);
+         if (catalan) return catalan;
+       }
+ 
+       return {
+         population: details.population || null,
+         autonomousCommunity: details.autonomousCommunity || null,
+         province: details.province || null
+       };   
+   }
 
   private async reverseGeocodeCatalan(lat: number, lon: number): Promise<TrackLocationDetails | null> {
     try {

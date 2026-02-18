@@ -1921,7 +1921,10 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
         const rows = tracks.map(track => this.toUserTrackRow(track, this.eventsById));
         this.userTrackRows.personal = rows.filter(row => !row.routeId);
         this.userTrackRows.events = rows.filter(row => !!row.routeId);
-        this.userTrackRows.shared = (sharedTracks || []).map(track => this.toUserTrackRow(track, this.eventsById));
+        this.userTrackRows.shared = (sharedTracks || []).map(track => ({
+          ...this.toUserTrackRow(track, this.eventsById),
+          canDelete: false
+        }));
         this.bumpUserTracksDataVersion('personal');
         this.bumpUserTracksDataVersion('events');
         this.bumpUserTracksDataVersion('shared');

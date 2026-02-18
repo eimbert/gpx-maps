@@ -492,14 +492,14 @@
                               <span>Distancia:</span>
                               <strong>{{ profile.stats.distanceKm | number: '1.0-1' }} km</strong>
                             </div>
-                            <div class="legend-row legend-row--tracks">
+                            <!-- <div class="legend-row legend-row--tracks">
                               <span>Tracks:</span>
                               <strong>{{ event.tracks.length }}</strong>
-                            </div>
+                            </div> -->
                           </div>
 
                           <div class="legend-row legend-row--tracks" style="margin-top: 10px;">
-                            <span>Track maestro:</span>
+                            <!-- <span>Track maestro:</span> -->
                             <button type="button" class="cloud-download"
                               [disabled]="!hasMasterTrack(event) || isDownloadingMaster(event.id)"
                               (click)="downloadEventMaster(event, $event)">

@@ -2036,7 +2036,7 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
     try {
       const parser = new DOMParser();
       const xml = parser.parseFromString(gpx, 'application/xml');
-      const trkpt = xml.querySelector('trkpt');
+      const trkpt = xml.getElementsByTagName('trkpt')[0] ?? xml.querySelector('trkpt');
       if (!trkpt) return null;
       const lat = parseFloat(trkpt.getAttribute('lat') || '');
       const lon = parseFloat(trkpt.getAttribute('lon') || '');
@@ -2070,12 +2070,6 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
       this.geoCache.set(key, location);
       return { ...location, startLatitude: point.lat, startLongitude: point.lon };
     }
-
-    this.geoCache.set(key, {
-      population: null,
-      autonomousCommunity: null,
-      province: null
-    });
 
     return {
       startLatitude: point.lat,
@@ -2145,7 +2139,6 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
       return this.reverseGeocodeCatalan(lat, lon);
     }
   }
-
 
   private isCatalonia(value: string | null | undefined): boolean {
     if (!value) return false;

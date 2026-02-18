@@ -191,12 +191,30 @@ export class EventCreateDialogComponent {
       const url = `https://nominatim.openstreetmap.org/reverse?format=geocodejson&lat=${encodeURIComponent(
         lat
       )}&lon=${encodeURIComponent(lon)}&zoom=15&addressdetails=1&layer=address`;
-      const response = await fetch(url, {
+      let response = await fetch(url, {
         headers: {
           Accept: 'application/json'
         }
       });
-      if (!response.ok) return;
+
+      if (response.status === 425) {
+        response = await fetch(url, {
+          headers: {
+            Accept: 'application/json'
+          }
+        });
+      }
+
+      if (!response.ok) {
+        const catalanLocation = await this.reverseGeocodeCatalan(lat, lon);
+        if (catalanLocation) {
+          this.newEvent.population = catalanLocation.population || this.newEvent.population;
+          this.newEvent.autonomousCommunity = catalanLocation.autonomousCommunity || this.newEvent.autonomousCommunity;
+          this.newEvent.province = catalanLocation.province || this.newEvent.province;
+        }
+        return;
+      }
+
       const data = await response.json();
       const geocoding = data?.features?.[0]?.properties?.geocoding || {};
       const autonomousCommunity = geocoding.state || null;

@@ -9,12 +9,17 @@ import {
 import { Router } from '@angular/router';
 import { Observable, catchError, throwError } from 'rxjs';
 import { AuthService } from './auth.service';
+import { environment } from 'src/environments/environment';
 
 @Injectable()
 export class AuthInterceptor implements HttpInterceptor {
   constructor(private authService: AuthService, private router: Router) {}
 
   intercept(req: HttpRequest<unknown>, next: HttpHandler): Observable<HttpEvent<unknown>> {
+    if (!this.shouldAttachAuthHeader(req.url)) {
+      return next.handle(req);
+    }
+
     const token = this.authService.getValidToken();
     const hasSession = !!this.authService.getSession();
 
@@ -40,5 +45,21 @@ export class AuthInterceptor implements HttpInterceptor {
   private handleInvalidToken(): void {
     this.authService.clearSession();
     this.router.navigate(['/']);
+  }
+
+  private shouldAttachAuthHeader(url: string): boolean {
+    if (!url) return false;
+
+    if (!/^https?:\/\//i.test(url)) {
+      return true;
+    }
+
+    try {
+      const requestUrl = new URL(url);
+      const apiUrl = new URL(environment.tracksApiBase);
+      return requestUrl.origin === apiUrl.origin;
+    } catch {
+      return false;
+    }
   }
 }

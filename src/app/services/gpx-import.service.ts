@@ -262,7 +262,7 @@ export class GpxImportService {
         province: properties.comarca || null
       };
     } catch {
-      return null;
+      return this.reverseGeocodeCatalan(lat, lon);
     }
   }
 

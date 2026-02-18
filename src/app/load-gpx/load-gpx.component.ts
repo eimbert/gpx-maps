@@ -2136,7 +2136,7 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
         province: properties.comarca || null
       };
     } catch {
-      return null;
+      return this.reverseGeocodeCatalan(lat, lon);
     }
   }
 

@@ -235,7 +235,7 @@ export class GpxImportService {
         province: geocoding.county || geocoding.state || null
       };
     } catch {
-      return null;
+      return this.reverseGeocodeCatalan(lat, lon);
     }
   }
 

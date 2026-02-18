@@ -2108,7 +2108,7 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
         province: geocoding.county || geocoding.state || null
       };
     } catch {
-      return null;
+      return this.reverseGeocodeCatalan(lat, lon);
     }
   }
 
@@ -2718,7 +2718,7 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
       province,
       startLat,
       startLon,
-      title: result.title,
+      title: (result.title?.trim() || population || result.file.name || 'Track').trim(),
       shared: result.shared
     };
 

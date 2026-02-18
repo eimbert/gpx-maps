@@ -215,7 +215,12 @@ export class EventCreateDialogComponent {
       this.newEvent.autonomousCommunity = autonomousCommunity || this.newEvent.autonomousCommunity;
       this.newEvent.province = geocoding.county || geocoding.state || this.newEvent.province;
     } catch {
-      // Ignorar fallos de geocodificación silenciosamente
+      const catalanLocation = await this.reverseGeocodeCatalan(lat, lon);
+      if (catalanLocation) {
+        this.newEvent.population = catalanLocation.population || this.newEvent.population;
+        this.newEvent.autonomousCommunity = catalanLocation.autonomousCommunity || this.newEvent.autonomousCommunity;
+        this.newEvent.province = catalanLocation.province || this.newEvent.province;
+      }
     }
   }
 

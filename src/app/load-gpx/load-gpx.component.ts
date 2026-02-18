@@ -1921,7 +1921,10 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
         const rows = tracks.map(track => this.toUserTrackRow(track, this.eventsById));
         this.userTrackRows.personal = rows.filter(row => !row.routeId);
         this.userTrackRows.events = rows.filter(row => !!row.routeId);
-        this.userTrackRows.shared = (sharedTracks || []).map(track => this.toUserTrackRow(track, this.eventsById));
+        this.userTrackRows.shared = (sharedTracks || []).map(track => ({
+          ...this.toUserTrackRow(track, this.eventsById),
+          canDelete: false
+        }));
         this.bumpUserTracksDataVersion('personal');
         this.bumpUserTracksDataVersion('events');
         this.bumpUserTracksDataVersion('shared');
@@ -2616,6 +2619,7 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
   }
 
   async confirmDeleteUserTrack(row: UserTrackRow): Promise<void> {
+    if (this.activeUserTracksTab === 'shared') return;
     if (!row.canDelete) return;
 
     const decision = await this.openInfoDialog({

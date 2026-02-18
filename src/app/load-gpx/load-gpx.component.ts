@@ -109,6 +109,7 @@ interface UserTrackRow {
   gpxAsset?: string | null;
   fileName?: string | null;
   canDelete: boolean;
+  googleMapsLink: string;
   title?: string | null;
   description?: string | null;
 }
@@ -1921,7 +1922,10 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
         const rows = tracks.map(track => this.toUserTrackRow(track, this.eventsById));
         this.userTrackRows.personal = rows.filter(row => !row.routeId);
         this.userTrackRows.events = rows.filter(row => !!row.routeId);
-        this.userTrackRows.shared = (sharedTracks || []).map(track => this.toUserTrackRow(track, this.eventsById));
+        this.userTrackRows.shared = (sharedTracks || []).map(track => ({
+          ...this.toUserTrackRow(track, this.eventsById),
+          canDelete: false
+        }));
         this.bumpUserTracksDataVersion('personal');
         this.bumpUserTracksDataVersion('events');
         this.bumpUserTracksDataVersion('shared');
@@ -2005,6 +2009,8 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
 
     const title = this.pickFirstText(track as any, ['title', 'trackTitle', 'track_title']);
     const description = this.pickFirstText(track as any, ['description', 'trackDescription', 'track_description']);
+    const normalizedTitle = this.normalizeTrackText(title);
+    const normalizedDescription = this.normalizeTrackText(description);
 
     return {
       trackId: track.id,
@@ -2028,8 +2034,17 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
       gpxAsset: track.gpxAsset,
       fileName: track.fileName,
       canDelete: this.canDeleteTrack(track),
-      title: this.normalizeTrackText(title),
-      description: this.normalizeTrackText(description)
+      googleMapsLink: this.buildGoogleMapsLinkForTrack({
+        startLat,
+        startLon,
+        population,
+        province,
+        autonomousCommunity,
+        title: normalizedTitle,
+        eventName: event?.name ?? '-'
+      }),
+      title: normalizedTitle,
+      description: normalizedDescription
     };
   }
 
@@ -2505,15 +2520,22 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
     expanded.add(province);
   }
 
-  hasStartCoordinates(row: UserTrackRow): boolean {
+  hasStartCoordinates(row: { startLat?: number | null; startLon?: number | null }): boolean {
     return Number.isFinite(row.startLat) && Number.isFinite(row.startLon);
   }
 
   //Enlace a google maps
-  buildGoogleMapsLinkForTrack(row: UserTrackRow): string {
+  buildGoogleMapsLinkForTrack(row: {
+    startLat?: number | null;
+    startLon?: number | null;
+    population?: string | null;
+    province?: string | null;
+    autonomousCommunity?: string | null;
+    title?: string | null;
+    eventName?: string | null;
+  }): string {
     if (this.hasStartCoordinates(row)) {
       const destination = `${row.startLat},${row.startLon}`;
-      console.log("destino por coordenadas")
       return `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(destination)}`;
     }
 
@@ -2574,6 +2596,9 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
   }
 
   async confirmDeleteUserTrack(row: UserTrackRow): Promise<void> {
+    if (this.activeUserTracksTab === 'shared') return;
+    if (!row.canDelete) return;
+
     const decision = await this.openInfoDialog({
       title: 'Eliminar track',
       message: '¿Seguro que quieres eliminar este track? Esta acción no se puede deshacer.',

@@ -1,6 +1,6 @@
 import { Component, ElementRef, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { MatDialog } from '@angular/material/dialog';
 import { firstValueFrom, Subject, Subscription, from } from 'rxjs';
 import { auditTime, exhaustMap, filter, takeUntil } from 'rxjs/operators';
@@ -2087,20 +2087,73 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
   }
 
   private async reverseGeocode(lat: number, lon: number): Promise<TrackLocationDetails | null> {
+    const url = `https://nominatim.openstreetmap.org/reverse?format=geocodejson&lat=${encodeURIComponent(
+      lat
+    )}&lon=${encodeURIComponent(lon)}&zoom=15&addressdetails=1&layer=address`;
+
     try {
-      const url = `https://nominatim.openstreetmap.org/reverse?format=geocodejson&lat=${encodeURIComponent(
-        lat
-      )}&lon=${encodeURIComponent(lon)}&zoom=15&addressdetails=1&layer=address`;
       const result: any = await firstValueFrom(this.http.get(url, { headers: { Accept: 'application/json' } }));
       const geocoding = result?.features?.[0]?.properties?.geocoding || {};
+      const autonomousCommunity = geocoding.state || null;
+
+      if (this.isCatalonia(autonomousCommunity)) {
+        const catalanLocation = await this.reverseGeocodeCatalan(lat, lon);
+        if (catalanLocation) {
+          return catalanLocation;
+        }
+      }
+
       return {
         population: geocoding.city || null,
-        autonomousCommunity: geocoding.state || null,
+        autonomousCommunity,
         province: geocoding.county || geocoding.state || null
+      };
+    } catch (error) {
+      if (error instanceof HttpErrorResponse && error.status === 425) {
+        try {
+          const retryResult: any = await firstValueFrom(this.http.get(url, { headers: { Accept: 'application/json' } }));
+          const retryGeocoding = retryResult?.features?.[0]?.properties?.geocoding || {};
+          return {
+            population: retryGeocoding.city || null,
+            autonomousCommunity: retryGeocoding.state || null,
+            province: retryGeocoding.county || retryGeocoding.state || null
+          };
+        } catch {
+          return this.reverseGeocodeCatalan(lat, lon);
+        }
+      }
+
+      return this.reverseGeocodeCatalan(lat, lon);
+    }
+  }
+
+  private async reverseGeocodeCatalan(lat: number, lon: number): Promise<TrackLocationDetails | null> {
+    try {
+      const url = `https://eines.icgc.cat/geocodificador/invers?lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(
+        lon
+      )}&size=1&topo=1`;
+      const result: any = await firstValueFrom(this.http.get(url, { headers: { Accept: 'application/json' } }));
+      const properties = result?.features?.[0]?.properties;
+      if (!properties) return null;
+
+      return {
+        population: properties.municipi || null,
+        autonomousCommunity: 'Catalunya',
+        province: properties.comarca || null
       };
     } catch {
       return null;
     }
+  }
+
+  private isCatalonia(value: string | null | undefined): boolean {
+    if (!value) return false;
+    const normalized = value
+      .normalize('NFD')
+      .replace(/\p{M}/gu, '')
+      .toLowerCase()
+      .trim();
+    return normalized === 'cataluna' || normalized === 'catalunya';
   }
 
   formatDurationHms(seconds: number): string {
@@ -2680,7 +2733,7 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
       province,
       startLat,
       startLon,
-      title: result.title,
+      title: (result.title?.trim() || population || result.file.name || 'Track').trim(),
       shared: result.shared
     };
 

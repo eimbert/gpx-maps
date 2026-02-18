@@ -108,6 +108,25 @@
   margin: 4px 0 0;
 }
 
+.home__support {
+  margin: 8px 0 0;
+  color: rgba(203, 213, 225, 0.86);
+  font-size: 13px;
+  letter-spacing: 0.1px;
+}
+
+.home__support-link {
+  color: #dbeafe;
+  text-decoration: none;
+  border-bottom: 1px dotted rgba(219, 234, 254, 0.5);
+  transition: color 0.2s ease, border-color 0.2s ease;
+}
+
+.home__support-link:hover {
+  color: #ffffff;
+  border-bottom-color: rgba(255, 255, 255, 0.85);
+}
+
 .home__actions {
   display: contents;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
@@ -306,6 +325,10 @@
     justify-content: center;
     width: 100%;
     font-size: 14px;
+  }
+
+  .home__support {
+    font-size: 12px;
   }
 
   .auth-link {

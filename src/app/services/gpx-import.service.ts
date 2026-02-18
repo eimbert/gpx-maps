@@ -262,24 +262,6 @@ export class GpxImportService {
         province: properties.comarca || null
       };
     } catch {
-      return this.reverseGeocodeCatalan(lat, lon);
-    }
-  }
-
-  private async reverseGeocodeCatalan(lat: number, lon: number): Promise<TrackLocationDetails | null> {
-    try {
-      const url = `https://eines.icgc.cat/geocodificador/invers?lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(
-        lon
-      )}&size=1&topo=1`;
-      const result: any = await firstValueFrom(this.http.get(url, { headers: { Accept: 'application/json' } }));
-      const properties = result?.features?.[0]?.properties;
-      if (!properties) return null;
-      return {
-        population: properties.municipi || null,
-        autonomousCommunity: 'Catalunya',
-        province: properties.comarca || null
-      };
-    } catch {
       return null;
     }
   }

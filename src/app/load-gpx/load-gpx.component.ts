@@ -554,8 +554,18 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
     if (!url) return null;
     const trimmed = url.trim();
     if (!trimmed) return null;
-    if (/^https?:\/\//i.test(trimmed)) return trimmed;
-    return `https://${trimmed}`;
+
+    const candidate = /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
+
+    try {
+      const parsedUrl = new URL(candidate);
+      if (parsedUrl.protocol !== 'http:' && parsedUrl.protocol !== 'https:') {
+        return null;
+      }
+      return parsedUrl.toString();
+    } catch {
+      return null;
+    }
   }
 
   getEventLogoBg(event: any): string {

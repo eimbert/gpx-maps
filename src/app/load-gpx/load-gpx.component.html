@@ -104,16 +104,16 @@
           <div class="user-tracks__counts">
             <span class="user-tracks__count">{{ filteredUserTracks.length }} tracks</span>
             <span class="user-tracks__range" *ngIf="groupedUserTracks.length && groupedUserTracks.length !== paginatedUserTracks.length">
-              Provincias {{ userTracksRangeStart }}-{{ userTracksRangeEnd }} de {{ groupedUserTracks.length }}
+              Comarcas {{ userTracksRangeStart }}-{{ userTracksRangeEnd }} de {{ groupedUserTracks.length }}
             </span>
           </div>
         </div>
 
         <div class="user-tracks__groups" *ngIf="paginatedUserTracks.length; else emptyGroups">
-          <table class="tabla-rutas" aria-label="Tracks guardadas agrupadas por provincia">
+          <table class="tabla-rutas" aria-label="Tracks guardadas agrupadas por comarca">
             <thead>
               <tr class="head-tabla">
-                <th scope="col" style="text-align: left; padding-left: 45px;">Provincia</th>
+                <th scope="col" style="text-align: left; padding-left: 45px;">Comarca</th>
                 <th scope="col">Tracks</th>
               </tr>
             </thead>
@@ -155,8 +155,8 @@
                             </th>
                             <th scope="col" style="text-align: left;">
                               <button type="button" class="user-tracks__sort" (click)="sortUserTracksBy('province')"
-                                aria-label="Ordenar por provincia">
-                                Provincia <span class="user-tracks__sort-indicator">{{resolveUserTracksSortIndicator('province') }}</span>
+                                aria-label="Ordenar por comarca">
+                                Comarca <span class="user-tracks__sort-indicator">{{resolveUserTracksSortIndicator('province') }}</span>
                               </button>
                             </th>
                             <th scope="col" style="text-align: left;">
@@ -278,7 +278,7 @@
                               <span>{{ row.autonomousCommunity || '—' }}</span>
                             </div>
                             <div class="user-tracks__mobile-item">
-                              <span class="user-tracks__mobile-label">Provincia</span>
+                              <span class="user-tracks__mobile-label">Comarca</span>
                               <span>{{ row.province || '—' }}</span>
                             </div>
                             <div class="user-tracks__mobile-item">

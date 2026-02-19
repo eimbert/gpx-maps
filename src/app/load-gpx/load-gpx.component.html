@@ -154,9 +154,9 @@
                               </button>
                             </th>
                             <th scope="col" style="text-align: left;">
-                              <button type="button" class="user-tracks__sort" (click)="sortUserTracksBy('province')"
+                              <button type="button" class="user-tracks__sort" (click)="sortUserTracksBy('comarca')"
                                 aria-label="Ordenar por comarca">
-                                Comarca <span class="user-tracks__sort-indicator">{{resolveUserTracksSortIndicator('province') }}</span>
+                                Comarca <span class="user-tracks__sort-indicator">{{resolveUserTracksSortIndicator('comarca') }}</span>
                               </button>
                             </th>
                             <th scope="col" style="text-align: left;">
@@ -206,7 +206,7 @@
                             <td *ngIf="activeUserTracksTab === 'shared'">{{ row.bikeType || '—' }}</td>
                             <td style="text-align: center;">{{ row.year || '-' }}</td>
                             <td style="text-align: left;">{{ row.autonomousCommunity || '—' }}</td>
-                            <td style="text-align: left;">{{ row.province || '—' }}</td>
+                            <td style="text-align: left;">{{ row.comarca || '—' }}</td>
                             <td>{{ row.population || '—' }}</td>
                             <td class="user-tracks__action-col">
                               <a class="user-tracks__maps-link user-tracks__maps-link--icon"
@@ -279,7 +279,7 @@
                             </div>
                             <div class="user-tracks__mobile-item">
                               <span class="user-tracks__mobile-label">Comarca</span>
-                              <span>{{ row.province || '—' }}</span>
+                              <span>{{ row.comarca || '—' }}</span>
                             </div>
                             <div class="user-tracks__mobile-item">
                               <span class="user-tracks__mobile-label">Población</span>

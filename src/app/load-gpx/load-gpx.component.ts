@@ -96,6 +96,7 @@ interface UserTrackRow {
   eventName: string;
   year: number;
   autonomousCommunity: string | null;
+  comarca: string | null;
   province: string | null;
   population: string | null;
   startLat?: number | null;
@@ -117,7 +118,7 @@ interface UserTrackRow {
 
 type UserTracksSortColumn =
   | 'year'
-  | 'province'
+  | 'comarca'
   | 'population'
   | 'autonomousCommunity'
   | 'distanceKm'
@@ -1998,6 +1999,7 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
     const year = this.resolveTrackYear(track, event);
     const population = track.population ?? event?.population ?? null;
     const autonomousCommunity = track.autonomousCommunity ?? event?.autonomousCommunity ?? null;
+    const comarca = track.comarca ?? event?.comarca ?? null;
     const province = track.province ?? event?.province ?? null;
     const distanceKm = this.toNumber(track.distanceKm);
     const timeSeconds = this.toNumber(track.timeSeconds);
@@ -2023,6 +2025,7 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
       eventName: event?.name ?? '-',
       year,
       autonomousCommunity,
+      comarca,
       province,
       population,
       startLat,
@@ -2363,8 +2366,8 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
     >();
 
     filtered.forEach(route => {
-      const province = this.normalizeProvinceName(route.province);
-      const existing = map.get(province);
+      const comarca = this.normalizeComarcaName(route.comarca);
+      const existing = map.get(comarca);
       if (existing) {
         existing.routes.push(route);
         if (!existing.autonomousCommunity && route.autonomousCommunity) {
@@ -2373,7 +2376,7 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
         return;
       }
 
-      map.set(province, {
+      map.set(comarca, {
         routes: [route],
         autonomousCommunity: route.autonomousCommunity ?? null
       });
@@ -2495,6 +2498,7 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
       row.bikeType,
       row.eventName,
       row.autonomousCommunity,
+      row.comarca,
       row.province,
       row.population,
       row.year?.toString(),
@@ -2534,8 +2538,8 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
     return value?.length ? value : 'Sin población';
   }
 
-  private normalizeProvinceName(province: string | null): string {
-    const value = province?.trim();
+  private normalizeComarcaName(comarca: string | null): string {
+    const value = comarca?.trim();
     return value?.length ? value : 'Sin comarca';
   }
 

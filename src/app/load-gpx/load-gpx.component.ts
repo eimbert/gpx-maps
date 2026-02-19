@@ -118,6 +118,7 @@ interface UserTrackRow {
 
 type UserTracksSortColumn =
   | 'year'
+  | 'province'
   | 'comarca'
   | 'population'
   | 'autonomousCommunity'
@@ -226,9 +227,9 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
   };
 
   private readonly tableState: Record<UserTracksTab, TrackTableState> = {
-    personal: { sortColumn: 'year', sortDirection: 'asc', groupBy: 'comarca', filter: '', rows: 10, page: 0 },
-    events: { sortColumn: 'year', sortDirection: 'asc', groupBy: 'comarca', filter: '', rows: 10, page: 0 },
-    shared: { sortColumn: 'year', sortDirection: 'asc', groupBy: 'comarca', filter: '', rows: 10, page: 0 }
+    personal: { sortColumn: 'year', sortDirection: 'asc', groupBy: 'province', filter: '', rows: 10, page: 0 },
+    events: { sortColumn: 'year', sortDirection: 'asc', groupBy: 'province', filter: '', rows: 10, page: 0 },
+    shared: { sortColumn: 'year', sortDirection: 'asc', groupBy: 'province', filter: '', rows: 10, page: 0 }
   };
 
   readonly userTracksRowsOptions = [10, 25, 50];
@@ -2492,6 +2493,10 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
 
   get userTracksGroupByPluralLabel(): string {
     return this.userTracksGroupByOptions.find(option => option.value === this.userTracksGroupBy)?.pluralLabel ?? 'Comarcas';
+  }
+
+  shouldShowUserTracksLocationColumn(column: UserTracksGroupBy): boolean {
+    return this.userTracksGroupBy !== column;
   }
 
   onUserTracksGroupByChange(value: string): void {

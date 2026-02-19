@@ -1,11 +1,20 @@
 import { Component } from '@angular/core';
 import { MatDialogRef } from '@angular/material/dialog';
 import { CreateEventPayload } from '../interfaces/events';
+import { firstValueFrom, Subject, Subscription, from } from 'rxjs';
 import { InfoMessageService } from '../services/info-message.service';
+import { HttpClient } from '@angular/common/http';
 
 export interface EventCreateDialogResult {
   event: CreateEventPayload;
 }
+
+type TrackLocationDetails = {
+  population: string | null;
+  autonomousCommunity: string | null;
+  comarca: string | null;
+  province: string | null;
+};
 
 @Component({
   selector: 'app-event-create-dialog',
@@ -30,7 +39,8 @@ export class EventCreateDialogComponent {
 
   constructor(
     private dialogRef: MatDialogRef<EventCreateDialogComponent, EventCreateDialogResult | undefined>,
-    private infoMessageService: InfoMessageService
+    private infoMessageService: InfoMessageService,
+    private http: HttpClient,
   ) { }
 
   private showMessage(message: string): void {
@@ -249,47 +259,46 @@ export class EventCreateDialogComponent {
     }
   }
 
-  private async reverseGeocodeCatalan(
-    lat: number,
-    lon: number
-  ): Promise<{ population: string | null; autonomousCommunity: string; comarca: string | null; province: string | null } | null> {
-    try {
-      const url = `https://eines.icgc.cat/geocodificador/invers?lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(
-        lon
-      )}&size=1&topo=1`;
-      const response = await fetch(url, {
-        headers: {
-          Accept: 'application/json'
-        }
-      });
-      if (!response.ok) return null;
-      const data = await response.json();
-      const properties = data?.features?.[0]?.properties;
-      if (!properties) return null;
-      const municipalityIdRaw = properties.id_municipi || properties.id_municipy || null;
-      const municipalityId = municipalityIdRaw !== null && municipalityIdRaw !== undefined
-        ? String(municipalityIdRaw).trim()
-        : '';
-      const provinceByMunicipalityPrefix: Record<string, string> = {
-        '08': 'Barcelona',
-        '17': 'Girona',
-        '25': 'Lleida',
-        '43': 'Tarragona'
-      };
-      const provinceFromMunicipalityId = municipalityId.length >= 2
-        ? provinceByMunicipalityPrefix[municipalityId.slice(0, 2)] || null
-        : null;
+private async reverseGeocodeCatalan(lat: number, lon: number): Promise<TrackLocationDetails | null> {
+  try {
+    const url =
+      `https://eines.icgc.cat/geocodificador/invers` +
+      `?lat=${encodeURIComponent(lat)}` +
+      `&lon=${encodeURIComponent(lon)}` +
+      `&size=1` +
+      `&layers=topo2,address`; // según doc :contentReference[oaicite:2]{index=2}
 
-      return {
-        population: properties.municipi || null,
-        autonomousCommunity: 'Catalunya',
-        comarca: properties.comarca || null,
-        province: properties.provincia || provinceFromMunicipalityId
-      };
-    } catch {
-      return null;
-    }
+    const result: any = await firstValueFrom(
+      this.http.get(url, { headers: { Accept: 'application/json' } })
+    );
+
+    const properties = result?.features?.[0]?.properties;
+    if (!properties) return null;
+
+    const municipalityIdRaw = properties.id_municipi ?? properties.id_municipy ?? null;
+    const municipalityId = municipalityIdRaw != null ? String(municipalityIdRaw).trim() : '';
+
+    const provinceByMunicipalityPrefix: Record<string, string> = {
+      '08': 'Barcelona',
+      '17': 'Girona',
+      '25': 'Lleida',
+      '43': 'Tarragona'
+    };
+
+    const provinceFromMunicipalityId =
+      municipalityId.length >= 2 ? (provinceByMunicipalityPrefix[municipalityId.slice(0, 2)] ?? null) : null;
+
+    return {
+      population: properties.municipi ?? null,
+      autonomousCommunity: 'Catalunya',
+      comarca: properties.comarca ?? null,
+      province: (properties.provincia ?? properties.province ?? provinceFromMunicipalityId)
+    };
+  } catch {
+    return null;
   }
+}
+
 
   private isCatalonia(value: string | null | undefined): boolean {
     if (!value) return false;

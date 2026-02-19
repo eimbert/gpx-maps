@@ -234,39 +234,46 @@ export class GpxImportService {
        };   
    }
 
-  private async reverseGeocodeCatalan(lat: number, lon: number): Promise<TrackLocationDetails | null> {
-    try {
-      const url = `https://eines.icgc.cat/geocodificador/invers?lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(
-        lon
-      )}&size=1&topo=1`;
-      const result: any = await firstValueFrom(this.http.get(url, { headers: { Accept: 'application/json' } }));
-      const properties = result?.features?.[0]?.properties;
-      if (!properties) return null;
+private async reverseGeocodeCatalan(lat: number, lon: number): Promise<TrackLocationDetails | null> {
+  try {
+    const url =
+      `https://eines.icgc.cat/geocodificador/invers` +
+      `?lat=${encodeURIComponent(lat)}` +
+      `&lon=${encodeURIComponent(lon)}` +
+      `&size=1` +
+      `&layers=topo2,address`; // según doc :contentReference[oaicite:2]{index=2}
 
-      const municipalityIdRaw = properties.id_municipi || properties.i_municipi || properties.id_municipy || null;
-      const municipalityId = municipalityIdRaw !== null && municipalityIdRaw !== undefined
-        ? String(municipalityIdRaw).trim()
-        : '';
-      const provinceByMunicipalityPrefix: Record<string, string> = {
-        '08': 'Barcelona',
-        '17': 'Girona',
-        '25': 'Lleida',
-        '43': 'Tarragona'
-      };
-      const provinceFromMunicipalityId = municipalityId.length >= 2
-        ? provinceByMunicipalityPrefix[municipalityId.slice(0, 2)] || null
-        : null;
+    const result: any = await firstValueFrom(
+      this.http.get(url, { headers: { Accept: 'application/json' } })
+    );
 
-      return {
-        population: properties.municipi || null,
-        autonomousCommunity: 'Catalunya',
-        comarca: properties.comarca || null,
-        province: properties.provincia || properties.province || provinceFromMunicipalityId
-      };
-    } catch {
-      return null;
-    }
+    const properties = result?.features?.[0]?.properties;
+    if (!properties) return null;
+
+    const municipalityIdRaw = properties.id_municipi ?? properties.id_municipy ?? null;
+    const municipalityId = municipalityIdRaw != null ? String(municipalityIdRaw).trim() : '';
+
+    const provinceByMunicipalityPrefix: Record<string, string> = {
+      '08': 'Barcelona',
+      '17': 'Girona',
+      '25': 'Lleida',
+      '43': 'Tarragona'
+    };
+
+    const provinceFromMunicipalityId =
+      municipalityId.length >= 2 ? (provinceByMunicipalityPrefix[municipalityId.slice(0, 2)] ?? null) : null;
+
+    return {
+      population: properties.municipi ?? null,
+      autonomousCommunity: 'Catalunya',
+      comarca: properties.comarca ?? null,
+      province: (properties.provincia ?? properties.province ?? provinceFromMunicipalityId)
+    };
+  } catch {
+    return null;
   }
+}
+
 
   private isCatalonia(value: string | null | undefined): boolean {
     if (!value) return false;

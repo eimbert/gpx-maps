@@ -107,7 +107,7 @@
               {{ userTracksGroupByPluralLabel }} {{ userTracksRangeStart }}-{{ userTracksRangeEnd }} de {{ groupedUserTracks.length }}
             </span>
           </div>
-          <label class="user-tracks__pagination-rows">
+          <label class="user-tracks__pagination-rows" style="margin-right: auto;">
             <span>Agrupar por</span>
             <select [value]="userTracksGroupBy" (change)="onUserTracksGroupByChange($any($event.target)?.value || '')"
               aria-label="Seleccionar agrupación de tracks">

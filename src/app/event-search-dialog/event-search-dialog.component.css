@@ -39,6 +39,7 @@
 .search-dialog__table {
   flex: 1;
   overflow: auto;
+  min-width: 0;
   border-radius: 18px;
   border: 1px solid #dbeafe;
   background: linear-gradient(180deg, #f8fbff 0%, #ffffff 100%);
@@ -231,6 +232,7 @@
     border: none;
     border-radius: 0;
     background: #fff;
+    overflow-wrap: anywhere;
   }
 
   .search-dialog tbody tr td::before {
@@ -268,6 +270,35 @@
 
   .select-button {
     width: 100%;
+  }
+
+  .search-dialog tbody tr td > * {
+    min-width: 0;
+  }
+
+  .search-dialog tbody tr td .main-text,
+  .search-dialog tbody tr td .distance-col {
+    text-align: right;
+  }
+}
+
+@media (max-width: 420px) {
+  .search-dialog {
+    padding: 6px;
+  }
+
+  .search-dialog__header h2 {
+    font-size: 18px;
+    line-height: 1.25;
+  }
+
+  .search-dialog tbody tr td {
+    padding: 9px 10px;
+  }
+
+  .logo-wrapper {
+    width: 72px;
+    height: 72px;
   }
 }
 

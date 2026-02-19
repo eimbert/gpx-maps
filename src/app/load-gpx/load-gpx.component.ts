@@ -2499,10 +2499,6 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
     return this.userTracksGroupBy !== column;
   }
 
-  shouldShowUserTracksLocationColumn(column: UserTracksGroupBy): boolean {
-    return this.userTracksGroupBy !== column;
-  }
-
   onUserTracksGroupByChange(value: string): void {
     if (!this.isValidUserTracksGroupBy(value)) return;
     const state = this.getTableState(this.activeUserTracksTab);

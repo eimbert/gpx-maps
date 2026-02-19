@@ -101,19 +101,26 @@
 
       <div class="user-tracks__panel" *ngIf="!activeTracksLoading && getUserTrackRows(activeUserTracksTab).length">
         <div class="user-tracks__table-toolbar">
+          <div class="user-tracks__pagination-rows" style="margin-right: auto;">
+            <select [value]="userTracksGroupBy"
+              (change)="onUserTracksGroupByChange($any($event.target)?.value || '')"
+              aria-label="Seleccionar agrupación de tracks">
+              <option *ngFor="let option of userTracksGroupByOptions" [value]="option.value">{{ option.label }}</option>
+            </select>
+          </div>
           <div class="user-tracks__counts">
             <span class="user-tracks__count">{{ filteredUserTracks.length }} tracks</span>
             <span class="user-tracks__range" *ngIf="groupedUserTracks.length && groupedUserTracks.length !== paginatedUserTracks.length">
-              Comarcas {{ userTracksRangeStart }}-{{ userTracksRangeEnd }} de {{ groupedUserTracks.length }}
+              {{ userTracksGroupByPluralLabel }} {{ userTracksRangeStart }}-{{ userTracksRangeEnd }} de {{ groupedUserTracks.length }}
             </span>
           </div>
         </div>
 
         <div class="user-tracks__groups" *ngIf="paginatedUserTracks.length; else emptyGroups">
-          <table class="tabla-rutas" aria-label="Tracks guardadas agrupadas por comarca">
+          <table class="tabla-rutas" [attr.aria-label]="'Tracks guardadas agrupadas por ' + userTracksGroupByLabel.toLowerCase()">
             <thead>
               <tr class="head-tabla">
-                <th scope="col" style="text-align: left; padding-left: 45px;">Comarca</th>
+                <th scope="col" style="text-align: left; padding-left: 45px;">{{ userTracksGroupByLabel }}</th>
                 <th scope="col">Tracks</th>
               </tr>
             </thead>

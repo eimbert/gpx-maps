@@ -79,6 +79,7 @@ interface EventTrackUploadPayload {
 type TrackLocationDetails = {
   population: string | null;
   autonomousCommunity: string | null;
+  comarca: string | null;
   province: string | null;
 };
 
@@ -1676,6 +1677,7 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
     const year = trackYear ?? event?.year ?? new Date().getFullYear();
     const population = trackLocation.population ?? event?.population ?? null;
     const autonomousCommunity = trackLocation.autonomousCommunity ?? event?.autonomousCommunity ?? null;
+    const comarca = trackLocation.comarca ?? event?.comarca ?? null;
     const province = trackLocation.province ?? event?.province ?? null;
     const startLatitude = trackLocation.startLatitude ?? startPoint?.lat ?? null;
     const startLongitude = trackLocation.startLongitude ?? startPoint?.lon ?? null;
@@ -1695,6 +1697,7 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
       ascent: track.details.ascent,
       population,
       autonomousCommunity,
+      comarca,
       province,
       startLat,
       startLon,
@@ -2071,6 +2074,7 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
         startLongitude: null,
         population: null,
         autonomousCommunity: null,
+        comarca: null,
         province: null
       };
     }
@@ -2092,6 +2096,7 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
       startLongitude: point.lon,
       population: null,
       autonomousCommunity: null,
+      comarca: null,
       province: null
     };
   }
@@ -2104,13 +2109,19 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
       console.log("details", details)
       if (this.isCatalonia(details?.autonomousCommunity)) {
         const catalan = await this.reverseGeocodeCatalan(lat, lon);
-        if (catalan) return catalan;
+        if (catalan) {
+          return {
+            ...catalan,
+            province: catalan.province || details.province || (details as any).provincia || null
+          };
+        }
       }
 
       return {
-        population: details.population || null,
-        autonomousCommunity: details.autonomousCommunity || null,
-        province: details.province || null
+        population: details.population || (details as any).city || null,
+        autonomousCommunity: details.autonomousCommunity || (details as any).state || null,
+        comarca: (details as any).comarca || (details as any).county || null,
+        province: details.province || (details as any).provincia || null
       };   
   }
 
@@ -2126,7 +2137,8 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
       return {
         population: properties.municipi || null,
         autonomousCommunity: 'Catalunya',
-        province: properties.comarca || null
+        comarca: properties.comarca || null,
+        province: properties.provincia || properties.province || null
       };
     } catch {
       return null;
@@ -2710,6 +2722,7 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
     const year = trackYear ?? new Date().getFullYear();
     const population = trackLocation.population ?? null;
     const autonomousCommunity = trackLocation.autonomousCommunity ?? null;
+    const comarca = trackLocation.comarca ?? null;
     const province = trackLocation.province ?? null;
     const startLatitude = trackLocation.startLatitude ?? null;
     const startLongitude = trackLocation.startLongitude ?? null;
@@ -2733,6 +2746,7 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
       createdBy: this.userId,
       population,
       autonomousCommunity,
+      comarca,
       province,
       startLat,
       startLon,

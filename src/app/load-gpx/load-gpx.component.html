@@ -193,7 +193,7 @@
                             <th scope="col" class="user-tracks__action-col">Descargar</th>
                             <th scope="col" class="user-tracks__action-col">Animar</th>
                             <th scope="col" class="user-tracks__action-col">Planificar salida</th>
-                            <th scope="col" class="user-tracks__action-col" *ngIf="activeUserTracksTab !== 'shared'">Eliminar</th>
+                            <th scope="col" class="user-tracks__action-col">Eliminar</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -248,13 +248,14 @@
                                 [attr.aria-label]="isPlanningTrack(row) ? 'Guardando planificación' : 'Planificar salida'">{{
                                 isPlanningTrack(row) ? 'hourglass_top' : 'event_available' }}</mat-icon>
                             </td>
-                            <td class="user-tracks__action-col" *ngIf="activeUserTracksTab !== 'shared'">
-                              <!-- <button type="button" class="ghost ghost--small ghost--danger user-tracks__icon-button" [disabled]="isDeletingTrack(row)" (click)="confirmDeleteUserTrack(row)" [attr.aria-label]="isDeletingTrack(row) ? 'Eliminando track' : 'Eliminar track'"> -->
-                              <mat-icon *ngIf="row.canDelete" aria-hidden="true" style="color: red; cursor: pointer;"
+                            <td class="user-tracks__action-col">
+                              <mat-icon *ngIf="row.canDelete; else noDeleteAction" aria-hidden="true" style="color: red; cursor: pointer;"
                                 (click)="confirmDeleteUserTrack(row)"
                                 [attr.aria-label]="isDeletingTrack(row) ? 'Eliminando track' : 'Eliminar track'">{{
                                 isDeletingTrack(row) ? 'hourglass_top' : 'delete' }}</mat-icon>
-                              <!-- </button> -->
+                              <ng-template #noDeleteAction>
+                                <span style="color: #94a3b8;">—</span>
+                              </ng-template>
                             </td>
                           </tr>
                         </tbody>

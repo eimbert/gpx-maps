@@ -234,8 +234,8 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
 
   readonly userTracksRowsOptions = [10, 25, 50];
   readonly userTracksGroupByOptions: { value: UserTracksGroupBy; label: string; pluralLabel: string }[] = [
-    { value: 'autonomousCommunity', label: 'Comunidad', pluralLabel: 'Comunidades' },
     { value: 'province', label: 'Provincia', pluralLabel: 'Provincias' },
+    { value: 'autonomousCommunity', label: 'Comunidad', pluralLabel: 'Comunidades' },
     { value: 'comarca', label: 'Comarca', pluralLabel: 'Comarcas' },
     { value: 'population', label: 'Población', pluralLabel: 'Poblaciones' }
   ];
@@ -2488,11 +2488,15 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
   }
 
   get userTracksGroupByLabel(): string {
-    return this.userTracksGroupByOptions.find(option => option.value === this.userTracksGroupBy)?.label ?? 'Comarca';
+    return this.userTracksGroupByOptions.find(option => option.value === this.userTracksGroupBy)?.label ?? 'Provincia';
   }
 
   get userTracksGroupByPluralLabel(): string {
-    return this.userTracksGroupByOptions.find(option => option.value === this.userTracksGroupBy)?.pluralLabel ?? 'Comarcas';
+    return this.userTracksGroupByOptions.find(option => option.value === this.userTracksGroupBy)?.pluralLabel ?? 'Provincias';
+  }
+
+  shouldShowUserTracksLocationColumn(column: UserTracksGroupBy): boolean {
+    return this.userTracksGroupBy !== column;
   }
 
   shouldShowUserTracksLocationColumn(column: UserTracksGroupBy): boolean {

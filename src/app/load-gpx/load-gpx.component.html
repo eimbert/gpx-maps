@@ -101,6 +101,13 @@
 
       <div class="user-tracks__panel" *ngIf="!activeTracksLoading && getUserTrackRows(activeUserTracksTab).length">
         <div class="user-tracks__table-toolbar">
+          <div class="user-tracks__pagination-rows" style="margin-right: auto;">
+            <select [value]="userTracksGroupBy"
+              (change)="onUserTracksGroupByChange($any($event.target)?.value || '')"
+              aria-label="Seleccionar agrupación de tracks">
+              <option *ngFor="let option of userTracksGroupByOptions" [value]="option.value">{{ option.label }}</option>
+            </select>
+          </div>
           <div class="user-tracks__counts">
             <span class="user-tracks__count">{{ filteredUserTracks.length }} tracks</span>
             <span class="user-tracks__range" *ngIf="groupedUserTracks.length && groupedUserTracks.length !== paginatedUserTracks.length">

@@ -147,8 +147,6 @@
                           <tr
                             style="border-style:solid; border-width: 1px; border-color: rgb(231, 228, 228); font-size: 11px;">
                             <th scope="col">Track</th>
-                            <th scope="col" *ngIf="activeUserTracksTab === 'shared'">Nickname</th>
-                            <th scope="col" *ngIf="activeUserTracksTab === 'shared'">Tipo bici</th>
                             <th scope="col">
                               <button type="button" class="user-tracks__sort" (click)="sortUserTracksBy('year')" aria-label="Ordenar por año">Año 
                                 <span class="user-tracks__sort-indicator">{{ resolveUserTracksSortIndicator('year')}}</span>
@@ -213,8 +211,6 @@
                               </div>
                               <span *ngIf="!row.title && (!row.eventName || row.eventName === '-')">—</span>
                             </td>
-                            <td *ngIf="activeUserTracksTab === 'shared'">{{ row.nickname || '—' }}</td>
-                            <td *ngIf="activeUserTracksTab === 'shared'">{{ row.bikeType || '—' }}</td>
                             <td style="text-align: center;">{{ row.year || '-' }}</td>
                             <td style="text-align: left;" *ngIf="shouldShowUserTracksLocationColumn('autonomousCommunity')">{{ row.autonomousCommunity || '—' }}</td>
                             <td style="text-align: left;" *ngIf="shouldShowUserTracksLocationColumn('province')">{{ row.province || '—' }}</td>
@@ -277,14 +273,6 @@
                           </header>
 
                           <div class="user-tracks__mobile-grid">
-                            <div class="user-tracks__mobile-item" *ngIf="activeUserTracksTab === 'shared'">
-                              <span class="user-tracks__mobile-label">Nickname</span>
-                              <span>{{ row.nickname || '—' }}</span>
-                            </div>
-                            <div class="user-tracks__mobile-item" *ngIf="activeUserTracksTab === 'shared'">
-                              <span class="user-tracks__mobile-label">Tipo bici</span>
-                              <span>{{ row.bikeType || '—' }}</span>
-                            </div>
                             <div class="user-tracks__mobile-item" *ngIf="shouldShowUserTracksLocationColumn('autonomousCommunity')">
                               <span class="user-tracks__mobile-label">Comunidad</span>
                               <span>{{ row.autonomousCommunity || '—' }}</span>

@@ -1,6 +1,7 @@
 .table-wrapper {
   max-height: 480px;
   overflow: auto;
+  min-width: 0;
 }
 
 .tracks-table {
@@ -174,5 +175,26 @@
 
   .icon-button {
     min-width: 40px;
+  }
+}
+
+
+@media (max-width: 560px) {
+  .tracks-table td {
+    padding: 9px 10px;
+    gap: 8px;
+  }
+
+  .tracks-table td::before {
+    font-size: 11px;
+  }
+
+  .icon-button {
+    width: 100%;
+    min-height: 38px;
+  }
+
+  .icon-col {
+    justify-content: stretch;
   }
 }

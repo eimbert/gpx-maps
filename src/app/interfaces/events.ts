@@ -61,6 +61,7 @@ export interface RouteTrackTime {
 
 export interface CreateEventPayload {
   name: string;
+  eventUrl?: string | null;
   population?: string | null;
   autonomousCommunity?: string | null;
   comarca?: string | null;
@@ -107,6 +108,7 @@ export interface CreateTrackPayload {
 export interface RaceEvent {
   id: number;
   name: string;
+  eventUrl?: string | null;
   population?: string | null;
   autonomousCommunity?: string | null;
   comarca?: string | null;

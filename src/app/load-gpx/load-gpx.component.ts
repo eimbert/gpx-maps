@@ -546,6 +546,18 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
     return parts.join(' • ');
   }
 
+  getEventExternalUrl(event: RaceEvent): string | null {
+    return this.normalizeExternalUrl(event.eventUrl ?? null);
+  }
+
+  private normalizeExternalUrl(url: string | null | undefined): string | null {
+    if (!url) return null;
+    const trimmed = url.trim();
+    if (!trimmed) return null;
+    if (/^https?:\/\//i.test(trimmed)) return trimmed;
+    return `https://${trimmed}`;
+  }
+
   getEventLogoBg(event: any): string {
     const raw = event?.logoBlob;
     if (!raw) return 'none';

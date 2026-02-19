@@ -24,6 +24,7 @@ type TrackLocationDetails = {
 export class EventCreateDialogComponent {
   newEvent = {
     name: '',
+    eventUrl: '',
     population: '',
     autonomousCommunity: '',
     comarca: '',
@@ -60,6 +61,11 @@ export class EventCreateDialogComponent {
       return;
     }
 
+    if (this.newEvent.eventUrl && this.newEvent.eventUrl.length > 500) {
+      this.showMessage('La URL del evento no puede superar los 500 caracteres.');
+      return;
+    }
+
     if (!this.newEvent.gpxMaster) {
       this.showMessage('Sube un track GPX válido para continuar.');
       return;
@@ -74,6 +80,7 @@ export class EventCreateDialogComponent {
 
     const event: CreateEventPayload = {
       name: this.newEvent.name.trim(),
+      eventUrl: this.newEvent.eventUrl.trim() || null,
       population: this.newEvent.population.trim(),
       autonomousCommunity: this.newEvent.autonomousCommunity.trim(),
       comarca: this.newEvent.comarca.trim(),

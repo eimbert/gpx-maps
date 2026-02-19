@@ -17,6 +17,7 @@ export class EventCreateDialogComponent {
     name: '',
     population: '',
     autonomousCommunity: '',
+    comarca: '',
     province: '',
     year: new Date().getFullYear(),
     distanceKm: null as number | null,
@@ -65,6 +66,7 @@ export class EventCreateDialogComponent {
       name: this.newEvent.name.trim(),
       population: this.newEvent.population.trim(),
       autonomousCommunity: this.newEvent.autonomousCommunity.trim(),
+      comarca: this.newEvent.comarca.trim(),
       province: this.newEvent.province.trim(),
       year: this.newEvent.year,
       distanceKm,
@@ -211,6 +213,7 @@ export class EventCreateDialogComponent {
         if (catalanLocation) {
           this.newEvent.population = catalanLocation.population || this.newEvent.population;
           this.newEvent.autonomousCommunity = catalanLocation.autonomousCommunity || this.newEvent.autonomousCommunity;
+          this.newEvent.comarca = catalanLocation.comarca || this.newEvent.comarca;
           this.newEvent.province = catalanLocation.province || this.newEvent.province;
         }
         return;
@@ -225,6 +228,7 @@ export class EventCreateDialogComponent {
         if (catalanLocation) {
           this.newEvent.population = catalanLocation.population || this.newEvent.population;
           this.newEvent.autonomousCommunity = catalanLocation.autonomousCommunity || this.newEvent.autonomousCommunity;
+          this.newEvent.comarca = catalanLocation.comarca || this.newEvent.comarca;
           this.newEvent.province = catalanLocation.province || this.newEvent.province;
           return;
         }
@@ -232,12 +236,14 @@ export class EventCreateDialogComponent {
 
       this.newEvent.population = geocoding.city || this.newEvent.population;
       this.newEvent.autonomousCommunity = autonomousCommunity || this.newEvent.autonomousCommunity;
-      this.newEvent.province = geocoding.county || geocoding.state || this.newEvent.province;
+      this.newEvent.comarca = geocoding.county || this.newEvent.comarca;
+      this.newEvent.province = geocoding.province || this.newEvent.province;
     } catch {
       const catalanLocation = await this.reverseGeocodeCatalan(lat, lon);
       if (catalanLocation) {
         this.newEvent.population = catalanLocation.population || this.newEvent.population;
         this.newEvent.autonomousCommunity = catalanLocation.autonomousCommunity || this.newEvent.autonomousCommunity;
+        this.newEvent.comarca = catalanLocation.comarca || this.newEvent.comarca;
         this.newEvent.province = catalanLocation.province || this.newEvent.province;
       }
     }
@@ -246,7 +252,7 @@ export class EventCreateDialogComponent {
   private async reverseGeocodeCatalan(
     lat: number,
     lon: number
-  ): Promise<{ population: string | null; autonomousCommunity: string; province: string | null } | null> {
+  ): Promise<{ population: string | null; autonomousCommunity: string; comarca: string | null; province: string | null } | null> {
     try {
       const url = `https://eines.icgc.cat/geocodificador/invers?lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(
         lon
@@ -260,10 +266,25 @@ export class EventCreateDialogComponent {
       const data = await response.json();
       const properties = data?.features?.[0]?.properties;
       if (!properties) return null;
+      const municipalityIdRaw = properties.id_municipi || properties.id_municipy || null;
+      const municipalityId = municipalityIdRaw !== null && municipalityIdRaw !== undefined
+        ? String(municipalityIdRaw).trim()
+        : '';
+      const provinceByMunicipalityPrefix: Record<string, string> = {
+        '08': 'Barcelona',
+        '17': 'Girona',
+        '25': 'Lleida',
+        '43': 'Tarragona'
+      };
+      const provinceFromMunicipalityId = municipalityId.length >= 2
+        ? provinceByMunicipalityPrefix[municipalityId.slice(0, 2)] || null
+        : null;
+
       return {
         population: properties.municipi || null,
         autonomousCommunity: 'Catalunya',
-        province: properties.comarca || null
+        comarca: properties.comarca || null,
+        province: properties.provincia || provinceFromMunicipalityId
       };
     } catch {
       return null;

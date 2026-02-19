@@ -30,6 +30,7 @@ export interface EventTrack {
   ascent?: number;
   population?: string | null;
   autonomousCommunity?: string | null;
+  comarca?: string | null;
   province?: string | null;
   startLat?: number | null;
   startLon?: number | null;
@@ -62,6 +63,7 @@ export interface CreateEventPayload {
   name: string;
   population?: string | null;
   autonomousCommunity?: string | null;
+  comarca?: string | null;
   province?: string | null;
   year: number;
   distanceKm?: number | null;
@@ -86,6 +88,7 @@ export interface CreateTrackPayload {
   ascent?: number;
   population?: string | null;
   autonomousCommunity?: string | null;
+  comarca?: string | null;
   province?: string | null;
   // startLatitude?: number | null;
   // startLongitude?: number | null;
@@ -106,6 +109,7 @@ export interface RaceEvent {
   name: string;
   population?: string | null;
   autonomousCommunity?: string | null;
+  comarca?: string | null;
   province?: string | null;
   year: number;
   distanceKm?: number | null;

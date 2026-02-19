@@ -914,8 +914,9 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
     const dialogRef = this.dialog.open<EventSearchDialogComponent, EventSearchDialogData, EventSearchDialogResult>(
       EventSearchDialogComponent,
       {
-        width: '960px',
-        height: '700px',
+        width: '95vw',
+        maxWidth: '960px',
+        height: 'min(700px, 90vh)',
         data: {
           events: this.events,
           selectedEventId: this.selectedEventId,
@@ -2949,7 +2950,9 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
     if (!this.ensureEventsAccess()) return;
     const rows = await this.buildMyTrackRows();
     this.dialog.open<MyTracksDialogComponent, any>(MyTracksDialogComponent, {
-      width: '1080px',
+      width: '95vw',
+      maxWidth: '1080px',
+      maxHeight: '90vh',
       data: {
         tracks: rows,
         userId: this.userId,

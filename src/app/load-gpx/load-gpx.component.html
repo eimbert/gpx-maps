@@ -125,9 +125,9 @@
             </thead>
             <tbody>
               <ng-container *ngFor="let group of paginatedUserTracks">
-                <tr>
+                <tr class="user-tracks__group-row" (click)="onProvinceRowClick(group.province)">
                   <td>
-                    <button type="button" class="user-tracks__expand" (click)="toggleProvinceExpansion(group.province)"
+                    <button type="button" class="user-tracks__expand" (click)="toggleProvinceExpansion(group.province); $event.stopPropagation()"
                       [attr.aria-expanded]="isProvinceExpanded(group.province)"
                       [attr.aria-label]="isProvinceExpanded(group.province) ? 'Ocultar tracks en ' + group.province : 'Mostrar tracks en ' + group.province">
                       <mat-icon class="user-tracks__expand-icon" aria-hidden="true">{{isProvinceExpanded(group.province) ? 'keyboard_arrow_up' : 'keyboard_arrow_down' }}</mat-icon>

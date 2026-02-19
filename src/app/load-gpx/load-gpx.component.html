@@ -432,7 +432,7 @@
                   [class.event-card--current]="i === carouselIndex" (click)="handleCarouselSelection(event.id)">
                   <div class="event-card__content event-card__content--stacked">
                     <div class="event-card__info">
-                      <p class="eyebrow">{{ event.year }}</p>
+                      <p class="eyebrow">Edición {{ event.year }}</p>
                       <div class="event-card__title-row">
                         <div class="event-logo event-logo--badge">
                           <ng-container *ngIf="event.logoBlob; else logoPlaceholderSmall">

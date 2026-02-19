@@ -126,10 +126,12 @@ type UserTracksSortColumn =
   | 'totalTimeSeconds';
 type SortDirection = 'asc' | 'desc';
 type UserTracksTab = 'personal' | 'events' | 'shared';
+type UserTracksGroupBy = 'autonomousCommunity' | 'province' | 'comarca' | 'population';
 
 interface TrackTableState {
   sortColumn: UserTracksSortColumn;
   sortDirection: SortDirection;
+  groupBy: UserTracksGroupBy;
   filter: string;
   rows: number;
   page: number;
@@ -224,12 +226,18 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
   };
 
   private readonly tableState: Record<UserTracksTab, TrackTableState> = {
-    personal: { sortColumn: 'year', sortDirection: 'asc', filter: '', rows: 10, page: 0 },
-    events: { sortColumn: 'year', sortDirection: 'asc', filter: '', rows: 10, page: 0 },
-    shared: { sortColumn: 'year', sortDirection: 'asc', filter: '', rows: 10, page: 0 }
+    personal: { sortColumn: 'year', sortDirection: 'asc', groupBy: 'comarca', filter: '', rows: 10, page: 0 },
+    events: { sortColumn: 'year', sortDirection: 'asc', groupBy: 'comarca', filter: '', rows: 10, page: 0 },
+    shared: { sortColumn: 'year', sortDirection: 'asc', groupBy: 'comarca', filter: '', rows: 10, page: 0 }
   };
 
   readonly userTracksRowsOptions = [10, 25, 50];
+  readonly userTracksGroupByOptions: { value: UserTracksGroupBy; label: string; pluralLabel: string }[] = [
+    { value: 'autonomousCommunity', label: 'Comunidad', pluralLabel: 'Comunidades' },
+    { value: 'province', label: 'Provincia', pluralLabel: 'Provincias' },
+    { value: 'comarca', label: 'Comarca', pluralLabel: 'Comarcas' },
+    { value: 'population', label: 'Población', pluralLabel: 'Poblaciones' }
+  ];
   activeUserTracksTab: UserTracksTab = 'personal';
 
   private readonly expandedProvinces: Record<UserTracksTab, Set<string>> = {
@@ -2366,8 +2374,8 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
     >();
 
     filtered.forEach(route => {
-      const comarca = this.normalizeComarcaName(route.comarca);
-      const existing = map.get(comarca);
+      const groupKey = this.resolveUserTrackGroupValue(route, state.groupBy);
+      const existing = map.get(groupKey);
       if (existing) {
         existing.routes.push(route);
         if (!existing.autonomousCommunity && route.autonomousCommunity) {
@@ -2376,7 +2384,7 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
         return;
       }
 
-      map.set(comarca, {
+      map.set(groupKey, {
         routes: [route],
         autonomousCommunity: route.autonomousCommunity ?? null
       });
@@ -2474,6 +2482,29 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
     this.bumpUserTracksStateVersion(this.activeUserTracksTab);
   }
 
+  get userTracksGroupBy(): UserTracksGroupBy {
+    return this.getTableState(this.activeUserTracksTab).groupBy;
+  }
+
+  get userTracksGroupByLabel(): string {
+    return this.userTracksGroupByOptions.find(option => option.value === this.userTracksGroupBy)?.label ?? 'Comarca';
+  }
+
+  get userTracksGroupByPluralLabel(): string {
+    return this.userTracksGroupByOptions.find(option => option.value === this.userTracksGroupBy)?.pluralLabel ?? 'Comarcas';
+  }
+
+  onUserTracksGroupByChange(value: string): void {
+    if (!this.isValidUserTracksGroupBy(value)) return;
+    const state = this.getTableState(this.activeUserTracksTab);
+    if (state.groupBy === value) return;
+
+    state.groupBy = value;
+    state.page = 0;
+    this.expandedProvinces[this.activeUserTracksTab].clear();
+    this.bumpUserTracksStateVersion(this.activeUserTracksTab);
+  }
+
   changeUserTracksPage(delta: number): void {
     const state = this.getTableState(this.activeUserTracksTab);
     const pageCount = this.getUserTracksPageCountForTab(this.activeUserTracksTab);
@@ -2541,6 +2572,27 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
   private normalizeComarcaName(comarca: string | null): string {
     const value = comarca?.trim();
     return value?.length ? value : 'Sin comarca';
+  }
+
+  private normalizeAutonomousCommunityName(autonomousCommunity: string | null): string {
+    const value = autonomousCommunity?.trim();
+    return value?.length ? value : 'Sin comunidad';
+  }
+
+  private normalizeProvinceName(province: string | null): string {
+    const value = province?.trim();
+    return value?.length ? value : 'Sin provincia';
+  }
+
+  private resolveUserTrackGroupValue(row: UserTrackRow, groupBy: UserTracksGroupBy): string {
+    if (groupBy === 'autonomousCommunity') return this.normalizeAutonomousCommunityName(row.autonomousCommunity);
+    if (groupBy === 'province') return this.normalizeProvinceName(row.province);
+    if (groupBy === 'population') return this.normalizePopulationName(row.population);
+    return this.normalizeComarcaName(row.comarca);
+  }
+
+  private isValidUserTracksGroupBy(value: string): value is UserTracksGroupBy {
+    return this.userTracksGroupByOptions.some(option => option.value === value);
   }
 
   isProvinceExpanded(province: string): boolean {

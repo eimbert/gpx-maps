@@ -219,14 +219,19 @@ export class GpxImportService {
        console.log("details", details)
        if (this.isCatalonia(details?.autonomousCommunity)) {
          const catalan = await this.reverseGeocodeCatalan(lat, lon);
-         if (catalan) return catalan;
+         if (catalan) {
+           return {
+             ...catalan,
+             province: catalan.province || details.province || (details as any).provincia || null
+           };
+         }
        }
  
        return {
          population: details.population || (details as any).city || null,
          autonomousCommunity: details.autonomousCommunity || (details as any).state || null,
          comarca: (details as any).comarca || (details as any).county || null,
-         province: details.province || null
+         province: details.province || (details as any).provincia || null
        };   
    }
 
@@ -242,7 +247,7 @@ export class GpxImportService {
         population: properties.municipi || null,
         autonomousCommunity: 'Catalunya',
         comarca: properties.comarca || null,
-        province: properties.provincia || null
+        province: properties.provincia || properties.province || null
       };
     } catch {
       return null;

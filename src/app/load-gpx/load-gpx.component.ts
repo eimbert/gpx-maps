@@ -2614,6 +2614,14 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
     expanded.add(province);
   }
 
+  onProvinceRowClick(province: string): void {
+    if (!window.matchMedia('(max-width: 768px)').matches) {
+      return;
+    }
+
+    this.toggleProvinceExpansion(province);
+  }
+
   hasStartCoordinates(row: { startLat?: number | null; startLon?: number | null }): boolean {
     return Number.isFinite(row.startLat) && Number.isFinite(row.startLon);
   }

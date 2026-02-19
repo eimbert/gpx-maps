@@ -216,7 +216,6 @@ export class GpxImportService {
          this.http.get<TrackLocationDetails>(environment.geoCode, { params: { lat, lon } })
        );
  
-       console.log("details", details)
        if (this.isCatalonia(details?.autonomousCommunity)) {
          const catalan = await this.reverseGeocodeCatalan(lat, lon);
          if (catalan) {
@@ -243,11 +242,26 @@ export class GpxImportService {
       const result: any = await firstValueFrom(this.http.get(url, { headers: { Accept: 'application/json' } }));
       const properties = result?.features?.[0]?.properties;
       if (!properties) return null;
+
+      const municipalityIdRaw = properties.id_municipi || properties.i_municipi || properties.id_municipy || null;
+      const municipalityId = municipalityIdRaw !== null && municipalityIdRaw !== undefined
+        ? String(municipalityIdRaw).trim()
+        : '';
+      const provinceByMunicipalityPrefix: Record<string, string> = {
+        '08': 'Barcelona',
+        '17': 'Girona',
+        '25': 'Lleida',
+        '43': 'Tarragona'
+      };
+      const provinceFromMunicipalityId = municipalityId.length >= 2
+        ? provinceByMunicipalityPrefix[municipalityId.slice(0, 2)] || null
+        : null;
+
       return {
         population: properties.municipi || null,
         autonomousCommunity: 'Catalunya',
         comarca: properties.comarca || null,
-        province: properties.provincia || properties.province || null
+        province: properties.provincia || properties.province || provinceFromMunicipalityId
       };
     } catch {
       return null;

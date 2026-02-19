@@ -2503,7 +2503,7 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
 
   private normalizeProvinceName(province: string | null): string {
     const value = province?.trim();
-    return value?.length ? value : 'Sin provincia';
+    return value?.length ? value : 'Sin comarca';
   }
 
   isProvinceExpanded(province: string): boolean {

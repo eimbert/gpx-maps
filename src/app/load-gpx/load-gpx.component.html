@@ -101,21 +101,13 @@
 
       <div class="user-tracks__panel" *ngIf="!activeTracksLoading && getUserTrackRows(activeUserTracksTab).length">
         <div class="user-tracks__table-toolbar">
-          <div class="user-tracks__pagination-rows" style="margin-right: auto;">
-            <select [value]="userTracksGroupBy"
-              (change)="onUserTracksGroupByChange($any($event.target)?.value || '')"
-              aria-label="Seleccionar agrupación de tracks">
-              <option *ngFor="let option of userTracksGroupByOptions" [value]="option.value">{{ option.label }}</option>
-            </select>
-          </div>
           <div class="user-tracks__counts">
             <span class="user-tracks__count">{{ filteredUserTracks.length }} tracks</span>
             <span class="user-tracks__range" *ngIf="groupedUserTracks.length && groupedUserTracks.length !== paginatedUserTracks.length">
               {{ userTracksGroupByPluralLabel }} {{ userTracksRangeStart }}-{{ userTracksRangeEnd }} de {{ groupedUserTracks.length }}
             </span>
           </div>
-          <label class="user-tracks__pagination-rows">
-            <span>Agrupar por</span>
+          <label class="user-tracks__pagination-rows" style="margin-right: auto;">
             <select [value]="userTracksGroupBy" (change)="onUserTracksGroupByChange($any($event.target)?.value || '')"
               aria-label="Seleccionar agrupación de tracks">
               <option *ngFor="let option of userTracksGroupByOptions" [value]="option.value">{{ option.label }}</option>
@@ -162,18 +154,23 @@
                                 <span class="user-tracks__sort-indicator">{{ resolveUserTracksSortIndicator('year')}}</span>
                               </button>
                             </th>
-                            <th scope="col" style="text-align: left;">
+                            <th scope="col" style="text-align: left;" *ngIf="shouldShowUserTracksLocationColumn('autonomousCommunity')">
                               <button type="button" class="user-tracks__sort" (click)="sortUserTracksBy('autonomousCommunity')" aria-label="Ordenar por comunidad">
                                 Comunidad <span class="user-tracks__sort-indicator">{{resolveUserTracksSortIndicator('autonomousCommunity') }}</span>
                               </button>
                             </th>
-                            <th scope="col" style="text-align: left;">
+                            <th scope="col" style="text-align: left;" *ngIf="shouldShowUserTracksLocationColumn('province')">
+                              <button type="button" class="user-tracks__sort" (click)="sortUserTracksBy('province')" aria-label="Ordenar por provincia">
+                                Provincia <span class="user-tracks__sort-indicator">{{resolveUserTracksSortIndicator('province') }}</span>
+                              </button>
+                            </th>
+                            <th scope="col" style="text-align: left;" *ngIf="shouldShowUserTracksLocationColumn('comarca')">
                               <button type="button" class="user-tracks__sort" (click)="sortUserTracksBy('comarca')"
                                 aria-label="Ordenar por comarca">
                                 Comarca <span class="user-tracks__sort-indicator">{{resolveUserTracksSortIndicator('comarca') }}</span>
                               </button>
                             </th>
-                            <th scope="col" style="text-align: left;">
+                            <th scope="col" style="text-align: left;" *ngIf="shouldShowUserTracksLocationColumn('population')">
                               <button type="button" class="user-tracks__sort" (click)="sortUserTracksBy('population')" aria-label="Ordenar por población">
                                 Población <span class="user-tracks__sort-indicator">{{resolveUserTracksSortIndicator('population') }}</span>
                               </button>
@@ -219,9 +216,10 @@
                             <td *ngIf="activeUserTracksTab === 'shared'">{{ row.nickname || '—' }}</td>
                             <td *ngIf="activeUserTracksTab === 'shared'">{{ row.bikeType || '—' }}</td>
                             <td style="text-align: center;">{{ row.year || '-' }}</td>
-                            <td style="text-align: left;">{{ row.autonomousCommunity || '—' }}</td>
-                            <td style="text-align: left;">{{ row.comarca || '—' }}</td>
-                            <td>{{ row.population || '—' }}</td>
+                            <td style="text-align: left;" *ngIf="shouldShowUserTracksLocationColumn('autonomousCommunity')">{{ row.autonomousCommunity || '—' }}</td>
+                            <td style="text-align: left;" *ngIf="shouldShowUserTracksLocationColumn('province')">{{ row.province || '—' }}</td>
+                            <td style="text-align: left;" *ngIf="shouldShowUserTracksLocationColumn('comarca')">{{ row.comarca || '—' }}</td>
+                            <td *ngIf="shouldShowUserTracksLocationColumn('population')">{{ row.population || '—' }}</td>
                             <td class="user-tracks__action-col">
                               <a class="user-tracks__maps-link user-tracks__maps-link--icon"
                                 [href]="row.googleMapsLink" target="_blank" rel="noopener noreferrer"
@@ -287,15 +285,19 @@
                               <span class="user-tracks__mobile-label">Tipo bici</span>
                               <span>{{ row.bikeType || '—' }}</span>
                             </div>
-                            <div class="user-tracks__mobile-item">
+                            <div class="user-tracks__mobile-item" *ngIf="shouldShowUserTracksLocationColumn('autonomousCommunity')">
                               <span class="user-tracks__mobile-label">Comunidad</span>
                               <span>{{ row.autonomousCommunity || '—' }}</span>
                             </div>
-                            <div class="user-tracks__mobile-item">
+                            <div class="user-tracks__mobile-item" *ngIf="shouldShowUserTracksLocationColumn('province')">
+                              <span class="user-tracks__mobile-label">Provincia</span>
+                              <span>{{ row.province || '—' }}</span>
+                            </div>
+                            <div class="user-tracks__mobile-item" *ngIf="shouldShowUserTracksLocationColumn('comarca')">
                               <span class="user-tracks__mobile-label">Comarca</span>
                               <span>{{ row.comarca || '—' }}</span>
                             </div>
-                            <div class="user-tracks__mobile-item">
+                            <div class="user-tracks__mobile-item" *ngIf="shouldShowUserTracksLocationColumn('population')">
                               <span class="user-tracks__mobile-label">Población</span>
                               <span>{{ row.population || '—' }}</span>
                             </div>

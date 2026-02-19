@@ -118,6 +118,7 @@ interface UserTrackRow {
 
 type UserTracksSortColumn =
   | 'year'
+  | 'province'
   | 'comarca'
   | 'population'
   | 'autonomousCommunity'
@@ -226,15 +227,15 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
   };
 
   private readonly tableState: Record<UserTracksTab, TrackTableState> = {
-    personal: { sortColumn: 'year', sortDirection: 'asc', groupBy: 'comarca', filter: '', rows: 10, page: 0 },
-    events: { sortColumn: 'year', sortDirection: 'asc', groupBy: 'comarca', filter: '', rows: 10, page: 0 },
-    shared: { sortColumn: 'year', sortDirection: 'asc', groupBy: 'comarca', filter: '', rows: 10, page: 0 }
+    personal: { sortColumn: 'year', sortDirection: 'asc', groupBy: 'province', filter: '', rows: 10, page: 0 },
+    events: { sortColumn: 'year', sortDirection: 'asc', groupBy: 'province', filter: '', rows: 10, page: 0 },
+    shared: { sortColumn: 'year', sortDirection: 'asc', groupBy: 'province', filter: '', rows: 10, page: 0 }
   };
 
   readonly userTracksRowsOptions = [10, 25, 50];
   readonly userTracksGroupByOptions: { value: UserTracksGroupBy; label: string; pluralLabel: string }[] = [
-    { value: 'autonomousCommunity', label: 'Comunidad', pluralLabel: 'Comunidades' },
     { value: 'province', label: 'Provincia', pluralLabel: 'Provincias' },
+    { value: 'autonomousCommunity', label: 'Comunidad', pluralLabel: 'Comunidades' },
     { value: 'comarca', label: 'Comarca', pluralLabel: 'Comarcas' },
     { value: 'population', label: 'Población', pluralLabel: 'Poblaciones' }
   ];
@@ -2487,11 +2488,15 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
   }
 
   get userTracksGroupByLabel(): string {
-    return this.userTracksGroupByOptions.find(option => option.value === this.userTracksGroupBy)?.label ?? 'Comarca';
+    return this.userTracksGroupByOptions.find(option => option.value === this.userTracksGroupBy)?.label ?? 'Provincia';
   }
 
   get userTracksGroupByPluralLabel(): string {
-    return this.userTracksGroupByOptions.find(option => option.value === this.userTracksGroupBy)?.pluralLabel ?? 'Comarcas';
+    return this.userTracksGroupByOptions.find(option => option.value === this.userTracksGroupBy)?.pluralLabel ?? 'Provincias';
+  }
+
+  shouldShowUserTracksLocationColumn(column: UserTracksGroupBy): boolean {
+    return this.userTracksGroupBy !== column;
   }
 
   onUserTracksGroupByChange(value: string): void {

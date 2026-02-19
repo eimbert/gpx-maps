@@ -17,6 +17,10 @@
       <input type="text" [(ngModel)]="newEvent.name" placeholder="Nombre del evento" />
     </label>
     <label>
+      <span>URL del evento (opcional)</span>
+      <input type="url" [(ngModel)]="newEvent.eventUrl" maxlength="500" placeholder="https://..." />
+    </label>
+    <label>
       <span>Población</span>
       <input type="text" [(ngModel)]="newEvent.population" placeholder="Ciudad / pueblo" />
     </label>

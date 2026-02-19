@@ -220,6 +220,7 @@ export class EventService {
     // console.log("LOGO: ", logo)
     const gpxMaster = (event as any).gpxMaster ?? (event as any).gpx_master ?? null;
     const gpxMasterFileName = (event as any).gpxMasterFileName ?? (event as any).gpx_master_file_name ?? null;
+    const eventUrl = this.normalizeTextField((event as any).eventUrl ?? (event as any).event_url ?? null);
 
     const routeId = Number(event.id);
     const modalities = (event.modalities || []).map(modality => ({
@@ -247,6 +248,7 @@ export class EventService {
       logoMime,
       gpxMaster,
       gpxMasterFileName,
+      eventUrl,
       modalities,
       tracks,
       

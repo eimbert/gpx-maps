@@ -13,6 +13,7 @@ type TrackPoint = {
 type TrackLocationDetails = {
   population: string | null;
   autonomousCommunity: string | null;
+  comarca: string | null;
   province: string | null;
 };
 
@@ -168,6 +169,7 @@ export class GpxImportService {
         startLongitude: null,
         population: null,
         autonomousCommunity: null,
+        comarca: null,
         province: null
       };
     }
@@ -189,6 +191,7 @@ export class GpxImportService {
       startLongitude: point.lon,
       population: null,
       autonomousCommunity: null,
+      comarca: null,
       province: null
     };
   }
@@ -220,8 +223,9 @@ export class GpxImportService {
        }
  
        return {
-         population: details.population || null,
-         autonomousCommunity: details.autonomousCommunity || null,
+         population: details.population || (details as any).city || null,
+         autonomousCommunity: details.autonomousCommunity || (details as any).state || null,
+         comarca: (details as any).comarca || (details as any).county || null,
          province: details.province || null
        };   
    }
@@ -237,7 +241,8 @@ export class GpxImportService {
       return {
         population: properties.municipi || null,
         autonomousCommunity: 'Catalunya',
-        province: properties.comarca || null
+        comarca: properties.comarca || null,
+        province: properties.provincia || null
       };
     } catch {
       return null;

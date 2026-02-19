@@ -26,7 +26,7 @@
           (dblclick)="onRowDoubleClick(row)"
           [class.is-selected]="isSelected(row)"
         >
-          <td class="logo-col">
+          <td data-label="Logo" class="logo-col">
             <div class="logo-wrapper" [class.logo-wrapper--placeholder]="!row.logo">
               <img [src]="getLogo(row)" [alt]="row.logo ? row.name : 'Imagen no disponible'" />
             </div>
@@ -38,7 +38,7 @@
           <td data-label="Población">{{ row.population }}</td>
           <td data-label="Comunidad">{{ row.autonomousCommunity }}</td>
           <td data-label="Distancias" class="distance-col" style="text-align: right;">{{ getDistancesLabel(row) }}</td>
-          <td class="action-col">
+          <td data-label="Acción" class="action-col">
             <button type="button" class="select-button" (click)="onRowDoubleClick(row)">Seleccionar</button>
           </td>
         </tr>

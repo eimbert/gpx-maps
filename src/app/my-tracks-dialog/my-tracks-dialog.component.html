@@ -1,4 +1,4 @@
-<h2 mat-dialog-title>Mis tracks</h2>
+<h2 mat-dialog-title>Mis tracks en eventos</h2>
 <div mat-dialog-content class="table-wrapper">
   <table class="tracks-table">
     <thead>
@@ -33,15 +33,15 @@
     </thead>
     <tbody>
       <tr *ngFor="let row of sortedRows">
-        <td>{{ row.year }}</td>
-        <td>{{ row.eventName }}</td>
-        <td>{{ row.province || '—' }}</td>
-        <td>{{ row.population || '—' }}</td>
-        <td>{{ row.autonomousCommunity || '—' }}</td>
-        <td>{{ row.distanceKm | number:'1.1-1' }}</td>
-        <td>{{ formatDuration(row.timeSeconds) }}</td>
-        <td>{{ formatDuration(row.totalTimeSeconds) }}</td>
-        <td class="icon-col">
+        <td data-label="Año">{{ row.year }}</td>
+        <td data-label="Evento">{{ row.eventName }}</td>
+        <td data-label="Provincia">{{ row.province || '—' }}</td>
+        <td data-label="Población">{{ row.population || '—' }}</td>
+        <td data-label="Comunidad">{{ row.autonomousCommunity || '—' }}</td>
+        <td data-label="Distancia (km)">{{ row.distanceKm | number:'1.1-1' }}</td>
+        <td data-label="Tiempo en movimiento">{{ formatDuration(row.timeSeconds) }}</td>
+        <td data-label="Tiempo total">{{ formatDuration(row.totalTimeSeconds) }}</td>
+        <td data-label="Descargar" class="icon-col">
           <button
             type="button"
             class="icon-button"
@@ -51,7 +51,7 @@
             <span class="sr-only">Descargar</span>
           </button>
         </td>
-        <td class="icon-col">
+        <td data-label="Eliminar" class="icon-col">
           <button
             type="button"
             class="icon-button danger"
@@ -63,7 +63,7 @@
         </td>
       </tr>
       <tr *ngIf="!rows.length">
-        <td colspan="8" class="empty">Sin tracks para mostrar.</td>
+        <td colspan="10" class="empty">Sin tracks para mostrar.</td>
       </tr>
     </tbody>
   </table>

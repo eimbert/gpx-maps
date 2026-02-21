@@ -1,22 +1,26 @@
 {
+  "id": "/",
   "name": "tracketeo.bike",
   "short_name": "tracketeo",
+  "description": "Visualiza y comparte rutas GPX como aplicación instalable.",
   "theme_color": "#1B5E20",
   "background_color": "#0E1116",
   "display": "standalone",
+  "orientation": "portrait",
   "scope": "/",
   "start_url": "/",
   "icons": [
     {
-      "src": "assets/plato.png",
-      "sizes": "1536x1024",
-      "type": "image/png"
+      "src": "assets/logo.png",
+      "sizes": "1024x1024",
+      "type": "image/png",
+      "purpose": "any"
     },
     {
-      "src": "assets/plato.png",
-      "sizes": "1536x1024",
+      "src": "assets/logo3.png",
+      "sizes": "1024x1024",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "maskable"
     }
   ]
 }

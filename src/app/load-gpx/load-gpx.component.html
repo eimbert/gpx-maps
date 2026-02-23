@@ -190,6 +190,7 @@
                                 Tiempo total <span class="user-tracks__sort-indicator">{{resolveUserTracksSortIndicator('totalTimeSeconds') }}</span>
                               </button>
                             </th>
+                            <th scope="col">Dureza</th>
                             <th scope="col" class="user-tracks__action-col">Descargar</th>
                             <th scope="col" class="user-tracks__action-col">Animar</th>
                             <th scope="col" class="user-tracks__action-col">Planificar salida</th>
@@ -202,6 +203,15 @@
                             style="border-style:solid; border-width: 0.5px; border-color: lightgrey;"
                             *ngFor="let row of group.routes">
                             <td> <!-- class="user-tracks__title-col" -->
+                              <ng-container *ngIf="getUserTrackDifficulty(row) as difficulty">
+                                <span
+                                  [ngStyle]="getUserTrackDifficultyStyle(difficulty.key)"
+                                  style="width:18px;height:18px;border-radius:999px;display:inline-flex;align-items:center;justify-content:center;margin-right:6px;vertical-align:middle;"
+                                  [attr.title]="'Dureza: ' + difficulty.label"
+                                  [attr.aria-label]="'Dureza ' + difficulty.label">
+                                  <mat-icon style="font-size:12px;width:12px;height:12px;" aria-hidden="true">landscape</mat-icon>
+                                </span>
+                              </ng-container>
                               <div *ngIf="row.eventName && row.eventName !== '-'">
                                 <span style="color: rgb(8, 8, 158);">{{ row.eventName }} (E)</span>
                               </div>
@@ -228,6 +238,17 @@
                             <td class="user-tracks__metric user-tracks__metric--right">{{ row.distanceLabel }}</td>
                             <td class="user-tracks__metric user-tracks__metric--center">{{ row.movingTimeLabel }}</td>
                             <td class="user-tracks__metric user-tracks__metric--center">{{ row.totalTimeLabel }}</td>
+                            <td class="user-tracks__metric user-tracks__metric--center">
+                              <ng-container *ngIf="getUserTrackDifficulty(row) as difficulty">
+                                <span
+                                  [ngStyle]="getUserTrackDifficultyStyle(difficulty.key)"
+                                  style="width:24px;height:24px;border-radius:999px;display:inline-flex;align-items:center;justify-content:center;"
+                                  [attr.title]="difficulty.label + ': ' + difficulty.description"
+                                  [attr.aria-label]="'Dureza ' + difficulty.label">
+                                  <mat-icon style="font-size:15px;width:15px;height:15px;" aria-hidden="true">landscape</mat-icon>
+                                </span>
+                              </ng-container>
+                            </td>
                             <td class="user-tracks__action-col">
                               <!-- <button type="button" class="ghost ghost--small user-tracks__icon-button" [disabled]="isDownloadingTrack(row)" (click)="downloadUserTrack(row)" [attr.aria-label]="isDownloadingTrack(row) ? 'Descargando track' : 'Descargar track'"> -->
                               <mat-icon aria-hidden="true" style="color: blue; cursor: pointer;"
@@ -301,6 +322,17 @@
                             <div class="user-tracks__mobile-item">
                               <span class="user-tracks__mobile-label">Tiempo total</span>
                               <span>{{ row.totalTimeLabel }}</span>
+                            </div>
+                            <div class="user-tracks__mobile-item">
+                              <span class="user-tracks__mobile-label">Dureza</span>
+                              <ng-container *ngIf="getUserTrackDifficulty(row) as difficulty">
+                                <span style="display:inline-flex;align-items:center;gap:6px;">
+                                  <span [ngStyle]="getUserTrackDifficultyStyle(difficulty.key)" style="width:24px;height:24px;border-radius:999px;display:inline-flex;align-items:center;justify-content:center;">
+                                    <mat-icon style="font-size:15px;width:15px;height:15px;" aria-hidden="true">landscape</mat-icon>
+                                  </span>
+                                  <span>{{ difficulty.label }}</span>
+                                </span>
+                              </ng-container>
                             </div>
                           </div>
 

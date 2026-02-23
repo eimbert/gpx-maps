@@ -102,6 +102,7 @@ interface UserTrackRow {
   startLat?: number | null;
   startLon?: number | null;
   distanceKm: number;
+  ascentMeters: number | null;
   timeSeconds: number;
   totalTimeSeconds: number;
   distanceLabel: string;
@@ -115,6 +116,12 @@ interface UserTrackRow {
   title?: string | null;
   description?: string | null;
 }
+
+type UserTrackDifficulty = {
+  key: 'easy' | 'medium' | 'hard' | 'very-hard' | 'unknown';
+  label: string;
+  description: string;
+};
 
 type UserTracksSortColumn =
   | 'year'
@@ -170,6 +177,14 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
   isAuthenticated = false;
   private sessionSub?: Subscription;
   private eventsNoticeShown = false;
+
+  readonly userTrackDifficultyLegend: UserTrackDifficulty[] = [
+    { key: 'easy', label: 'Suave', description: 'Ruta con exigencia baja.' },
+    { key: 'medium', label: 'Media', description: 'Ruta con exigencia moderada.' },
+    { key: 'hard', label: 'Dura', description: 'Ruta exigente en forma física.' },
+    { key: 'very-hard', label: 'Muy dura', description: 'Ruta muy exigente; requiere muy buena forma física.' },
+    { key: 'unknown', label: 'Sin datos', description: 'No hay métricas suficientes para estimar dureza.' }
+  ];
 
   mode: 'routes' | 'events' = 'routes';
   events: RaceEvent[] = [];
@@ -2034,6 +2049,7 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
     const comarca = track.comarca ?? event?.comarca ?? null;
     const province = track.province ?? event?.province ?? null;
     const distanceKm = this.toNumber(track.distanceKm);
+    const ascentMeters = this.toOptionalNumber(track.ascent);
     const timeSeconds = this.toNumber(track.timeSeconds);
     const totalTimeSeconds = this.resolveTotalTimeSeconds(track);
     // IMPORTANTE (rendimiento móvil):
@@ -2063,6 +2079,7 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
       startLat,
       startLon,
       distanceKm,
+      ascentMeters,
       timeSeconds,
       totalTimeSeconds,
       distanceLabel: Number.isFinite(distanceKm) && distanceKm > 0 ? `${distanceKm.toFixed(1)} km` : '—',
@@ -2084,6 +2101,48 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
       title: normalizedTitle,
       description: normalizedDescription
     };
+  }
+
+  getUserTrackDifficultyStyle(key: UserTrackDifficulty['key']): { [klass: string]: string } {
+    const palette: Record<UserTrackDifficulty['key'], { bg: string; fg: string }> = {
+      easy: { bg: '#86efac', fg: '#14532d' },
+      medium: { bg: '#fde047', fg: '#713f12' },
+      hard: { bg: '#fdba74', fg: '#7c2d12' },
+      'very-hard': { bg: '#fca5a5', fg: '#7f1d1d' },
+      unknown: { bg: '#cbd5e1', fg: '#334155' }
+    };
+    const colors = palette[key] ?? palette.unknown;
+    return {
+      'background-color': colors.bg,
+      color: colors.fg
+    };
+  }
+
+  getUserTrackDifficulty(row: UserTrackRow): UserTrackDifficulty {
+    const distanceKm = Number(row.distanceKm);
+    const ascentMeters = Number(row.ascentMeters);
+
+    if (!Number.isFinite(distanceKm) || distanceKm <= 0 || !Number.isFinite(ascentMeters) || ascentMeters < 0) {
+      return this.userTrackDifficultyLegend.find(item => item.key === 'unknown')!;
+    }
+
+    const movingTimeHours = Number.isFinite(Number(row.timeSeconds)) && Number(row.timeSeconds) > 0
+      ? Number(row.timeSeconds) / 3600
+      : null;
+
+    const ascentPerKm = ascentMeters / Math.max(distanceKm, 0.1);
+    const climbRate = movingTimeHours ? ascentMeters / movingTimeHours : 0;
+
+    let score = 0;
+    score += Math.min(distanceKm / 35, 1) * 30;
+    score += Math.min(ascentMeters / 1800, 1) * 35;
+    score += Math.min(ascentPerKm / 140, 1) * 25;
+    score += Math.min(climbRate / 900, 1) * 10;
+
+    if (score >= 75) return this.userTrackDifficultyLegend.find(item => item.key === 'very-hard')!;
+    if (score >= 55) return this.userTrackDifficultyLegend.find(item => item.key === 'hard')!;
+    if (score >= 35) return this.userTrackDifficultyLegend.find(item => item.key === 'medium')!;
+    return this.userTrackDifficultyLegend.find(item => item.key === 'easy')!;
   }
 
   private extractFirstPointFromGpx(gpx: string): { lat: number; lon: number } | null {
@@ -3058,6 +3117,11 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
   private toNumber(value: any, fallback = 0): number {
     const num = Number(value);
     return Number.isFinite(num) ? num : fallback;
+  }
+
+  private toOptionalNumber(value: any): number | null {
+    const num = Number(value);
+    return Number.isFinite(num) ? num : null;
   }
 
   private normalizeTrackText(value: any): string | null {

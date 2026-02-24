@@ -2401,6 +2401,12 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
         calculatedDesnivel = null;
       }
 
+      const difficulty = this.calculateTrackDifficultyMetrics(
+        Number.isFinite(row.distanceKm) ? row.distanceKm : null,
+        calculatedDesnivel,
+        Number.isFinite(row.timeSeconds) ? row.timeSeconds : null
+      );
+
       const payload: PlanTrackImportPayload = {
         folder_id: targetFolderId,
         created_by_user_id: this.userId,
@@ -2412,6 +2418,9 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
         moving_time_sec: Number.isFinite(row.timeSeconds) ? row.timeSeconds : null,
         total_time_sec: Number.isFinite(row.totalTimeSeconds) ? row.totalTimeSeconds : null,
         desnivel: calculatedDesnivel,
+        difficulty_score: difficulty.score,
+        difficulty_level: difficulty.level,
+        difficulty_version: 1,
         route_xml: gpx
       };
 
@@ -2422,6 +2431,36 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
     } finally {
       this.planningTracks.delete(row.trackId);
     }
+  }
+
+
+  private calculateTrackDifficultyMetrics(distanceKmRaw: number | null, desnivelRaw: number | null, movingTimeSecRaw: number | null): { score: number | null; level: number | null } {
+    const distanceKm = Number(distanceKmRaw);
+    const desnivel = Number(desnivelRaw);
+
+    if (!Number.isFinite(distanceKm) || distanceKm <= 0 || !Number.isFinite(desnivel) || desnivel < 0) {
+      return { score: null, level: 0 };
+    }
+
+    const movingTimeHours = Number.isFinite(Number(movingTimeSecRaw)) && Number(movingTimeSecRaw) > 0
+      ? Number(movingTimeSecRaw) / 3600
+      : null;
+
+    const ascentPerKm = desnivel / Math.max(distanceKm, 0.1);
+    const climbRate = movingTimeHours ? desnivel / movingTimeHours : 0;
+
+    let score = 0;
+    score += Math.min(distanceKm / 35, 1) * 30;
+    score += Math.min(desnivel / 1800, 1) * 35;
+    score += Math.min(ascentPerKm / 140, 1) * 25;
+    score += Math.min(climbRate / 900, 1) * 10;
+
+    const normalizedScore = Math.round(Math.max(0, Math.min(100, score)) * 100) / 100;
+
+    if (normalizedScore >= 75) return { score: normalizedScore, level: 4 };
+    if (normalizedScore >= 55) return { score: normalizedScore, level: 3 };
+    if (normalizedScore >= 35) return { score: normalizedScore, level: 2 };
+    return { score: normalizedScore, level: 1 };
   }
 
   async downloadUserTrack(row: UserTrackRow): Promise<void> {

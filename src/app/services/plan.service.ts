@@ -54,6 +54,9 @@ export type PlanTrackImportPayload = {
   moving_time_sec: number | null;
   total_time_sec: number | null;
   desnivel: number | null;
+  difficulty_score: number | null;
+  difficulty_level: number | null;
+  difficulty_version?: number;
   route_xml: string;
 };
 
@@ -279,6 +282,9 @@ export class PlanService {
       movingTimeSec: track.movingTimeSec ?? (track as any).moving_time_sec ?? null,
       totalTimeSec: track.totalTimeSec ?? (track as any).total_time_sec ?? null,
       desnivel: track.desnivel ?? (track as any).desnivel ?? (track as any).elevation_gain ?? (track as any).elevationGain ?? null,
+      difficultyScore: track.difficultyScore ?? (track as any).difficultyScore ?? (track as any).difficulty_score ?? null,
+      difficultyLevel: track.difficultyLevel ?? (track as any).difficultyLevel ?? (track as any).difficulty_level ?? null,
+      difficultyVersion: track.difficultyVersion ?? (track as any).difficultyVersion ?? (track as any).difficulty_version ?? null,
       howToGetUrl: track.howToGetUrl ?? (track as any).how_to_get_url ?? null,
       sourceType: track.sourceType ?? (track as any).source_type ?? null,
       routeXml: track.routeXml ?? (track as any).routeXml ?? (track as any).route_xml ?? null,

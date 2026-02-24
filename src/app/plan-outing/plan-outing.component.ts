@@ -691,30 +691,15 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
 
 
   getTrackDifficulty(track: PlanTrack): TrackDifficulty {
-    const distanceKm = Number(track.distanceKm);
-    const desnivel = Number(track.desnivel);
-
-    if (!Number.isFinite(distanceKm) || distanceKm <= 0 || !Number.isFinite(desnivel) || desnivel < 0) {
-      return this.difficultyLegend.find(item => item.key === 'unknown')!;
+    const level = Number(track.difficultyLevel);
+    if (Number.isFinite(level)) {
+      if (level === 1) return this.difficultyLegend.find(item => item.key === 'easy')!;
+      if (level === 2) return this.difficultyLegend.find(item => item.key === 'medium')!;
+      if (level === 3) return this.difficultyLegend.find(item => item.key === 'hard')!;
+      if (level === 4) return this.difficultyLegend.find(item => item.key === 'very-hard')!;
     }
 
-    const movingTimeHours = Number.isFinite(Number(track.movingTimeSec)) && Number(track.movingTimeSec) > 0
-      ? Number(track.movingTimeSec) / 3600
-      : null;
-
-    const ascentPerKm = desnivel / Math.max(distanceKm, 0.1);
-    const climbRate = movingTimeHours ? desnivel / movingTimeHours : 0;
-
-    let score = 0;
-    score += Math.min(distanceKm / 35, 1) * 30;
-    score += Math.min(desnivel / 1800, 1) * 35;
-    score += Math.min(ascentPerKm / 140, 1) * 25;
-    score += Math.min(climbRate / 900, 1) * 10;
-
-    if (score >= 75) return this.difficultyLegend.find(item => item.key === 'very-hard')!;
-    if (score >= 55) return this.difficultyLegend.find(item => item.key === 'hard')!;
-    if (score >= 35) return this.difficultyLegend.find(item => item.key === 'medium')!;
-    return this.difficultyLegend.find(item => item.key === 'easy')!;
+    return this.difficultyLegend.find(item => item.key === 'unknown')!;
   }
 
   canVoteOnTracks(): boolean {
@@ -1280,6 +1265,9 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
       movingTimeSec: track.movingTimeSec ?? payload.moving_time_sec,
       totalTimeSec: track.totalTimeSec ?? payload.total_time_sec,
       desnivel: track.desnivel ?? payload.desnivel,
+      difficultyScore: track.difficultyScore ?? payload.difficulty_score,
+      difficultyLevel: track.difficultyLevel ?? payload.difficulty_level,
+      difficultyVersion: track.difficultyVersion ?? payload.difficulty_version ?? 1,
       routeXml: track.routeXml ?? payload.route_xml
     };
   }
@@ -1328,6 +1316,7 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
       minStepUpMeters: 0.25
     });
     const desnivel = reportedAscent ?? computedAscent;
+    const difficulty = this.calculateTrackDifficultyMetrics(distanceKm, desnivel, movingTimeSec);
 
     return {
       folder_id: folderId,
@@ -1340,8 +1329,40 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
       moving_time_sec: Number.isFinite(movingTimeSec) ? movingTimeSec : null,
       total_time_sec: Number.isFinite(totalTimeSec) ? totalTimeSec : null,
       desnivel: Number.isFinite(desnivel) ? Math.trunc(desnivel) : null,
+      difficulty_score: difficulty.score,
+      difficulty_level: difficulty.level,
+      difficulty_version: 1,
       route_xml: gpxData
     };
+  }
+
+  private calculateTrackDifficultyMetrics(distanceKmRaw: number | null, desnivelRaw: number | null, movingTimeSecRaw: number | null): { score: number | null; level: number | null } {
+    const distanceKm = Number(distanceKmRaw);
+    const desnivel = Number(desnivelRaw);
+
+    if (!Number.isFinite(distanceKm) || distanceKm <= 0 || !Number.isFinite(desnivel) || desnivel < 0) {
+      return { score: null, level: 0 };
+    }
+
+    const movingTimeHours = Number.isFinite(Number(movingTimeSecRaw)) && Number(movingTimeSecRaw) > 0
+      ? Number(movingTimeSecRaw) / 3600
+      : null;
+
+    const ascentPerKm = desnivel / Math.max(distanceKm, 0.1);
+    const climbRate = movingTimeHours ? desnivel / movingTimeHours : 0;
+
+    let score = 0;
+    score += Math.min(distanceKm / 35, 1) * 30;
+    score += Math.min(desnivel / 1800, 1) * 35;
+    score += Math.min(ascentPerKm / 140, 1) * 25;
+    score += Math.min(climbRate / 900, 1) * 10;
+
+    const normalizedScore = Math.round(Math.max(0, Math.min(100, score)) * 100) / 100;
+
+    if (normalizedScore >= 75) return { score: normalizedScore, level: 4 };
+    if (normalizedScore >= 55) return { score: normalizedScore, level: 3 };
+    if (normalizedScore >= 35) return { score: normalizedScore, level: 2 };
+    return { score: normalizedScore, level: 1 };
   }
 
   //calcular desnivel

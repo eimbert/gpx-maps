@@ -24,6 +24,9 @@ export interface PlanTrack {
   movingTimeSec: number | null;
   totalTimeSec: number | null;
   desnivel: number | null;
+  difficultyScore?: number | null;
+  difficultyLevel?: number | null;
+  difficultyVersion?: number | null;
   howToGetUrl: string | null;
   sourceType: string | null;
   sortOrder: number | null;

@@ -1724,6 +1724,7 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
     }
     const timeSeconds = Math.max(1, Math.round(activeDurationSeconds));
     const tiempoReal = Math.max(1, Math.round(totalDurationSeconds || timeSeconds));
+    const difficulty = this.calculateTrackDifficultyMetrics(trackDistanceKm, track.details.ascent, timeSeconds);
 
     const year = trackYear ?? event?.year ?? new Date().getFullYear();
     const population = trackLocation.population ?? event?.population ?? null;
@@ -1746,6 +1747,12 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
       tiempoReal,
       distanceKm: trackDistanceKm,
       ascent: track.details.ascent,
+      difficultyScore: difficulty.score,
+      difficultyLevel: difficulty.level,
+      difficultyVersion: 1,
+      difficulty_score: difficulty.score,
+      difficulty_level: difficulty.level,
+      difficulty_version: 1,
       population,
       autonomousCommunity,
       comarca,
@@ -2927,6 +2934,12 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
     const totalDurationSeconds = this.calculateTotalDurationSeconds(track.data.trkpts) || durationSeconds;
     const timeSeconds = Math.max(1, Math.round(activeDurationSeconds || durationSeconds || 1));
     const tiempoReal = Math.max(1, Math.round(totalDurationSeconds || activeDurationSeconds || durationSeconds || 1));
+    const ascent = Number.isFinite(track.details.ascent) ? track.details.ascent : null;
+    const difficulty = this.calculateTrackDifficultyMetrics(
+      Number.isFinite(track.details.distance) ? track.details.distance : null,
+      ascent,
+      timeSeconds
+    );
     const year = trackYear ?? new Date().getFullYear();
     const population = trackLocation.population ?? null;
     const autonomousCommunity = trackLocation.autonomousCommunity ?? null;
@@ -2947,6 +2960,13 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
       timeSeconds,
       tiempoReal,
       distanceKm: Number.isFinite(track.details.distance) ? track.details.distance : 0,
+      ascent: ascent ?? undefined,
+      difficultyScore: difficulty.score,
+      difficultyLevel: difficulty.level,
+      difficultyVersion: 1,
+      difficulty_score: difficulty.score,
+      difficulty_level: difficulty.level,
+      difficulty_version: 1,
       routeXml: gpxData,
       fileName: result.file.name,
       uploadedAt: new Date().toISOString(),

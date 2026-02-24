@@ -108,6 +108,9 @@ interface UserTrackRow {
   distanceLabel: string;
   movingTimeLabel: string;
   totalTimeLabel: string;
+  difficultyScore: number | null;
+  difficultyLevel: number | null;
+  difficultyVersion: number | null;
   gpxData?: string | null;
   gpxAsset?: string | null;
   fileName?: string | null;
@@ -1976,12 +1979,9 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
           canDelete: false
         }));
 
-        const enrichedRows = await Promise.all(rows.map(row => this.enrichUserTrackRowDifficultyData(row)));
-        const enrichedSharedRows = await Promise.all(sharedRows.map(row => this.enrichUserTrackRowDifficultyData(row)));
-
-        this.userTrackRows.personal = enrichedRows.filter(row => !row.routeId);
-        this.userTrackRows.events = enrichedRows.filter(row => !!row.routeId);
-        this.userTrackRows.shared = enrichedSharedRows;
+        this.userTrackRows.personal = rows.filter(row => !row.routeId);
+        this.userTrackRows.events = rows.filter(row => !!row.routeId);
+        this.userTrackRows.shared = sharedRows;
         this.bumpUserTracksDataVersion('personal');
         this.bumpUserTracksDataVersion('events');
         this.bumpUserTracksDataVersion('shared');
@@ -2057,6 +2057,9 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
     const ascentMeters = this.toOptionalNumber(track.ascent);
     const timeSeconds = this.toNumber(track.timeSeconds);
     const totalTimeSeconds = this.resolveTotalTimeSeconds(track);
+    const difficultyScore = this.toOptionalNumber((track as any).difficultyScore ?? (track as any).difficulty_score);
+    const difficultyLevel = this.toOptionalNumber((track as any).difficultyLevel ?? (track as any).difficulty_level);
+    const difficultyVersion = this.toOptionalNumber((track as any).difficultyVersion ?? (track as any).difficulty_version);
     // IMPORTANTE (rendimiento móvil):
     // Evitamos decodificar y parsear GPX al construir cada fila de la tabla.
     // Esa operación (base64 + XML) para docenas/centenares de tracks bloquea la UI
@@ -2090,6 +2093,9 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
       distanceLabel: Number.isFinite(distanceKm) && distanceKm > 0 ? `${distanceKm.toFixed(1)} km` : '—',
       movingTimeLabel: this.formatDurationHms(timeSeconds),
       totalTimeLabel: this.formatDurationHms(totalTimeSeconds),
+      difficultyScore,
+      difficultyLevel,
+      difficultyVersion,
       gpxData: track.gpxData,
       gpxAsset: track.gpxAsset,
       fileName: track.fileName,
@@ -2108,49 +2114,6 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
     };
   }
 
-  private async enrichUserTrackRowDifficultyData(row: UserTrackRow): Promise<UserTrackRow> {
-    if (row.ascentMeters !== null && row.ascentMeters !== undefined && row.ascentMeters > 0) {
-      return row;
-    }
-
-    const gpxContent = await this.resolveGpxContentForRow(row);
-    if (!gpxContent) {
-      return row;
-    }
-
-    try {
-      const fileName = row.fileName || row.title || `track-${row.trackId}.gpx`;
-      const parsed = this.parseGpxData(gpxContent, fileName, 0);
-      const ascentMeters = Number.isFinite(parsed.track.details.ascent) ? Math.max(0, Math.round(parsed.track.details.ascent)) : null;
-      const parsedDistanceKm = Number.isFinite(parsed.track.details.distance) ? parsed.track.details.distance : null;
-      const parsedMovingTimeSec = Number.isFinite(parsed.durationSeconds) ? Math.max(0, Math.round(parsed.durationSeconds)) : null;
-
-      if (ascentMeters !== null && ascentMeters > 0) {
-        row.ascentMeters = ascentMeters;
-      }
-
-      if ((!Number.isFinite(row.distanceKm) || row.distanceKm <= 0) && parsedDistanceKm !== null && parsedDistanceKm > 0) {
-        row.distanceKm = parsedDistanceKm;
-        row.distanceLabel = `${parsedDistanceKm.toFixed(1)} km`;
-      }
-
-      if ((!Number.isFinite(row.timeSeconds) || row.timeSeconds <= 0) && parsedMovingTimeSec !== null && parsedMovingTimeSec > 0) {
-        row.timeSeconds = parsedMovingTimeSec;
-        row.movingTimeLabel = this.formatDurationHms(parsedMovingTimeSec);
-      }
-
-      if ((!Number.isFinite(row.totalTimeSeconds) || row.totalTimeSeconds <= 0) && parsedMovingTimeSec !== null && parsedMovingTimeSec > 0) {
-        row.totalTimeSeconds = parsedMovingTimeSec;
-        row.totalTimeLabel = this.formatDurationHms(parsedMovingTimeSec);
-      }
-    } catch {
-      // Si el GPX no se puede parsear, dejamos los datos originales.
-    }
-
-    return row;
-  }
-
-
   getUserTrackDifficultyStyle(key: UserTrackDifficulty['key']): { [klass: string]: string } {
     const palette: Record<UserTrackDifficulty['key'], { bg: string; fg: string }> = {
       easy: { bg: '#86efac', fg: '#14532d' },
@@ -2167,34 +2130,16 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
   }
 
   getUserTrackDifficulty(row: UserTrackRow): UserTrackDifficulty {
-    const distanceKm = Number(row.distanceKm);
-
-    if (!Number.isFinite(distanceKm) || distanceKm <= 0) {
+    const level = Number(row.difficultyLevel);
+    if (!Number.isFinite(level)) {
       return this.userTrackDifficultyLegend.find(item => item.key === 'unknown')!;
     }
 
-    if (row.ascentMeters === null || row.ascentMeters === undefined || row.ascentMeters <= 0) {
-      return this.userTrackDifficultyLegend.find(item => item.key === 'unknown')!;
-    }
-
-    const ascentMeters = row.ascentMeters;
-    const movingTimeHours = Number.isFinite(Number(row.timeSeconds)) && Number(row.timeSeconds) > 0
-      ? Number(row.timeSeconds) / 3600
-      : null;
-
-    const ascentPerKm = ascentMeters / Math.max(distanceKm, 0.1);
-    const climbRate = movingTimeHours ? ascentMeters / movingTimeHours : 0;
-
-    let score = 0;
-    score += Math.min(distanceKm / 35, 1) * 30;
-    score += Math.min(ascentMeters / 1800, 1) * 35;
-    score += Math.min(ascentPerKm / 140, 1) * 25;
-    score += Math.min(climbRate / 900, 1) * 10;
-
-    if (score >= 75) return this.userTrackDifficultyLegend.find(item => item.key === 'very-hard')!;
-    if (score >= 55) return this.userTrackDifficultyLegend.find(item => item.key === 'hard')!;
-    if (score >= 35) return this.userTrackDifficultyLegend.find(item => item.key === 'medium')!;
-    return this.userTrackDifficultyLegend.find(item => item.key === 'easy')!;
+    if (level === 1) return this.userTrackDifficultyLegend.find(item => item.key === 'easy')!;
+    if (level === 2) return this.userTrackDifficultyLegend.find(item => item.key === 'medium')!;
+    if (level === 3) return this.userTrackDifficultyLegend.find(item => item.key === 'hard')!;
+    if (level === 4) return this.userTrackDifficultyLegend.find(item => item.key === 'very-hard')!;
+    return this.userTrackDifficultyLegend.find(item => item.key === 'unknown')!;
   }
 
   private extractFirstPointFromGpx(gpx: string): { lat: number; lon: number } | null {

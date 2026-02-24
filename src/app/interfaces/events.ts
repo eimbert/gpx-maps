@@ -42,6 +42,12 @@ export interface EventTrack {
   createdBy?: number;
   title?: string | null;
   description?: string | null;
+  difficultyScore?: number | null;
+  difficultyLevel?: number | null;
+  difficultyVersion?: number | null;
+  difficulty_score?: number | null;
+  difficulty_level?: number | null;
+  difficulty_version?: number | null;
 }
 
 export interface TrackGpxFile {

@@ -45,9 +45,6 @@ export interface EventTrack {
   difficultyScore?: number | null;
   difficultyLevel?: number | null;
   difficultyVersion?: number | null;
-  difficulty_score?: number | null;
-  difficulty_level?: number | null;
-  difficulty_version?: number | null;
 }
 
 export interface TrackGpxFile {
@@ -96,9 +93,6 @@ export interface CreateTrackPayload {
   difficultyScore?: number | null;
   difficultyLevel?: number | null;
   difficultyVersion?: number | null;
-  difficulty_score?: number | null;
-  difficulty_level?: number | null;
-  difficulty_version?: number | null;
   population?: string | null;
   autonomousCommunity?: string | null;
   comarca?: string | null;

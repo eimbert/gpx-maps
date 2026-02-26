@@ -143,6 +143,8 @@ export class MapComponent implements OnInit, AfterViewInit {
 
   // Ticks dinámicos cada 30 min
   private readonly TICK_STEP_MS = 30 * 60 * 1000;
+  private readonly TICK_VISIBLE_MS = 3000;
+  private transientTickTimeouts: number[] = [];
 
   colors: string[] = [];
   names: string[] = [];
@@ -1022,7 +1024,14 @@ export class MapComponent implements OnInit, AfterViewInit {
   }
 
   // Añade un tick (punto + etiqueta) en un tiempo absoluto
-  private addTickAtAbs(track: TPx[], absT: number, color: string, group: L.LayerGroup, startAbs: number): void {
+  private addTickAtAbs(
+    track: TPx[],
+    absT: number,
+    color: string,
+    group: L.LayerGroup,
+    startAbs: number,
+    autoHide = false
+  ): void {
     if (absT > track[track.length - 1].t) return;
     const [lat, lon] = this.positionAtAbs(track, absT);
     const dot = L.circleMarker([lat, lon], {
@@ -1038,6 +1047,14 @@ export class MapComponent implements OnInit, AfterViewInit {
     label.setLatLng([lat, lon]);
     group.addLayer(dot);
     group.addLayer(label);
+
+    if (autoHide) {
+      const timeoutId = window.setTimeout(() => {
+        group.removeLayer(dot);
+        group.removeLayer(label);
+      }, this.TICK_VISIBLE_MS);
+      this.transientTickTimeouts.push(timeoutId);
+    }
   }
 
   // Marca FINAL (en el último punto) con duración total
@@ -1079,6 +1096,7 @@ export class MapComponent implements OnInit, AfterViewInit {
   }
 
   private resetPlaybackState(): void {
+    this.clearTransientTickTimeouts();
     this.clearCountdownTimer();
     if (this.rafId) {
       cancelAnimationFrame(this.rafId);
@@ -1130,6 +1148,11 @@ export class MapComponent implements OnInit, AfterViewInit {
       if (meta.ticks) this.map.removeLayer(meta.ticks);
       if (meta.pauseLayer) this.map.removeLayer(meta.pauseLayer);
     });
+  }
+
+  private clearTransientTickTimeouts(): void {
+    this.transientTickTimeouts.forEach(timeoutId => window.clearTimeout(timeoutId));
+    this.transientTickTimeouts = [];
   }
 
   private renderStaticTracks(): void {
@@ -1603,7 +1626,7 @@ export class MapComponent implements OnInit, AfterViewInit {
         const endRel = end - start;
         while (meta.nextTickRel <= rel && meta.nextTickRel < endRel) {
           const absTick = start + meta.nextTickRel;
-          this.addTickAtAbs(meta.sanitized, absTick, meta.color, meta.ticks, start);
+          this.addTickAtAbs(meta.sanitized, absTick, meta.color, meta.ticks, start, true);
           meta.nextTickRel += this.TICK_STEP_MS;
         }
 

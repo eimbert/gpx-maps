@@ -8,7 +8,7 @@ import { PlanOutingComponent } from './plan-outing/plan-outing.component';
 import { ResetPasswordComponent } from './reset-password/reset-password.component';
 
 const routes: Routes = [
-  { path: '', component: HomeComponent },
+  { path: '', component: HomeComponent, pathMatch: 'full' },
   { path: 'load', component: LoadGpxComponent },
   { path: 'events', component: LoadGpxComponent, canActivate: [AuthGuard], data: { mode: 'events' } },
   { path: 'plan', component: PlanOutingComponent, canActivate: [AuthGuard] },

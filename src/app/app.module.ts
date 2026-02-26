@@ -36,6 +36,8 @@ import { EventTrackUploadDialogComponent } from './event-track-upload-dialog/eve
 import { StandaloneTrackUploadDialogComponent } from './standalone-track-upload-dialog/standalone-track-upload-dialog.component';
 import { PlanOutingComponent } from './plan-outing/plan-outing.component';
 import { PlanTrackDialogComponent } from './plan-track-dialog/plan-track-dialog.component';
+import { ForgotPasswordDialogComponent } from './forgot-password-dialog/forgot-password-dialog.component';
+import { ResetPasswordComponent } from './reset-password/reset-password.component';
 import localeEs from '@angular/common/locales/es';
 import { LOCALE_ID } from '@angular/core';
 import { registerLocaleData } from '@angular/common';
@@ -61,7 +63,9 @@ registerLocaleData(localeEs);
     EventTrackUploadDialogComponent,
     StandaloneTrackUploadDialogComponent,
     PlanOutingComponent,
-    PlanTrackDialogComponent
+    PlanTrackDialogComponent,
+    ForgotPasswordDialogComponent,
+    ResetPasswordComponent
   ],
   imports: [
     MatCheckboxModule,

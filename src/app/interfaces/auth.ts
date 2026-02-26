@@ -28,3 +28,15 @@ export interface RegisterErrorResponse {
 }
 
 export type RegisterResponse = RegisterSuccessResponse | RegisterErrorResponse;
+
+export interface PasswordRecoverySuccessResponse {
+  exitCode: 0;
+  message?: string;
+}
+
+export interface PasswordRecoveryErrorResponse {
+  message: string;
+  exitCode: number;
+}
+
+export type PasswordRecoveryResponse = PasswordRecoverySuccessResponse | PasswordRecoveryErrorResponse;

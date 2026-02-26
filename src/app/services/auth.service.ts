@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable, BehaviorSubject, of } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
-import { LoginResponse, RegisterResponse } from '../interfaces/auth';
+import { LoginResponse, PasswordRecoveryResponse, RegisterResponse } from '../interfaces/auth';
 import { environment } from '../../environments/environment';
 import { LoginSuccessResponse } from '../interfaces/auth';
 
@@ -44,6 +44,14 @@ export class AuthService {
       { email },
       headers ? { headers } : {}
     );
+  }
+
+  forgotPassword(email: string): Observable<PasswordRecoveryResponse> {
+    return this.http.post<PasswordRecoveryResponse>(environment.forgotPasswordUrl, { email });
+  }
+
+  resetPassword(token: string, password: string): Observable<PasswordRecoveryResponse> {
+    return this.http.post<PasswordRecoveryResponse>(environment.resetPasswordUrl, { token, password });
   }
 
   saveSession(session: LoginSuccessResponse): void {

@@ -9,6 +9,8 @@ export const environment = {
   loginUrl: `http://${back}/auth/login`,
   registerUrl: `http://${back}/auth/register`,
   resendVerificationUrl: `http://${back}/auth/resend-verification`,
+  forgotPasswordUrl: `http://${back}/auth/forgot-password`,
+  resetPasswordUrl: `http://${back}/auth/reset-password`,
   meUrl: `http://${back}/tracks/me`,
   routesApiBase: `http://${back}/routes`,
   tracksApiBase: `http://${back}/tracks`,

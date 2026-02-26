@@ -5,6 +5,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { AuthService } from '../services/auth.service';
 import { LoginErrorResponse, LoginSuccessResponse } from '../interfaces/auth';
 import { VerificationDialogComponent } from '../verification-dialog/verification-dialog.component';
+import { ForgotPasswordDialogComponent } from '../forgot-password-dialog/forgot-password-dialog.component';
 import { environment } from 'src/environments/environment';
 
 @Component({
@@ -92,6 +93,13 @@ export class LoginDialogComponent {
 
     this.dialog.open(VerificationDialogComponent, {
       data: { email: this.email }
+    });
+  }
+
+  openForgotPasswordDialog(): void {
+    this.dialog.open(ForgotPasswordDialogComponent, {
+      width: '460px',
+      maxWidth: '95vw'
     });
   }
 }

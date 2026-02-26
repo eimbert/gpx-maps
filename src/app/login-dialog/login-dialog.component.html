@@ -31,6 +31,10 @@
       <mat-error>Introduce tu contraseña</mat-error>
     </mat-form-field>
 
+    <button class="forgot-link" type="button" mat-button (click)="openForgotPasswordDialog()">
+      ¿Olvidaste tu contraseña?
+    </button>
+
     <p *ngIf="errorMessage" class="error">{{ errorMessage }}</p>
   </mat-dialog-content>
 

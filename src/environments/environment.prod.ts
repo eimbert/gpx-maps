@@ -7,6 +7,8 @@ export const environment = {
   loginUrl: `${apiBase}/auth/login`,
   registerUrl: `${apiBase}/auth/register`,
   resendVerificationUrl: `${apiBase}/auth/resend-verification`,
+  forgotPasswordUrl: `${apiBase}/auth/forgot-password`,
+  resetPasswordUrl: `${apiBase}/auth/reset-password`,
 
   meUrl: `${apiBase}/tracks/me`,
   routesApiBase: `${apiBase}/routes`,

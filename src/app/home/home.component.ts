@@ -5,7 +5,7 @@ import { LoginSuccessResponse } from '../interfaces/auth';
 import { RegisterDialogComponent } from '../register-dialog/register-dialog.component';
 import { AuthService } from '../services/auth.service';
 import { Subscription } from 'rxjs';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 
 @Component({
   selector: 'app-home',
@@ -16,9 +16,23 @@ export class HomeComponent implements OnInit, OnDestroy {
   loggedUser: LoginSuccessResponse | null = null;
   private sessionSub?: Subscription;
 
-  constructor(private dialog: MatDialog, private authService: AuthService, private router: Router) {}
+  constructor(
+    private dialog: MatDialog,
+    private authService: AuthService,
+    private router: Router,
+    private route: ActivatedRoute
+  ) {}
 
   ngOnInit(): void {
+    const resetToken = this.route.snapshot.queryParamMap.get('token');
+    if (resetToken) {
+      this.router.navigate(['/reset-password'], {
+        queryParams: { token: resetToken },
+        replaceUrl: true
+      });
+      return;
+    }
+
     this.loggedUser = this.authService.getSession();
     this.sessionSub = this.authService.sessionChanges$.subscribe(session => {
       this.loggedUser = session;

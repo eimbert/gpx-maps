@@ -192,6 +192,7 @@
                             </th>
                             <th scope="col">Dureza</th>
                             <th scope="col" class="user-tracks__action-col">Descargar</th>
+                            <th scope="col" class="user-tracks__action-col">Ver track</th>
                             <th scope="col" class="user-tracks__action-col">Animar</th>
                             <th scope="col" class="user-tracks__action-col">Planificar salida</th>
                             <th scope="col" class="user-tracks__action-col">Eliminar</th>
@@ -247,6 +248,11 @@
                                 [attr.aria-label]="isDownloadingTrack(row) ? 'Descargando track' : 'Descargar track'">{{
                                 isDownloadingTrack(row) ? 'downloading' : 'file_download' }}</mat-icon>
                               <!-- </button> -->
+                            </td>
+                            <td class="user-tracks__action-col">
+                              <mat-icon aria-hidden="true" style="color: #0f766e; cursor: pointer;"
+                                (click)="viewUserTrack(row)"
+                                aria-label="Ver track en el mapa">map</mat-icon>
                             </td>
                             <td class="user-tracks__action-col">
                               <!-- <button type="button" class="ghost ghost--small user-tracks__icon-button" (click)="animateUserTrack(row)" aria-label="Animar track"> -->
@@ -339,6 +345,9 @@
                               (click)="downloadUserTrack(row)"
                               [attr.aria-label]="isDownloadingTrack(row) ? 'Descargando track' : 'Descargar track'">{{
                               isDownloadingTrack(row) ? 'downloading' : 'file_download' }}</mat-icon>
+                            <mat-icon aria-hidden="true" style="color: #0f766e; cursor: pointer;"
+                              (click)="viewUserTrack(row)"
+                              aria-label="Ver track en el mapa">map</mat-icon>
                             <mat-icon aria-hidden="true" style="color: orange; cursor: pointer;"
                               (click)="animateUserTrack(row)">play_arrow</mat-icon>
                             <mat-icon aria-hidden="true" style="color: #7b1fa2; cursor: pointer;"

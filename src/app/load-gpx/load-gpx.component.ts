@@ -2802,6 +2802,44 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
     }
   }
 
+  async viewUserTrack(row: UserTrackRow): Promise<void> {
+    const gpx = await this.resolveGpxContentForRow(row);
+    if (!gpx) {
+      this.showMessage('No se pudo cargar el track para visualizarlo.');
+      return;
+    }
+
+    const trkpts = this.parseTrackPointsFromString(gpx);
+    if (!trkpts.length) {
+      this.showMessage('El track no contiene puntos válidos para visualizar.');
+      return;
+    }
+
+    const payload = {
+      names: [row.title || row.eventName || 'Track'],
+      colors: [],
+      tracks: [{ trkpts }],
+      logo: null,
+      rmstops: true,
+      marcarPausasLargas: false,
+      umbralPausaSegundos: 60,
+      activarMusica: false,
+      grabarAnimacion: false,
+      relacionAspectoGrabacion: '16:9',
+      modoVisualizacion: 'general',
+      mostrarPerfil: true,
+      viewOnly: true,
+      trackId: row.trackId,
+      routeXml: gpx
+    };
+
+    this.persistMapPayload(payload);
+    this.router.navigate(['/map'], {
+      queryParams: { from: this.mode },
+      state: { gpxViewerPayload: payload }
+    });
+  }
+
   private async promptStartAnimationOnMobile(): Promise<void> {
     if (!this.isMobileViewport) {
       return;

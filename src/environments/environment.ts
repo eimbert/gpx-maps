@@ -17,7 +17,8 @@ export const environment = {
   planApiBase: `http://${back}/plan-folders`,
   usersApiBase: `http://${back}/users`,
   geoCode: `http://${back}/geocode/reverse`,
-  mensajesApiBase: `http://${back}/mensajes`
+  mensajesApiBase: `http://${back}/mensajes`,
+  routingApiBase: `http://${back}/routing`
 };
 
 /*

@@ -551,7 +551,7 @@
       <h4>Selecciona el punto de inicio</h4>
       <button class="plan__secondary plan__secondary--small" type="button" (click)="closeRoundTripMapOverlay()" [disabled]="isGeneratingRoundTrip">Cancelar</button>
     </div>
-    <p class="plan__hint">Haz clic en el mapa para iniciar automáticamente la generación de la ruta circular.</p>
+    <p class="plan__hint">Haz clic en el mapa para generar la ruta circular. El mapa permanecerá abierto con el track pintado.</p>
     <div #roundTripMap class="plan__roundtrip-map plan__roundtrip-map--fullscreen" aria-label="Mapa para seleccionar salida"></div>
     <div class="plan__roundtrip-coords">
       <span>Lat: {{ roundTripStartLat ?? '—' }}</span>

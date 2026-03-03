@@ -485,8 +485,9 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
       },
       RoundTripOptionsDialogResult | undefined
     >(RoundTripOptionsDialogComponent, {
-      width: '460px',
-      maxWidth: '95vw',
+      width: '520px',
+      maxWidth: '96vw',
+      autoFocus: false,
       data: {
         profile: this.roundTripProfile,
         complexity: this.roundTripComplexity,
@@ -613,8 +614,7 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
         this.roundTripMap.fitBounds(this.roundTripPreview.getBounds(), { padding: [24, 24] });
       }
 
-      this.showRoundTripMapOverlay = false;
-      this.showMessage('Ruta circular generada e importada correctamente.');
+      this.showMessage('Ruta circular generada, dibujada en el mapa e importada correctamente.');
     } catch {
       this.showMessage('No se pudo generar la ruta circular. Inténtalo de nuevo.');
     } finally {

@@ -440,7 +440,7 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
     this.isLoadingTracks = true;
     this.planService.getTracks(folderId).pipe(
       switchMap(tracks => {
-        this.tracks = tracks;
+        this.tracks = tracks.map(track => this.ensureTrackDifficulty(track));
         this.clearTrackSelection();
         this.updateFolderTrackCountCache(folderId, tracks.length);
         this.refreshForecasts();
@@ -1629,6 +1629,30 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
       difficulty_level: difficulty.level,
       difficulty_version: 1,
       route_xml: gpxData
+    };
+  }
+
+
+  private ensureTrackDifficulty(track: PlanTrack): PlanTrack {
+    if (Number.isFinite(Number(track.difficultyLevel)) && Number(track.difficultyLevel) > 0) {
+      return track;
+    }
+
+    const difficulty = this.calculateTrackDifficultyMetrics(
+      track.distanceKm ?? null,
+      track.desnivel ?? null,
+      track.movingTimeSec ?? null
+    );
+
+    if (!Number.isFinite(Number(difficulty.level)) || Number(difficulty.level) <= 0) {
+      return track;
+    }
+
+    return {
+      ...track,
+      difficultyScore: difficulty.score,
+      difficultyLevel: difficulty.level,
+      difficultyVersion: track.difficultyVersion ?? 1
     };
   }
 

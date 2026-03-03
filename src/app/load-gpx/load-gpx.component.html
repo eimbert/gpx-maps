@@ -103,9 +103,11 @@
         <div class="user-tracks__table-toolbar">
           <label class="user-tracks__pagination-rows">
             <select [value]="userTracksGroupBy" (change)="onUserTracksGroupByChange($any($event.target)?.value || '')"
+              [disabled]="isActiveUserTracksProximityLoading"
               aria-label="Seleccionar agrupación de tracks">
               <option *ngFor="let option of userTracksGroupByOptions" [value]="option.value">{{ option.label }}</option>
             </select>
+            <span *ngIf="isActiveUserTracksProximityLoading" class="muted" aria-live="polite">⏳ Ordenando por proximidad...</span>
           </label>
           <div class="user-tracks__counts" style="margin-left: auto;">
             <span class="user-tracks__count">{{ filteredUserTracks.length }} tracks</span>

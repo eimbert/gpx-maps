@@ -4,7 +4,12 @@ import { MatDialog } from '@angular/material/dialog';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Observable, Subject, debounceTime, firstValueFrom, forkJoin, map, of, switchMap, takeUntil } from 'rxjs';
 import { InfoDialogComponent, InfoDialogData, InfoDialogResult } from '../info-dialog/info-dialog.component';
-import { PlanService, PlanTrackImportPayload } from '../services/plan.service';
+import {
+  PlanService,
+  PlanTrackImportPayload,
+  RoundTripComplexity,
+  RoundTripProfile
+} from '../services/plan.service';
 import { GpxImportService } from '../services/gpx-import.service';
 import { InfoMessageService } from '../services/info-message.service';
 import { MapPayloadTransferService } from '../services/map-payload-transfer.service';
@@ -12,6 +17,7 @@ import { UserIdentityService } from '../services/user-identity.service';
 import { PlanFolder,  PlanFolderVotesResponse, PlanInvitation, PlanTrack, PlanTrackVotesSummary, PlanUserSearchResult, TrackWeatherSummary } from '../interfaces/plan';
 import { LoginSuccessResponse } from '../interfaces/auth';
 import { environment } from 'src/environments/environment';
+import * as L from 'leaflet';
 
 type EditableFolder = {
   name: string;
@@ -61,6 +67,16 @@ type TrackDifficulty = {
   description: string;
 };
 
+type RoundTripProfileOption = {
+  value: RoundTripProfile;
+  label: string;
+};
+
+type RoundTripComplexityOption = {
+  value: RoundTripComplexity;
+  label: string;
+};
+
 @Component({
   selector: 'app-plan-outing',
   templateUrl: './plan-outing.component.html',
@@ -68,6 +84,7 @@ type TrackDifficulty = {
 })
 export class PlanOutingComponent implements OnInit, OnDestroy {
   @ViewChild('trackInput') trackInput?: ElementRef<HTMLInputElement>;
+  @ViewChild('roundTripMap') roundTripMapRef?: ElementRef<HTMLDivElement>;
 
   folders: PlanFolder[] = [];
   filteredFolders: PlanFolder[] = [];
@@ -106,8 +123,32 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
   isLoadingTracks = false;
   isImportingTrack = false;
   isLoadingPendingMessages = false;
+  isGeneratingRoundTrip = false;
+  showRoundTripPanel = false;
   showPendingMessages = false;
   pendingMessages: PendingMessage[] = [];
+
+  readonly roundTripProfileOptions: RoundTripProfileOption[] = [
+    { value: 'cycling-regular', label: 'Bici (equilibrada)' },
+    { value: 'cycling-road', label: 'Bici de carretera' },
+    { value: 'cycling-mountain', label: 'Bici de montaña (MTB)' },
+    { value: 'cycling-electric', label: 'Bici eléctrica (e-bike)' }
+  ];
+
+  readonly roundTripComplexityOptions: RoundTripComplexityOption[] = [
+    { value: 'simple', label: 'Simple' },
+    { value: 'medium', label: 'Media' },
+    { value: 'technical', label: 'Variada / técnica' }
+  ];
+
+  roundTripProfile: RoundTripProfile = 'cycling-mountain';
+  roundTripComplexity: RoundTripComplexity = 'medium';
+  roundTripLengthKm = 35;
+  roundTripStartLat: number | null = null;
+  roundTripStartLon: number | null = null;
+
+  private roundTripMap: L.Map | null = null;
+  private roundTripMarker: L.Marker | null = null;
 
   private readonly destroy$ = new Subject<void>();
   private readonly inviteSearch$ = new Subject<string>();
@@ -423,6 +464,136 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
 
   onTrackImportClick(): void {
     this.trackInput?.nativeElement?.click();
+  }
+
+  toggleRoundTripPanel(): void {
+    this.showRoundTripPanel = !this.showRoundTripPanel;
+    if (!this.showRoundTripPanel) return;
+    setTimeout(() => this.initializeRoundTripMap(), 0);
+  }
+
+  async generateRoundTripRoute(): Promise<void> {
+    if (!this.activeFolder) {
+      this.showMessage('Selecciona una salida antes de generar una ruta.');
+      return;
+    }
+    if (!Number.isFinite(this.roundTripStartLat) || !Number.isFinite(this.roundTripStartLon)) {
+      this.showMessage('Selecciona el punto de salida haciendo clic en el mapa.');
+      return;
+    }
+    if (!Number.isFinite(this.roundTripLengthKm) || this.roundTripLengthKm < 5 || this.roundTripLengthKm > 200) {
+      this.showMessage('La longitud debe estar entre 5 km y 200 km.');
+      return;
+    }
+
+    this.isGeneratingRoundTrip = true;
+    try {
+      const response = await firstValueFrom(this.planService.generateRoundTripRoute({
+        profile: this.roundTripProfile,
+        complexity: this.roundTripComplexity,
+        lengthKm: this.roundTripLengthKm,
+        start: {
+          lat: Number(this.roundTripStartLat),
+          lon: Number(this.roundTripStartLon)
+        }
+      }));
+
+      const coordinates = response?.geometry?.coordinates ?? [];
+      if (!Array.isArray(coordinates) || coordinates.length < 2) {
+        this.showMessage('No se pudo generar una geometría de ruta válida.');
+        return;
+      }
+
+      const trkpts = coordinates
+        .map(([lon, lat, ele]) => ({ lat: Number(lat), lon: Number(lon), ele: Number(ele) }))
+        .filter(point => Number.isFinite(point.lat) && Number.isFinite(point.lon));
+
+      if (trkpts.length < 2) {
+        this.showMessage('La ruta generada no contiene suficientes puntos.');
+        return;
+      }
+
+      const routeName = `Circular ${this.resolveRoundTripProfileLabel(this.roundTripProfile)} · ${Math.round(this.roundTripLengthKm)} km`;
+      const gpxData = this.buildGpxFromTrackPoints(trkpts, routeName);
+      const difficulty = this.calculateTrackDifficultyMetrics(
+        (response.distanceMeters ?? 0) / 1000,
+        response.ascentMeters,
+        response.durationSeconds
+      );
+
+      const payload: PlanTrackImportPayload = {
+        folder_id: this.activeFolder.id,
+        created_by_user_id: this.userId,
+        name: `${routeName}.gpx`,
+        start_lat: Number(this.roundTripStartLat),
+        start_lon: Number(this.roundTripStartLon),
+        start_population: 'Ruta circular generada',
+        distance_km: Number.isFinite(response.distanceMeters) ? Number(response.distanceMeters) / 1000 : null,
+        moving_time_sec: Number.isFinite(response.durationSeconds) ? Number(response.durationSeconds) : null,
+        total_time_sec: Number.isFinite(response.durationSeconds) ? Number(response.durationSeconds) : null,
+        desnivel: Number.isFinite(response.ascentMeters) ? Number(response.ascentMeters) : null,
+        difficulty_score: difficulty.score,
+        difficulty_level: difficulty.level,
+        difficulty_version: 1,
+        route_xml: gpxData
+      };
+
+      const createdTrack = await firstValueFrom(this.planService.importTrack(payload));
+      const mergedTrack = this.mergeTrackWithPayload(createdTrack, payload);
+      this.tracks = [...this.tracks, mergedTrack];
+      this.updateActiveFolderTrackCount(1);
+      this.refreshForecasts();
+      this.showRoundTripPanel = false;
+      this.showMessage('Ruta circular generada e importada correctamente.');
+    } catch {
+      this.showMessage('No se pudo generar la ruta circular. Inténtalo de nuevo.');
+    } finally {
+      this.isGeneratingRoundTrip = false;
+    }
+  }
+
+  private initializeRoundTripMap(): void {
+    const mapHost = this.roundTripMapRef?.nativeElement;
+    if (!mapHost) return;
+
+    if (!this.roundTripMap) {
+      this.roundTripMap = L.map(mapHost, {
+        center: [40.4168, -3.7038],
+        zoom: 6,
+        zoomControl: true
+      });
+
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap contributors',
+        maxZoom: 19
+      }).addTo(this.roundTripMap);
+
+      this.roundTripMap.on('click', (event: L.LeafletMouseEvent) => {
+        this.roundTripStartLat = Number(event.latlng.lat.toFixed(6));
+        this.roundTripStartLon = Number(event.latlng.lng.toFixed(6));
+        this.placeRoundTripMarker();
+      });
+    }
+
+    this.roundTripMap.invalidateSize();
+    this.placeRoundTripMarker();
+  }
+
+  private placeRoundTripMarker(): void {
+    if (!this.roundTripMap || !Number.isFinite(this.roundTripStartLat) || !Number.isFinite(this.roundTripStartLon)) {
+      return;
+    }
+    const latLng: L.LatLngExpression = [Number(this.roundTripStartLat), Number(this.roundTripStartLon)];
+    if (!this.roundTripMarker) {
+      this.roundTripMarker = L.marker(latLng).addTo(this.roundTripMap);
+    } else {
+      this.roundTripMarker.setLatLng(latLng);
+    }
+    this.roundTripMap.setView(latLng, Math.max(this.roundTripMap.getZoom(), 11));
+  }
+
+  private resolveRoundTripProfileLabel(profile: RoundTripProfile): string {
+    return this.roundTripProfileOptions.find(option => option.value === profile)?.label ?? profile;
   }
 
   async onTrackFileSelected(event: Event): Promise<void> {
@@ -1252,6 +1423,40 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
     } catch {
       return null;
     }
+  }
+
+
+  private buildGpxFromTrackPoints(points: Array<{ lat: number; lon: number; ele?: number }>, name: string): string {
+    const escapedName = this.escapeXml(name || 'Ruta circular');
+    const trkpts = points
+      .map(point => {
+        const eleTag = Number.isFinite(point.ele) ? `<ele>${Number(point.ele).toFixed(1)}</ele>` : '';
+        return `<trkpt lat="${point.lat.toFixed(6)}" lon="${point.lon.toFixed(6)}">${eleTag}</trkpt>`;
+      })
+      .join('');
+
+    return `<?xml version="1.0" encoding="UTF-8"?>
+`
+      + `<gpx version="1.1" creator="GPX Maps" xmlns="http://www.topografix.com/GPX/1/1">
+`
+      + `  <trk>
+`
+      + `    <name>${escapedName}</name>
+`
+      + `    <trkseg>${trkpts}</trkseg>
+`
+      + `  </trk>
+`
+      + `</gpx>`;
+  }
+
+  private escapeXml(value: string): string {
+    return value
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&apos;');
   }
 
   private mergeTrackWithPayload(track: PlanTrack, payload: PlanTrackImportPayload): PlanTrack {

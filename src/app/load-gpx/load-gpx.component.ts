@@ -303,6 +303,7 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
   private readonly deletingTracks = new Set<number>();
   private readonly planningTracks = new Set<number>();
   private readonly downloadingMasterTracks = new Set<number>();
+  private readonly proximityLoadingTabs = new Set<UserTracksTab>();
 
   standaloneUploadInProgress = false;
 
@@ -2799,10 +2800,15 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
     return `${(meters / 1000).toFixed(1)} km`;
   }
 
+  get isActiveUserTracksProximityLoading(): boolean {
+    return this.proximityLoadingTabs.has(this.activeUserTracksTab);
+  }
+
   private async enableProximityGroupingForActiveTab(): Promise<void> {
     const tab = this.activeUserTracksTab;
     const state = this.getTableState(tab);
     const previousGroupBy = state.groupBy;
+    this.proximityLoadingTabs.add(tab);
 
     try {
       const userLocation = await this.resolveCurrentPosition();
@@ -2839,6 +2845,8 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
     } catch {
       state.groupBy = previousGroupBy;
       this.showMessage('No se pudo obtener tu ubicación. Mantengo la agrupación actual.', 'Ubicación no disponible');
+    } finally {
+      this.proximityLoadingTabs.delete(tab);
     }
   }
 

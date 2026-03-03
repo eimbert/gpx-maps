@@ -118,6 +118,7 @@ interface UserTrackRow {
   googleMapsLink: string;
   title?: string | null;
   description?: string | null;
+  proximityMeters?: number | null;
 }
 
 type UserTrackDifficulty = {
@@ -134,10 +135,11 @@ type UserTracksSortColumn =
   | 'autonomousCommunity'
   | 'distanceKm'
   | 'timeSeconds'
-  | 'totalTimeSeconds';
+  | 'totalTimeSeconds'
+  | 'proximityMeters';
 type SortDirection = 'asc' | 'desc';
 type UserTracksTab = 'personal' | 'events' | 'shared';
-type UserTracksGroupBy = 'autonomousCommunity' | 'province' | 'comarca' | 'population';
+type UserTracksGroupBy = 'autonomousCommunity' | 'province' | 'comarca' | 'population' | 'proximity';
 
 interface TrackTableState {
   sortColumn: UserTracksSortColumn;
@@ -255,7 +257,8 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
     { value: 'province', label: 'Provincia', pluralLabel: 'Provincias' },
     { value: 'autonomousCommunity', label: 'Comunidad', pluralLabel: 'Comunidades' },
     { value: 'comarca', label: 'Comarca', pluralLabel: 'Comarcas' },
-    { value: 'population', label: 'Población', pluralLabel: 'Poblaciones' }
+    { value: 'population', label: 'Población', pluralLabel: 'Poblaciones' },
+    { value: 'proximity', label: 'Proximidad', pluralLabel: 'Tracks' }
   ];
   activeUserTracksTab: UserTracksTab = 'personal';
 
@@ -2491,6 +2494,16 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
     const query = state.filter.trim().toLowerCase();
     const filtered = query ? sorted.filter(row => this.matchesUserTrackFilter(row, query)) : sorted;
 
+    if (state.groupBy === 'proximity') {
+      const grouped = filtered.length
+        ? [{ province: 'Ordenadas por proximidad', routes: filtered, count: filtered.length, autonomousCommunity: null }]
+        : [];
+
+      this.userTracksDerived[tab] = { sorted, filtered, grouped };
+      this.userTracksDerivedVersion[tab] = { data: dataVersion, state: stateVersion };
+      return this.userTracksDerived[tab];
+    }
+
     const map = new Map<
       string,
       { routes: UserTrackRow[]; autonomousCommunity: string | null }
@@ -2626,6 +2639,11 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
     const state = this.getTableState(this.activeUserTracksTab);
     if (state.groupBy === value) return;
 
+    if (value === 'proximity') {
+      void this.enableProximityGroupingForActiveTab();
+      return;
+    }
+
     state.groupBy = value;
     state.page = 0;
     this.expandedProvinces[this.activeUserTracksTab].clear();
@@ -2669,6 +2687,16 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
   }
 
   private compareUserTrackRows(a: UserTrackRow, b: UserTrackRow, state: TrackTableState): number {
+    if (state.groupBy === 'proximity') {
+      const proximityA = Number.isFinite(a.proximityMeters) ? Number(a.proximityMeters) : Number.POSITIVE_INFINITY;
+      const proximityB = Number.isFinite(b.proximityMeters) ? Number(b.proximityMeters) : Number.POSITIVE_INFINITY;
+      if (proximityA !== proximityB) {
+        return proximityA - proximityB;
+      }
+
+      return (a.title ?? a.eventName ?? '').localeCompare(b.title ?? b.eventName ?? '', 'es', { sensitivity: 'base' });
+    }
+
     const direction = state.sortDirection === 'asc' ? 1 : -1;
     const key = state.sortColumn;
     const rawA = a[key] ?? '';
@@ -2712,6 +2740,7 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
   }
 
   private resolveUserTrackGroupValue(row: UserTrackRow, groupBy: UserTracksGroupBy): string {
+    if (groupBy === 'proximity') return 'Ordenadas por proximidad';
     if (groupBy === 'autonomousCommunity') return this.normalizeAutonomousCommunityName(row.autonomousCommunity);
     if (groupBy === 'province') return this.normalizeProvinceName(row.province);
     if (groupBy === 'population') return this.normalizePopulationName(row.population);
@@ -2720,6 +2749,66 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
 
   private isValidUserTracksGroupBy(value: string): value is UserTracksGroupBy {
     return this.userTracksGroupByOptions.some(option => option.value === value);
+  }
+
+  get isUserTracksProximityView(): boolean {
+    return this.getTableState(this.activeUserTracksTab).groupBy === 'proximity';
+  }
+
+  formatProximityMeters(value: number | null | undefined): string {
+    if (!Number.isFinite(value)) return '—';
+    const meters = Number(value);
+    if (meters < 1000) return `${Math.round(meters)} m`;
+    return `${(meters / 1000).toFixed(1)} km`;
+  }
+
+  private async enableProximityGroupingForActiveTab(): Promise<void> {
+    const tab = this.activeUserTracksTab;
+    const state = this.getTableState(tab);
+    const previousGroupBy = state.groupBy;
+
+    try {
+      const userLocation = await this.resolveCurrentPosition();
+      this.userTrackRows[tab].forEach(row => {
+        if (!this.hasStartCoordinates(row)) {
+          row.proximityMeters = null;
+          return;
+        }
+
+        row.proximityMeters = this.calculateDistance(userLocation.lat, userLocation.lon, Number(row.startLat), Number(row.startLon));
+      });
+
+      state.groupBy = 'proximity';
+      state.page = 0;
+      this.expandedProvinces[tab].clear();
+      this.expandedProvinces[tab].add('Ordenadas por proximidad');
+      this.bumpUserTracksDataVersion(tab);
+      this.bumpUserTracksStateVersion(tab);
+    } catch {
+      state.groupBy = previousGroupBy;
+      this.showMessage('No se pudo obtener tu ubicación. Mantengo la agrupación actual.', 'Ubicación no disponible');
+    }
+  }
+
+  private resolveCurrentPosition(): Promise<{ lat: number; lon: number }> {
+    return new Promise((resolve, reject) => {
+      if (typeof navigator === 'undefined' || !navigator.geolocation) {
+        reject(new Error('Geolocalización no soportada'));
+        return;
+      }
+
+      navigator.geolocation.getCurrentPosition(
+        position => {
+          resolve({ lat: position.coords.latitude, lon: position.coords.longitude });
+        },
+        () => reject(new Error('Permiso denegado o posición no disponible')),
+        {
+          enableHighAccuracy: true,
+          timeout: 10000,
+          maximumAge: 60000
+        }
+      );
+    });
   }
 
   isProvinceExpanded(province: string): boolean {

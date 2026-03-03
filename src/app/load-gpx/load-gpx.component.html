@@ -133,7 +133,7 @@
                       <mat-icon class="user-tracks__expand-icon" aria-hidden="true">{{isProvinceExpanded(group.province) ? 'keyboard_arrow_up' : 'keyboard_arrow_down' }}</mat-icon>
                     </button>
                     <span class="user-tracks__population-name">{{ group.province }}
-                      <span class="user-tracks__population-meta">— <span class="user-tracks__population-community">({{group.autonomousCommunity || '—' }})</span></span>
+                      <span *ngIf="!isUserTracksProximityView" class="user-tracks__population-meta">— <span class="user-tracks__population-community">({{group.autonomousCommunity || '—' }})</span></span>
                     </span>
                     <!-- <span class="user-tracks__population-name-mobile">Grupo de rutas</span> -->
                   </td>
@@ -174,6 +174,7 @@
                               </button>
                             </th>
                             <th scope="col" class="user-tracks__action-col">Cómo llegar</th>
+                            <th scope="col" *ngIf="isUserTracksProximityView">Proximidad</th>
                             <th scope="col">
                               <button type="button" class="user-tracks__sort" (click)="sortUserTracksBy('distanceKm')" aria-label="Ordenar por distancia">
                                 Distancia <span class="user-tracks__sort-indicator">{{resolveUserTracksSortIndicator('distanceKm') }}</span>
@@ -227,6 +228,7 @@
                                 <mat-icon class="user-tracks__maps-pin" aria-hidden="true">location_on</mat-icon>
                               </a>
                             </td>
+                            <td class="user-tracks__metric user-tracks__metric--right" *ngIf="isUserTracksProximityView">{{ formatProximityMeters(row.proximityMeters) }}</td>
                             <td class="user-tracks__metric user-tracks__metric--right">{{ row.distanceLabel }}</td>
                             <td class="user-tracks__metric user-tracks__metric--center">{{ row.movingTimeLabel }}</td>
                             <td class="user-tracks__metric user-tracks__metric--center">{{ row.totalTimeLabel }}</td>

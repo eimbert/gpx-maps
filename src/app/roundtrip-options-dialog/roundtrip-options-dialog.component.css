@@ -1,0 +1,22 @@
+.roundtrip-dialog__content {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: min(90vw, 420px);
+}
+
+.roundtrip-dialog__content label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-weight: 600;
+  color: #334155;
+}
+
+.roundtrip-dialog__content select,
+.roundtrip-dialog__content input {
+  border-radius: 10px;
+  border: 1px solid #cbd5e1;
+  padding: 10px 12px;
+  font-size: 14px;
+}

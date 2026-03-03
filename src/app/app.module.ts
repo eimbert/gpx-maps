@@ -38,6 +38,7 @@ import { PlanOutingComponent } from './plan-outing/plan-outing.component';
 import { PlanTrackDialogComponent } from './plan-track-dialog/plan-track-dialog.component';
 import { ForgotPasswordDialogComponent } from './forgot-password-dialog/forgot-password-dialog.component';
 import { ResetPasswordComponent } from './reset-password/reset-password.component';
+import { RoundTripOptionsDialogComponent } from './roundtrip-options-dialog/roundtrip-options-dialog.component';
 import localeEs from '@angular/common/locales/es';
 import { LOCALE_ID } from '@angular/core';
 import { registerLocaleData } from '@angular/common';
@@ -65,7 +66,8 @@ registerLocaleData(localeEs);
     PlanOutingComponent,
     PlanTrackDialogComponent,
     ForgotPasswordDialogComponent,
-    ResetPasswordComponent
+    ResetPasswordComponent,
+    RoundTripOptionsDialogComponent
   ],
   imports: [
     MatCheckboxModule,

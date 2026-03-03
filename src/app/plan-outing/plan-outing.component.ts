@@ -16,6 +16,7 @@ import { MapPayloadTransferService } from '../services/map-payload-transfer.serv
 import { UserIdentityService } from '../services/user-identity.service';
 import { PlanFolder,  PlanFolderVotesResponse, PlanInvitation, PlanTrack, PlanTrackVotesSummary, PlanUserSearchResult, TrackWeatherSummary } from '../interfaces/plan';
 import { LoginSuccessResponse } from '../interfaces/auth';
+import { RoundTripOptionsDialogComponent, RoundTripOptionsDialogResult } from '../roundtrip-options-dialog/roundtrip-options-dialog.component';
 import { environment } from 'src/environments/environment';
 import * as L from 'leaflet';
 
@@ -124,7 +125,7 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
   isImportingTrack = false;
   isLoadingPendingMessages = false;
   isGeneratingRoundTrip = false;
-  showRoundTripPanel = false;
+  showRoundTripMapOverlay = false;
   showPendingMessages = false;
   pendingMessages: PendingMessage[] = [];
 
@@ -149,6 +150,7 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
 
   private roundTripMap: L.Map | null = null;
   private roundTripMarker: L.Marker | null = null;
+  private roundTripPreview: L.Polyline | null = null;
 
   private readonly destroy$ = new Subject<void>();
   private readonly inviteSearch$ = new Subject<string>();
@@ -466,13 +468,72 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
     this.trackInput?.nativeElement?.click();
   }
 
-  toggleRoundTripPanel(): void {
-    this.showRoundTripPanel = !this.showRoundTripPanel;
-    if (!this.showRoundTripPanel) return;
+  openRoundTripOptionsDialog(): void {
+    if (!this.activeFolder) {
+      this.showMessage('Selecciona una salida antes de generar una ruta.');
+      return;
+    }
+
+    const dialogRef = this.dialog.open<
+      RoundTripOptionsDialogComponent,
+      {
+        profile: RoundTripProfile;
+        complexity: RoundTripComplexity;
+        lengthKm: number;
+        profileOptions: RoundTripProfileOption[];
+        complexityOptions: RoundTripComplexityOption[];
+      },
+      RoundTripOptionsDialogResult | undefined
+    >(RoundTripOptionsDialogComponent, {
+      width: '460px',
+      maxWidth: '95vw',
+      data: {
+        profile: this.roundTripProfile,
+        complexity: this.roundTripComplexity,
+        lengthKm: this.roundTripLengthKm,
+        profileOptions: this.roundTripProfileOptions,
+        complexityOptions: this.roundTripComplexityOptions
+      }
+    });
+
+    dialogRef.afterClosed().subscribe(result => {
+      if (!result) return;
+      this.roundTripProfile = result.profile;
+      this.roundTripComplexity = result.complexity;
+      this.roundTripLengthKm = Number(result.lengthKm);
+      this.openRoundTripMapOverlay();
+    });
+  }
+
+  closeRoundTripMapOverlay(): void {
+    this.showRoundTripMapOverlay = false;
+  }
+
+  private openRoundTripMapOverlay(): void {
+    this.showRoundTripMapOverlay = true;
+    this.requestRoundTripUserLocation();
     setTimeout(() => this.initializeRoundTripMap(), 0);
   }
 
-  async generateRoundTripRoute(): Promise<void> {
+  private requestRoundTripUserLocation(): void {
+    if (typeof navigator === 'undefined' || !navigator.geolocation) {
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      position => {
+        this.roundTripStartLat = Number(position.coords.latitude.toFixed(6));
+        this.roundTripStartLon = Number(position.coords.longitude.toFixed(6));
+        this.placeRoundTripMarker();
+      },
+      () => {
+        this.roundTripStartLat = null;
+        this.roundTripStartLon = null;
+      },
+      { enableHighAccuracy: true, timeout: 6000, maximumAge: 120000 }
+    );
+  }
+
+  private async generateRoundTripRoute(): Promise<void> {
     if (!this.activeFolder) {
       this.showMessage('Selecciona una salida antes de generar una ruta.');
       return;
@@ -543,7 +604,16 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
       this.tracks = [...this.tracks, mergedTrack];
       this.updateActiveFolderTrackCount(1);
       this.refreshForecasts();
-      this.showRoundTripPanel = false;
+      const previewCoords = trkpts.map(point => [point.lat, point.lon] as L.LatLngTuple);
+      if (this.roundTripPreview) {
+        this.roundTripMap?.removeLayer(this.roundTripPreview);
+      }
+      if (this.roundTripMap) {
+        this.roundTripPreview = L.polyline(previewCoords, { color: '#2563eb', weight: 4 }).addTo(this.roundTripMap);
+        this.roundTripMap.fitBounds(this.roundTripPreview.getBounds(), { padding: [24, 24] });
+      }
+
+      this.showRoundTripMapOverlay = false;
       this.showMessage('Ruta circular generada e importada correctamente.');
     } catch {
       this.showMessage('No se pudo generar la ruta circular. Inténtalo de nuevo.');
@@ -569,9 +639,13 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
       }).addTo(this.roundTripMap);
 
       this.roundTripMap.on('click', (event: L.LeafletMouseEvent) => {
+        if (this.isGeneratingRoundTrip) {
+          return;
+        }
         this.roundTripStartLat = Number(event.latlng.lat.toFixed(6));
         this.roundTripStartLon = Number(event.latlng.lng.toFixed(6));
         this.placeRoundTripMarker();
+        this.generateRoundTripRoute();
       });
     }
 

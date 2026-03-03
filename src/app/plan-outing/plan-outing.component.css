@@ -1078,6 +1078,36 @@
   margin-top: 8px;
 }
 
+.plan__roundtrip-map--fullscreen {
+  height: min(72vh, 760px);
+}
+
+.plan__roundtrip-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.65);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  z-index: 1200;
+}
+
+.plan__roundtrip-dialog {
+  width: min(1100px, 96vw);
+  background: #fff;
+  border-radius: 16px;
+  padding: 16px;
+  box-shadow: 0 24px 40px rgba(15, 23, 42, 0.3);
+}
+
+.plan__roundtrip-dialog-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
 .plan__roundtrip-coords {
   display: flex;
   gap: 14px;

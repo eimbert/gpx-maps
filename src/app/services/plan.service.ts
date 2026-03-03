@@ -65,10 +65,38 @@ export type PlanTrackUpdatePayload = {
   routeXml: string;
 };
 
+export type RoundTripProfile =
+  | 'cycling-regular'
+  | 'cycling-road'
+  | 'cycling-mountain'
+  | 'cycling-electric';
+
+export type RoundTripComplexity = 'simple' | 'medium' | 'technical';
+
+export type RoundTripRouteRequest = {
+  profile: RoundTripProfile;
+  complexity: RoundTripComplexity;
+  lengthKm: number;
+  start: {
+    lat: number;
+    lon: number;
+  };
+};
+
+export type RoundTripRouteResponse = {
+  geometry: {
+    coordinates: number[][];
+  } | null;
+  distanceMeters: number | null;
+  durationSeconds: number | null;
+  ascentMeters: number | null;
+};
+
 @Injectable({ providedIn: 'root' })
 export class PlanService {
   private readonly planApiBase = environment.planApiBase;
   private readonly usersApiBase = environment.usersApiBase;
+  private readonly routingApiBase = environment.routingApiBase;
 
   constructor(private http: HttpClient) {}
 
@@ -117,6 +145,10 @@ export class PlanService {
     return this.http.put<PlanTrack>(`${this.planApiBase}/updateTrack`, payload).pipe(
       map(track => this.normalizeTrack(track))
     );
+  }
+
+  generateRoundTripRoute(payload: RoundTripRouteRequest): Observable<RoundTripRouteResponse> {
+    return this.http.post<RoundTripRouteResponse>(`${this.routingApiBase}/round-trip`, payload);
   }
 
   getVotes(folderId: number): Observable<PlanFolderVotesResponse> {

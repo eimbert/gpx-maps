@@ -151,6 +151,7 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
   private roundTripMap: L.Map | null = null;
   private roundTripMarker: L.Marker | null = null;
   private roundTripPreview: L.Polyline | null = null;
+  private hasGeneratedRoundTripInCurrentSession = false;
 
   private readonly destroy$ = new Subject<void>();
   private readonly inviteSearch$ = new Subject<string>();
@@ -508,12 +509,23 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
 
   closeRoundTripMapOverlay(): void {
     this.showRoundTripMapOverlay = false;
+    this.destroyRoundTripMap();
   }
 
   private openRoundTripMapOverlay(): void {
+    this.hasGeneratedRoundTripInCurrentSession = false;
     this.showRoundTripMapOverlay = true;
     this.requestRoundTripUserLocation();
     setTimeout(() => this.initializeRoundTripMap(), 0);
+  }
+
+  private destroyRoundTripMap(): void {
+    if (this.roundTripMap) {
+      this.roundTripMap.remove();
+    }
+    this.roundTripMap = null;
+    this.roundTripMarker = null;
+    this.roundTripPreview = null;
   }
 
   private requestRoundTripUserLocation(): void {
@@ -613,6 +625,7 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
         this.roundTripPreview = L.polyline(previewCoords, { color: '#2563eb', weight: 4 }).addTo(this.roundTripMap);
         this.roundTripMap.fitBounds(this.roundTripPreview.getBounds(), { padding: [24, 24] });
       }
+      this.hasGeneratedRoundTripInCurrentSession = true;
 
       this.showMessage('Ruta circular generada, dibujada en el mapa e importada correctamente.');
     } catch {
@@ -640,6 +653,10 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
 
       this.roundTripMap.on('click', (event: L.LeafletMouseEvent) => {
         if (this.isGeneratingRoundTrip) {
+          return;
+        }
+        if (this.hasGeneratedRoundTripInCurrentSession) {
+          this.showMessage('Ya has generado una ruta en este mapa. Cierra y vuelve a abrir para generar otra.');
           return;
         }
         this.roundTripStartLat = Number(event.latlng.lat.toFixed(6));

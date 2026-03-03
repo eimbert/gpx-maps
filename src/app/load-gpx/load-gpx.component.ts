@@ -119,6 +119,37 @@ interface UserTrackRow {
   title?: string | null;
   description?: string | null;
   proximityMeters?: number | null;
+  proximityRank?: number | null;
+  proximityRoadDurationS?: number | null;
+}
+
+interface ProximityMatrixCandidate {
+  trackId: number;
+  startLat: number;
+  startLon: number;
+  haversineKm: number;
+}
+
+interface ProximityMatrixRequest {
+  profile: 'driving-car';
+  origin: { lat: number; lon: number };
+  candidates: ProximityMatrixCandidate[];
+  options: {
+    metrics: Array<'duration' | 'distance'>;
+    units: 'm';
+    resolveOrderBy: 'duration';
+    fallback: 'haversine';
+  };
+}
+
+interface ProximityMatrixResponse {
+  strategyUsed: 'matrix' | 'haversine';
+  ordered: Array<{
+    trackId: number;
+    rank: number;
+    roadDistanceM: number | null;
+    roadDurationS: number | null;
+  }>;
 }
 
 type UserTrackDifficulty = {
@@ -2688,6 +2719,12 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
 
   private compareUserTrackRows(a: UserTrackRow, b: UserTrackRow, state: TrackTableState): number {
     if (state.groupBy === 'proximity') {
+      const rankA = Number.isFinite(a.proximityRank) ? Number(a.proximityRank) : Number.POSITIVE_INFINITY;
+      const rankB = Number.isFinite(b.proximityRank) ? Number(b.proximityRank) : Number.POSITIVE_INFINITY;
+      if (rankA !== rankB) {
+        return rankA - rankB;
+      }
+
       const proximityA = Number.isFinite(a.proximityMeters) ? Number(a.proximityMeters) : Number.POSITIVE_INFINITY;
       const proximityB = Number.isFinite(b.proximityMeters) ? Number(b.proximityMeters) : Number.POSITIVE_INFINITY;
       if (proximityA !== proximityB) {
@@ -2769,14 +2806,29 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
 
     try {
       const userLocation = await this.resolveCurrentPosition();
+      const rowsWithCoords: Array<{ row: UserTrackRow; haversineMeters: number }> = [];
+
       this.userTrackRows[tab].forEach(row => {
         if (!this.hasStartCoordinates(row)) {
           row.proximityMeters = null;
+          row.proximityRank = Number.MAX_SAFE_INTEGER;
+          row.proximityRoadDurationS = null;
           return;
         }
 
-        row.proximityMeters = this.calculateDistance(userLocation.lat, userLocation.lon, Number(row.startLat), Number(row.startLon));
+        const haversineMeters = this.calculateDistance(userLocation.lat, userLocation.lon, Number(row.startLat), Number(row.startLon));
+        row.proximityMeters = haversineMeters;
+        row.proximityRoadDurationS = null;
+        rowsWithCoords.push({ row, haversineMeters });
       });
+
+      rowsWithCoords
+        .sort((a, b) => a.haversineMeters - b.haversineMeters)
+        .forEach((item, index) => {
+          item.row.proximityRank = index;
+        });
+
+      await this.refineTopProximityRowsWithMatrix(tab, userLocation, rowsWithCoords);
 
       state.groupBy = 'proximity';
       state.page = 0;
@@ -2787,6 +2839,73 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
     } catch {
       state.groupBy = previousGroupBy;
       this.showMessage('No se pudo obtener tu ubicación. Mantengo la agrupación actual.', 'Ubicación no disponible');
+    }
+  }
+
+  private async refineTopProximityRowsWithMatrix(
+    tab: UserTracksTab,
+    userLocation: { lat: number; lon: number },
+    rowsWithCoords: Array<{ row: UserTrackRow; haversineMeters: number }>
+  ): Promise<void> {
+    const topRows = rowsWithCoords.slice(0, 10);
+    if (!topRows.length) return;
+
+    const payload: ProximityMatrixRequest = {
+      profile: 'driving-car',
+      origin: userLocation,
+      candidates: topRows.map(item => ({
+        trackId: item.row.trackId,
+        startLat: Number(item.row.startLat),
+        startLon: Number(item.row.startLon),
+        haversineKm: Number((item.haversineMeters / 1000).toFixed(3))
+      })),
+      options: {
+        metrics: ['duration', 'distance'],
+        units: 'm',
+        resolveOrderBy: 'duration',
+        fallback: 'haversine'
+      }
+    };
+
+    try {
+      const response = await firstValueFrom(
+        this.http.post<ProximityMatrixResponse>(`${environment.routingApiBase}/matrix-rank`, payload)
+      );
+
+      if (!response?.ordered?.length || response.strategyUsed !== 'matrix') {
+        return;
+      }
+
+      const rankedTop = response.ordered
+        .slice()
+        .sort((a, b) => a.rank - b.rank)
+        .map(entry => entry.trackId);
+      const rankByTrackId = new Map<number, number>(rankedTop.map((trackId, index) => [trackId, index]));
+      const metricsByTrackId = new Map<number, { roadDistanceM: number | null; roadDurationS: number | null }>(
+        response.ordered.map(entry => [
+          entry.trackId,
+          { roadDistanceM: entry.roadDistanceM, roadDurationS: entry.roadDurationS }
+        ])
+      );
+
+      topRows.forEach(({ row }, fallbackIndex) => {
+        const roadRank = rankByTrackId.get(row.trackId);
+        row.proximityRank = roadRank !== undefined ? roadRank : fallbackIndex;
+        const metrics = metricsByTrackId.get(row.trackId);
+        row.proximityRoadDurationS = metrics?.roadDurationS ?? null;
+        if (Number.isFinite(metrics?.roadDistanceM)) {
+          row.proximityMeters = Number(metrics?.roadDistanceM);
+        }
+      });
+
+      const fallbackStartIndex = topRows.length;
+      rowsWithCoords.slice(topRows.length).forEach(({ row }, index) => {
+        row.proximityRank = fallbackStartIndex + index;
+      });
+
+      this.bumpUserTracksDataVersion(tab);
+    } catch {
+      // Mantener orden por Haversine si la llamada al backend no está disponible.
     }
   }
 

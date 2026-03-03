@@ -1,0 +1,33 @@
+<h2 mat-dialog-title class="roundtrip-dialog__header">Generar ruta circular</h2>
+
+<mat-dialog-content class="roundtrip-dialog__content">
+  <p class="roundtrip-dialog__subtitle">
+    Define el tipo de ruta, la complejidad y la distancia aproximada para generar el recorrido.
+  </p>
+
+  <div class="roundtrip-dialog__section">
+    <label>
+      Tipo de ruta
+      <select [(ngModel)]="profile">
+        <option *ngFor="let option of data.profileOptions" [ngValue]="option.value">{{ option.label }}</option>
+      </select>
+    </label>
+
+    <label>
+      Complejidad
+      <select [(ngModel)]="complexity">
+        <option *ngFor="let option of data.complexityOptions" [ngValue]="option.value">{{ option.label }}</option>
+      </select>
+    </label>
+
+    <label>
+      Longitud aproximada (km)
+      <input type="number" min="5" max="200" step="1" [(ngModel)]="lengthKm">
+    </label>
+  </div>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end" class="roundtrip-dialog__actions">
+  <button mat-button type="button" (click)="cancel()">Cancelar</button>
+  <button mat-flat-button color="primary" type="button" (click)="generate()">Generar</button>
+</mat-dialog-actions>

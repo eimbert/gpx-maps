@@ -242,49 +242,14 @@
             <button class="plan__secondary" type="button" (click)="onTrackImportClick()" [disabled]="isImportingTrack">
               Importar track
             </button>
-            <button class="plan__secondary" type="button" (click)="toggleRoundTripPanel()" [disabled]="isGeneratingRoundTrip">
-              Generar ruta
+            <button class="plan__secondary" type="button" (click)="openRoundTripOptionsDialog()" [disabled]="isGeneratingRoundTrip">
+              Generar ruta circular
             </button>
             <input #trackInput type="file" accept=".gpx" hidden (change)="onTrackFileSelected($event)">
           </div>
         </div>
 
-        <section class="plan__roundtrip" *ngIf="showRoundTripPanel">
-          <h4>Generar ruta circular</h4>
-          <div class="plan__roundtrip-fields">
-            <label>
-              Tipo de ruta
-              <select [(ngModel)]="roundTripProfile">
-                <option *ngFor="let option of roundTripProfileOptions" [ngValue]="option.value">{{ option.label }}</option>
-              </select>
-            </label>
-            <label>
-              Complejidad
-              <select [(ngModel)]="roundTripComplexity">
-                <option *ngFor="let option of roundTripComplexityOptions" [ngValue]="option.value">{{ option.label }}</option>
-              </select>
-            </label>
-            <label>
-              Longitud aproximada (km)
-              <input type="number" min="5" max="200" step="1" [(ngModel)]="roundTripLengthKm">
-            </label>
-          </div>
-
-          <p class="plan__hint">Haz clic en el mapa para escoger el punto de salida.</p>
-          <div #roundTripMap class="plan__roundtrip-map" aria-label="Mapa para seleccionar salida"></div>
-
-          <div class="plan__roundtrip-coords">
-            <span>Lat: {{ roundTripStartLat ?? '—' }}</span>
-            <span>Lon: {{ roundTripStartLon ?? '—' }}</span>
-          </div>
-
-          <div class="plan__roundtrip-actions">
-            <button class="plan__secondary" type="button" (click)="toggleRoundTripPanel()">Cancelar</button>
-            <button class="plan__primary" type="button" (click)="generateRoundTripRoute()" [disabled]="isGeneratingRoundTrip">
-              {{ isGeneratingRoundTrip ? 'Generando…' : 'Generar e importar' }}
-            </button>
-          </div>
-        </section>
+        
 
         <p class="plan__hint" *ngIf="!editFolder.plannedDate">Añade una fecha para ver la predicción del tiempo por
           track.</p>
@@ -579,3 +544,19 @@
     <p>Organiza tracks, invita a tu grupo y empieza a votar por tu track preferido.</p>
   </div>
 </ng-template>
+
+<div class="plan__roundtrip-overlay" *ngIf="showRoundTripMapOverlay">
+  <div class="plan__roundtrip-dialog">
+    <div class="plan__roundtrip-dialog-header">
+      <h4>Selecciona el punto de inicio</h4>
+      <button class="plan__secondary plan__secondary--small" type="button" (click)="closeRoundTripMapOverlay()" [disabled]="isGeneratingRoundTrip">Cancelar</button>
+    </div>
+    <p class="plan__hint">Haz clic en el mapa para generar la ruta circular. El mapa permanecerá abierto con el track pintado.</p>
+    <div #roundTripMap class="plan__roundtrip-map plan__roundtrip-map--fullscreen" aria-label="Mapa para seleccionar salida"></div>
+    <div class="plan__roundtrip-coords">
+      <span>Lat: {{ roundTripStartLat ?? '—' }}</span>
+      <span>Lon: {{ roundTripStartLon ?? '—' }}</span>
+      <span *ngIf="isGeneratingRoundTrip">Generando ruta…</span>
+    </div>
+  </div>
+</div>

@@ -151,13 +151,13 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
 
   readonly roundTripRoutingModeOptions: RoundTripRoutingModeOption[] = [
     { value: 'balanced', label: 'Equilibrado' },
-    { value: 'trail-priority', label: 'Más senderos y pistas' },
+    { value: 'trails', label: 'Más senderos y pistas' },
     { value: 'avoid-asphalt', label: 'Evitar asfalto al máximo (experimental)' }
   ];
 
   roundTripProfile: RoundTripProfile = 'cycling-mountain';
   roundTripComplexity: RoundTripComplexity = 'medium';
-  roundTripRoutingMode: RoundTripRoutingMode = 'trail-priority';
+  roundTripRoutingMode: RoundTripRoutingMode = 'trails';
   roundTripLengthKm = 35;
   roundTripStartLat: number | null = null;
   roundTripStartLon: number | null = null;
@@ -732,7 +732,7 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
       return 'cycling-regular';
     }
 
-    if (this.roundTripRoutingMode === 'trail-priority' || this.roundTripRoutingMode === 'avoid-asphalt') {
+    if (this.roundTripRoutingMode === 'trails' || this.roundTripRoutingMode === 'avoid-asphalt') {
       return 'cycling-mountain';
     }
 

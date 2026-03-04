@@ -73,7 +73,7 @@ export type RoundTripProfile =
 
 export type RoundTripComplexity = 'simple' | 'medium' | 'technical';
 
-export type RoundTripRoutingMode = 'balanced' | 'trail-priority' | 'avoid-asphalt';
+export type RoundTripRoutingMode = 'balanced' | 'trails' | 'avoid-asphalt';
 
 export type RoundTripWeightings = {
   green?: number;

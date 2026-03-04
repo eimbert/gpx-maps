@@ -78,12 +78,15 @@ export type RoundTripRoutingMode = 'balanced' | 'trail-priority' | 'avoid-asphal
 export type RoundTripWeightings = {
   green?: number;
   quiet?: number;
+  steepness_difficulty?: number;
 };
 
 export type RoundTripRoutingPreferences = {
   mode: RoundTripRoutingMode;
   avoidFeatures?: string[];
   weightings?: RoundTripWeightings;
+  extraInfo?: Array<'surface' | 'waytype'>;
+  seedAttempts?: number;
 };
 
 export type RoundTripRouteRequest = {

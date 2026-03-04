@@ -583,9 +583,9 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
     this.isGeneratingRoundTrip = true;
     try {
       const response = await firstValueFrom(this.planService.generateRoundTripRoute({
-        profile: this.roundTripProfile,
+        profile: this.resolveRoundTripProfileForRoutingMode(),
         complexity: this.roundTripComplexity,
-        points: 6,
+        points: this.resolveRoundTripPoints(),
         preferences: this.buildRoundTripRoutingPreferences(),
         lengthKm: this.roundTripLengthKm,
         start: {
@@ -710,43 +710,54 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
   }
 
   private buildRoundTripRoutingPreferences(): RoundTripRoutingPreferences {
-    const mtbWeightings: RoundTripWeightings | null =
-      this.roundTripProfile === 'cycling-mountain'
-        ? {
-            green: 1.3,
-            quiet: 1
-          }
-        : null;
+    const weightings: RoundTripWeightings = {
+      steepness_difficulty: this.resolveSteepnessDifficulty()
+    };
+
+    const preferences: RoundTripRoutingPreferences = {
+      mode: this.roundTripRoutingMode,
+      avoidFeatures: ['steps'],
+      weightings
+    };
 
     if (this.roundTripRoutingMode === 'avoid-asphalt') {
-      return {
-        mode: this.roundTripRoutingMode,
-        avoidFeatures: ['highways'],
-        weightings: mtbWeightings ?? {
-          green: 1,
-          quiet: 1
-        }
-      };
+      preferences.extraInfo = ['surface', 'waytype'];
+      preferences.seedAttempts = 8;
     }
 
-    if (this.roundTripRoutingMode === 'trail-priority') {
-      return {
-        mode: this.roundTripRoutingMode,
-        avoidFeatures: ['highways'],
-        weightings: mtbWeightings ?? {
-          green: 0.8,
-          quiet: 0.8
-        }
-      };
+    return preferences;
+  }
+
+  private resolveRoundTripProfileForRoutingMode(): RoundTripProfile {
+    if (this.roundTripRoutingMode === 'balanced') {
+      return 'cycling-regular';
     }
 
-    return {
-      mode: this.roundTripRoutingMode,
-      weightings: mtbWeightings ?? {
-        green: 0.5,
-        quiet: 0.5
-      }
-    };
+    if (this.roundTripRoutingMode === 'trail-priority' || this.roundTripRoutingMode === 'avoid-asphalt') {
+      return 'cycling-mountain';
+    }
+
+    return this.roundTripProfile;
+  }
+
+  private resolveRoundTripPoints(): number {
+    if (this.roundTripComplexity === 'simple') {
+      return 4;
+    }
+    if (this.roundTripComplexity === 'medium') {
+      return 5;
+    }
+    return 6;
+  }
+
+  private resolveSteepnessDifficulty(): number {
+    if (this.roundTripComplexity === 'simple') {
+      return 1;
+    }
+    if (this.roundTripComplexity === 'medium') {
+      return 2;
+    }
+    return 3;
   }
 
   async onTrackFileSelected(event: Event): Promise<void> {

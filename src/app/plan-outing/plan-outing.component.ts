@@ -8,7 +8,9 @@ import {
   PlanService,
   PlanTrackImportPayload,
   RoundTripComplexity,
-  RoundTripProfile
+  RoundTripProfile,
+  RoundTripRoutingMode,
+  RoundTripRoutingPreferences
 } from '../services/plan.service';
 import { GpxImportService } from '../services/gpx-import.service';
 import { InfoMessageService } from '../services/info-message.service';
@@ -78,6 +80,11 @@ type RoundTripComplexityOption = {
   label: string;
 };
 
+type RoundTripRoutingModeOption = {
+  value: RoundTripRoutingMode;
+  label: string;
+};
+
 @Component({
   selector: 'app-plan-outing',
   templateUrl: './plan-outing.component.html',
@@ -142,8 +149,15 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
     { value: 'technical', label: 'Variada / técnica' }
   ];
 
+  readonly roundTripRoutingModeOptions: RoundTripRoutingModeOption[] = [
+    { value: 'balanced', label: 'Equilibrado' },
+    { value: 'trail-priority', label: 'Más senderos y pistas' },
+    { value: 'avoid-asphalt', label: 'Evitar asfalto al máximo (experimental)' }
+  ];
+
   roundTripProfile: RoundTripProfile = 'cycling-mountain';
   roundTripComplexity: RoundTripComplexity = 'medium';
+  roundTripRoutingMode: RoundTripRoutingMode = 'trail-priority';
   roundTripLengthKm = 35;
   roundTripStartLat: number | null = null;
   roundTripStartLon: number | null = null;
@@ -480,9 +494,11 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
       {
         profile: RoundTripProfile;
         complexity: RoundTripComplexity;
+        routingMode: RoundTripRoutingMode;
         lengthKm: number;
         profileOptions: RoundTripProfileOption[];
         complexityOptions: RoundTripComplexityOption[];
+        routingModeOptions: RoundTripRoutingModeOption[];
       },
       RoundTripOptionsDialogResult | undefined
     >(RoundTripOptionsDialogComponent, {
@@ -492,9 +508,11 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
       data: {
         profile: this.roundTripProfile,
         complexity: this.roundTripComplexity,
+        routingMode: this.roundTripRoutingMode,
         lengthKm: this.roundTripLengthKm,
         profileOptions: this.roundTripProfileOptions,
-        complexityOptions: this.roundTripComplexityOptions
+        complexityOptions: this.roundTripComplexityOptions,
+        routingModeOptions: this.roundTripRoutingModeOptions
       }
     });
 
@@ -502,6 +520,7 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
       if (!result) return;
       this.roundTripProfile = result.profile;
       this.roundTripComplexity = result.complexity;
+      this.roundTripRoutingMode = result.routingMode;
       this.roundTripLengthKm = Number(result.lengthKm);
       this.openRoundTripMapOverlay();
     });
@@ -565,6 +584,7 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
       const response = await firstValueFrom(this.planService.generateRoundTripRoute({
         profile: this.roundTripProfile,
         complexity: this.roundTripComplexity,
+        preferences: this.buildRoundTripRoutingPreferences(),
         lengthKm: this.roundTripLengthKm,
         start: {
           lat: Number(this.roundTripStartLat),
@@ -685,6 +705,38 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
 
   private resolveRoundTripProfileLabel(profile: RoundTripProfile): string {
     return this.roundTripProfileOptions.find(option => option.value === profile)?.label ?? profile;
+  }
+
+  private buildRoundTripRoutingPreferences(): RoundTripRoutingPreferences {
+    if (this.roundTripRoutingMode === 'avoid-asphalt') {
+      return {
+        mode: this.roundTripRoutingMode,
+        avoidFeatures: ['highways'],
+        weightings: {
+          green: 1,
+          quiet: 1
+        }
+      };
+    }
+
+    if (this.roundTripRoutingMode === 'trail-priority') {
+      return {
+        mode: this.roundTripRoutingMode,
+        avoidFeatures: ['highways'],
+        weightings: {
+          green: 0.8,
+          quiet: 0.8
+        }
+      };
+    }
+
+    return {
+      mode: this.roundTripRoutingMode,
+      weightings: {
+        green: 0.5,
+        quiet: 0.5
+      }
+    };
   }
 
   async onTrackFileSelected(event: Event): Promise<void> {

@@ -1,18 +1,21 @@
 import { Component, Inject } from '@angular/core';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
-import { RoundTripComplexity, RoundTripProfile } from '../services/plan.service';
+import { RoundTripComplexity, RoundTripProfile, RoundTripRoutingMode } from '../services/plan.service';
 
 export type RoundTripOptionsDialogData = {
   profile: RoundTripProfile;
   complexity: RoundTripComplexity;
+  routingMode: RoundTripRoutingMode;
   lengthKm: number;
   profileOptions: Array<{ value: RoundTripProfile; label: string }>;
   complexityOptions: Array<{ value: RoundTripComplexity; label: string }>;
+  routingModeOptions: Array<{ value: RoundTripRoutingMode; label: string }>;
 };
 
 export type RoundTripOptionsDialogResult = {
   profile: RoundTripProfile;
   complexity: RoundTripComplexity;
+  routingMode: RoundTripRoutingMode;
   lengthKm: number;
 };
 
@@ -24,6 +27,7 @@ export type RoundTripOptionsDialogResult = {
 export class RoundTripOptionsDialogComponent {
   profile: RoundTripProfile;
   complexity: RoundTripComplexity;
+  routingMode: RoundTripRoutingMode;
   lengthKm: number;
 
   constructor(
@@ -32,6 +36,7 @@ export class RoundTripOptionsDialogComponent {
   ) {
     this.profile = data.profile;
     this.complexity = data.complexity;
+    this.routingMode = data.routingMode;
     this.lengthKm = data.lengthKm;
   }
 
@@ -43,6 +48,7 @@ export class RoundTripOptionsDialogComponent {
     this.dialogRef.close({
       profile: this.profile,
       complexity: this.complexity,
+      routingMode: this.routingMode,
       lengthKm: this.lengthKm
     });
   }

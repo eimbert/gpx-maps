@@ -2,7 +2,7 @@
 
 <mat-dialog-content class="roundtrip-dialog__content">
   <p class="roundtrip-dialog__subtitle">
-    Define el tipo de ruta, la complejidad y la distancia aproximada para generar el recorrido.
+    Define el tipo de ruta, complejidad, prioridad de terreno y distancia aproximada para generar el recorrido.
   </p>
 
   <div class="roundtrip-dialog__section">
@@ -17,6 +17,13 @@
       Complejidad
       <select [(ngModel)]="complexity">
         <option *ngFor="let option of data.complexityOptions" [ngValue]="option.value">{{ option.label }}</option>
+      </select>
+    </label>
+
+    <label>
+      Prioridad de terreno
+      <select [(ngModel)]="routingMode">
+        <option *ngFor="let option of data.routingModeOptions" [ngValue]="option.value">{{ option.label }}</option>
       </select>
     </label>
 

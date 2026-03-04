@@ -138,10 +138,9 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
   pendingMessages: PendingMessage[] = [];
 
   readonly roundTripProfileOptions: RoundTripProfileOption[] = [
-    { value: 'cycling-regular', label: 'Bici (equilibrada)' },
+    { value: 'cycling-regular', label: 'Gravel' },
     { value: 'cycling-road', label: 'Bici de carretera' },
     { value: 'cycling-mountain', label: 'Bici de montaña (MTB)' },
-    { value: 'cycling-electric', label: 'Bici eléctrica (e-bike)' }
   ];
 
   readonly roundTripComplexityOptions: RoundTripComplexityOption[] = [

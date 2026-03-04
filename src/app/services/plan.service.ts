@@ -73,6 +73,19 @@ export type RoundTripProfile =
 
 export type RoundTripComplexity = 'simple' | 'medium' | 'technical';
 
+export type RoundTripRoutingMode = 'balanced' | 'trail-priority' | 'avoid-asphalt';
+
+export type RoundTripWeightings = {
+  green?: number;
+  quiet?: number;
+};
+
+export type RoundTripRoutingPreferences = {
+  mode: RoundTripRoutingMode;
+  avoidFeatures?: string[];
+  weightings?: RoundTripWeightings;
+};
+
 export type RoundTripRouteRequest = {
   profile: RoundTripProfile;
   complexity: RoundTripComplexity;
@@ -81,6 +94,7 @@ export type RoundTripRouteRequest = {
     lat: number;
     lon: number;
   };
+  preferences?: RoundTripRoutingPreferences;
 };
 
 export type RoundTripRouteResponse = {
@@ -90,6 +104,12 @@ export type RoundTripRouteResponse = {
   distanceMeters: number | null;
   durationSeconds: number | null;
   ascentMeters: number | null;
+  appliedOptions?: {
+    avoidFeatures?: string[];
+    weightings?: RoundTripWeightings;
+  } | null;
+  fallbackLevel?: number | null;
+  warnings?: string[];
 };
 
 @Injectable({ providedIn: 'root' })

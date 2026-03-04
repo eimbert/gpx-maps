@@ -89,6 +89,7 @@ export type RoundTripRoutingPreferences = {
 export type RoundTripRouteRequest = {
   profile: RoundTripProfile;
   complexity: RoundTripComplexity;
+  points: number;
   lengthKm: number;
   start: {
     lat: number;

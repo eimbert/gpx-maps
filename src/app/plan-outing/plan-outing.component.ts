@@ -10,7 +10,8 @@ import {
   RoundTripComplexity,
   RoundTripProfile,
   RoundTripRoutingMode,
-  RoundTripRoutingPreferences
+  RoundTripRoutingPreferences,
+  RoundTripWeightings
 } from '../services/plan.service';
 import { GpxImportService } from '../services/gpx-import.service';
 import { InfoMessageService } from '../services/info-message.service';
@@ -584,6 +585,7 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
       const response = await firstValueFrom(this.planService.generateRoundTripRoute({
         profile: this.roundTripProfile,
         complexity: this.roundTripComplexity,
+        points: 6,
         preferences: this.buildRoundTripRoutingPreferences(),
         lengthKm: this.roundTripLengthKm,
         start: {
@@ -708,11 +710,19 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
   }
 
   private buildRoundTripRoutingPreferences(): RoundTripRoutingPreferences {
+    const mtbWeightings: RoundTripWeightings | null =
+      this.roundTripProfile === 'cycling-mountain'
+        ? {
+            green: 1.3,
+            quiet: 1
+          }
+        : null;
+
     if (this.roundTripRoutingMode === 'avoid-asphalt') {
       return {
         mode: this.roundTripRoutingMode,
         avoidFeatures: ['highways'],
-        weightings: {
+        weightings: mtbWeightings ?? {
           green: 1,
           quiet: 1
         }
@@ -723,7 +733,7 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
       return {
         mode: this.roundTripRoutingMode,
         avoidFeatures: ['highways'],
-        weightings: {
+        weightings: mtbWeightings ?? {
           green: 0.8,
           quiet: 0.8
         }
@@ -732,7 +742,7 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
 
     return {
       mode: this.roundTripRoutingMode,
-      weightings: {
+      weightings: mtbWeightings ?? {
         green: 0.5,
         quiet: 0.5
       }

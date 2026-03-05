@@ -28,7 +28,6 @@ import { UserIdentityService } from '../services/user-identity.service';
 import { AuthService } from '../services/auth.service';
 import { InfoMessageService } from '../services/info-message.service';
 import { InfoDialogComponent, InfoDialogData, InfoDialogResult } from '../info-dialog/info-dialog.component';
-import { MyTrackRow, MyTracksDialogComponent } from '../my-tracks-dialog/my-tracks-dialog.component';
 import { StandaloneTrackUploadDialogComponent, StandaloneTrackUploadResult } from '../standalone-track-upload-dialog/standalone-track-upload-dialog.component';
 import { PlanService, PlanTrackImportPayload } from '../services/plan.service';
 import { PlanTrackDialogComponent, PlanTrackDialogData, PlanTrackDialogResult } from '../plan-track-dialog/plan-track-dialog.component';
@@ -3309,55 +3308,6 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
     }
   }
 
-  async openMyTracksDialog(): Promise<void> {
-    if (!this.ensureEventsAccess()) return;
-    const rows = await this.buildMyTrackRows();
-    this.dialog.open<MyTracksDialogComponent, any>(MyTracksDialogComponent, {
-      width: '95vw',
-      maxWidth: '1080px',
-      maxHeight: '90vh',
-      data: {
-        tracks: rows,
-        userId: this.userId,
-        personalNickname: this.personalNickname
-      }
-    });
-  }
-
-  private async buildMyTrackRows(): Promise<MyTrackRow[]> {
-    try {
-      const tracks = await firstValueFrom(this.eventService.getMyTracks(false));
-      // usa el Map precalculado
-      const eventsById = this.eventsById;
-
-      return tracks.map(track => {
-        const event = track.routeId ? eventsById.get(track.routeId) : undefined;
-        const year = this.resolveTrackYear(track, event);
-        const population = track.population ?? event?.population ?? null;
-        const autonomousCommunity = track.autonomousCommunity ?? event?.autonomousCommunity ?? null;
-        const province = track.province ?? event?.province ?? null;
-        return {
-          eventId: track.routeId ?? 0,
-          trackId: track.id,
-          eventName: event?.name ?? '—',
-          year,
-          province,
-          population,
-          autonomousCommunity,
-          distanceKm: this.toNumber(track.distanceKm),
-          timeSeconds: this.toNumber(track.timeSeconds),
-          totalTimeSeconds: this.resolveTotalTimeSeconds(track),
-          gpxData: track.gpxData,
-          gpxAsset: track.gpxAsset,
-          fileName: track.fileName,
-          canDelete: this.canDeleteTrack(track)
-        };
-      });
-    } catch {
-      this.showMessage('No se pudieron cargar tus tracks. Inténtalo de nuevo más tarde.');
-      return [];
-    }
-  }
 
   private resolveTotalTimeSeconds(track: EventTrack): number {
     const tiempoReal = track.tiempoReal;

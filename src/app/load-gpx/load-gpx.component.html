@@ -437,10 +437,6 @@
           (click)="deleteSelectedEvent()" matTooltip="Eliminar evento" aria-label="Eliminar evento">
           <mat-icon aria-hidden="true">delete</mat-icon>
         </button>
-        <button type="button" class="event-action-button" (click)="openMyTracksDialog()" matTooltip="Mis tracks"
-          aria-label="Mis tracks">
-          <mat-icon aria-hidden="true">folder_shared</mat-icon>
-        </button>
       </div>
     </div>
     <input #masterGpxInput type="file" accept=".gpx" hidden (change)="onMasterGpxFileChange($event)" />

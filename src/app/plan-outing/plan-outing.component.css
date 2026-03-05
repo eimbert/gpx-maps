@@ -1116,6 +1116,47 @@
   color: #334155;
 }
 
+
+.plan__roundtrip-loading {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1250;
+}
+
+.plan__roundtrip-loading-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 18px;
+  border-radius: 12px;
+  background: #ffffff;
+  box-shadow: 0 16px 28px rgba(15, 23, 42, 0.28);
+  color: #0f172a;
+  font-weight: 600;
+}
+
+.plan__roundtrip-loading-card p {
+  margin: 0;
+}
+
+.plan__roundtrip-spinner {
+  width: 18px;
+  height: 18px;
+  border: 2px solid #bfdbfe;
+  border-top-color: #2563eb;
+  border-radius: 50%;
+  animation: plan-roundtrip-spin 0.8s linear infinite;
+}
+
+@keyframes plan-roundtrip-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
 .plan__roundtrip-actions {
   margin-top: 10px;
   display: flex;

@@ -560,3 +560,10 @@
     </div>
   </div>
 </div>
+
+<div class="plan__roundtrip-loading" *ngIf="isGeneratingRoundTrip" role="status" aria-live="polite">
+  <div class="plan__roundtrip-loading-card">
+    <span class="plan__roundtrip-spinner" aria-hidden="true"></span>
+    <p>Generando ruta circular…</p>
+  </div>
+</div>

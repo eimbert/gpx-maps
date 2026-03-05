@@ -164,7 +164,6 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
 
   private roundTripMap: L.Map | null = null;
   private roundTripMarker: L.Marker | null = null;
-  private roundTripPreview: L.Polyline | null = null;
   private hasGeneratedRoundTripInCurrentSession = false;
 
   private readonly destroy$ = new Subject<void>();
@@ -544,7 +543,6 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
     }
     this.roundTripMap = null;
     this.roundTripMarker = null;
-    this.roundTripPreview = null;
   }
 
   private requestRoundTripUserLocation(): void {
@@ -638,17 +636,9 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
       this.tracks = [...this.tracks, mergedTrack];
       this.updateActiveFolderTrackCount(1);
       this.refreshForecasts();
-      const previewCoords = trkpts.map(point => [point.lat, point.lon] as L.LatLngTuple);
-      if (this.roundTripPreview) {
-        this.roundTripMap?.removeLayer(this.roundTripPreview);
-      }
-      if (this.roundTripMap) {
-        this.roundTripPreview = L.polyline(previewCoords, { color: '#2563eb', weight: 4 }).addTo(this.roundTripMap);
-        this.roundTripMap.fitBounds(this.roundTripPreview.getBounds(), { padding: [24, 24] });
-      }
       this.hasGeneratedRoundTripInCurrentSession = true;
 
-      this.showMessage('Ruta circular generada, dibujada en el mapa e importada correctamente.');
+      this.showMessage('Ruta circular generada y guardada correctamente.');
     } catch {
       this.showMessage('No se pudo generar la ruta circular. Inténtalo de nuevo.');
     } finally {
@@ -683,6 +673,7 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
         this.roundTripStartLat = Number(event.latlng.lat.toFixed(6));
         this.roundTripStartLon = Number(event.latlng.lng.toFixed(6));
         this.placeRoundTripMarker();
+        this.closeRoundTripMapOverlay();
         this.generateRoundTripRoute();
       });
     }

@@ -6,6 +6,7 @@ import { MapComponent } from './map/map.component';
 import { AuthGuard } from './services/auth.guard';
 import { PlanOutingComponent } from './plan-outing/plan-outing.component';
 import { ResetPasswordComponent } from './reset-password/reset-password.component';
+import { PrivacyPolicyComponent } from './privacy-policy/privacy-policy.component';
 
 const routes: Routes = [
   { path: '', component: HomeComponent, pathMatch: 'full' },
@@ -14,6 +15,7 @@ const routes: Routes = [
   { path: 'plan', component: PlanOutingComponent, canActivate: [AuthGuard] },
   { path: 'map', component: MapComponent },
   { path: 'reset-password', component: ResetPasswordComponent },
+  { path: 'privacy-policy', component: PrivacyPolicyComponent },
   { path: '**', redirectTo: '' }
 ];
 

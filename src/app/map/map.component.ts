@@ -28,6 +28,8 @@ interface TrackMeta {
   sanitized: TPx[];
   full?: L.Polyline;
   prog?: L.Polyline;
+  fullSlope?: L.LayerGroup;
+  progSlope?: L.LayerGroup;
   mark?: L.Marker;
   startMark?: L.CircleMarker;
   endMark?: L.CircleMarker;
@@ -118,6 +120,13 @@ export class MapComponent implements OnInit, AfterViewInit {
   private lastLeaderTarget: L.LatLng | null = null;
   private allTracksBounds: L.LatLngBounds | null = null;
   private readonly maxReasonableSpeedMs = 45; // ~162 km/h, evita descartar puntos válidos en coche
+  private readonly slopeSoftMax = 4;
+  private readonly slopeModerateMax = 7;
+  private readonly slopeHardMax = 14;
+  private readonly slopeColorSoft = '#2563eb';
+  private readonly slopeColorModerate = '#facc15';
+  private readonly slopeColorHard = '#f97316';
+  private readonly slopeColorVeryHard = '#dc2626';
 
   trackMetas: TrackMeta[] = [];
   private relMs = 0;
@@ -1141,6 +1150,8 @@ export class MapComponent implements OnInit, AfterViewInit {
     this.trackMetas.forEach(meta => {
       if (meta.full) this.map.removeLayer(meta.full);
       if (meta.prog) this.map.removeLayer(meta.prog);
+      if (meta.fullSlope) this.map.removeLayer(meta.fullSlope);
+      if (meta.progSlope) this.map.removeLayer(meta.progSlope);
       if (meta.mark) this.map.removeLayer(meta.mark);
       if (meta.startMark) this.map.removeLayer(meta.startMark);
       if (meta.endMark) this.map.removeLayer(meta.endMark);
@@ -1174,7 +1185,9 @@ export class MapComponent implements OnInit, AfterViewInit {
         const useCombinedEndpointLabel = endpointDistance <= 15;
 
         meta.full.setLatLngs([]);
-        meta.prog.setLatLngs(latlngs);
+        meta.prog.setLatLngs([]);
+        if (meta.fullSlope) this.renderSlopeColoredTrack(meta.sanitized, meta.fullSlope, this.ghostWeight, 0);
+        if (meta.progSlope) this.renderSlopeColoredTrack(meta.sanitized, meta.progSlope, 4, this.progressOpacity);
         meta.ticks.clearLayers();
         meta.pauseLayer?.clearLayers();
 
@@ -1215,6 +1228,8 @@ export class MapComponent implements OnInit, AfterViewInit {
       } else {
         meta.full?.setLatLngs([]);
         meta.prog?.setLatLngs([]);
+        meta.fullSlope?.clearLayers();
+        meta.progSlope?.clearLayers();
         meta.ticks?.clearLayers();
         meta.pauseLayer?.clearLayers();
       }
@@ -1478,6 +1493,8 @@ export class MapComponent implements OnInit, AfterViewInit {
       ...meta,
       full: meta.full ?? L.polyline([], ghost(meta.color)).addTo(this.map),
       prog: meta.prog ?? L.polyline([], prog(meta.color)).addTo(this.map),
+      fullSlope: meta.fullSlope ?? L.layerGroup().addTo(this.map),
+      progSlope: meta.progSlope ?? L.layerGroup().addTo(this.map),
       mark: meta.mark ?? L.marker([0, 0], { icon: mk(meta.color) }),
       startMark: meta.startMark ?? L.circleMarker([0, 0], {
         radius: 6,
@@ -1526,8 +1543,10 @@ export class MapComponent implements OnInit, AfterViewInit {
       if (meta.has && meta.full && meta.prog && meta.mark && meta.ticks && meta.pauseLayer) {
         const latlngs = meta.sanitized.map(p => L.latLng(p.lat, p.lon));
         const startLatLng = latlngs[0];
-        meta.full.setLatLngs(latlngs);
-        meta.prog.setLatLngs([startLatLng]);
+        meta.full.setLatLngs([]);
+        meta.prog.setLatLngs([]);
+        if (meta.fullSlope) this.renderSlopeColoredTrack(meta.sanitized, meta.fullSlope, this.ghostWeight, this.ghostOpacity);
+        meta.progSlope?.clearLayers();
         meta.mark.setLatLng(startLatLng).addTo(this.map);
         meta.ticks.clearLayers();
         meta.pauseLayer.clearLayers();
@@ -1537,6 +1556,8 @@ export class MapComponent implements OnInit, AfterViewInit {
       } else if (meta.full && meta.prog && meta.ticks && meta.pauseLayer) {
         meta.full.setLatLngs([]);
         meta.prog.setLatLngs([]);
+        meta.fullSlope?.clearLayers();
+        meta.progSlope?.clearLayers();
         meta.ticks.clearLayers();
         meta.pauseLayer.clearLayers();
       }
@@ -1633,9 +1654,10 @@ export class MapComponent implements OnInit, AfterViewInit {
         const pos = this.positionAt(meta.sanitized, tAbs, { i: meta.cursor });
         const path = meta.sanitized
           .slice(0, meta.cursor + 1)
-          .map(p => L.latLng(p.lat, p.lon));
-        path.push(L.latLng(pos[0], pos[1]));
-        meta.prog.setLatLngs(path);
+          .map(p => ({ ...p }));
+        path.push(this.buildInterpolatedTrackPoint(meta.sanitized, meta.cursor, tAbs, pos));
+        if (meta.progSlope) this.renderSlopeColoredTrack(path, meta.progSlope, 4, this.progressOpacity);
+        meta.prog.setLatLngs([]);
         meta.mark.setLatLng(L.latLng(pos[0], pos[1]));
 
         if (this.profileEnabled && index === this.profileTrackIndex) {
@@ -1753,7 +1775,85 @@ export class MapComponent implements OnInit, AfterViewInit {
     this.trackMetas.forEach((meta) => {
       if (meta.full) meta.full.setStyle({ opacity: this.ghostOpacity, weight: this.ghostWeight });
       if (meta.prog) meta.prog.setStyle({ opacity: showProgress ? this.progressOpacity : 0 });
+      this.updateSlopeLayerStyle(meta.fullSlope, this.ghostWeight, this.ghostOpacity);
+      this.updateSlopeLayerStyle(meta.progSlope, 4, showProgress ? this.progressOpacity : 0);
     });
+  }
+
+  private updateSlopeLayerStyle(layerGroup: L.LayerGroup | undefined, weight: number, opacity: number): void {
+    if (!layerGroup) return;
+    layerGroup.eachLayer((layer) => {
+      if (layer instanceof L.Polyline) {
+        layer.setStyle({ weight, opacity });
+      }
+    });
+  }
+
+  private renderSlopeColoredTrack(points: Array<TrackPoint | TPx>, layerGroup: L.LayerGroup, weight: number, opacity: number): void {
+    layerGroup.clearLayers();
+    if (!this.renderer || points.length < 2) return;
+
+    for (let index = 1; index < points.length; index += 1) {
+      const from = points[index - 1];
+      const to = points[index];
+      const slopeColor = this.resolveSlopeColor(from, to);
+      const segment = L.polyline(
+        [
+          [from.lat, from.lon],
+          [to.lat, to.lon]
+        ],
+        {
+          color: slopeColor,
+          weight,
+          opacity,
+          renderer: this.renderer,
+          interactive: false,
+          fill: false,
+          stroke: true
+        }
+      );
+      layerGroup.addLayer(segment);
+    }
+  }
+
+  private resolveSlopeColor(from: TrackPoint | TPx, to: TrackPoint | TPx): string {
+    const riseMeters = to.ele - from.ele;
+    if (riseMeters <= 0) {
+      return this.slopeColorSoft;
+    }
+    const runMeters = L.latLng(from.lat, from.lon).distanceTo(L.latLng(to.lat, to.lon));
+    if (runMeters <= 0.5) {
+      return this.slopeColorSoft;
+    }
+    const slopePercent = (riseMeters / runMeters) * 100;
+    if (slopePercent < this.slopeSoftMax) return this.slopeColorSoft;
+    if (slopePercent < this.slopeModerateMax) return this.slopeColorModerate;
+    if (slopePercent < this.slopeHardMax) return this.slopeColorHard;
+    return this.slopeColorVeryHard;
+  }
+
+  private buildInterpolatedTrackPoint(track: TPx[], cursor: number, tAbs: number, fallbackPos: [number, number]): TPx {
+    const current = track[Math.max(0, Math.min(cursor, track.length - 1))];
+    const next = track[Math.min(cursor + 1, track.length - 1)];
+    if (!current || !next) {
+      return {
+        lat: fallbackPos[0],
+        lon: fallbackPos[1],
+        ele: current?.ele ?? 0,
+        time: '',
+        t: tAbs
+      };
+    }
+
+    const span = Math.max(1, next.t - current.t);
+    const ratio = Math.max(0, Math.min(1, (tAbs - current.t) / span));
+    return {
+      lat: current.lat + (next.lat - current.lat) * ratio,
+      lon: current.lon + (next.lon - current.lon) * ratio,
+      ele: current.ele + (next.ele - current.ele) * ratio,
+      time: '',
+      t: tAbs
+    };
   }
 
   private getLeaderPosition(relMs: number): L.LatLngExpression | null {

@@ -7,7 +7,7 @@
       <img [src]="logoDataUrl" alt="logo carrera">
     </div>
 
-    <div class="map-title" *ngIf="!isMobileViewport">
+    <div class="map-title" *ngIf="!isMobileViewport && desktopTitleBarVisible">
       <ng-container *ngFor="let track of trackMetas; let last = last">
         <span class="title-chip" [style.borderColor]="track.color" [style.color]="track.color" [title]="track.name">{{ track.name }}</span>
         <span class="vs" *ngIf="!last">VS</span>
@@ -27,6 +27,24 @@
           {{ option.name }}
         </option>
       </select>
+
+      <label class="desktop-toggle" *ngIf="!isMobileViewport" aria-label="Mostrar u ocultar el perfil de elevación">
+        <input
+          type="checkbox"
+          [checked]="desktopProfileVisible"
+          (change)="onDesktopProfileToggle($any($event.target).checked)"
+        >
+        <span>Perfil</span>
+      </label>
+
+      <label class="desktop-toggle" *ngIf="!isMobileViewport" aria-label="Mostrar u ocultar barra de títulos y acciones">
+        <input
+          type="checkbox"
+          [checked]="desktopTitleBarVisible"
+          (change)="onDesktopTitleBarToggle($any($event.target).checked)"
+        >
+        <span>Barra títulos</span>
+      </label>
     </div>
 
     <label
@@ -42,7 +60,7 @@
       <span>Perfil</span>
     </label>
 
-    <div class="map-edit-controls" *ngIf="canEditTrack && !isMobileViewport" role="group" aria-label="Edición del track">
+    <div class="map-edit-controls" *ngIf="canEditTrack && !isMobileViewport && desktopTitleBarVisible" role="group" aria-label="Edición del track">
       <button type="button" class="map-edit-btn" (click)="toggleEditMode()">
         {{ editMode ? 'Salir de edición' : 'Editar puntos' }}
       </button>
@@ -59,10 +77,10 @@
       </button>
     </div>
 
-    <div class="map-edit-hint" *ngIf="editMode && !isMobileViewport">Haz clic en el punto que quieres eliminar.</div>
-    <div class="map-edit-status" *ngIf="editStatusMessage && !isMobileViewport">{{ editStatusMessage }}</div>
+    <div class="map-edit-hint" *ngIf="editMode && !isMobileViewport && desktopTitleBarVisible">Haz clic en el punto que quieres eliminar.</div>
+    <div class="map-edit-status" *ngIf="editStatusMessage && !isMobileViewport && desktopTitleBarVisible">{{ editStatusMessage }}</div>
 
-    <button type="button" class="start-btn" *ngIf="!isMobileViewport" (click)="goBack()">Anterior</button>
+    <button type="button" class="start-btn" *ngIf="!isMobileViewport && desktopTitleBarVisible" (click)="goBack()">Anterior</button>
     <!-- <a class="stop-rec" (click)="stopRecordingAndDownload()" *ngIf="rec.isRecording">⏹ Stop & Download</a> -->
   </div>
 

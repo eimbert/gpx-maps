@@ -152,6 +152,20 @@
   align-items: center;
   gap: 6px;
 }
+.desktop-toggle{
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding-left: 8px;
+  margin-left: 4px;
+  border-left: 1px solid rgba(255,255,255,0.18);
+  color: #e2e8f0;
+  font: 600 12px/1 system-ui,-apple-system,Segoe UI,Roboto,Arial;
+}
+.desktop-toggle input{
+  margin: 0;
+  accent-color: #22c55e;
+}
 .base-layer-select{
   appearance: none;
   padding: 7px 30px 7px 12px;

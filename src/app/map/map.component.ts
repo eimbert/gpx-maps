@@ -142,6 +142,8 @@ export class MapComponent implements OnInit, AfterViewInit {
   profileCursorX = 0;
   profileTrackColor = '#f97316';
   mobileProfileVisible = true;
+  desktopProfileVisible = true;
+  desktopTitleBarVisible = true;
   private profileTrackIndex = 0;
   private profileDragging = false;
   private profilePointerId: number | null = null;
@@ -659,6 +661,7 @@ export class MapComponent implements OnInit, AfterViewInit {
       this.visualizationMode = payload.modoVisualizacion === 'zoomCabeza' ? 'zoomCabeza' : 'general';
       this.profileEnabled = payload.mostrarPerfil ?? true;
       this.mobileProfileVisible = this.profileEnabled;
+      this.desktopProfileVisible = this.profileEnabled;
       this.isVerticalViewport = this.recordingAspect === '9:16';
       if (this.viewOnly) {
         this.musicEnabled = false;
@@ -698,13 +701,21 @@ export class MapComponent implements OnInit, AfterViewInit {
       return false;
     }
     if (!this.isMobileViewport) {
-      return true;
+      return this.desktopProfileVisible;
     }
     return this.canToggleMobileProfile && this.mobileProfileVisible;
   }
 
   onMobileProfileToggle(checked: boolean): void {
     this.mobileProfileVisible = checked;
+  }
+
+  onDesktopProfileToggle(checked: boolean): void {
+    this.desktopProfileVisible = checked;
+  }
+
+  onDesktopTitleBarToggle(checked: boolean): void {
+    this.desktopTitleBarVisible = checked;
   }
 
   get canEditTrack(): boolean {

@@ -341,7 +341,11 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
       });
   }
 
-  selectFolder(folder: PlanFolder): void {
+  onFolderCardClick(folder: PlanFolder): void {
+    this.selectFolder(folder, true);
+  }
+
+  selectFolder(folder: PlanFolder, shouldScrollToDetails = false): void {
     this.activeFolder = folder;
     this.editFolder = {
       name: folder.name,
@@ -352,7 +356,9 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
     this.loadInvitations(folder.id);
     this.inviteSearchResults = [];
     this.inviteStatusMessage = '';
-    this.scrollToDetailsOnMobile();
+    if (shouldScrollToDetails) {
+      this.scrollToDetailsOnMobile();
+    }
   }
 
   private scrollToDetailsOnMobile(): void {

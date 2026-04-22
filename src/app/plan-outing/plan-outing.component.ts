@@ -94,6 +94,7 @@ type RoundTripRoutingModeOption = {
 export class PlanOutingComponent implements OnInit, OnDestroy {
   @ViewChild('trackInput') trackInput?: ElementRef<HTMLInputElement>;
   @ViewChild('roundTripMap') roundTripMapRef?: ElementRef<HTMLDivElement>;
+  @ViewChild('detailsPanel') detailsPanelRef?: ElementRef<HTMLElement>;
 
   folders: PlanFolder[] = [];
   filteredFolders: PlanFolder[] = [];
@@ -351,6 +352,20 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
     this.loadInvitations(folder.id);
     this.inviteSearchResults = [];
     this.inviteStatusMessage = '';
+    this.scrollToDetailsOnMobile();
+  }
+
+  private scrollToDetailsOnMobile(): void {
+    if (typeof window === 'undefined' || !window.matchMedia('(max-width: 768px)').matches) {
+      return;
+    }
+
+    requestAnimationFrame(() => {
+      this.detailsPanelRef?.nativeElement.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start'
+      });
+    });
   }
 
   saveFolder(): void {

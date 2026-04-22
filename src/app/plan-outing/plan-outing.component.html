@@ -72,7 +72,7 @@
           class="plan__folder-card"
           type="button"
           *ngFor="let folder of filteredFolders"
-          (click)="selectFolder(folder)"
+          (click)="onFolderCardClick(folder)"
           [class.plan__folder-card--active]="activeFolder?.id === folder.id"
           [class.plan__folder-card--owner]="isFolderOwner(folder)"
           [class.plan__folder-card--guest]="!isFolderOwner(folder)">
@@ -97,7 +97,7 @@
       </ng-template>
     </aside>
 
-    <section class="plan__details" *ngIf="activeFolder && editFolder; else emptyState">
+    <section class="plan__details" #detailsPanel *ngIf="activeFolder && editFolder; else emptyState">
       <div class="plan__details-header">
         <div>
           <p class="eyebrow">Salida abierta</p>

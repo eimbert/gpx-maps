@@ -97,7 +97,7 @@
       </ng-template>
     </aside>
 
-    <section class="plan__details" *ngIf="activeFolder && editFolder; else emptyState">
+    <section class="plan__details" #detailsPanel *ngIf="activeFolder && editFolder; else emptyState">
       <div class="plan__details-header">
         <div>
           <p class="eyebrow">Salida abierta</p>

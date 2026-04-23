@@ -100,6 +100,7 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
   filteredFolders: PlanFolder[] = [];
   activeFolder: PlanFolder | null = null;
   editFolder: EditableFolder | null = null;
+  private originalEditFolder: EditableFolder | null = null;
   tracks: PlanTrack[] = [];
   selectedTrackIds = new Set<number>();
   votesByTrackId = new Map<number, number>();
@@ -303,7 +304,12 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
   }
 
 
-  toggleNewFolderForm(): void {
+  async toggleNewFolderForm(): Promise<void> {
+    if (!this.showNewFolderForm) {
+      const canContinue = await this.confirmDiscardUnsavedChanges();
+      if (!canContinue) return;
+    }
+
     this.showNewFolderForm = !this.showNewFolderForm;
   }
 
@@ -341,8 +347,32 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
       });
   }
 
-  onFolderCardClick(folder: PlanFolder): void {
+  async onFolderCardClick(folder: PlanFolder): Promise<void> {
+    if (this.activeFolder?.id === folder.id) return;
+    const canContinue = await this.confirmDiscardUnsavedChanges();
+    if (!canContinue) return;
     this.selectFolder(folder, true);
+  }
+
+  get hasFolderChanges(): boolean {
+    if (!this.editFolder || !this.originalEditFolder) return false;
+
+    return this.normalizeEditableField(this.editFolder.name) !== this.normalizeEditableField(this.originalEditFolder.name)
+      || this.normalizeEditableField(this.editFolder.plannedDate) !== this.normalizeEditableField(this.originalEditFolder.plannedDate)
+      || this.normalizeEditableField(this.editFolder.observations) !== this.normalizeEditableField(this.originalEditFolder.observations);
+  }
+
+  private async confirmDiscardUnsavedChanges(): Promise<boolean> {
+    if (!this.hasFolderChanges) return true;
+
+    const decision = await this.openInfoDialog({
+      title: 'Cambios sin guardar',
+      message: 'No se han guardado los cambios y, si continúas, se perderán. ¿Deseas continuar?',
+      confirmLabel: 'Continuar',
+      cancelLabel: 'Seguir editando'
+    });
+
+    return decision === 'confirm';
   }
 
   selectFolder(folder: PlanFolder, shouldScrollToDetails = false): void {
@@ -352,6 +382,7 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
       plannedDate: this.toDateValue(folder.plannedDate),
       observations: folder.observations
     };
+    this.originalEditFolder = { ...this.editFolder };
     this.loadTracks(folder.id);
     this.loadInvitations(folder.id);
     this.inviteSearchResults = [];
@@ -412,6 +443,7 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
           plannedDate: this.toDateValue(mergedFolder.plannedDate),
           observations: mergedFolder.observations
         };
+        this.originalEditFolder = { ...this.editFolder };
         this.isSavingFolder = false;
         this.refreshForecasts();
       });
@@ -433,6 +465,7 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
       if (this.activeFolder?.id === folder.id) {
         this.activeFolder = null;
         this.editFolder = null;
+        this.originalEditFolder = null;
         this.tracks = [];
         this.clearTrackSelection();
         this.votesByTrackId.clear();
@@ -1940,6 +1973,10 @@ private calculateTotalAscent(
     }
   }
 
+
+  private normalizeEditableField(value: string | null | undefined): string {
+    return (value ?? '').trim();
+  }
 
   private openInfoDialog(data: InfoDialogData): Promise<InfoDialogResult | undefined> {
     const dialogRef = this.dialog.open<InfoDialogComponent, InfoDialogData, InfoDialogResult>(InfoDialogComponent, {

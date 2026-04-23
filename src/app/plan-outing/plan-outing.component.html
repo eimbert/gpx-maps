@@ -103,8 +103,13 @@
           <p class="eyebrow">Salida abierta</p>
           <h2>Planifica tu salida</h2>
         </div>
-        <button class="plan__primary" type="button" (click)="saveFolder()" [disabled]="isSavingFolder">
-          Guardar
+        <button
+          *ngIf="hasFolderChanges"
+          class="plan__primary"
+          type="button"
+          (click)="saveFolder()"
+          [disabled]="isSavingFolder">
+          Guardar Cambios
         </button>
       </div>
 

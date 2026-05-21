@@ -3,7 +3,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 
-import * as L from 'leaflet';
+import maplibregl, { GeoJSONSource, Map as MapLibreMap } from 'maplibre-gl';
 import { RecorderService } from '../recording/recorder.service';
 import { PlanService } from '../services/plan.service';
 import { MapPayloadTransferService } from '../services/map-payload-transfer.service';
@@ -27,17 +27,22 @@ interface TrackMeta {
   visible: boolean;
   raw: TrackPoint[];
   sanitized: TPx[];
-  full?: L.Polyline;
-  prog?: L.Polyline;
-  fullSlope?: L.LayerGroup;
-  progSlope?: L.LayerGroup;
-  mark?: L.Marker;
-  startMark?: L.CircleMarker;
-  endMark?: L.CircleMarker;
-  hoverMark?: L.CircleMarker;
-  ticks?: L.LayerGroup;
+  fullSourceId?: string;
+  fullLayerId?: string;
+  progSourceId?: string;
+  progLayerId?: string;
+  fullSlopeSourceId?: string;
+  fullSlopeLayerId?: string;
+  progSlopeSourceId?: string;
+  progSlopeLayerId?: string;
+  mark?: maplibregl.Marker;
+  startMark?: maplibregl.Marker;
+  endMark?: maplibregl.Marker;
+  hoverMark?: maplibregl.Marker;
+  tickMarkers?: maplibregl.Marker[];
+  endpointLabelMarkers?: maplibregl.Marker[];
   pauses: PauseInterval[];
-  pauseLayer?: L.LayerGroup;
+  pauseMarkers?: maplibregl.Marker[];
   cursor: number;
   nextTickRel: number;
   finalAdded: boolean;
@@ -68,8 +73,8 @@ interface BaseLayerOption {
 })
 export class MapComponent implements OnInit, AfterViewInit {
 
-  private map!: L.Map;
-  private renderer!: L.Canvas;
+  private map!: MapLibreMap;
+  private mapReady = false;
 
   logoDataUrl: string | null = null;
   removeStops = false;  // quitar paradas largas
@@ -118,8 +123,8 @@ export class MapComponent implements OnInit, AfterViewInit {
   private readonly zoomPanSlowdownFactor = 2;
   private readonly fallbackUniformSpeedMs = 5; // velocidad constante para tracks sin tiempo
   private readonly defaultColors = ['#2563eb', '#7c3aed', '#0891b2', '#1e40af', '#a855f7', '#0f172a', '#0284c7', '#4338ca'];
-  private lastLeaderTarget: L.LatLng | null = null;
-  private allTracksBounds: L.LatLngBounds | null = null;
+  private lastLeaderTarget: maplibregl.LngLat | null = null;
+  private allTracksBounds: maplibregl.LngLatBounds | null = null;
   private readonly maxReasonableSpeedMs = 45; // ~162 km/h, evita descartar puntos válidos en coche
   private readonly slopeSoftMax = 4;
   private readonly slopeModerateMax = 7;
@@ -188,7 +193,8 @@ export class MapComponent implements OnInit, AfterViewInit {
     }
   ];
   selectedBaseLayerId = this.baseLayerOptions.find((option) => option.id === 'street')?.id ?? this.baseLayerOptions[0]?.id ?? '';
-  private baseLayer: L.TileLayer | null = null;
+  private baseLayerId = 'base-raster';
+  private baseLayerSourceId = 'base-raster-source';
   viewOnly = false;
   editMode = false;
   isSavingEdits = false;
@@ -198,7 +204,7 @@ export class MapComponent implements OnInit, AfterViewInit {
   private originalTrackPoints: TrackPoint[] | null = null;
   private originalRouteXml: string | null = null;
   private originalPointsSnapshot: string | null = null;
-  private editPointsLayer: L.LayerGroup | null = null;
+  private editPointMarkers: maplibregl.Marker[] = [];
 
   constructor(
     private route: ActivatedRoute,
@@ -321,6 +327,24 @@ export class MapComponent implements OnInit, AfterViewInit {
     const φ1 = lat1 * toRad, φ2 = lat2 * toRad, dφ = (lat2 - lat1) * toRad, dλ = (lon2 - lon1) * toRad;
     const a = Math.sin(dφ / 2) ** 2 + Math.cos(φ1) * Math.cos(φ2) * Math.sin(dλ / 2) ** 2;
     return 2 * R * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  }
+  private toLngLat(point: TrackPoint | TPx | { lat: number; lon: number }): [number, number] {
+    return [point.lon, point.lat];
+  }
+  private extendBounds(bounds: maplibregl.LngLatBounds | null, point: TrackPoint | TPx | [number, number]): maplibregl.LngLatBounds {
+    const lngLat: [number, number] = Array.isArray(point) ? [point[1], point[0]] : this.toLngLat(point);
+    if (!bounds) return new maplibregl.LngLatBounds(lngLat, lngLat);
+    bounds.extend(lngLat);
+    return bounds;
+  }
+  private hasValidBounds(bounds: maplibregl.LngLatBounds | null): bounds is maplibregl.LngLatBounds {
+    if (!bounds) return false;
+    const sw = bounds.getSouthWest();
+    const ne = bounds.getNorthEast();
+    return Number.isFinite(sw.lng) && Number.isFinite(sw.lat) && Number.isFinite(ne.lng) && Number.isFinite(ne.lat);
+  }
+  private distanceBetween(a: { lat: number; lon: number }, b: { lat: number; lon: number }): number {
+    return this.hav(a.lat, a.lon, b.lat, b.lon);
   }
   private speedMs(p0: TPx, p1: TPx): number {
     const dt = (p1.t - p0.t) / 1000;
@@ -497,7 +521,7 @@ export class MapComponent implements OnInit, AfterViewInit {
     this.updateProfileVisual();
     this.updateEditPointsLayer();
 
-    if (this.map) {
+    if (this.map && this.mapReady) {
       this.attachTrackLayers();
       if (this.viewOnly) {
         this.renderStaticTracks();
@@ -622,27 +646,27 @@ export class MapComponent implements OnInit, AfterViewInit {
     const distance = clampedRatio * meta.totalDistance;
     this.profileCursorX = clampedRatio * this.profileWidth;
     const position = this.positionAtDistance(meta, distance);
-    meta.hoverMark?.setLatLng(position).addTo(this.map);
+    meta.hoverMark?.setLngLat(position).addTo(this.map);
   }
 
   onProfileHoverEnd(): void {
     if (!this.viewOnly || this.profileDragging) return;
   }
 
-  private positionAtDistance(meta: TrackMeta, distance: number): L.LatLng {
+  private positionAtDistance(meta: TrackMeta, distance: number): [number, number] {
     const total = meta.totalDistance;
     if (!meta.distances.length || !meta.sanitized.length || total <= 0) {
-      return L.latLng(0, 0);
+      return [0, 0];
     }
     const clamped = Math.max(0, Math.min(distance, total));
     let index = meta.distances.findIndex(value => value >= clamped);
     if (index <= 0) {
       const start = meta.sanitized[0];
-      return L.latLng(start.lat, start.lon);
+      return this.toLngLat(start);
     }
     if (index === -1) {
       const last = meta.sanitized[meta.sanitized.length - 1];
-      return L.latLng(last.lat, last.lon);
+      return this.toLngLat(last);
     }
 
     const prevIndex = index - 1;
@@ -652,10 +676,10 @@ export class MapComponent implements OnInit, AfterViewInit {
     const p1 = meta.sanitized[index];
     const span = d1 - d0;
     const ratio = span > 0 ? (clamped - d0) / span : 0;
-    return L.latLng(
-      p0.lat + (p1.lat - p0.lat) * ratio,
-      p0.lon + (p1.lon - p0.lon) * ratio
-    );
+    return [
+      p0.lon + (p1.lon - p0.lon) * ratio,
+      p0.lat + (p1.lat - p0.lat) * ratio
+    ];
   }
 
   private loadTracksFromSessionOrQuery(): void {
@@ -789,20 +813,10 @@ export class MapComponent implements OnInit, AfterViewInit {
     const showTimes = this.shouldShowTimes;
     this.trackMetas.forEach((meta) => {
       const shouldShowTrackTimes = showTimes && meta.visible;
-      if (meta.ticks) {
-        if (shouldShowTrackTimes) {
-          if (!this.map.hasLayer(meta.ticks)) meta.ticks.addTo(this.map);
-        } else if (this.map.hasLayer(meta.ticks)) {
-          this.map.removeLayer(meta.ticks);
-        }
-      }
-      if (meta.pauseLayer) {
-        if (shouldShowTrackTimes) {
-          if (!this.map.hasLayer(meta.pauseLayer)) meta.pauseLayer.addTo(this.map);
-        } else if (this.map.hasLayer(meta.pauseLayer)) {
-          this.map.removeLayer(meta.pauseLayer);
-        }
-      }
+      [...(meta.tickMarkers ?? []), ...(meta.pauseMarkers ?? [])].forEach(marker => {
+        if (shouldShowTrackTimes) marker.addTo(this.map);
+        else marker.remove();
+      });
     });
   }
 
@@ -812,29 +826,16 @@ export class MapComponent implements OnInit, AfterViewInit {
     meta.visible = checked;
     if (!this.map) return;
 
-    const applyVisibility = (layer: L.Layer | undefined): void => {
-      if (!layer) return;
-      if (checked) {
-        if (!this.map.hasLayer(layer)) layer.addTo(this.map);
-      } else if (this.map.hasLayer(layer)) {
-        this.map.removeLayer(layer);
-      }
-    };
-
-    applyVisibility(meta.full);
-    applyVisibility(meta.prog);
-    applyVisibility(meta.fullSlope);
-    applyVisibility(meta.progSlope);
-    applyVisibility(meta.mark);
-    applyVisibility(meta.startMark);
-    applyVisibility(meta.endMark);
-    applyVisibility(meta.hoverMark);
+    this.setTrackLayerVisibility(meta, checked);
+    [meta.mark, meta.startMark, meta.endMark, meta.hoverMark, ...(meta.endpointLabelMarkers ?? [])].forEach(marker => {
+      if (!marker) return;
+      if (checked) marker.addTo(this.map);
+      else marker.remove();
+    });
     if (this.shouldShowTimes) {
-      applyVisibility(meta.ticks);
-      applyVisibility(meta.pauseLayer);
+      [...(meta.tickMarkers ?? []), ...(meta.pauseMarkers ?? [])].forEach(marker => checked ? marker.addTo(this.map) : marker.remove());
     } else {
-      if (meta.ticks && this.map.hasLayer(meta.ticks)) this.map.removeLayer(meta.ticks);
-      if (meta.pauseLayer && this.map.hasLayer(meta.pauseLayer)) this.map.removeLayer(meta.pauseLayer);
+      [...(meta.tickMarkers ?? []), ...(meta.pauseMarkers ?? []), ...(meta.endpointLabelMarkers ?? [])].forEach(marker => marker.remove());
     }
   }
 
@@ -914,7 +915,7 @@ export class MapComponent implements OnInit, AfterViewInit {
     });
   }
 
-  private handleMapClick(event: L.LeafletMouseEvent): void {
+  private handleMapClick(event: maplibregl.MapMouseEvent): void {
     if (!this.editMode || !this.canEditTrack) return;
     const meta = this.trackMetas[0];
     if (!meta?.raw?.length || meta.raw.length < 3) {
@@ -922,13 +923,15 @@ export class MapComponent implements OnInit, AfterViewInit {
       return;
     }
 
-    const clickPoint = this.map.latLngToContainerPoint(event.latlng);
+    const clickPoint = event.point;
     let closestIndex = -1;
     let closestDistance = Number.POSITIVE_INFINITY;
 
     meta.raw.forEach((point, index) => {
-      const layerPoint = this.map.latLngToContainerPoint([point.lat, point.lon]);
-      const distance = clickPoint.distanceTo(layerPoint);
+      const layerPoint = this.map.project(this.toLngLat(point));
+      const dx = clickPoint.x - layerPoint.x;
+      const dy = clickPoint.y - layerPoint.y;
+      const distance = Math.sqrt(dx * dx + dy * dy);
       if (distance < closestDistance) {
         closestDistance = distance;
         closestIndex = index;
@@ -953,25 +956,20 @@ export class MapComponent implements OnInit, AfterViewInit {
   }
 
   private updateEditPointsLayer(): void {
-    if (!this.editPointsLayer || !this.map) return;
+    if (!this.map) return;
     if (!this.editMode || !this.canEditTrack) {
       this.clearEditPointsLayer();
       return;
     }
-    this.editPointsLayer.clearLayers();
+    this.clearEditPointsLayer();
     const meta = this.trackMetas[0];
     if (!meta?.raw?.length) return;
     const points = this.buildEditPointMarkers(meta.raw);
     points.forEach(point => {
-      const marker = L.circleMarker([point.lat, point.lon], {
-        radius: 4,
-        color: '#0f172a',
-        weight: 1,
-        fillColor: '#f8fafc',
-        fillOpacity: 1,
-        pane: 'overlayPane'
-      });
-      this.editPointsLayer?.addLayer(marker);
+      const marker = new maplibregl.Marker({
+        element: this.createDotElement('#f8fafc', 8, '#0f172a', 1)
+      }).setLngLat(this.toLngLat(point)).addTo(this.map);
+      this.editPointMarkers.push(marker);
     });
   }
 
@@ -988,7 +986,8 @@ export class MapComponent implements OnInit, AfterViewInit {
   }
 
   private clearEditPointsLayer(): void {
-    this.editPointsLayer?.clearLayers();
+    this.editPointMarkers.forEach(marker => marker.remove());
+    this.editPointMarkers = [];
   }
 
   private updateTrackRaw(index: number, raw: TrackPoint[]): void {
@@ -1153,15 +1152,11 @@ export class MapComponent implements OnInit, AfterViewInit {
     return `${m} min`;
   }
 
-  private createTickLabel(content: string, isFinal = false): L.Marker {
-    const icon = L.divIcon({
-      className: 'tick-label-wrapper',
-      html: `<div class="tick-label${isFinal ? ' tick-label-final' : ''}">${content}</div>`,
-      iconSize: undefined,
-      iconAnchor: [-8, 12],
-    });
-
-    return L.marker([0, 0], { icon, interactive: false });
+  private createTickLabel(content: string, isFinal = false): maplibregl.Marker {
+    const wrapper = document.createElement('div');
+    wrapper.className = 'tick-label-wrapper';
+    wrapper.innerHTML = `<div class="tick-label${isFinal ? ' tick-label-final' : ''}">${content}</div>`;
+    return new maplibregl.Marker({ element: wrapper, anchor: 'top-left', offset: [-8, 12] });
   }
 
   // Añade un tick (punto + etiqueta) en un tiempo absoluto
@@ -1169,71 +1164,55 @@ export class MapComponent implements OnInit, AfterViewInit {
     track: TPx[],
     absT: number,
     color: string,
-    group: L.LayerGroup,
+    markers: maplibregl.Marker[],
     startAbs: number,
     autoHide = false
   ): void {
     if (absT > track[track.length - 1].t) return;
     const [lat, lon] = this.positionAtAbs(track, absT);
-    const dot = L.circleMarker([lat, lon], {
-      radius: 4,
-      color: color,
-      weight: 2,
-      fillColor: '#fff',
-      fillOpacity: 0.9,
-      pane: 'overlayPane'
-    });
+    const dot = new maplibregl.Marker({
+      element: this.createDotElement('#fff', 8, color, 2)
+    }).setLngLat([lon, lat]).addTo(this.map);
 
     const label = this.createTickLabel(this.fmtHMin(absT - startAbs));
-    label.setLatLng([lat, lon]);
-    group.addLayer(dot);
-    group.addLayer(label);
+    label.setLngLat([lon, lat]).addTo(this.map);
+    markers.push(dot, label);
 
     if (autoHide) {
       const timeoutId = window.setTimeout(() => {
-        group.removeLayer(dot);
-        group.removeLayer(label);
+        dot.remove();
+        label.remove();
       }, this.TICK_VISIBLE_MS);
       this.transientTickTimeouts.push(timeoutId);
     }
   }
 
   // Marca FINAL (en el último punto) con duración total
-  private addFinalTick(track: TPx[], color: string, group: L.LayerGroup, startAbs: number): void {
+  private addFinalTick(track: TPx[], color: string, markers: maplibregl.Marker[], startAbs: number): void {
     if (track.length === 0) return;
     const endAbs = track[track.length - 1].t;
     const [lat, lon] = [track[track.length - 1].lat, track[track.length - 1].lon];
 
-    const dot = L.circleMarker([lat, lon], {
-      radius: 6,
-      color: color,
-      weight: 3,
-      fillColor: '#fff',
-      fillOpacity: 1,
-      pane: 'overlayPane'
-    });
+    const dot = new maplibregl.Marker({
+      element: this.createDotElement('#fff', 12, color, 3)
+    }).setLngLat([lon, lat]).addTo(this.map);
 
     const label = this.createTickLabel(this.fmtHMin(endAbs - startAbs), true);
-    label.setLatLng([lat, lon]);
-    group.addLayer(dot);
-    group.addLayer(label);
+    label.setLngLat([lon, lat]).addTo(this.map);
+    markers.push(dot, label);
   }
 
-  private addPauseMarker(pause: PauseInterval, color: string, group: L.LayerGroup): void {
+  private addPauseMarker(pause: PauseInterval, color: string, markers: maplibregl.Marker[]): void {
     const minutes = pause.durationMs / 60000;
     if (minutes < 1) return;
     const label = `parada de ${Math.round(minutes)} min`;
-    const icon = L.divIcon({
-      className: 'pause-marker',
-      html: `
-        <div class="pause-label">${label}</div>
-      `,
-      iconSize: undefined,
-      iconAnchor: [-8, 12]
-    });
-
-    const marker = L.marker([pause.anchor.lat, pause.anchor.lon], { icon, interactive: false });
-    group.addLayer(marker);
+    const element = document.createElement('div');
+    element.className = 'pause-marker';
+    element.innerHTML = `<div class="pause-label">${label}</div>`;
+    const marker = new maplibregl.Marker({ element, anchor: 'top-left', offset: [-8, 12] })
+      .setLngLat([pause.anchor.lon, pause.anchor.lat])
+      .addTo(this.map);
+    markers.push(marker);
   }
 
   private resetPlaybackState(): void {
@@ -1280,17 +1259,26 @@ export class MapComponent implements OnInit, AfterViewInit {
     if (!this.map) return;
 
     this.trackMetas.forEach(meta => {
-      if (meta.full) this.map.removeLayer(meta.full);
-      if (meta.prog) this.map.removeLayer(meta.prog);
-      if (meta.fullSlope) this.map.removeLayer(meta.fullSlope);
-      if (meta.progSlope) this.map.removeLayer(meta.progSlope);
-      if (meta.mark) this.map.removeLayer(meta.mark);
-      if (meta.startMark) this.map.removeLayer(meta.startMark);
-      if (meta.endMark) this.map.removeLayer(meta.endMark);
-      if (meta.hoverMark) this.map.removeLayer(meta.hoverMark);
-      if (meta.ticks) this.map.removeLayer(meta.ticks);
-      if (meta.pauseLayer) this.map.removeLayer(meta.pauseLayer);
+      [
+        meta.fullLayerId,
+        meta.progLayerId,
+        meta.fullSlopeLayerId,
+        meta.progSlopeLayerId,
+      ].forEach(layerId => {
+        if (layerId && this.map.getLayer(layerId)) this.map.removeLayer(layerId);
+      });
+      [
+        meta.fullSourceId,
+        meta.progSourceId,
+        meta.fullSlopeSourceId,
+        meta.progSlopeSourceId,
+      ].forEach(sourceId => {
+        if (sourceId && this.map.getSource(sourceId)) this.map.removeSource(sourceId);
+      });
+      [meta.mark, meta.startMark, meta.endMark, meta.hoverMark].forEach(marker => marker?.remove());
+      [...(meta.tickMarkers ?? []), ...(meta.pauseMarkers ?? [])].forEach(marker => marker.remove());
     });
+    this.clearEditPointsLayer();
   }
 
   private clearTransientTickTimeouts(): void {
@@ -1301,7 +1289,7 @@ export class MapComponent implements OnInit, AfterViewInit {
   private renderStaticTracks(): void {
     if (!this.map) return;
 
-    const boundsPts: L.LatLng[] = [];
+    let bounds: maplibregl.LngLatBounds | null = null;
 
     this.trackMetas.forEach((meta) => {
       meta.has = meta.sanitized.length >= 2;
@@ -1309,72 +1297,62 @@ export class MapComponent implements OnInit, AfterViewInit {
       meta.nextTickRel = this.TICK_STEP_MS;
       meta.finalAdded = false;
 
-      if (meta.has && meta.full && meta.prog && meta.ticks && meta.startMark && meta.endMark && meta.hoverMark) {
-        const latlngs = meta.sanitized.map(p => L.latLng(p.lat, p.lon));
-        const startLatLng = latlngs[0];
-        const endLatLng = latlngs[latlngs.length - 1];
-        const endpointDistance = startLatLng.distanceTo(endLatLng);
+      if (meta.has && meta.startMark && meta.endMark && meta.hoverMark) {
+        const start = meta.sanitized[0];
+        const endPoint = meta.sanitized[meta.sanitized.length - 1];
+        const startLngLat = this.toLngLat(start);
+        const endLngLat = this.toLngLat(endPoint);
+        const endpointDistance = this.distanceBetween(start, endPoint);
         const useCombinedEndpointLabel = endpointDistance <= 15;
 
-        meta.full.setLatLngs([]);
-        meta.prog.setLatLngs([]);
-        if (meta.fullSlope) this.renderSlopeColoredTrack(meta.sanitized, meta.fullSlope, this.ghostWeight, 0, meta.color);
-        if (meta.progSlope) this.renderSlopeColoredTrack(meta.sanitized, meta.progSlope, 4, this.progressOpacity, meta.color);
-        meta.ticks.clearLayers();
-        meta.pauseLayer?.clearLayers();
+        this.setLineData(meta.fullSourceId, []);
+        this.setLineData(meta.progSourceId, []);
+        this.setSlopeData(meta.fullSlopeSourceId, meta.sanitized, meta.color);
+        this.setSlopeData(meta.progSlopeSourceId, meta.sanitized, meta.color);
+        meta.tickMarkers = this.clearMarkers(meta.tickMarkers);
+        meta.pauseMarkers = this.clearMarkers(meta.pauseMarkers);
 
-        meta.startMark
-          .setLatLng(startLatLng)
-          .bindTooltip(useCombinedEndpointLabel ? 'Salida/Llegada' : 'Salida', {
-            permanent: true,
-            direction: 'top',
-            offset: [0, -8],
-            className: 'track-endpoint-label track-endpoint-label--start'
-          })
-          .addTo(this.map);
-        meta.endMark
-          .setLatLng(endLatLng)
-          .addTo(this.map);
-        if (useCombinedEndpointLabel) {
-          meta.endMark.unbindTooltip();
-        } else {
-          meta.endMark.bindTooltip('Llegada', {
-            permanent: true,
-            direction: 'top',
-            offset: [0, -8],
-            className: 'track-endpoint-label track-endpoint-label--end'
-          });
+        meta.startMark.setLngLat(startLngLat).addTo(this.map);
+        meta.endMark.setLngLat(endLngLat).addTo(this.map);
+        meta.endpointLabelMarkers = this.clearMarkers(meta.endpointLabelMarkers);
+        meta.endpointLabelMarkers.push(this.createEndpointLabelMarker(
+          useCombinedEndpointLabel ? 'Salida/Llegada' : 'Salida',
+          startLngLat,
+          'track-endpoint-label--start'
+        ));
+        if (!useCombinedEndpointLabel) {
+          meta.endpointLabelMarkers.push(this.createEndpointLabelMarker('Llegada', endLngLat, 'track-endpoint-label--end'));
         }
-        meta.hoverMark.setLatLng(startLatLng).addTo(this.map);
+        meta.hoverMark.setLngLat(startLngLat).addTo(this.map);
 
-        const start = meta.sanitized[0].t;
-        const end = meta.sanitized[meta.sanitized.length - 1].t;
-        let tickAbs = start + this.TICK_STEP_MS;
-        while (tickAbs < end) {
-          this.addTickAtAbs(meta.sanitized, tickAbs, meta.color, meta.ticks, start);
+        const startAbs = meta.sanitized[0].t;
+        const endAbs = meta.sanitized[meta.sanitized.length - 1].t;
+        let tickAbs = startAbs + this.TICK_STEP_MS;
+        while (tickAbs < endAbs) {
+          this.addTickAtAbs(meta.sanitized, tickAbs, meta.color, meta.tickMarkers, startAbs);
           tickAbs += this.TICK_STEP_MS;
         }
-        this.addFinalTick(meta.sanitized, meta.color, meta.ticks, start);
+        this.addFinalTick(meta.sanitized, meta.color, meta.tickMarkers, startAbs);
 
-        boundsPts.push(...latlngs);
+        meta.sanitized.forEach(point => { bounds = this.extendBounds(bounds, point); });
       } else {
-        meta.full?.setLatLngs([]);
-        meta.prog?.setLatLngs([]);
-        meta.fullSlope?.clearLayers();
-        meta.progSlope?.clearLayers();
-        meta.ticks?.clearLayers();
-        meta.pauseLayer?.clearLayers();
+        this.setLineData(meta.fullSourceId, []);
+        this.setLineData(meta.progSourceId, []);
+        this.setSlopeData(meta.fullSlopeSourceId, [], meta.color);
+        this.setSlopeData(meta.progSlopeSourceId, [], meta.color);
+        meta.tickMarkers = this.clearMarkers(meta.tickMarkers);
+        meta.pauseMarkers = this.clearMarkers(meta.pauseMarkers);
+        meta.endpointLabelMarkers = this.clearMarkers(meta.endpointLabelMarkers);
       }
     });
 
-    const union = L.latLngBounds(boundsPts);
-    this.allTracksBounds = union.isValid() ? union.pad(0.05) : null;
+    this.allTracksBounds = this.hasValidBounds(bounds) ? bounds : null;
     if (this.allTracksBounds && !this.editMode) {
       this.map.fitBounds(this.allTracksBounds, {
         ...this.computeFitOptions(),
         maxZoom: this.leaderZoomLevel - 1
       });
-      this.map.invalidateSize();
+      this.map.resize();
     }
   }
 
@@ -1402,6 +1380,7 @@ export class MapComponent implements OnInit, AfterViewInit {
     this.initMap();
     setTimeout(() => {
       this.applyAspectViewport().then(() => {
+        if (!this.mapReady) return;
         this.attachTrackLayers();
         this.applyTimesLayerVisibility();
         if (this.viewOnly) {
@@ -1543,7 +1522,7 @@ export class MapComponent implements OnInit, AfterViewInit {
     return new Promise(resolve => {
       requestAnimationFrame(() => {
         if (this.map) {
-          this.map.invalidateSize();
+          this.map.resize();
         }
         resolve();
       });
@@ -1579,12 +1558,31 @@ export class MapComponent implements OnInit, AfterViewInit {
 
   // ---------- mapa ----------
   private initMap(): void {
-    this.map = L.map('map', { preferCanvas: true, zoomSnap: 0.1 }).setView([40.4168, -3.7038], 6);
-    this.applyBaseLayer();
-    this.renderer = L.canvas({ padding: 0.25 }).addTo(this.map);
-    this.attachTrackLayers();
-    this.editPointsLayer = L.layerGroup().addTo(this.map);
-    this.map.on('click', (event: L.LeafletMouseEvent) => this.handleMapClick(event));
+    const option = this.baseLayerOptions.find((o) => o.id === this.selectedBaseLayerId) ?? this.baseLayerOptions[0];
+    this.map = new maplibregl.Map({
+      container: 'map',
+      style: this.buildMapStyle(option),
+      center: [-3.7038, 40.4168],
+      zoom: 6,
+      touchZoomRotate: true,
+      dragRotate: true,
+      pitchWithRotate: false,
+    });
+    this.map.touchZoomRotate.enableRotation();
+    this.map.addControl(new maplibregl.NavigationControl({ visualizePitch: false }), 'top-left');
+    this.map.on('load', () => {
+      this.mapReady = true;
+      this.attachTrackLayers();
+      this.applyTimesLayerVisibility();
+      if (this.viewOnly) {
+        this.renderStaticTracks();
+      } else {
+        this.hasTracksReady = this.startIfReady();
+        this.startCountdown();
+        void this.autoStartIfRequested();
+      }
+    });
+    this.map.on('click', (event: maplibregl.MapMouseEvent) => this.handleMapClick(event));
   }
 
   onBaseLayerChange(baseLayerId: string): void {
@@ -1598,65 +1596,211 @@ export class MapComponent implements OnInit, AfterViewInit {
     const option = this.baseLayerOptions.find((o) => o.id === this.selectedBaseLayerId) ?? this.baseLayerOptions[0];
     if (!option) return;
 
-    if (this.baseLayer) {
-      this.map.removeLayer(this.baseLayer);
+    if (this.map.getLayer(this.baseLayerId)) {
+      this.map.removeLayer(this.baseLayerId);
+    }
+    if (this.map.getSource(this.baseLayerSourceId)) {
+      this.map.removeSource(this.baseLayerSourceId);
     }
 
-    this.baseLayer = L.tileLayer(option.url, {
-      maxZoom: option.maxZoom ?? 19,
-      attribution: option.attribution
-    }).addTo(this.map);
+    this.map.addSource(this.baseLayerSourceId, this.buildRasterSource(option));
+    this.map.addLayer({
+      id: this.baseLayerId,
+      type: 'raster',
+      source: this.baseLayerSourceId,
+      minzoom: 0,
+      maxzoom: option.maxZoom ?? 19,
+    }, this.firstTrackLayerId());
   }
 
   private attachTrackLayers(): void {
-    if (!this.map || !this.renderer) return;
-
-    const ghost = (color: string): L.PolylineOptions => ({
-      color, weight: this.ghostWeight, opacity: this.ghostOpacity, renderer: this.renderer, interactive: false, fill: false, stroke: true
-    });
-    const prog = (color: string): L.PolylineOptions => ({
-      color, weight: 4, opacity: this.progressOpacity, renderer: this.renderer, interactive: false, fill: false, stroke: true
-    });
-    const mk = (c: string) => L.divIcon({
-      className: 'custom-circle-icon',
-      html: `<div style="width:14px;height:14px;background:${c};border-radius:50%"></div>`,
-      iconSize: [18, 18], iconAnchor: [9, 9]
-    });
+    if (!this.map || !this.map.isStyleLoaded()) return;
 
     this.trackMetas = this.trackMetas.map((meta) => ({
       ...meta,
-      full: meta.full ?? L.polyline([], ghost(meta.color)).addTo(this.map),
-      prog: meta.prog ?? L.polyline([], prog(meta.color)).addTo(this.map),
-      fullSlope: meta.fullSlope ?? L.layerGroup().addTo(this.map),
-      progSlope: meta.progSlope ?? L.layerGroup().addTo(this.map),
-      mark: meta.mark ?? L.marker([0, 0], { icon: mk(meta.color) }),
-      startMark: meta.startMark ?? L.circleMarker([0, 0], {
-        radius: 6,
-        color: '#22c55e',
-        weight: 2,
-        fillColor: '#22c55e',
-        fillOpacity: 0.9,
-        pane: 'overlayPane'
+      fullSourceId: meta.fullSourceId ?? this.trackId(meta, 'full-source'),
+      fullLayerId: meta.fullLayerId ?? this.trackId(meta, 'full-layer'),
+      progSourceId: meta.progSourceId ?? this.trackId(meta, 'prog-source'),
+      progLayerId: meta.progLayerId ?? this.trackId(meta, 'prog-layer'),
+      fullSlopeSourceId: meta.fullSlopeSourceId ?? this.trackId(meta, 'full-slope-source'),
+      fullSlopeLayerId: meta.fullSlopeLayerId ?? this.trackId(meta, 'full-slope-layer'),
+      progSlopeSourceId: meta.progSlopeSourceId ?? this.trackId(meta, 'prog-slope-source'),
+      progSlopeLayerId: meta.progSlopeLayerId ?? this.trackId(meta, 'prog-slope-layer'),
+      mark: meta.mark ?? new maplibregl.Marker({
+        element: this.createDotElement(meta.color, 14)
       }),
-      endMark: meta.endMark ?? L.circleMarker([0, 0], {
-        radius: 6,
-        color: '#ef4444',
-        weight: 2,
-        fillColor: '#ef4444',
-        fillOpacity: 0.9,
-        pane: 'overlayPane'
+      startMark: meta.startMark ?? new maplibregl.Marker({
+        element: this.createEndpointElement('#22c55e')
       }),
-      hoverMark: meta.hoverMark ?? L.circleMarker([0, 0], {
-        radius: 6,
-        color: meta.color,
-        weight: 2,
-        fillColor: '#fff',
-        fillOpacity: 1,
-        pane: 'overlayPane'
+      endMark: meta.endMark ?? new maplibregl.Marker({
+        element: this.createEndpointElement('#ef4444')
       }),
-      ticks: meta.ticks ?? L.layerGroup().addTo(this.map),
-      pauseLayer: meta.pauseLayer ?? L.layerGroup().addTo(this.map)
+      hoverMark: meta.hoverMark ?? new maplibregl.Marker({
+        element: this.createDotElement('#fff', 12, meta.color, 2)
+      }),
+      tickMarkers: meta.tickMarkers ?? [],
+      endpointLabelMarkers: meta.endpointLabelMarkers ?? [],
+      pauseMarkers: meta.pauseMarkers ?? []
     }));
+
+    this.trackMetas.forEach(meta => {
+      this.ensureLineLayer(meta.fullSourceId!, meta.fullLayerId!, meta.color, this.ghostWeight, this.ghostOpacity);
+      this.ensureLineLayer(meta.progSourceId!, meta.progLayerId!, meta.color, 4, this.progressOpacity);
+      this.ensureSlopeLayer(meta.fullSlopeSourceId!, meta.fullSlopeLayerId!, this.ghostWeight, this.ghostOpacity);
+      this.ensureSlopeLayer(meta.progSlopeSourceId!, meta.progSlopeLayerId!, 4, this.progressOpacity);
+    });
+  }
+
+  private buildMapStyle(option: BaseLayerOption | undefined): maplibregl.StyleSpecification {
+    const source = this.buildRasterSource(option);
+    return {
+      version: 8,
+      sources: {
+        [this.baseLayerSourceId]: source,
+      },
+      layers: [
+        {
+          id: this.baseLayerId,
+          type: 'raster',
+          source: this.baseLayerSourceId,
+          minzoom: 0,
+          maxzoom: option?.maxZoom ?? 19,
+        }
+      ]
+    } as maplibregl.StyleSpecification;
+  }
+
+  private buildRasterSource(option: BaseLayerOption | undefined): maplibregl.RasterSourceSpecification {
+    return {
+      type: 'raster',
+      tiles: [this.normalizeTileUrl(option?.url ?? this.baseLayerOptions[0].url)],
+      tileSize: 256,
+      attribution: option?.attribution,
+      maxzoom: option?.maxZoom ?? 19,
+    };
+  }
+
+  private normalizeTileUrl(url: string): string {
+    return url.replace('{s}', 'a');
+  }
+
+  private firstTrackLayerId(): string | undefined {
+    return this.trackMetas
+      .map(meta => meta.fullSlopeLayerId ?? meta.fullLayerId ?? meta.progSlopeLayerId ?? meta.progLayerId)
+      .find((layerId): layerId is string => !!layerId && !!this.map.getLayer(layerId));
+  }
+
+  private trackId(meta: TrackMeta, suffix: string): string {
+    const index = this.trackMetas.indexOf(meta);
+    return `track-${Math.max(0, index)}-${suffix}`;
+  }
+
+  private emptyLineCollection(): GeoJSON.FeatureCollection<GeoJSON.LineString> {
+    return { type: 'FeatureCollection', features: [] };
+  }
+
+  private ensureLineLayer(sourceId: string, layerId: string, color: string, weight: number, opacity: number): void {
+    if (!this.map.getSource(sourceId)) {
+      this.map.addSource(sourceId, {
+        type: 'geojson',
+        data: this.emptyLineCollection()
+      });
+    }
+    if (!this.map.getLayer(layerId)) {
+      this.map.addLayer({
+        id: layerId,
+        type: 'line',
+        source: sourceId,
+        layout: { 'line-cap': 'round', 'line-join': 'round' },
+        paint: {
+          'line-color': color,
+          'line-width': weight,
+          'line-opacity': opacity,
+        }
+      });
+    }
+  }
+
+  private ensureSlopeLayer(sourceId: string, layerId: string, weight: number, opacity: number): void {
+    if (!this.map.getSource(sourceId)) {
+      this.map.addSource(sourceId, {
+        type: 'geojson',
+        data: this.emptyLineCollection()
+      });
+    }
+    if (!this.map.getLayer(layerId)) {
+      this.map.addLayer({
+        id: layerId,
+        type: 'line',
+        source: sourceId,
+        layout: { 'line-cap': 'round', 'line-join': 'round' },
+        paint: {
+          'line-color': ['get', 'color'],
+          'line-width': weight,
+          'line-opacity': opacity,
+        }
+      });
+    }
+  }
+
+  private setLineData(sourceId: string | undefined, points: Array<TrackPoint | TPx>): void {
+    if (!sourceId || !this.map.getSource(sourceId)) return;
+    const coordinates = points.map(point => this.toLngLat(point));
+    const data: GeoJSON.FeatureCollection<GeoJSON.LineString> = coordinates.length >= 2
+      ? { type: 'FeatureCollection', features: [{ type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates } }] }
+      : this.emptyLineCollection();
+    (this.map.getSource(sourceId) as GeoJSONSource).setData(data);
+  }
+
+  private setSlopeData(sourceId: string | undefined, points: Array<TrackPoint | TPx>, baseColor: string): void {
+    if (!sourceId || !this.map.getSource(sourceId)) return;
+    const features: GeoJSON.Feature<GeoJSON.LineString>[] = [];
+    for (let index = 1; index < points.length; index += 1) {
+      const from = points[index - 1];
+      const to = points[index];
+      features.push({
+        type: 'Feature',
+        properties: { color: this.resolveSlopeColor(from, to, baseColor) },
+        geometry: { type: 'LineString', coordinates: [this.toLngLat(from), this.toLngLat(to)] }
+      });
+    }
+    (this.map.getSource(sourceId) as GeoJSONSource).setData({ type: 'FeatureCollection', features });
+  }
+
+  private clearMarkers(markers: maplibregl.Marker[] | undefined): maplibregl.Marker[] {
+    markers?.forEach(marker => marker.remove());
+    return [];
+  }
+
+  private createDotElement(color: string, size: number, borderColor = 'rgba(255,255,255,0.92)', borderWidth = 0): HTMLElement {
+    const element = document.createElement('div');
+    element.className = 'maplibre-dot-marker';
+    element.style.width = `${size}px`;
+    element.style.height = `${size}px`;
+    element.style.background = color;
+    element.style.border = borderWidth ? `${borderWidth}px solid ${borderColor}` : 'none';
+    return element;
+  }
+
+  private createEndpointElement(color: string): HTMLElement {
+    return this.createDotElement(color, 12, '#fff', 2);
+  }
+
+  private createEndpointLabelMarker(label: string, position: [number, number], className: string): maplibregl.Marker {
+    const element = document.createElement('div');
+    element.className = `track-endpoint-label ${className}`;
+    element.textContent = label;
+    return new maplibregl.Marker({ element, anchor: 'bottom', offset: [0, -12] })
+      .setLngLat(position)
+      .addTo(this.map);
+  }
+
+  private setTrackLayerVisibility(meta: TrackMeta, visible: boolean): void {
+    [meta.fullLayerId, meta.progLayerId, meta.fullSlopeLayerId, meta.progSlopeLayerId].forEach(layerId => {
+      if (layerId && this.map.getLayer(layerId)) {
+        this.map.setLayoutProperty(layerId, 'visibility', visible ? 'visible' : 'none');
+      }
+    });
   }
 
   private startIfReady(): boolean {
@@ -1665,7 +1809,7 @@ export class MapComponent implements OnInit, AfterViewInit {
     this.showRanking = false;
     this.ranking = [];
 
-    const boundsPts: L.LatLng[] = [];
+    let bounds: maplibregl.LngLatBounds | null = null;
     let anyTrack = false;
 
     this.trackMetas.forEach((meta) => {
@@ -1674,33 +1818,31 @@ export class MapComponent implements OnInit, AfterViewInit {
       meta.nextTickRel = this.TICK_STEP_MS;
       meta.finalAdded = false;
 
-      if (meta.has && meta.full && meta.prog && meta.mark && meta.ticks && meta.pauseLayer) {
-        const latlngs = meta.sanitized.map(p => L.latLng(p.lat, p.lon));
-        const startLatLng = latlngs[0];
-        meta.full.setLatLngs([]);
-        meta.prog.setLatLngs([]);
-        if (meta.fullSlope) this.renderSlopeColoredTrack(meta.sanitized, meta.fullSlope, this.ghostWeight, this.ghostOpacity, meta.color);
-        meta.progSlope?.clearLayers();
-        meta.mark.setLatLng(startLatLng).addTo(this.map);
-        meta.ticks.clearLayers();
-        meta.pauseLayer.clearLayers();
-        meta.pauses.forEach((pause) => this.addPauseMarker(pause, meta.color, meta.pauseLayer!));
-        boundsPts.push(...latlngs);
+      if (meta.has && meta.mark) {
+        const startLngLat = this.toLngLat(meta.sanitized[0]);
+        this.setLineData(meta.fullSourceId, []);
+        this.setLineData(meta.progSourceId, []);
+        this.setSlopeData(meta.fullSlopeSourceId, meta.sanitized, meta.color);
+        this.setSlopeData(meta.progSlopeSourceId, [], meta.color);
+        meta.mark.setLngLat(startLngLat).addTo(this.map);
+        meta.tickMarkers = this.clearMarkers(meta.tickMarkers);
+        meta.pauseMarkers = this.clearMarkers(meta.pauseMarkers);
+        meta.pauses.forEach((pause) => this.addPauseMarker(pause, meta.color, meta.pauseMarkers!));
+        meta.sanitized.forEach(point => { bounds = this.extendBounds(bounds, point); });
         anyTrack = true;
-      } else if (meta.full && meta.prog && meta.ticks && meta.pauseLayer) {
-        meta.full.setLatLngs([]);
-        meta.prog.setLatLngs([]);
-        meta.fullSlope?.clearLayers();
-        meta.progSlope?.clearLayers();
-        meta.ticks.clearLayers();
-        meta.pauseLayer.clearLayers();
+      } else {
+        this.setLineData(meta.fullSourceId, []);
+        this.setLineData(meta.progSourceId, []);
+        this.setSlopeData(meta.fullSlopeSourceId, [], meta.color);
+        this.setSlopeData(meta.progSlopeSourceId, [], meta.color);
+        meta.tickMarkers = this.clearMarkers(meta.tickMarkers);
+        meta.pauseMarkers = this.clearMarkers(meta.pauseMarkers);
       }
     });
 
     this.applyTrackVisibility();
 
-    const union = L.latLngBounds(boundsPts);
-    this.allTracksBounds = union.isValid() ? union.pad(0.05) : null;
+    this.allTracksBounds = this.hasValidBounds(bounds) ? bounds : null;
     if (this.allTracksBounds) {
       this.map.fitBounds(this.allTracksBounds, {
         ...this.computeFitOptions(),
@@ -1714,12 +1856,12 @@ export class MapComponent implements OnInit, AfterViewInit {
         }
       } else {
         const scaledZoom = currentZoom + Math.log2(this.generalViewZoomScaleForViewport);
-        const boundedZoom = Math.max(this.map.getMinZoom(), Math.min(this.leaderZoomLevel - 1, scaledZoom));
+        const boundedZoom = Math.max(this.map.getMinZoom() ?? 0, Math.min(this.leaderZoomLevel - 1, scaledZoom));
         if (boundedZoom !== currentZoom) {
           this.map.setZoom(boundedZoom);
         }
       }
-      this.map.invalidateSize();
+      this.map.resize();
     }
 
     if (!anyTrack) return false;
@@ -1769,7 +1911,7 @@ export class MapComponent implements OnInit, AfterViewInit {
       let allDone = true;
 
       this.trackMetas.forEach((meta, index) => {
-        if (!meta.has || !meta.sanitized.length || !meta.prog || !meta.mark || !meta.ticks) return;
+        if (!meta.has || !meta.sanitized.length || !meta.mark) return;
 
         const start = meta.sanitized[0].t;
         const end = meta.sanitized[meta.sanitized.length - 1].t;
@@ -1781,7 +1923,7 @@ export class MapComponent implements OnInit, AfterViewInit {
         const endRel = end - start;
         while (meta.nextTickRel <= rel && meta.nextTickRel < endRel) {
           const absTick = start + meta.nextTickRel;
-          this.addTickAtAbs(meta.sanitized, absTick, meta.color, meta.ticks, start, true);
+          this.addTickAtAbs(meta.sanitized, absTick, meta.color, meta.tickMarkers!, start, true);
           meta.nextTickRel += this.TICK_STEP_MS;
         }
 
@@ -1790,9 +1932,9 @@ export class MapComponent implements OnInit, AfterViewInit {
           .slice(0, meta.cursor + 1)
           .map(p => ({ ...p }));
         path.push(this.buildInterpolatedTrackPoint(meta.sanitized, meta.cursor, tAbs, pos));
-        if (meta.progSlope) this.renderSlopeColoredTrack(path, meta.progSlope, 4, this.progressOpacity, meta.color);
-        meta.prog.setLatLngs([]);
-        meta.mark.setLatLng(L.latLng(pos[0], pos[1]));
+        this.setSlopeData(meta.progSlopeSourceId, path, meta.color);
+        this.setLineData(meta.progSourceId, []);
+        meta.mark.setLngLat([pos[1], pos[0]]);
 
         if (this.profileEnabled && index === this.profileTrackIndex) {
           this.updateProfileCursor(meta, tAbs);
@@ -1800,7 +1942,7 @@ export class MapComponent implements OnInit, AfterViewInit {
 
         const done = meta.cursor >= meta.sanitized.length - 1 && tAbs >= end;
         if (done && !meta.finalAdded) {
-          this.addFinalTick(meta.sanitized, meta.color, meta.ticks, start);
+          this.addFinalTick(meta.sanitized, meta.color, meta.tickMarkers!, start);
           meta.finalAdded = true;
         }
         if (!done) allDone = false;
@@ -1854,22 +1996,28 @@ export class MapComponent implements OnInit, AfterViewInit {
 
   private setGeneralView(): void {
     if (!this.map) return;
-    if (this.allTracksBounds && this.allTracksBounds.isValid()) {
-      this.map.flyToBounds(this.allTracksBounds, {
+    if (this.hasValidBounds(this.allTracksBounds)) {
+      this.map.fitBounds(this.allTracksBounds, {
         animate: true,
-        duration: 0.7,
+        duration: 700,
         ...this.computeFitOptions(),
         maxZoom: this.leaderZoomLevel - 1,
       });
     }
   }
 
-  private computeFitOptions(): L.FitBoundsOptions {
+  private computeFitOptions(): maplibregl.FitBoundsOptions {
     const basePadding = this.computeBasePadding();
-    if (!this.isVerticalViewport) return { padding: basePadding };
+    const basePaddingOptions = {
+      top: basePadding[1],
+      bottom: basePadding[1],
+      left: basePadding[0],
+      right: basePadding[0],
+    };
+    if (!this.isVerticalViewport) return { padding: basePaddingOptions };
 
     const mapEl = document.getElementById('map');
-    if (!mapEl) return { padding: basePadding };
+    if (!mapEl) return { padding: basePaddingOptions };
 
     const mapRect = mapEl.getBoundingClientRect();
     const topOverlay = document.querySelector('.map-ui') as HTMLElement | null;
@@ -1882,8 +2030,12 @@ export class MapComponent implements OnInit, AfterViewInit {
     const paddingBottom = basePadding[1] + bottomOverlap;
 
     return {
-      paddingTopLeft: L.point(basePadding[0], paddingTop),
-      paddingBottomRight: L.point(basePadding[0], paddingBottom)
+      padding: {
+        top: paddingTop,
+        bottom: paddingBottom,
+        left: basePadding[0],
+        right: basePadding[0],
+      }
     };
   }
 
@@ -1891,9 +2043,9 @@ export class MapComponent implements OnInit, AfterViewInit {
     if (!this.map) return [24, 24];
     if (!this.isVerticalViewport) return [24, 24];
 
-    const size = this.map.getSize();
-    const padX = Math.max(40, Math.round(size.x * 0.12));
-    const padY = Math.max(30, Math.round(size.y * 0.08));
+    const container = this.map.getContainer();
+    const padX = Math.max(40, Math.round(container.clientWidth * 0.12));
+    const padY = Math.max(30, Math.round(container.clientHeight * 0.08));
     return [padX, padY];
   }
 
@@ -1907,47 +2059,17 @@ export class MapComponent implements OnInit, AfterViewInit {
     const showProgress = this.shouldShowTracks && !hideProgressForMidOverview;
 
     this.trackMetas.forEach((meta) => {
-      if (meta.full) meta.full.setStyle({ opacity: this.ghostOpacity, weight: this.ghostWeight });
-      if (meta.prog) meta.prog.setStyle({ opacity: showProgress ? this.progressOpacity : 0 });
-      this.updateSlopeLayerStyle(meta.fullSlope, this.ghostWeight, this.ghostOpacity);
-      this.updateSlopeLayerStyle(meta.progSlope, 4, showProgress ? this.progressOpacity : 0);
+      this.updateLineLayerStyle(meta.fullLayerId, this.ghostWeight, this.ghostOpacity);
+      this.updateLineLayerStyle(meta.progLayerId, 4, showProgress ? this.progressOpacity : 0);
+      this.updateLineLayerStyle(meta.fullSlopeLayerId, this.ghostWeight, this.ghostOpacity);
+      this.updateLineLayerStyle(meta.progSlopeLayerId, 4, showProgress ? this.progressOpacity : 0);
     });
   }
 
-  private updateSlopeLayerStyle(layerGroup: L.LayerGroup | undefined, weight: number, opacity: number): void {
-    if (!layerGroup) return;
-    layerGroup.eachLayer((layer) => {
-      if (layer instanceof L.Polyline) {
-        layer.setStyle({ weight, opacity });
-      }
-    });
-  }
-
-  private renderSlopeColoredTrack(points: Array<TrackPoint | TPx>, layerGroup: L.LayerGroup, weight: number, opacity: number, baseColor: string): void {
-    layerGroup.clearLayers();
-    if (!this.renderer || points.length < 2) return;
-
-    for (let index = 1; index < points.length; index += 1) {
-      const from = points[index - 1];
-      const to = points[index];
-      const slopeColor = this.resolveSlopeColor(from, to, baseColor);
-      const segment = L.polyline(
-        [
-          [from.lat, from.lon],
-          [to.lat, to.lon]
-        ],
-        {
-          color: slopeColor,
-          weight,
-          opacity,
-          renderer: this.renderer,
-          interactive: false,
-          fill: false,
-          stroke: true
-        }
-      );
-      layerGroup.addLayer(segment);
-    }
+  private updateLineLayerStyle(layerId: string | undefined, weight: number, opacity: number): void {
+    if (!layerId || !this.map.getLayer(layerId)) return;
+    this.map.setPaintProperty(layerId, 'line-width', weight);
+    this.map.setPaintProperty(layerId, 'line-opacity', opacity);
   }
 
   private resolveSlopeColor(from: TrackPoint | TPx, to: TrackPoint | TPx, baseColor: string): string {
@@ -1955,7 +2077,7 @@ export class MapComponent implements OnInit, AfterViewInit {
     if (riseMeters <= 0) {
       return baseColor;
     }
-    const runMeters = L.latLng(from.lat, from.lon).distanceTo(L.latLng(to.lat, to.lon));
+    const runMeters = this.distanceBetween(from, to);
     if (runMeters <= 0.5) {
       return baseColor;
     }
@@ -1990,7 +2112,7 @@ export class MapComponent implements OnInit, AfterViewInit {
     };
   }
 
-  private getLeaderPosition(relMs: number): L.LatLngExpression | null {
+  private getLeaderPosition(relMs: number): maplibregl.LngLat | null {
     let best: { progress: number; pos: [number, number] } | null = null;
 
 
@@ -2012,9 +2134,7 @@ export class MapComponent implements OnInit, AfterViewInit {
     if (!best) return null;
 
     const [lat, lon] = best.pos;
-    return L.latLng(lat, lon);
-
-
+    return new maplibregl.LngLat(lon, lat);
   }
 
   private followLeader(relMs: number, now: number): void {
@@ -2025,7 +2145,7 @@ export class MapComponent implements OnInit, AfterViewInit {
     const leader = this.getLeaderPosition(relMs);
     if (!leader) return;
 
-    const target = L.latLng(leader);
+    const target = leader;
     const zoomMismatch = this.map.getZoom() < this.leaderZoomLevel;
 
     if (this.isTargetWithinComfortZone(target) && !zoomMismatch) {
@@ -2038,32 +2158,32 @@ export class MapComponent implements OnInit, AfterViewInit {
 
     this.leaderAnimationRunning = true;
     this.map.once('moveend', () => { this.leaderAnimationRunning = false; });
-    this.map.flyTo(target, this.leaderZoomLevel, {
+    this.map.flyTo({
+      center: target,
+      zoom: this.leaderZoomLevel,
       animate: true,
-      duration: this.leaderFlyDuration / 1000,
-      easeLinearity: 0.25,
+      duration: this.leaderFlyDuration,
     });
     this.lastLeaderPan = now;
     this.lastLeaderTarget = target;
   }
 
-  private isTargetWithinComfortZone(target: L.LatLng): boolean {
+  private isTargetWithinComfortZone(target: maplibregl.LngLat): boolean {
     if (!this.map) return true;
 
     if (!this.isVerticalViewport) {
-      const viewBounds = this.map.getBounds().pad(this.isZoomMode ? -0.3 : -0.2);
+      const viewBounds = this.map.getBounds();
       return viewBounds.contains(target);
     }
 
-    const size = this.map.getSize();
-    const paddingX = size.x * 0.25; // mayor margen lateral para 9:16
-    const paddingY = size.y * 0.15;
-    const comfortBounds = L.bounds(
-      L.point(paddingX, paddingY),
-      L.point(size.x - paddingX, size.y - paddingY)
-    );
-    const targetPoint = this.map.latLngToContainerPoint(target);
-    return comfortBounds.contains(targetPoint);
+    const container = this.map.getContainer();
+    const paddingX = container.clientWidth * 0.25;
+    const paddingY = container.clientHeight * 0.15;
+    const targetPoint = this.map.project(target);
+    return targetPoint.x >= paddingX
+      && targetPoint.x <= container.clientWidth - paddingX
+      && targetPoint.y >= paddingY
+      && targetPoint.y <= container.clientHeight - paddingY;
   }
 
   private updateVisualization(now: number, relMs: number, someoneFinished: boolean): void {

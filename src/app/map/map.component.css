@@ -257,8 +257,19 @@
     margin-left: 68px;
   }
 
-  .map-profile-toggle{
-    margin-top: 14px;
+  .map-profile-toggle--profile{
+    margin-top: 44px;
+  }
+
+  .map-profile-toggle--title,
+  .map-profile-toggle--times{
+    margin-top: 0;
+  }
+
+  .mobile-back-btn{
+    margin-top: 2px;
+    padding: 8px 13px;
+    font-size: 13px;
   }
 }
 

@@ -63,7 +63,7 @@
     </div>
 
     <label
-      class="map-profile-toggle"
+      class="map-profile-toggle map-profile-toggle--profile"
       *ngIf="canToggleMobileProfile"
       aria-label="Mostrar u ocultar el perfil de elevación"
     >
@@ -77,7 +77,7 @@
 
 
     <label
-      class="map-profile-toggle"
+      class="map-profile-toggle map-profile-toggle--title"
       *ngIf="isMobileViewport"
       aria-label="Mostrar u ocultar barra de títulos"
     >
@@ -90,7 +90,7 @@
     </label>
 
     <label
-      class="map-profile-toggle"
+      class="map-profile-toggle map-profile-toggle--times"
       *ngIf="isMobileViewport && !isRouteAnimating"
       aria-label="Mostrar u ocultar tiempos"
     >
@@ -101,6 +101,8 @@
       >
       <span>Tiempos</span>
     </label>
+
+    <button type="button" class="start-btn mobile-back-btn" *ngIf="isMobileViewport" (click)="goBack()">Volver</button>
 
     <div class="map-edit-controls" *ngIf="canEditTrack && !isMobileViewport && desktopTitleBarVisible" role="group" aria-label="Edición del track">
       <button type="button" class="map-edit-btn" (click)="toggleEditMode()">

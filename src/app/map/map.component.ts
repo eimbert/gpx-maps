@@ -835,8 +835,12 @@ export class MapComponent implements OnInit, AfterViewInit {
       if (checked) marker.addTo(this.map);
       else marker.remove();
     });
-    meta.fullSvgPath?.setAttribute('display', checked ? '' : 'none');
-    meta.progSvgPath?.setAttribute('display', checked ? '' : 'none');
+    [meta.fullSvgPath, meta.progSvgPath].forEach(path => {
+      if (!path) return;
+      if (checked) path.removeAttribute('display');
+      else path.setAttribute('display', 'none');
+    });
+    this.updateSvgTracks();
     if (this.shouldShowTimes) {
       [...(meta.tickMarkers ?? []), ...(meta.pauseMarkers ?? [])].forEach(marker => checked ? marker.addTo(this.map) : marker.remove());
     } else {

@@ -51,6 +51,15 @@
         >
         <span>Barra títulos</span>
       </label>
+
+      <label class="desktop-toggle" *ngIf="!isMobileViewport" aria-label="Mostrar u ocultar tiempos">
+        <input
+          type="checkbox"
+          [checked]="desktopTimesVisible"
+          (change)="onDesktopTimesToggle($any($event.target).checked)"
+        >
+        <span>Tiempos</span>
+      </label>
     </div>
 
     <label
@@ -64,6 +73,19 @@
         (change)="onMobileProfileToggle($any($event.target).checked)"
       >
       <span>Perfil</span>
+    </label>
+
+    <label
+      class="map-profile-toggle"
+      *ngIf="isMobileViewport"
+      aria-label="Mostrar u ocultar tiempos"
+    >
+      <input
+        type="checkbox"
+        [checked]="mobileTimesVisible"
+        (change)="onMobileTimesToggle($any($event.target).checked)"
+      >
+      <span>Tiempos</span>
     </label>
 
     <div class="map-edit-controls" *ngIf="canEditTrack && !isMobileViewport && desktopTitleBarVisible" role="group" aria-label="Edición del track">
@@ -118,7 +140,7 @@
           </div>
           <div class="ranking-runner">
             <span class="runner-name" [style.color]="item.color" [style.borderColor]="item.color" [title]="item.name">{{ item.name }}</span>
-            <span class="runner-time">{{ formatRaceTime(item.durationMs) }}</span>
+            <span class="runner-time" *ngIf="shouldShowTimes">{{ formatRaceTime(item.durationMs) }}</span>
           </div>
         </li>
       </ol>

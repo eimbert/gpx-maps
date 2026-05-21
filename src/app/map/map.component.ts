@@ -145,6 +145,8 @@ export class MapComponent implements OnInit, AfterViewInit {
   mobileProfileVisible = true;
   desktopProfileVisible = true;
   desktopTitleBarVisible = true;
+  mobileTimesVisible = true;
+  desktopTimesVisible = true;
   private profileTrackIndex = 0;
   private profileDragging = false;
   private profilePointerId: number | null = null;
@@ -755,6 +757,42 @@ export class MapComponent implements OnInit, AfterViewInit {
     this.desktopTitleBarVisible = checked;
   }
 
+  onMobileTimesToggle(checked: boolean): void {
+    this.mobileTimesVisible = checked;
+    this.applyTimesLayerVisibility();
+  }
+
+  onDesktopTimesToggle(checked: boolean): void {
+    this.desktopTimesVisible = checked;
+    this.applyTimesLayerVisibility();
+  }
+
+  get shouldShowTimes(): boolean {
+    return this.isMobileViewport ? this.mobileTimesVisible : this.desktopTimesVisible;
+  }
+
+  private applyTimesLayerVisibility(): void {
+    if (!this.map) return;
+    const showTimes = this.shouldShowTimes;
+    this.trackMetas.forEach((meta) => {
+      const shouldShowTrackTimes = showTimes && meta.visible;
+      if (meta.ticks) {
+        if (shouldShowTrackTimes) {
+          if (!this.map.hasLayer(meta.ticks)) meta.ticks.addTo(this.map);
+        } else if (this.map.hasLayer(meta.ticks)) {
+          this.map.removeLayer(meta.ticks);
+        }
+      }
+      if (meta.pauseLayer) {
+        if (shouldShowTrackTimes) {
+          if (!this.map.hasLayer(meta.pauseLayer)) meta.pauseLayer.addTo(this.map);
+        } else if (this.map.hasLayer(meta.pauseLayer)) {
+          this.map.removeLayer(meta.pauseLayer);
+        }
+      }
+    });
+  }
+
   onTrackVisibilityToggle(trackIndex: number, checked: boolean): void {
     const meta = this.trackMetas[trackIndex];
     if (!meta) return;
@@ -778,8 +816,13 @@ export class MapComponent implements OnInit, AfterViewInit {
     applyVisibility(meta.startMark);
     applyVisibility(meta.endMark);
     applyVisibility(meta.hoverMark);
-    applyVisibility(meta.ticks);
-    applyVisibility(meta.pauseLayer);
+    if (this.shouldShowTimes) {
+      applyVisibility(meta.ticks);
+      applyVisibility(meta.pauseLayer);
+    } else {
+      if (meta.ticks && this.map.hasLayer(meta.ticks)) this.map.removeLayer(meta.ticks);
+      if (meta.pauseLayer && this.map.hasLayer(meta.pauseLayer)) this.map.removeLayer(meta.pauseLayer);
+    }
   }
 
   get canEditTrack(): boolean {
@@ -1347,6 +1390,7 @@ export class MapComponent implements OnInit, AfterViewInit {
     setTimeout(() => {
       this.applyAspectViewport().then(() => {
         this.attachTrackLayers();
+        this.applyTimesLayerVisibility();
         if (this.viewOnly) {
           this.renderStaticTracks();
         } else {
@@ -1375,6 +1419,7 @@ export class MapComponent implements OnInit, AfterViewInit {
   @HostListener('window:resize')
   onWindowResize(): void {
     this.updateViewportFlags();
+    this.applyTimesLayerVisibility();
   }
 
   private updateViewportFlags(): void {

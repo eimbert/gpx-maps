@@ -816,10 +816,8 @@ export class MapComponent implements OnInit, AfterViewInit {
     const showTimes = this.shouldShowTimes;
     this.trackMetas.forEach((meta) => {
       const shouldShowTrackTimes = showTimes && meta.visible;
-      [...(meta.tickMarkers ?? []), ...(meta.pauseMarkers ?? [])].forEach(marker => {
-        if (shouldShowTrackTimes) marker.addTo(this.map);
-        else marker.remove();
-      });
+      [...(meta.tickMarkers ?? []), ...(meta.pauseMarkers ?? [])]
+        .forEach(marker => this.setMarkerVisible(marker, shouldShowTrackTimes));
     });
   }
 
@@ -829,22 +827,19 @@ export class MapComponent implements OnInit, AfterViewInit {
     meta.visible = checked;
     if (!this.map) return;
 
-    this.setTrackLayerVisibility(meta, checked);
-    [meta.mark, meta.startMark, meta.endMark, meta.hoverMark, ...(meta.endpointLabelMarkers ?? [])].forEach(marker => {
-      if (!marker) return;
-      if (checked) marker.addTo(this.map);
-      else marker.remove();
-    });
+    [meta.mark, meta.startMark, meta.endMark, meta.hoverMark, ...(meta.endpointLabelMarkers ?? [])]
+      .forEach(marker => this.setMarkerVisible(marker, checked));
     [meta.fullSvgPath, meta.progSvgPath].forEach(path => {
       if (!path) return;
-      if (checked) path.removeAttribute('display');
-      else path.setAttribute('display', 'none');
+      path.style.display = checked ? '' : 'none';
     });
     this.updateSvgTracks();
     if (this.shouldShowTimes) {
-      [...(meta.tickMarkers ?? []), ...(meta.pauseMarkers ?? [])].forEach(marker => checked ? marker.addTo(this.map) : marker.remove());
+      [...(meta.tickMarkers ?? []), ...(meta.pauseMarkers ?? [])]
+        .forEach(marker => this.setMarkerVisible(marker, checked));
     } else {
-      [...(meta.tickMarkers ?? []), ...(meta.pauseMarkers ?? []), ...(meta.endpointLabelMarkers ?? [])].forEach(marker => marker.remove());
+      [...(meta.tickMarkers ?? []), ...(meta.pauseMarkers ?? [])]
+        .forEach(marker => this.setMarkerVisible(marker, false));
     }
   }
 
@@ -1881,6 +1876,11 @@ export class MapComponent implements OnInit, AfterViewInit {
         this.map.setLayoutProperty(layerId, 'visibility', visible ? 'visible' : 'none');
       }
     });
+  }
+
+  private setMarkerVisible(marker: maplibregl.Marker | undefined, visible: boolean): void {
+    if (!marker) return;
+    marker.getElement().style.display = visible ? '' : 'none';
   }
 
   private startIfReady(): boolean {

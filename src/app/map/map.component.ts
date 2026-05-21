@@ -117,7 +117,7 @@ export class MapComponent implements OnInit, AfterViewInit {
   private readonly zoomPlaybackFactor = 0.3;
   private readonly zoomPanSlowdownFactor = 2;
   private readonly fallbackUniformSpeedMs = 5; // velocidad constante para tracks sin tiempo
-  private readonly defaultColors = ['#3b82f6', '#ef4444', '#22c55e', '#f59e0b', '#8b5cf6'];
+  private readonly defaultColors = ['#3b82f6', '#22c55e', '#8b5cf6', '#14b8a6', '#ec4899'];
   private lastLeaderTarget: L.LatLng | null = null;
   private allTracksBounds: L.LatLngBounds | null = null;
   private readonly maxReasonableSpeedMs = 45; // ~162 km/h, evita descartar puntos válidos en coche
@@ -423,7 +423,7 @@ export class MapComponent implements OnInit, AfterViewInit {
   private buildMetas(names: string[], colors: string[], tracks: any[]): TrackMeta[] {
     return tracks.map((track, index) => ({
       name: names[index] ?? `Track ${index + 1}`,
-      color: colors[index] ?? this.defaultColors[index % this.defaultColors.length],
+      color: this.resolveDisplayColor(colors[index], index),
       visible: true,
       raw: (track?.trkpts ?? []) as TrackPoint[],
       sanitized: [],
@@ -435,6 +435,41 @@ export class MapComponent implements OnInit, AfterViewInit {
       totalDistance: 0,
       has: false,
     }));
+  }
+
+
+
+  private resolveDisplayColor(candidate: string | undefined, index: number): string {
+    const fallback = this.defaultColors[index % this.defaultColors.length];
+    if (!candidate) return fallback;
+    return this.isWarmColor(candidate) ? fallback : candidate;
+  }
+
+  private isWarmColor(color: string): boolean {
+    const normalized = color.trim().toLowerCase();
+    if (!normalized) return true;
+
+    if (normalized.startsWith('#')) {
+      const hex = normalized.slice(1);
+      const fullHex = hex.length === 3 ? hex.split('').map((ch) => ch + ch).join('') : hex;
+      if (fullHex.length !== 6) return true;
+      const r = parseInt(fullHex.slice(0, 2), 16);
+      const g = parseInt(fullHex.slice(2, 4), 16);
+      const b = parseInt(fullHex.slice(4, 6), 16);
+      if ([r, g, b].some((value) => Number.isNaN(value))) return true;
+      const max = Math.max(r, g, b);
+      const min = Math.min(r, g, b);
+      const delta = max - min;
+      if (delta === 0) return false;
+      let hue = 0;
+      if (max === r) hue = ((g - b) / delta) % 6;
+      else if (max === g) hue = (b - r) / delta + 2;
+      else hue = (r - g) / delta + 4;
+      const hueDeg = (hue * 60 + 360) % 360;
+      return hueDeg <= 60 || hueDeg >= 330;
+    }
+
+    return /(red|orange|yellow|amber|gold)/.test(normalized);
   }
 
   private applySanitization(): void {
@@ -1227,8 +1262,8 @@ export class MapComponent implements OnInit, AfterViewInit {
 
         meta.full.setLatLngs([]);
         meta.prog.setLatLngs([]);
-        if (meta.fullSlope) this.renderSlopeColoredTrack(meta.sanitized, meta.fullSlope, this.ghostWeight, 0);
-        if (meta.progSlope) this.renderSlopeColoredTrack(meta.sanitized, meta.progSlope, 4, this.progressOpacity);
+        if (meta.fullSlope) this.renderSlopeColoredTrack(meta.sanitized, meta.fullSlope, this.ghostWeight, 0, meta.color);
+        if (meta.progSlope) this.renderSlopeColoredTrack(meta.sanitized, meta.progSlope, 4, this.progressOpacity, meta.color);
         meta.ticks.clearLayers();
         meta.pauseLayer?.clearLayers();
 
@@ -1586,7 +1621,7 @@ export class MapComponent implements OnInit, AfterViewInit {
         const startLatLng = latlngs[0];
         meta.full.setLatLngs([]);
         meta.prog.setLatLngs([]);
-        if (meta.fullSlope) this.renderSlopeColoredTrack(meta.sanitized, meta.fullSlope, this.ghostWeight, this.ghostOpacity);
+        if (meta.fullSlope) this.renderSlopeColoredTrack(meta.sanitized, meta.fullSlope, this.ghostWeight, this.ghostOpacity, meta.color);
         meta.progSlope?.clearLayers();
         meta.mark.setLatLng(startLatLng).addTo(this.map);
         meta.ticks.clearLayers();
@@ -1697,7 +1732,7 @@ export class MapComponent implements OnInit, AfterViewInit {
           .slice(0, meta.cursor + 1)
           .map(p => ({ ...p }));
         path.push(this.buildInterpolatedTrackPoint(meta.sanitized, meta.cursor, tAbs, pos));
-        if (meta.progSlope) this.renderSlopeColoredTrack(path, meta.progSlope, 4, this.progressOpacity);
+        if (meta.progSlope) this.renderSlopeColoredTrack(path, meta.progSlope, 4, this.progressOpacity, meta.color);
         meta.prog.setLatLngs([]);
         meta.mark.setLatLng(L.latLng(pos[0], pos[1]));
 
@@ -1830,14 +1865,14 @@ export class MapComponent implements OnInit, AfterViewInit {
     });
   }
 
-  private renderSlopeColoredTrack(points: Array<TrackPoint | TPx>, layerGroup: L.LayerGroup, weight: number, opacity: number): void {
+  private renderSlopeColoredTrack(points: Array<TrackPoint | TPx>, layerGroup: L.LayerGroup, weight: number, opacity: number, baseColor: string): void {
     layerGroup.clearLayers();
     if (!this.renderer || points.length < 2) return;
 
     for (let index = 1; index < points.length; index += 1) {
       const from = points[index - 1];
       const to = points[index];
-      const slopeColor = this.resolveSlopeColor(from, to);
+      const slopeColor = this.resolveSlopeColor(from, to, baseColor);
       const segment = L.polyline(
         [
           [from.lat, from.lon],
@@ -1857,17 +1892,17 @@ export class MapComponent implements OnInit, AfterViewInit {
     }
   }
 
-  private resolveSlopeColor(from: TrackPoint | TPx, to: TrackPoint | TPx): string {
+  private resolveSlopeColor(from: TrackPoint | TPx, to: TrackPoint | TPx, baseColor: string): string {
     const riseMeters = to.ele - from.ele;
     if (riseMeters <= 0) {
-      return this.slopeColorSoft;
+      return baseColor;
     }
     const runMeters = L.latLng(from.lat, from.lon).distanceTo(L.latLng(to.lat, to.lon));
     if (runMeters <= 0.5) {
-      return this.slopeColorSoft;
+      return baseColor;
     }
     const slopePercent = (riseMeters / runMeters) * 100;
-    if (slopePercent < this.slopeSoftMax) return this.slopeColorSoft;
+    if (slopePercent < this.slopeSoftMax) return baseColor;
     if (slopePercent < this.slopeModerateMax) return this.slopeColorModerate;
     if (slopePercent < this.slopeHardMax) return this.slopeColorHard;
     return this.slopeColorVeryHard;

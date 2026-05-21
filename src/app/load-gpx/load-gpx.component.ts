@@ -201,6 +201,7 @@ interface UserTracksDerivedData {
 export class LoadGpxComponent implements OnInit, OnDestroy {
   @ViewChild('fileInput') fileInputRef!: ElementRef<HTMLInputElement>;
   @ViewChild('masterGpxInput') masterGpxInputRef!: ElementRef<HTMLInputElement>;
+  @ViewChild('userTracksSection') userTracksSectionRef?: ElementRef<HTMLElement>;
 
   readonly maxTracks = 4;
   readonly maxComparison = 3;
@@ -2052,11 +2053,23 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
 
   private scrollToUserTracksBottomOnMobile(): void {
     if (!this.isMobileViewport || typeof window === 'undefined') return;
-    setTimeout(() => {
+
+    const scrollToBottom = () => {
+      const section = this.userTracksSectionRef?.nativeElement;
+      if (section) {
+        section.scrollIntoView({ behavior: 'smooth', block: 'end' });
+        return;
+      }
+
       window.scrollTo({
         top: document.documentElement.scrollHeight,
         behavior: 'smooth'
       });
+    };
+
+    setTimeout(() => {
+      scrollToBottom();
+      requestAnimationFrame(scrollToBottom);
     }, 0);
   }
 

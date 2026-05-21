@@ -1337,7 +1337,7 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
   }
 
   private pickColor(index: number): string {
-    const palette = ['#3b82f6', '#f87171', '#22c55e', '#f59e0b', '#a855f7'];
+    const palette = ['#3b82f6', '#f87171', '#a855f7', '#f59e0b', '#ec4899'];
     return palette[index % palette.length];
   }
 

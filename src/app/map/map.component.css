@@ -229,6 +229,11 @@
     gap: 8px;
   }
 
+  .map-title{
+    margin-left: 68px;
+    width: min(500px, calc(100vw - 92px));
+  }
+
   .map-controls{
     margin-left: 68px;
   }

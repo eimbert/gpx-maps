@@ -2047,6 +2047,17 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
   setUserTracksTab(tab: UserTracksTab): void {
     this.activeUserTracksTab = tab;
     this.expandedProvinces[tab].clear();
+    this.scrollToUserTracksBottomOnMobile();
+  }
+
+  private scrollToUserTracksBottomOnMobile(): void {
+    if (!this.isMobileViewport || typeof window === 'undefined') return;
+    setTimeout(() => {
+      window.scrollTo({
+        top: document.documentElement.scrollHeight,
+        behavior: 'smooth'
+      });
+    }, 0);
   }
 
   getUserTrackRows(tab: UserTracksTab): UserTrackRow[] {

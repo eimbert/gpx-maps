@@ -117,7 +117,7 @@ export class MapComponent implements OnInit, AfterViewInit {
   private readonly zoomPlaybackFactor = 0.3;
   private readonly zoomPanSlowdownFactor = 2;
   private readonly fallbackUniformSpeedMs = 5; // velocidad constante para tracks sin tiempo
-  private readonly defaultColors = ['#3b82f6', '#ef4444', '#8b5cf6', '#f59e0b', '#ec4899'];
+  private readonly defaultColors = ['#2563eb', '#7c3aed', '#0891b2', '#1e40af', '#a855f7', '#0f172a', '#0284c7', '#4338ca'];
   private lastLeaderTarget: L.LatLng | null = null;
   private allTracksBounds: L.LatLngBounds | null = null;
   private readonly maxReasonableSpeedMs = 45; // ~162 km/h, evita descartar puntos válidos en coche
@@ -445,10 +445,10 @@ export class MapComponent implements OnInit, AfterViewInit {
   private resolveDisplayColor(candidate: string | undefined, index: number): string {
     const fallback = this.defaultColors[index % this.defaultColors.length];
     if (!candidate) return fallback;
-    return this.isWarmColor(candidate) ? fallback : candidate;
+    return this.isReservedTrackColor(candidate) ? fallback : candidate;
   }
 
-  private isWarmColor(color: string): boolean {
+  private isReservedTrackColor(color: string): boolean {
     const normalized = color.trim().toLowerCase();
     if (!normalized) return true;
 
@@ -469,10 +469,10 @@ export class MapComponent implements OnInit, AfterViewInit {
       else if (max === g) hue = (b - r) / delta + 2;
       else hue = (r - g) / delta + 4;
       const hueDeg = (hue * 60 + 360) % 360;
-      return hueDeg <= 60 || hueDeg >= 330;
+      return hueDeg <= 70 || hueDeg >= 330 || (hueDeg >= 80 && hueDeg <= 170);
     }
 
-    return /(red|orange|yellow|amber|gold)/.test(normalized);
+    return /(red|orange|yellow|amber|gold|green|lime|olive)/.test(normalized);
   }
 
   private applySanitization(): void {

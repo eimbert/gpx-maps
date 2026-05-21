@@ -885,8 +885,8 @@
   .plan__toolbar-left {
     min-width: 0;
     width: 100%;
-    flex-direction: column;
-    align-items: stretch;
+    flex-direction: row;
+    align-items: center;
     gap: 10px;
   }
 
@@ -902,12 +902,15 @@
 
   .plan__search {
     min-width: 0;
-    width: 100%;
+    width: auto;
+    flex: 1;
     padding: 10px 12px;
   }
 
   .plan__home-button {
-    display: none;
+    display: inline-flex;
+    flex: 0 0 auto;
+    padding: 10px 12px;
   }
 
   .plan__new,
@@ -1005,6 +1008,19 @@
   .plan__search,
   .plan__toolbar-actions .plan__primary {
     min-height: 44px;
+  }
+
+  .plan__home-button {
+    padding: 10px;
+  }
+
+  .plan__home-button mat-icon {
+    margin: 0;
+  }
+
+  .plan__home-button {
+    font-size: 0;
+    gap: 0;
   }
 
   .plan__folder-card {

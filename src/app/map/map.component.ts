@@ -1305,7 +1305,7 @@ export class MapComponent implements OnInit, AfterViewInit {
         const endpointDistance = this.distanceBetween(start, endPoint);
         const useCombinedEndpointLabel = endpointDistance <= 15;
 
-        this.setLineData(meta.fullSourceId, []);
+        this.setLineData(meta.fullSourceId, meta.sanitized);
         this.setLineData(meta.progSourceId, []);
         this.setSlopeData(meta.fullSlopeSourceId, meta.sanitized, meta.color);
         this.setSlopeData(meta.progSlopeSourceId, meta.sanitized, meta.color);
@@ -1820,7 +1820,7 @@ export class MapComponent implements OnInit, AfterViewInit {
 
       if (meta.has && meta.mark) {
         const startLngLat = this.toLngLat(meta.sanitized[0]);
-        this.setLineData(meta.fullSourceId, []);
+        this.setLineData(meta.fullSourceId, meta.sanitized);
         this.setLineData(meta.progSourceId, []);
         this.setSlopeData(meta.fullSlopeSourceId, meta.sanitized, meta.color);
         this.setSlopeData(meta.progSlopeSourceId, [], meta.color);
@@ -1848,19 +1848,6 @@ export class MapComponent implements OnInit, AfterViewInit {
         ...this.computeFitOptions(),
         maxZoom: this.leaderZoomLevel - 1
       });
-      const currentZoom = this.map.getZoom();
-      if (this.isZoomMode) {
-        const targetZoom = Math.min(this.leaderZoomLevel - 1, currentZoom + 1);
-        if (targetZoom > currentZoom) {
-          this.map.setZoom(targetZoom);
-        }
-      } else {
-        const scaledZoom = currentZoom + Math.log2(this.generalViewZoomScaleForViewport);
-        const boundedZoom = Math.max(this.map.getMinZoom() ?? 0, Math.min(this.leaderZoomLevel - 1, scaledZoom));
-        if (boundedZoom !== currentZoom) {
-          this.map.setZoom(boundedZoom);
-        }
-      }
       this.map.resize();
     }
 
@@ -1933,7 +1920,7 @@ export class MapComponent implements OnInit, AfterViewInit {
           .map(p => ({ ...p }));
         path.push(this.buildInterpolatedTrackPoint(meta.sanitized, meta.cursor, tAbs, pos));
         this.setSlopeData(meta.progSlopeSourceId, path, meta.color);
-        this.setLineData(meta.progSourceId, []);
+        this.setLineData(meta.progSourceId, path);
         meta.mark.setLngLat([pos[1], pos[0]]);
 
         if (this.profileEnabled && index === this.profileTrackIndex) {

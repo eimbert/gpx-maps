@@ -222,6 +222,18 @@
   accent-color: #22c55e;
 }
 
+@media (max-width: 768px){
+  .map-ui{
+    left: max(8px, env(safe-area-inset-left, 8px));
+    top: max(8px, env(safe-area-inset-top, 8px));
+    gap: 8px;
+  }
+
+  .map-profile-toggle{
+    margin-top: 4px;
+  }
+}
+
 :host ::ng-deep .tick-label{
   position: relative;
   background: linear-gradient(180deg, #fff7e6, #ffe8c7);

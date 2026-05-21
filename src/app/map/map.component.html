@@ -52,7 +52,7 @@
         <span>Barra títulos</span>
       </label>
 
-      <label class="desktop-toggle" *ngIf="!isMobileViewport" aria-label="Mostrar u ocultar tiempos">
+      <label class="desktop-toggle" *ngIf="!isMobileViewport && !isRouteAnimating" aria-label="Mostrar u ocultar tiempos">
         <input
           type="checkbox"
           [checked]="desktopTimesVisible"
@@ -91,7 +91,7 @@
 
     <label
       class="map-profile-toggle"
-      *ngIf="isMobileViewport"
+      *ngIf="isMobileViewport && !isRouteAnimating"
       aria-label="Mostrar u ocultar tiempos"
     >
       <input

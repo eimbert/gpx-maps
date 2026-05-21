@@ -7,7 +7,7 @@
       <img [src]="logoDataUrl" alt="logo carrera">
     </div>
 
-    <div class="map-title" *ngIf="!isMobileViewport && desktopTitleBarVisible">
+    <div class="map-title" *ngIf="shouldShowTitleBar">
       <div class="track-list-item" *ngFor="let track of trackMetas; let i = index">
         <input
           type="checkbox"
@@ -73,6 +73,20 @@
         (change)="onMobileProfileToggle($any($event.target).checked)"
       >
       <span>Perfil</span>
+    </label>
+
+
+    <label
+      class="map-profile-toggle"
+      *ngIf="isMobileViewport"
+      aria-label="Mostrar u ocultar barra de títulos"
+    >
+      <input
+        type="checkbox"
+        [checked]="mobileTitleBarVisible"
+        (change)="onMobileTitleBarToggle($any($event.target).checked)"
+      >
+      <span>Barra títulos</span>
     </label>
 
     <label

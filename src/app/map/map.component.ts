@@ -146,6 +146,7 @@ export class MapComponent implements OnInit, AfterViewInit {
   desktopProfileVisible = true;
   desktopTitleBarVisible = true;
   mobileTimesVisible = true;
+  mobileTitleBarVisible = true;
   desktopTimesVisible = true;
   private profileTrackIndex = 0;
   private profileDragging = false;
@@ -757,6 +758,10 @@ export class MapComponent implements OnInit, AfterViewInit {
     this.desktopTitleBarVisible = checked;
   }
 
+  onMobileTitleBarToggle(checked: boolean): void {
+    this.mobileTitleBarVisible = checked;
+  }
+
   onMobileTimesToggle(checked: boolean): void {
     this.mobileTimesVisible = checked;
     this.applyTimesLayerVisibility();
@@ -765,6 +770,10 @@ export class MapComponent implements OnInit, AfterViewInit {
   onDesktopTimesToggle(checked: boolean): void {
     this.desktopTimesVisible = checked;
     this.applyTimesLayerVisibility();
+  }
+
+  get shouldShowTitleBar(): boolean {
+    return this.isMobileViewport ? this.mobileTitleBarVisible : this.desktopTitleBarVisible;
   }
 
   get shouldShowTimes(): boolean {

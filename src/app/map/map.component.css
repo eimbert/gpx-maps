@@ -229,8 +229,12 @@
     gap: 8px;
   }
 
+  .map-controls{
+    margin-left: 68px;
+  }
+
   .map-profile-toggle{
-    margin-top: 4px;
+    margin-top: 14px;
   }
 }
 

@@ -117,7 +117,7 @@ export class MapComponent implements OnInit, AfterViewInit {
   private readonly zoomPlaybackFactor = 0.3;
   private readonly zoomPanSlowdownFactor = 2;
   private readonly fallbackUniformSpeedMs = 5; // velocidad constante para tracks sin tiempo
-  private readonly defaultColors = ['#3b82f6', '#22c55e', '#8b5cf6', '#14b8a6', '#ec4899'];
+  private readonly defaultColors = ['#3b82f6', '#ef4444', '#8b5cf6', '#f59e0b', '#ec4899'];
   private lastLeaderTarget: L.LatLng | null = null;
   private allTracksBounds: L.LatLngBounds | null = null;
   private readonly maxReasonableSpeedMs = 45; // ~162 km/h, evita descartar puntos válidos en coche

@@ -780,6 +780,10 @@ export class MapComponent implements OnInit, AfterViewInit {
     return this.isMobileViewport ? this.mobileTimesVisible : this.desktopTimesVisible;
   }
 
+  get isRouteAnimating(): boolean {
+    return this.rafId !== 0;
+  }
+
   private applyTimesLayerVisibility(): void {
     if (!this.map) return;
     const showTimes = this.shouldShowTimes;

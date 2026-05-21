@@ -24,6 +24,7 @@ interface PauseInterval {
 interface TrackMeta {
   name: string;
   color: string;
+  visible: boolean;
   raw: TrackPoint[];
   sanitized: TPx[];
   full?: L.Polyline;
@@ -423,6 +424,7 @@ export class MapComponent implements OnInit, AfterViewInit {
     return tracks.map((track, index) => ({
       name: names[index] ?? `Track ${index + 1}`,
       color: colors[index] ?? this.defaultColors[index % this.defaultColors.length],
+      visible: true,
       raw: (track?.trkpts ?? []) as TrackPoint[],
       sanitized: [],
       pauses: [],
@@ -718,6 +720,33 @@ export class MapComponent implements OnInit, AfterViewInit {
     this.desktopTitleBarVisible = checked;
   }
 
+  onTrackVisibilityToggle(trackIndex: number, checked: boolean): void {
+    const meta = this.trackMetas[trackIndex];
+    if (!meta) return;
+    meta.visible = checked;
+    if (!this.map) return;
+
+    const applyVisibility = (layer: L.Layer | undefined): void => {
+      if (!layer) return;
+      if (checked) {
+        if (!this.map.hasLayer(layer)) layer.addTo(this.map);
+      } else if (this.map.hasLayer(layer)) {
+        this.map.removeLayer(layer);
+      }
+    };
+
+    applyVisibility(meta.full);
+    applyVisibility(meta.prog);
+    applyVisibility(meta.fullSlope);
+    applyVisibility(meta.progSlope);
+    applyVisibility(meta.mark);
+    applyVisibility(meta.startMark);
+    applyVisibility(meta.endMark);
+    applyVisibility(meta.hoverMark);
+    applyVisibility(meta.ticks);
+    applyVisibility(meta.pauseLayer);
+  }
+
   get canEditTrack(): boolean {
     return this.viewOnly
       && this.trackMetas.length === 1
@@ -977,6 +1006,7 @@ export class MapComponent implements OnInit, AfterViewInit {
       metas.push({
         name,
         color,
+        visible: true,
         raw,
         sanitized: [],
         pauses: [],

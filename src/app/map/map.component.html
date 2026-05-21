@@ -8,10 +8,16 @@
     </div>
 
     <div class="map-title" *ngIf="!isMobileViewport && desktopTitleBarVisible">
-      <ng-container *ngFor="let track of trackMetas; let last = last">
-        <span class="title-chip" [style.borderColor]="track.color" [style.color]="track.color" [title]="track.name">{{ track.name }}</span>
-        <span class="vs" *ngIf="!last">VS</span>
-      </ng-container>
+      <div class="track-list-item" *ngFor="let track of trackMetas; let i = index">
+        <input
+          type="checkbox"
+          [checked]="track.visible"
+          (change)="onTrackVisibilityToggle(i, $any($event.target).checked)"
+          [attr.aria-label]="'Mostrar u ocultar ' + track.name"
+        >
+        <span class="track-color-dot" [style.backgroundColor]="track.color"></span>
+        <span class="title-chip" [style.color]="track.color" [title]="track.name">{{ track.name }}</span>
+      </div>
     </div>
 
     <div class="map-controls" role="group" aria-label="Seleccionar mapa base">

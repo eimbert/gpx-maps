@@ -53,7 +53,7 @@
       </button>
     </div>
 
-    <section *ngIf="isAuthenticated && !isUserTracksPanelCollapsed" class="user-tracks">
+    <section *ngIf="isAuthenticated && !isUserTracksPanelCollapsed" class="user-tracks" #userTracksSection>
       <div class="user-tracks__header">
         <div>
           <p class="eyebrow">Tracks disponibles</p>

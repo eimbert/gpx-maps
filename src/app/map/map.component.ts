@@ -41,6 +41,8 @@ interface TrackMeta {
   hoverMark?: maplibregl.Marker;
   tickMarkers?: maplibregl.Marker[];
   endpointLabelMarkers?: maplibregl.Marker[];
+  fullSvgPath?: SVGPathElement;
+  progSvgPath?: SVGPathElement;
   pauses: PauseInterval[];
   pauseMarkers?: maplibregl.Marker[];
   cursor: number;
@@ -75,6 +77,7 @@ export class MapComponent implements OnInit, AfterViewInit {
 
   private map!: MapLibreMap;
   private mapReady = false;
+  private trackSvgOverlay: SVGSVGElement | null = null;
 
   logoDataUrl: string | null = null;
   removeStops = false;  // quitar paradas largas
@@ -832,6 +835,8 @@ export class MapComponent implements OnInit, AfterViewInit {
       if (checked) marker.addTo(this.map);
       else marker.remove();
     });
+    meta.fullSvgPath?.setAttribute('display', checked ? '' : 'none');
+    meta.progSvgPath?.setAttribute('display', checked ? '' : 'none');
     if (this.shouldShowTimes) {
       [...(meta.tickMarkers ?? []), ...(meta.pauseMarkers ?? [])].forEach(marker => checked ? marker.addTo(this.map) : marker.remove());
     } else {
@@ -1276,7 +1281,9 @@ export class MapComponent implements OnInit, AfterViewInit {
         if (sourceId && this.map.getSource(sourceId)) this.map.removeSource(sourceId);
       });
       [meta.mark, meta.startMark, meta.endMark, meta.hoverMark].forEach(marker => marker?.remove());
-      [...(meta.tickMarkers ?? []), ...(meta.pauseMarkers ?? [])].forEach(marker => marker.remove());
+      [...(meta.tickMarkers ?? []), ...(meta.pauseMarkers ?? []), ...(meta.endpointLabelMarkers ?? [])].forEach(marker => marker.remove());
+      meta.fullSvgPath?.remove();
+      meta.progSvgPath?.remove();
     });
     this.clearEditPointsLayer();
   }
@@ -1298,6 +1305,7 @@ export class MapComponent implements OnInit, AfterViewInit {
       meta.finalAdded = false;
 
       if (meta.has && meta.startMark && meta.endMark && meta.hoverMark) {
+        (meta as any).currentProgressPoints = meta.sanitized;
         const start = meta.sanitized[0];
         const endPoint = meta.sanitized[meta.sanitized.length - 1];
         const startLngLat = this.toLngLat(start);
@@ -1336,6 +1344,7 @@ export class MapComponent implements OnInit, AfterViewInit {
 
         meta.sanitized.forEach(point => { bounds = this.extendBounds(bounds, point); });
       } else {
+        (meta as any).currentProgressPoints = [];
         this.setLineData(meta.fullSourceId, []);
         this.setLineData(meta.progSourceId, []);
         this.setSlopeData(meta.fullSlopeSourceId, [], meta.color);
@@ -1572,6 +1581,7 @@ export class MapComponent implements OnInit, AfterViewInit {
     this.map.addControl(new maplibregl.NavigationControl({ visualizePitch: false }), 'top-left');
     this.map.on('load', () => {
       this.mapReady = true;
+      this.ensureTrackSvgOverlay();
       this.attachTrackLayers();
       this.applyTimesLayerVisibility();
       if (this.viewOnly) {
@@ -1582,6 +1592,7 @@ export class MapComponent implements OnInit, AfterViewInit {
         void this.autoStartIfRequested();
       }
     });
+    this.map.on('render', () => this.updateSvgTracks());
     this.map.on('click', (event: maplibregl.MapMouseEvent) => this.handleMapClick(event));
   }
 
@@ -1640,6 +1651,8 @@ export class MapComponent implements OnInit, AfterViewInit {
       }),
       tickMarkers: meta.tickMarkers ?? [],
       endpointLabelMarkers: meta.endpointLabelMarkers ?? [],
+      fullSvgPath: meta.fullSvgPath ?? this.createTrackSvgPath(meta.color, this.ghostWeight, this.ghostOpacity),
+      progSvgPath: meta.progSvgPath ?? this.createTrackSvgPath(meta.color, 4, this.progressOpacity),
       pauseMarkers: meta.pauseMarkers ?? []
     }));
 
@@ -1649,6 +1662,69 @@ export class MapComponent implements OnInit, AfterViewInit {
       this.ensureSlopeLayer(meta.fullSlopeSourceId!, meta.fullSlopeLayerId!, this.ghostWeight, this.ghostOpacity);
       this.ensureSlopeLayer(meta.progSlopeSourceId!, meta.progSlopeLayerId!, 4, this.progressOpacity);
     });
+    this.updateSvgTracks();
+  }
+
+  private ensureTrackSvgOverlay(): SVGSVGElement | null {
+    if (this.trackSvgOverlay) return this.trackSvgOverlay;
+    const container = this.map?.getContainer();
+    if (!container) return null;
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.classList.add('track-svg-overlay');
+    svg.style.position = 'absolute';
+    svg.style.top = '0';
+    svg.style.left = '0';
+    svg.style.width = '100%';
+    svg.style.height = '100%';
+    svg.style.zIndex = '20';
+    svg.style.pointerEvents = 'none';
+    svg.style.overflow = 'visible';
+    const controls = container.querySelector('.maplibregl-control-container');
+    container.insertBefore(svg, controls);
+    this.trackSvgOverlay = svg;
+    return svg;
+  }
+
+  private createTrackSvgPath(color: string, weight: number, opacity: number): SVGPathElement {
+    const overlay = this.ensureTrackSvgOverlay();
+    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    path.setAttribute('fill', 'none');
+    path.setAttribute('stroke', color);
+    path.setAttribute('stroke-width', String(weight));
+    path.setAttribute('stroke-opacity', String(opacity));
+    path.setAttribute('stroke-linecap', 'round');
+    path.setAttribute('stroke-linejoin', 'round');
+    path.setAttribute('vector-effect', 'non-scaling-stroke');
+    path.style.filter = 'drop-shadow(0 1px 3px rgba(0,0,0,0.45))';
+    overlay?.appendChild(path);
+    return path;
+  }
+
+  private updateSvgTracks(): void {
+    if (!this.map || !this.trackSvgOverlay) return;
+    const container = this.map.getContainer();
+    this.trackSvgOverlay.setAttribute('width', String(container.clientWidth));
+    this.trackSvgOverlay.setAttribute('height', String(container.clientHeight));
+    this.trackMetas.forEach(meta => {
+      this.setSvgPath(meta.fullSvgPath, meta.visible ? meta.sanitized : []);
+      const progressPoints = (meta as any).currentProgressPoints as Array<TrackPoint | TPx> | undefined;
+      this.setSvgPath(meta.progSvgPath, meta.visible ? (progressPoints ?? []) : []);
+    });
+  }
+
+  private setSvgPath(path: SVGPathElement | undefined, points: Array<TrackPoint | TPx>): void {
+    if (!path) return;
+    if (points.length < 2) {
+      path.setAttribute('d', '');
+      return;
+    }
+    const d = points
+      .map((point, index) => {
+        const projected = this.map.project(this.toLngLat(point));
+        return `${index === 0 ? 'M' : 'L'}${projected.x.toFixed(1)} ${projected.y.toFixed(1)}`;
+      })
+      .join(' ');
+    path.setAttribute('d', d);
   }
 
   private buildMapStyle(option: BaseLayerOption | undefined): maplibregl.StyleSpecification {
@@ -1819,6 +1895,7 @@ export class MapComponent implements OnInit, AfterViewInit {
       meta.finalAdded = false;
 
       if (meta.has && meta.mark) {
+        (meta as any).currentProgressPoints = [];
         const startLngLat = this.toLngLat(meta.sanitized[0]);
         this.setLineData(meta.fullSourceId, meta.sanitized);
         this.setLineData(meta.progSourceId, []);
@@ -1831,6 +1908,7 @@ export class MapComponent implements OnInit, AfterViewInit {
         meta.sanitized.forEach(point => { bounds = this.extendBounds(bounds, point); });
         anyTrack = true;
       } else {
+        (meta as any).currentProgressPoints = [];
         this.setLineData(meta.fullSourceId, []);
         this.setLineData(meta.progSourceId, []);
         this.setSlopeData(meta.fullSlopeSourceId, [], meta.color);
@@ -1919,6 +1997,7 @@ export class MapComponent implements OnInit, AfterViewInit {
           .slice(0, meta.cursor + 1)
           .map(p => ({ ...p }));
         path.push(this.buildInterpolatedTrackPoint(meta.sanitized, meta.cursor, tAbs, pos));
+        (meta as any).currentProgressPoints = path;
         this.setSlopeData(meta.progSlopeSourceId, path, meta.color);
         this.setLineData(meta.progSourceId, path);
         meta.mark.setLngLat([pos[1], pos[0]]);
@@ -2046,6 +2125,14 @@ export class MapComponent implements OnInit, AfterViewInit {
     const showProgress = this.shouldShowTracks && !hideProgressForMidOverview;
 
     this.trackMetas.forEach((meta) => {
+      if (meta.fullSvgPath) {
+        meta.fullSvgPath.setAttribute('stroke-opacity', String(this.ghostOpacity));
+        meta.fullSvgPath.setAttribute('stroke-width', String(this.ghostWeight));
+      }
+      if (meta.progSvgPath) {
+        meta.progSvgPath.setAttribute('stroke-opacity', String(showProgress ? this.progressOpacity : 0));
+        meta.progSvgPath.setAttribute('stroke-width', '4');
+      }
       this.updateLineLayerStyle(meta.fullLayerId, this.ghostWeight, this.ghostOpacity);
       this.updateLineLayerStyle(meta.progLayerId, 4, showProgress ? this.progressOpacity : 0);
       this.updateLineLayerStyle(meta.fullSlopeLayerId, this.ghostWeight, this.ghostOpacity);

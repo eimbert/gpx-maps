@@ -15,6 +15,21 @@
   box-shadow: 0 1px 5px rgba(0,0,0,0.35);
 }
 
+.track-svg-overlay{
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 20;
+  pointer-events: none;
+  overflow: visible;
+}
+
+.track-svg-overlay path{
+  filter: drop-shadow(0 1px 3px rgba(0,0,0,0.45));
+}
+
 .map-logo{
   position: absolute;
   left: 50%;

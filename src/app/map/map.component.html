@@ -21,7 +21,10 @@
     </div>
 
     <div class="map-controls" role="group" aria-label="Seleccionar mapa base">
-      <label class="control-label" for="base-layer-select">Mapa:</label>
+      <label class="control-label" for="base-layer-select" title="Mapa base" aria-label="Mapa base">
+        <span class="material-icons map-control-icon" aria-hidden="true">layers</span>
+        <span class="map-toggle-text">Mapa</span>
+      </label>
       <select
         id="base-layer-select"
         class="base-layer-select"
@@ -34,32 +37,66 @@
         </option>
       </select>
 
-      <label class="desktop-toggle" *ngIf="!isMobileViewport" aria-label="Mostrar u ocultar el perfil de elevación">
+      <label
+        class="desktop-toggle"
+        [class.desktop-toggle--active]="desktopProfileVisible"
+        *ngIf="!isMobileViewport"
+        aria-label="Mostrar u ocultar el perfil de elevación"
+        title="Perfil"
+      >
         <input
           type="checkbox"
           [checked]="desktopProfileVisible"
           (change)="onDesktopProfileToggle($any($event.target).checked)"
         >
-        <span>Perfil</span>
+        <span class="material-icons map-toggle-icon" aria-hidden="true">show_chart</span>
+        <span class="map-toggle-text">Perfil</span>
       </label>
 
-      <label class="desktop-toggle" *ngIf="!isMobileViewport" aria-label="Mostrar u ocultar barra de títulos y acciones">
+      <label
+        class="desktop-toggle"
+        [class.desktop-toggle--active]="desktopTitleBarVisible"
+        *ngIf="!isMobileViewport"
+        aria-label="Mostrar u ocultar barra de títulos y acciones"
+        title="Barra títulos"
+      >
         <input
           type="checkbox"
           [checked]="desktopTitleBarVisible"
           (change)="onDesktopTitleBarToggle($any($event.target).checked)"
         >
-        <span>Barra títulos</span>
+        <span class="material-icons map-toggle-icon" aria-hidden="true">title</span>
+        <span class="map-toggle-text">Barra títulos</span>
       </label>
 
-      <label class="desktop-toggle" *ngIf="!isMobileViewport && !isRouteAnimating" aria-label="Mostrar u ocultar tiempos">
+      <label
+        class="desktop-toggle"
+        [class.desktop-toggle--active]="desktopTimesVisible"
+        *ngIf="!isMobileViewport && !isRouteAnimating"
+        aria-label="Mostrar u ocultar tiempos"
+        title="Tiempos"
+      >
         <input
           type="checkbox"
           [checked]="desktopTimesVisible"
           (change)="onDesktopTimesToggle($any($event.target).checked)"
         >
-        <span>Tiempos</span>
+        <span class="material-icons map-toggle-icon" aria-hidden="true">schedule</span>
+        <span class="map-toggle-text">Tiempos</span>
       </label>
+
+      <button
+        type="button"
+        class="desktop-toggle map-location-btn"
+        *ngIf="!isMobileViewport"
+        (click)="locateUser()"
+        [disabled]="isLocatingUser"
+        aria-label="Centrar en mi ubicación actual"
+        title="Mi ubicación"
+      >
+        <span class="material-icons map-toggle-icon" aria-hidden="true">{{ isLocatingUser ? 'sync' : 'my_location' }}</span>
+        <span class="map-toggle-text">Mi ubicación</span>
+      </button>
     </div>
 
     <label
@@ -194,7 +231,10 @@
     </div>
     <div class="map-edit-status" *ngIf="editStatusMessage && shouldShowEditControls">{{ editStatusMessage }}</div>
 
-    <button type="button" class="start-btn" *ngIf="!isMobileViewport && desktopTitleBarVisible" (click)="goBack()">Anterior</button>
+    <button type="button" class="start-btn desktop-back-btn" *ngIf="!isMobileViewport && desktopTitleBarVisible" (click)="goBack()" aria-label="Anterior" title="Anterior">
+      <span class="material-icons" aria-hidden="true">arrow_back</span>
+      <span class="map-toggle-text">Anterior</span>
+    </button>
     <!-- <a class="stop-rec" (click)="stopRecordingAndDownload()" *ngIf="rec.isRecording">⏹ Stop & Download</a> -->
   </div>
 

@@ -214,19 +214,56 @@
   align-items: center;
   gap: 6px;
 }
+.map-control-icon{
+  font-size: 20px;
+  line-height: 1;
+}
 .desktop-toggle{
+  appearance: none;
+  border: 1px solid rgba(255,255,255,0.14);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.18);
+  cursor: pointer;
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding-left: 8px;
-  margin-left: 4px;
-  border-left: 1px solid rgba(255,255,255,0.18);
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  gap: 0;
+  padding: 0;
+  margin-left: 2px;
+  border-radius: 999px;
+  background: rgba(148,163,184,0.22);
   color: #e2e8f0;
   font: 600 12px/1 system-ui,-apple-system,Segoe UI,Roboto,Arial;
 }
-.desktop-toggle input{
-  margin: 0;
-  accent-color: #22c55e;
+.desktop-toggle:hover{
+  transform: translateY(-1px);
+}
+.desktop-toggle input,
+.desktop-toggle .map-toggle-text,
+.desktop-back-btn .map-toggle-text,
+.control-label .map-toggle-text{
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+.desktop-toggle .map-toggle-icon{
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.desktop-toggle--active{
+  color: #fff;
+  background: linear-gradient(180deg, #22c55e, #16a34a);
+  border-color: rgba(187,247,208,0.75);
+}
+.desktop-toggle:disabled{
+  cursor: wait;
+  opacity: 0.72;
+  transform: none;
 }
 .base-layer-select{
   appearance: none;
@@ -260,6 +297,16 @@
 }
 .start-btn:hover{ transform: translateY(-1px); box-shadow: 0 8px 22px rgba(67,56,202,.45); }
 .start-btn:active{ transform: translateY(0); filter: brightness(.95); }
+.desktop-back-btn{
+  width: 38px;
+  height: 38px;
+  padding: 0;
+  border-radius: 999px;
+}
+.desktop-back-btn .material-icons{
+  font-size: 21px;
+  line-height: 1;
+}
 
 
 .map-profile-toggle{

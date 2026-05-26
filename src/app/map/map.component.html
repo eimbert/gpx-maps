@@ -108,6 +108,39 @@
       <button type="button" class="map-edit-btn" (click)="toggleEditMode()">
         {{ editMode ? 'Salir de edición' : 'Editar puntos' }}
       </button>
+      <div class="map-edit-mode" *ngIf="editMode" role="group" aria-label="Modo de borrado">
+        <button
+          type="button"
+          class="map-edit-btn map-edit-btn--compact"
+          [class.map-edit-btn--active]="editDeleteMode === 'radius'"
+          (click)="setEditDeleteMode('radius')"
+        >
+          Radio
+        </button>
+        <button
+          type="button"
+          class="map-edit-btn map-edit-btn--compact"
+          [class.map-edit-btn--active]="editDeleteMode === 'range'"
+          (click)="setEditDeleteMode('range')"
+        >
+          Tramo
+        </button>
+      </div>
+      <label class="map-edit-radius" *ngIf="editMode && editDeleteMode === 'radius'">
+        <span>Radio</span>
+        <select [ngModel]="editDeleteRadiusMeters" (ngModelChange)="setEditDeleteRadius($event)">
+          <option *ngFor="let radius of editDeleteRadiusOptions" [ngValue]="radius">{{ radius }} m</option>
+        </select>
+      </label>
+      <button
+        type="button"
+        class="map-edit-btn map-edit-btn--ghost"
+        *ngIf="editMode"
+        (click)="undoLastEdit()"
+        [disabled]="!canUndoEdit"
+      >
+        Deshacer
+      </button>
       <button
         type="button"
         class="map-edit-btn map-edit-btn--primary"
@@ -121,7 +154,9 @@
       </button>
     </div>
 
-    <div class="map-edit-hint" *ngIf="editMode && !isMobileViewport && desktopTitleBarVisible">Haz clic en el punto que quieres eliminar.</div>
+    <div class="map-edit-hint" *ngIf="editMode && !isMobileViewport && desktopTitleBarVisible">
+      {{ editDeleteMode === 'range' ? 'Modo tramo: primer clic inicio, segundo clic final.' : 'Modo radio: cada clic borra varios puntos cercanos.' }}
+    </div>
     <div class="map-edit-status" *ngIf="editStatusMessage && !isMobileViewport && desktopTitleBarVisible">{{ editStatusMessage }}</div>
 
     <button type="button" class="start-btn" *ngIf="!isMobileViewport && desktopTitleBarVisible" (click)="goBack()">Anterior</button>

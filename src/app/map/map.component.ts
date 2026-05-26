@@ -68,6 +68,8 @@ interface BaseLayerOption {
   maxZoom?: number;
 }
 
+type EditDeleteMode = 'radius' | 'range';
+
 @Component({
   selector: 'app-map',
   templateUrl: './map.component.html',
@@ -200,6 +202,9 @@ export class MapComponent implements OnInit, AfterViewInit {
   private baseLayerSourceId = 'base-raster-source';
   viewOnly = false;
   editMode = false;
+  editDeleteMode: EditDeleteMode = 'radius';
+  editDeleteRadiusMeters = 15;
+  readonly editDeleteRadiusOptions = [5, 10, 15, 25, 50];
   isSavingEdits = false;
   editStatusMessage: string | null = null;
   private editStatusTimeout: number | null = null;
@@ -208,6 +213,9 @@ export class MapComponent implements OnInit, AfterViewInit {
   private originalRouteXml: string | null = null;
   private originalPointsSnapshot: string | null = null;
   private editPointMarkers: maplibregl.Marker[] = [];
+  private editUndoStack: TrackPoint[][] = [];
+  private editRangeStartIndex: number | null = null;
+  private editRangeStartMarker: maplibregl.Marker | null = null;
 
   constructor(
     private route: ActivatedRoute,
@@ -856,16 +864,49 @@ export class MapComponent implements OnInit, AfterViewInit {
     return this.serializeTrackPoints(raw) !== this.originalPointsSnapshot;
   }
 
+  get canUndoEdit(): boolean {
+    return this.editUndoStack.length > 0 && !this.isSavingEdits;
+  }
+
   toggleEditMode(): void {
     if (!this.canEditTrack) return;
     this.editMode = !this.editMode;
     if (this.editMode) {
-      this.setEditStatusMessage('Haz clic en un punto para eliminarlo.');
+      this.setEditStatusMessage(this.getEditHintMessage());
       this.updateEditPointsLayer();
     } else {
       this.clearEditStatusMessage();
+      this.clearEditRangeSelection();
       this.clearEditPointsLayer();
     }
+  }
+
+  setEditDeleteMode(mode: EditDeleteMode): void {
+    if (this.editDeleteMode === mode) return;
+    this.editDeleteMode = mode;
+    this.clearEditRangeSelection();
+    if (this.editMode) {
+      this.setEditStatusMessage(this.getEditHintMessage());
+    }
+  }
+
+  setEditDeleteRadius(radiusMeters: number | string): void {
+    const parsed = Number(radiusMeters);
+    if (!Number.isFinite(parsed) || parsed <= 0) return;
+    this.editDeleteRadiusMeters = parsed;
+    if (this.editMode && this.editDeleteMode === 'radius') {
+      this.setEditStatusMessage(`Radio de borrado: ${parsed} m.`);
+    }
+  }
+
+  undoLastEdit(): void {
+    if (!this.canUndoEdit || !this.canEditTrack) return;
+    const previous = this.editUndoStack.pop();
+    if (!previous) return;
+    this.updateTrackRaw(0, previous.map(point => ({ ...point })));
+    this.clearEditRangeSelection();
+    this.applySanitization();
+    this.setEditStatusMessage('Último borrado deshecho.');
   }
 
   cancelEdits(): void {
@@ -875,6 +916,8 @@ export class MapComponent implements OnInit, AfterViewInit {
     this.updateTrackRaw(0, this.originalTrackPoints.map(point => ({ ...point })));
     this.applySanitization();
     this.editMode = false;
+    this.editUndoStack = [];
+    this.clearEditRangeSelection();
     this.setEditStatusMessage('Cambios descartados.');
     this.clearEditPointsLayer();
   }
@@ -908,6 +951,8 @@ export class MapComponent implements OnInit, AfterViewInit {
         this.originalRouteXml = gpxData;
         this.originalPointsSnapshot = this.serializeTrackPoints(raw);
         this.editMode = false;
+        this.editUndoStack = [];
+        this.clearEditRangeSelection();
         this.setEditStatusMessage('Cambios guardados.');
         this.isSavingEdits = false;
         this.clearEditPointsLayer();
@@ -927,11 +972,91 @@ export class MapComponent implements OnInit, AfterViewInit {
       return;
     }
 
+    if (this.editDeleteMode === 'range') {
+      this.handleRangeDeleteClick(event, meta);
+      return;
+    }
+
+    this.handleRadiusDeleteClick(event, meta);
+  }
+
+  private handleRadiusDeleteClick(event: maplibregl.MapMouseEvent, meta: TrackMeta): void {
+    const closest = this.findClosestRawPoint(event, meta.raw);
+    const thresholdPx = 28;
+    if (!closest || closest.distancePx > thresholdPx) {
+      this.setEditStatusMessage('Haz clic más cerca del tramo que quieres borrar.');
+      return;
+    }
+
+    const center = meta.raw[closest.index];
+    const removableIndexes = new Set<number>();
+    meta.raw.forEach((point, index) => {
+      if (this.distanceBetween(point, center) <= this.editDeleteRadiusMeters) {
+        removableIndexes.add(index);
+      }
+    });
+
+    if (!removableIndexes.size) {
+      removableIndexes.add(closest.index);
+    }
+
+    if (meta.raw.length - removableIndexes.size < 2) {
+      this.setEditStatusMessage('El track necesita al menos dos puntos.');
+      return;
+    }
+
+    this.pushEditUndoSnapshot(meta.raw);
+    const updated = meta.raw.filter((_, index) => !removableIndexes.has(index));
+    this.updateTrackRaw(0, updated);
+    this.applySanitization();
+    this.setEditStatusMessage(`${removableIndexes.size} punto${removableIndexes.size === 1 ? '' : 's'} eliminado${removableIndexes.size === 1 ? '' : 's'}.`);
+  }
+
+  private handleRangeDeleteClick(event: maplibregl.MapMouseEvent, meta: TrackMeta): void {
+    const closest = this.findClosestRawPoint(event, meta.raw);
+    const thresholdPx = 32;
+    if (!closest || closest.distancePx > thresholdPx) {
+      this.setEditStatusMessage('Haz clic más cerca del tramo que quieres seleccionar.');
+      return;
+    }
+
+    if (this.editRangeStartIndex === null) {
+      this.editRangeStartIndex = closest.index;
+      this.setEditRangeStartMarker(meta.raw[closest.index]);
+      this.setEditStatusMessage('Inicio del tramo marcado. Haz clic en el final.');
+      return;
+    }
+
+    const start = Math.min(this.editRangeStartIndex, closest.index);
+    const end = Math.max(this.editRangeStartIndex, closest.index);
+    this.clearEditRangeSelection();
+
+    if (start === end) {
+      this.setEditStatusMessage('El segundo clic debe estar en otro punto del track.');
+      return;
+    }
+
+    const deleteCount = end - start + 1;
+    if (meta.raw.length - deleteCount < 2) {
+      this.setEditStatusMessage('El track necesita al menos dos puntos.');
+      return;
+    }
+
+    this.pushEditUndoSnapshot(meta.raw);
+    const updated = meta.raw.filter((_, index) => index < start || index > end);
+    this.updateTrackRaw(0, updated);
+    this.applySanitization();
+    this.setEditStatusMessage(`Tramo eliminado: ${deleteCount} puntos.`);
+  }
+
+  private findClosestRawPoint(event: maplibregl.MapMouseEvent, points: TrackPoint[]): { index: number; distancePx: number } | null {
     const clickPoint = event.point;
     let closestIndex = -1;
     let closestDistance = Number.POSITIVE_INFINITY;
+    const step = this.getEditPointSampleStep(points.length, 800);
 
-    meta.raw.forEach((point, index) => {
+    for (let index = 0; index < points.length; index += step) {
+      const point = points[index];
       const layerPoint = this.map.project(this.toLngLat(point));
       const dx = clickPoint.x - layerPoint.x;
       const dy = clickPoint.y - layerPoint.y;
@@ -940,23 +1065,29 @@ export class MapComponent implements OnInit, AfterViewInit {
         closestDistance = distance;
         closestIndex = index;
       }
-    });
-
-    const thresholdPx = 12;
-    if (closestIndex === -1 || closestDistance > thresholdPx) {
-      this.setEditStatusMessage('Haz clic más cerca del punto que quieres eliminar.');
-      return;
     }
 
-    const updated = meta.raw.filter((_, index) => index !== closestIndex);
-    if (updated.length < 2) {
-      this.setEditStatusMessage('El track necesita al menos dos puntos.');
-      return;
+    const lastIndex = points.length - 1;
+    if (lastIndex >= 0 && lastIndex % step !== 0) {
+      const point = points[lastIndex];
+      const layerPoint = this.map.project(this.toLngLat(point));
+      const dx = clickPoint.x - layerPoint.x;
+      const dy = clickPoint.y - layerPoint.y;
+      const distance = Math.sqrt(dx * dx + dy * dy);
+      if (distance < closestDistance) {
+        closestDistance = distance;
+        closestIndex = lastIndex;
+      }
     }
 
-    this.updateTrackRaw(0, updated);
-    this.applySanitization();
-    this.setEditStatusMessage('Punto eliminado.');
+    return closestIndex === -1 ? null : { index: closestIndex, distancePx: closestDistance };
+  }
+
+  private pushEditUndoSnapshot(points: TrackPoint[]): void {
+    this.editUndoStack.push(points.map(point => ({ ...point })));
+    if (this.editUndoStack.length > 20) {
+      this.editUndoStack.shift();
+    }
   }
 
   private updateEditPointsLayer(): void {
@@ -970,8 +1101,10 @@ export class MapComponent implements OnInit, AfterViewInit {
     if (!meta?.raw?.length) return;
     const points = this.buildEditPointMarkers(meta.raw);
     points.forEach(point => {
+      const element = this.createDotElement('#f8fafc', 8, '#0f172a', 1);
+      element.style.pointerEvents = 'none';
       const marker = new maplibregl.Marker({
-        element: this.createDotElement('#f8fafc', 8, '#0f172a', 1)
+        element
       }).setLngLat(this.toLngLat(point)).addTo(this.map);
       this.editPointMarkers.push(marker);
     });
@@ -980,7 +1113,7 @@ export class MapComponent implements OnInit, AfterViewInit {
   private buildEditPointMarkers(points: TrackPoint[]): TrackPoint[] {
     const maxPoints = 300;
     if (points.length <= maxPoints) return points;
-    const step = Math.ceil(points.length / maxPoints);
+    const step = this.getEditPointSampleStep(points.length, maxPoints);
     const sampled = points.filter((_, index) => index % step === 0);
     const last = points[points.length - 1];
     if (sampled[sampled.length - 1] !== last) {
@@ -989,9 +1122,34 @@ export class MapComponent implements OnInit, AfterViewInit {
     return sampled;
   }
 
+  private getEditPointSampleStep(pointCount: number, maxPoints: number): number {
+    return Math.max(1, Math.ceil(pointCount / maxPoints));
+  }
+
   private clearEditPointsLayer(): void {
     this.editPointMarkers.forEach(marker => marker.remove());
     this.editPointMarkers = [];
+  }
+
+  private setEditRangeStartMarker(point: TrackPoint): void {
+    this.editRangeStartMarker?.remove();
+    const element = this.createDotElement('#facc15', 14, '#111827', 2);
+    element.style.pointerEvents = 'none';
+    this.editRangeStartMarker = new maplibregl.Marker({
+      element
+    }).setLngLat(this.toLngLat(point)).addTo(this.map);
+  }
+
+  private clearEditRangeSelection(): void {
+    this.editRangeStartIndex = null;
+    this.editRangeStartMarker?.remove();
+    this.editRangeStartMarker = null;
+  }
+
+  private getEditHintMessage(): string {
+    return this.editDeleteMode === 'range'
+      ? 'Modo tramo: haz clic en el inicio y luego en el final.'
+      : `Modo radio: cada clic borra puntos cercanos (${this.editDeleteRadiusMeters} m).`;
   }
 
   private updateTrackRaw(index: number, raw: TrackPoint[]): void {

@@ -104,7 +104,7 @@
 
     <button type="button" class="start-btn mobile-back-btn" *ngIf="isMobileViewport" (click)="goBack()">Volver</button>
 
-    <div class="map-edit-controls" *ngIf="canEditTrack && !isMobileViewport && desktopTitleBarVisible" role="group" aria-label="Edición del track">
+    <div class="map-edit-controls" *ngIf="shouldShowEditControls" role="group" aria-label="Edición del track">
       <button type="button" class="map-edit-btn" (click)="toggleEditMode()">
         {{ editMode ? 'Salir de edición' : 'Editar puntos' }}
       </button>
@@ -154,10 +154,10 @@
       </button>
     </div>
 
-    <div class="map-edit-hint" *ngIf="editMode && !isMobileViewport && desktopTitleBarVisible">
+    <div class="map-edit-hint" *ngIf="editMode && shouldShowEditControls">
       {{ editDeleteMode === 'range' ? 'Modo tramo: primer clic inicio, segundo clic final.' : 'Modo radio: cada clic borra varios puntos cercanos.' }}
     </div>
-    <div class="map-edit-status" *ngIf="editStatusMessage && !isMobileViewport && desktopTitleBarVisible">{{ editStatusMessage }}</div>
+    <div class="map-edit-status" *ngIf="editStatusMessage && shouldShowEditControls">{{ editStatusMessage }}</div>
 
     <button type="button" class="start-btn" *ngIf="!isMobileViewport && desktopTitleBarVisible" (click)="goBack()">Anterior</button>
     <!-- <a class="stop-rec" (click)="stopRecordingAndDownload()" *ngIf="rec.isRecording">⏹ Stop & Download</a> -->

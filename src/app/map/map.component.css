@@ -289,6 +289,38 @@
     margin-left: 68px;
   }
 
+  .map-edit-controls{
+    width: min(500px, calc(100vw - 16px));
+    justify-content: flex-start;
+    gap: 6px;
+    padding: 7px;
+  }
+
+  .map-edit-btn{
+    padding: 7px 10px;
+    font-size: 12px;
+  }
+
+  .map-edit-btn--compact{
+    padding: 6px 9px;
+  }
+
+  .map-edit-radius{
+    gap: 5px;
+    font-size: 11px;
+  }
+
+  .map-edit-radius select{
+    padding: 6px 24px 6px 9px;
+    font-size: 11px;
+  }
+
+  .map-edit-hint,
+  .map-edit-status{
+    max-width: min(500px, calc(100vw - 16px));
+    font-size: 11px;
+  }
+
   .map-profile-toggle--profile{
     margin-top: 44px;
   }

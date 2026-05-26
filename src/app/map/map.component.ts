@@ -868,6 +868,11 @@ export class MapComponent implements OnInit, AfterViewInit {
     return this.editUndoStack.length > 0 && !this.isSavingEdits;
   }
 
+  get shouldShowEditControls(): boolean {
+    if (!this.canEditTrack) return false;
+    return this.isMobileViewport ? this.mobileTitleBarVisible : this.desktopTitleBarVisible;
+  }
+
   toggleEditMode(): void {
     if (!this.canEditTrack) return;
     this.editMode = !this.editMode;

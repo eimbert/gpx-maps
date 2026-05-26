@@ -64,45 +64,57 @@
 
     <label
       class="map-profile-toggle map-profile-toggle--profile"
+      [class.map-profile-toggle--active]="mobileProfileVisible"
       *ngIf="canToggleMobileProfile"
       aria-label="Mostrar u ocultar el perfil de elevación"
+      title="Perfil"
     >
       <input
         type="checkbox"
         [checked]="mobileProfileVisible"
         (change)="onMobileProfileToggle($any($event.target).checked)"
       >
-      <span>Perfil</span>
+      <span class="material-icons map-toggle-icon" aria-hidden="true">show_chart</span>
+      <span class="map-toggle-text">Perfil</span>
     </label>
 
 
     <label
       class="map-profile-toggle map-profile-toggle--title"
+      [class.map-profile-toggle--active]="mobileTitleBarVisible"
       *ngIf="isMobileViewport"
       aria-label="Mostrar u ocultar barra de títulos"
+      title="Barra títulos"
     >
       <input
         type="checkbox"
         [checked]="mobileTitleBarVisible"
         (change)="onMobileTitleBarToggle($any($event.target).checked)"
       >
-      <span>Barra títulos</span>
+      <span class="material-icons map-toggle-icon" aria-hidden="true">title</span>
+      <span class="map-toggle-text">Barra títulos</span>
     </label>
 
     <label
       class="map-profile-toggle map-profile-toggle--times"
+      [class.map-profile-toggle--active]="mobileTimesVisible"
       *ngIf="isMobileViewport && !isRouteAnimating"
       aria-label="Mostrar u ocultar tiempos"
+      title="Tiempos"
     >
       <input
         type="checkbox"
         [checked]="mobileTimesVisible"
         (change)="onMobileTimesToggle($any($event.target).checked)"
       >
-      <span>Tiempos</span>
+      <span class="material-icons map-toggle-icon" aria-hidden="true">schedule</span>
+      <span class="map-toggle-text">Tiempos</span>
     </label>
 
-    <button type="button" class="start-btn mobile-back-btn" *ngIf="isMobileViewport" (click)="goBack()">Volver</button>
+    <button type="button" class="start-btn mobile-back-btn" *ngIf="isMobileViewport" (click)="goBack()" aria-label="Volver" title="Volver">
+      <span class="material-icons" aria-hidden="true">arrow_back</span>
+      <span class="map-toggle-text">Volver</span>
+    </button>
 
     <div class="map-edit-controls" *ngIf="shouldShowEditControls" role="group" aria-label="Edición del track">
       <button type="button" class="map-edit-btn" (click)="toggleEditMode()">

@@ -111,6 +111,19 @@
       <span class="map-toggle-text">Tiempos</span>
     </label>
 
+    <button
+      type="button"
+      class="map-profile-toggle map-location-btn"
+      *ngIf="isMobileViewport"
+      (click)="locateUser()"
+      [disabled]="isLocatingUser"
+      aria-label="Centrar en mi ubicación actual"
+      title="Mi ubicación"
+    >
+      <span class="material-icons map-toggle-icon" aria-hidden="true">{{ isLocatingUser ? 'sync' : 'my_location' }}</span>
+      <span class="map-toggle-text">Mi ubicación</span>
+    </button>
+
     <button type="button" class="start-btn mobile-back-btn" *ngIf="isMobileViewport" (click)="goBack()" aria-label="Volver" title="Volver">
       <span class="material-icons" aria-hidden="true">arrow_back</span>
       <span class="map-toggle-text">Volver</span>

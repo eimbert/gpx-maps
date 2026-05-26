@@ -223,6 +223,8 @@ export class MapComponent implements OnInit, AfterViewInit {
   private editUndoStack: TrackPoint[][] = [];
   private editRangeStartIndex: number | null = null;
   private editRangeStartMarker: maplibregl.Marker | null = null;
+  isLocatingUser = false;
+  private userLocationMarker: maplibregl.Marker | null = null;
 
   constructor(
     private route: ActivatedRoute,
@@ -820,6 +822,47 @@ export class MapComponent implements OnInit, AfterViewInit {
     this.applyTimesLayerVisibility();
   }
 
+  locateUser(): void {
+    if (!this.map || this.isLocatingUser) return;
+    if (typeof navigator === 'undefined' || !navigator.geolocation) {
+      this.setEditStatusMessage('Tu navegador no permite obtener la ubicación.');
+      return;
+    }
+
+    this.isLocatingUser = true;
+    this.setEditStatusMessage('Buscando ubicación...');
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        this.isLocatingUser = false;
+        const { latitude, longitude, accuracy } = position.coords;
+        if (!this.isCoordValid(latitude, longitude)) {
+          this.setEditStatusMessage('No se pudo obtener una ubicación válida.');
+          return;
+        }
+
+        this.setUserLocationMarker(latitude, longitude);
+        this.map.flyTo({
+          center: [longitude, latitude],
+          zoom: Math.max(this.map.getZoom(), accuracy && accuracy < 50 ? 17 : 15),
+          duration: 700
+        });
+        this.setEditStatusMessage('Ubicación actual centrada.');
+      },
+      (error) => {
+        this.isLocatingUser = false;
+        const message = error.code === error.PERMISSION_DENIED
+          ? 'Permiso de ubicación denegado.'
+          : 'No se pudo obtener tu ubicación.';
+        this.setEditStatusMessage(message);
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 30000
+      }
+    );
+  }
+
   get shouldShowTitleBar(): boolean {
     return this.isMobileViewport ? this.mobileTitleBarVisible : this.desktopTitleBarVisible;
   }
@@ -1278,6 +1321,20 @@ export class MapComponent implements OnInit, AfterViewInit {
     this.editRangeStartIndex = null;
     this.editRangeStartMarker?.remove();
     this.editRangeStartMarker = null;
+  }
+
+  private setUserLocationMarker(latitude: number, longitude: number): void {
+    this.userLocationMarker?.remove();
+    const element = document.createElement('div');
+    element.className = 'user-location-marker';
+    const pulse = document.createElement('span');
+    pulse.className = 'user-location-marker__pulse';
+    const dot = document.createElement('span');
+    dot.className = 'user-location-marker__dot';
+    element.append(pulse, dot);
+    this.userLocationMarker = new maplibregl.Marker({ element })
+      .setLngLat([longitude, latitude])
+      .addTo(this.map);
   }
 
   private getEditHintMessage(): string {

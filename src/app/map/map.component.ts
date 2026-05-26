@@ -1041,7 +1041,7 @@ export class MapComponent implements OnInit, AfterViewInit {
 
   private handleRadiusDeleteClick(event: maplibregl.MapMouseEvent, meta: TrackMeta): void {
     const closest = this.findClosestEditPoint(event, meta.raw);
-    const thresholdPx = 28;
+    const thresholdPx = this.isMobileViewport ? 52 : 38;
     if (!closest || closest.distancePx > thresholdPx) {
       this.setEditStatusMessage('Haz clic más cerca del tramo que quieres borrar.');
       return;
@@ -1073,7 +1073,7 @@ export class MapComponent implements OnInit, AfterViewInit {
 
   private handleRangeDeleteClick(event: maplibregl.MapMouseEvent, meta: TrackMeta): void {
     const closest = this.findClosestEditPoint(event, meta.raw);
-    const thresholdPx = 32;
+    const thresholdPx = this.isMobileViewport ? 56 : 42;
     if (!closest || closest.distancePx > thresholdPx) {
       this.setEditStatusMessage('Haz clic más cerca del tramo que quieres seleccionar.');
       return;
@@ -1147,7 +1147,7 @@ export class MapComponent implements OnInit, AfterViewInit {
     this.editIndexedPoints = this.buildEditIndexedPoints(meta.raw);
     this.editSimplifiedPointCount = this.editIndexedPoints.length;
     this.editIndexedPoints.forEach(({ point }) => {
-      const element = this.createDotElement('#f8fafc', 8, '#0f172a', 1);
+      const element = this.createDotElement('#f8fafc', this.isMobileViewport ? 7 : 6, '#0f172a', 1);
       element.style.pointerEvents = 'none';
       const marker = new maplibregl.Marker({
         element
@@ -1157,11 +1157,11 @@ export class MapComponent implements OnInit, AfterViewInit {
   }
 
   private buildEditIndexedPoints(points: TrackPoint[]): IndexedTrackPoint[] {
-    const maxPoints = this.isMobileViewport ? 700 : 1200;
+    const maxPoints = this.isMobileViewport ? 120 : 220;
     const indexed = points.map((point, index) => ({ point, index }));
     if (indexed.length <= maxPoints) return indexed;
 
-    const tolerancesMeters = [2, 4, 7, 10, 15, 25, 40];
+    const tolerancesMeters = [8, 12, 18, 25, 35, 50, 75, 100];
     let simplified = indexed;
     for (const tolerance of tolerancesMeters) {
       simplified = this.simplifyIndexedTrackPoints(indexed, tolerance);

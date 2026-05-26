@@ -840,13 +840,16 @@ export class MapComponent implements OnInit, AfterViewInit {
           return;
         }
 
-        this.setUserLocationMarker(latitude, longitude);
+        const distanceToStart = this.getDistanceToTrackStart(latitude, longitude);
+        this.setUserLocationMarker(latitude, longitude, distanceToStart);
         this.map.flyTo({
           center: [longitude, latitude],
           zoom: Math.max(this.map.getZoom(), accuracy && accuracy < 50 ? 17 : 15),
           duration: 700
         });
-        this.setEditStatusMessage('Ubicación actual centrada.');
+        this.setEditStatusMessage(distanceToStart === null
+          ? 'Ubicación actual centrada.'
+          : `Ubicación actual centrada. Inicio a ${this.formatDistance(distanceToStart)}.`);
       },
       (error) => {
         this.isLocatingUser = false;
@@ -1323,18 +1326,37 @@ export class MapComponent implements OnInit, AfterViewInit {
     this.editRangeStartMarker = null;
   }
 
-  private setUserLocationMarker(latitude: number, longitude: number): void {
+  private setUserLocationMarker(latitude: number, longitude: number, distanceToStart: number | null): void {
     this.userLocationMarker?.remove();
     const element = document.createElement('div');
     element.className = 'user-location-marker';
     const pulse = document.createElement('span');
     pulse.className = 'user-location-marker__pulse';
-    const dot = document.createElement('span');
-    dot.className = 'user-location-marker__dot';
-    element.append(pulse, dot);
+    const icon = document.createElement('span');
+    icon.className = 'material-icons user-location-marker__icon';
+    icon.textContent = 'my_location';
+    element.append(pulse, icon);
+    if (distanceToStart !== null) {
+      const label = document.createElement('span');
+      label.className = 'user-location-marker__label';
+      label.textContent = `${this.formatDistance(distanceToStart)} al inicio`;
+      element.append(label);
+    }
     this.userLocationMarker = new maplibregl.Marker({ element })
       .setLngLat([longitude, latitude])
       .addTo(this.map);
+  }
+
+  private getDistanceToTrackStart(latitude: number, longitude: number): number | null {
+    const start = this.trackMetas[0]?.raw?.[0];
+    if (!start) return null;
+    return this.distanceBetween({ lat: latitude, lon: longitude }, start);
+  }
+
+  private formatDistance(meters: number): string {
+    if (!Number.isFinite(meters)) return '-';
+    if (meters < 1000) return `${Math.round(meters)} m`;
+    return `${(meters / 1000).toFixed(meters < 10000 ? 1 : 0)} km`;
   }
 
   private getEditHintMessage(): string {

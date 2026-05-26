@@ -143,6 +143,16 @@
       </button>
       <button
         type="button"
+        class="map-edit-btn map-edit-btn--ghost"
+        *ngIf="editMode"
+        (click)="simplifyEditableTrack()"
+        [disabled]="isSavingEdits"
+      >
+        Reducir puntos
+      </button>
+      <span class="map-edit-reduction" *ngIf="editPointReductionLabel">{{ editPointReductionLabel }}</span>
+      <button
+        type="button"
         class="map-edit-btn map-edit-btn--primary"
         (click)="saveEdits()"
         [disabled]="!hasEditChanges || isSavingEdits"

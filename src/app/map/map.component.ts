@@ -70,6 +70,11 @@ interface BaseLayerOption {
 
 type EditDeleteMode = 'radius' | 'range';
 
+interface IndexedTrackPoint {
+  point: TrackPoint;
+  index: number;
+}
+
 @Component({
   selector: 'app-map',
   templateUrl: './map.component.html',
@@ -213,6 +218,8 @@ export class MapComponent implements OnInit, AfterViewInit {
   private originalRouteXml: string | null = null;
   private originalPointsSnapshot: string | null = null;
   private editPointMarkers: maplibregl.Marker[] = [];
+  private editIndexedPoints: IndexedTrackPoint[] = [];
+  editSimplifiedPointCount = 0;
   private editUndoStack: TrackPoint[][] = [];
   private editRangeStartIndex: number | null = null;
   private editRangeStartMarker: maplibregl.Marker | null = null;
@@ -791,10 +798,16 @@ export class MapComponent implements OnInit, AfterViewInit {
 
   onDesktopTitleBarToggle(checked: boolean): void {
     this.desktopTitleBarVisible = checked;
+    if (!checked) {
+      this.exitEditMode();
+    }
   }
 
   onMobileTitleBarToggle(checked: boolean): void {
     this.mobileTitleBarVisible = checked;
+    if (!checked) {
+      this.exitEditMode();
+    }
   }
 
   onMobileTimesToggle(checked: boolean): void {
@@ -868,6 +881,14 @@ export class MapComponent implements OnInit, AfterViewInit {
     return this.editUndoStack.length > 0 && !this.isSavingEdits;
   }
 
+  get editPointReductionLabel(): string | null {
+    const rawCount = this.trackMetas[0]?.raw?.length ?? 0;
+    if (!this.editMode || rawCount <= 0 || this.editSimplifiedPointCount <= 0 || this.editSimplifiedPointCount >= rawCount) {
+      return null;
+    }
+    return `${rawCount.toLocaleString('es-ES')} -> ${this.editSimplifiedPointCount.toLocaleString('es-ES')}`;
+  }
+
   get shouldShowEditControls(): boolean {
     if (!this.canEditTrack) return false;
     return this.isMobileViewport ? this.mobileTitleBarVisible : this.desktopTitleBarVisible;
@@ -880,10 +901,17 @@ export class MapComponent implements OnInit, AfterViewInit {
       this.setEditStatusMessage(this.getEditHintMessage());
       this.updateEditPointsLayer();
     } else {
-      this.clearEditStatusMessage();
-      this.clearEditRangeSelection();
-      this.clearEditPointsLayer();
+      this.exitEditMode();
     }
+  }
+
+  private exitEditMode(): void {
+    if (!this.editMode && !this.editPointMarkers.length && this.editRangeStartIndex === null) return;
+    this.editMode = false;
+    this.editSimplifiedPointCount = 0;
+    this.clearEditStatusMessage();
+    this.clearEditRangeSelection();
+    this.clearEditPointsLayer();
   }
 
   setEditDeleteMode(mode: EditDeleteMode): void {
@@ -912,6 +940,32 @@ export class MapComponent implements OnInit, AfterViewInit {
     this.clearEditRangeSelection();
     this.applySanitization();
     this.setEditStatusMessage('Último borrado deshecho.');
+  }
+
+  simplifyEditableTrack(): void {
+    if (!this.canEditTrack || this.isSavingEdits) return;
+    const meta = this.trackMetas[0];
+    const raw = meta?.raw ?? [];
+    if (raw.length < 3) {
+      this.setEditStatusMessage('El track no tiene suficientes puntos para simplificar.');
+      return;
+    }
+
+    const simplified = this.simplifyTrackPoints(raw, 5);
+    if (simplified.length >= raw.length) {
+      this.setEditStatusMessage('No hay puntos redundantes que simplificar.');
+      return;
+    }
+    if (simplified.length < 2) {
+      this.setEditStatusMessage('La simplificación dejaría el track sin puntos suficientes.');
+      return;
+    }
+
+    this.pushEditUndoSnapshot(raw);
+    this.clearEditRangeSelection();
+    this.updateTrackRaw(0, simplified);
+    this.applySanitization();
+    this.setEditStatusMessage(`Track simplificado: ${raw.length.toLocaleString('es-ES')} -> ${simplified.length.toLocaleString('es-ES')} puntos.`);
   }
 
   cancelEdits(): void {
@@ -986,14 +1040,14 @@ export class MapComponent implements OnInit, AfterViewInit {
   }
 
   private handleRadiusDeleteClick(event: maplibregl.MapMouseEvent, meta: TrackMeta): void {
-    const closest = this.findClosestRawPoint(event, meta.raw);
+    const closest = this.findClosestEditPoint(event, meta.raw);
     const thresholdPx = 28;
     if (!closest || closest.distancePx > thresholdPx) {
       this.setEditStatusMessage('Haz clic más cerca del tramo que quieres borrar.');
       return;
     }
 
-    const center = meta.raw[closest.index];
+    const center = meta.raw[closest.rawIndex];
     const removableIndexes = new Set<number>();
     meta.raw.forEach((point, index) => {
       if (this.distanceBetween(point, center) <= this.editDeleteRadiusMeters) {
@@ -1002,7 +1056,7 @@ export class MapComponent implements OnInit, AfterViewInit {
     });
 
     if (!removableIndexes.size) {
-      removableIndexes.add(closest.index);
+      removableIndexes.add(closest.rawIndex);
     }
 
     if (meta.raw.length - removableIndexes.size < 2) {
@@ -1018,7 +1072,7 @@ export class MapComponent implements OnInit, AfterViewInit {
   }
 
   private handleRangeDeleteClick(event: maplibregl.MapMouseEvent, meta: TrackMeta): void {
-    const closest = this.findClosestRawPoint(event, meta.raw);
+    const closest = this.findClosestEditPoint(event, meta.raw);
     const thresholdPx = 32;
     if (!closest || closest.distancePx > thresholdPx) {
       this.setEditStatusMessage('Haz clic más cerca del tramo que quieres seleccionar.');
@@ -1026,14 +1080,14 @@ export class MapComponent implements OnInit, AfterViewInit {
     }
 
     if (this.editRangeStartIndex === null) {
-      this.editRangeStartIndex = closest.index;
-      this.setEditRangeStartMarker(meta.raw[closest.index]);
+      this.editRangeStartIndex = closest.rawIndex;
+      this.setEditRangeStartMarker(meta.raw[closest.rawIndex]);
       this.setEditStatusMessage('Inicio del tramo marcado. Haz clic en el final.');
       return;
     }
 
-    const start = Math.min(this.editRangeStartIndex, closest.index);
-    const end = Math.max(this.editRangeStartIndex, closest.index);
+    const start = Math.min(this.editRangeStartIndex, closest.rawIndex);
+    const end = Math.max(this.editRangeStartIndex, closest.rawIndex);
     this.clearEditRangeSelection();
 
     if (start === end) {
@@ -1054,14 +1108,13 @@ export class MapComponent implements OnInit, AfterViewInit {
     this.setEditStatusMessage(`Tramo eliminado: ${deleteCount} puntos.`);
   }
 
-  private findClosestRawPoint(event: maplibregl.MapMouseEvent, points: TrackPoint[]): { index: number; distancePx: number } | null {
+  private findClosestEditPoint(event: maplibregl.MapMouseEvent, points: TrackPoint[]): { rawIndex: number; distancePx: number } | null {
     const clickPoint = event.point;
     let closestIndex = -1;
     let closestDistance = Number.POSITIVE_INFINITY;
-    const step = this.getEditPointSampleStep(points.length, 800);
+    const editPoints = this.editIndexedPoints.length ? this.editIndexedPoints : this.buildEditIndexedPoints(points);
 
-    for (let index = 0; index < points.length; index += step) {
-      const point = points[index];
+    editPoints.forEach(({ point, index }) => {
       const layerPoint = this.map.project(this.toLngLat(point));
       const dx = clickPoint.x - layerPoint.x;
       const dy = clickPoint.y - layerPoint.y;
@@ -1070,22 +1123,9 @@ export class MapComponent implements OnInit, AfterViewInit {
         closestDistance = distance;
         closestIndex = index;
       }
-    }
+    });
 
-    const lastIndex = points.length - 1;
-    if (lastIndex >= 0 && lastIndex % step !== 0) {
-      const point = points[lastIndex];
-      const layerPoint = this.map.project(this.toLngLat(point));
-      const dx = clickPoint.x - layerPoint.x;
-      const dy = clickPoint.y - layerPoint.y;
-      const distance = Math.sqrt(dx * dx + dy * dy);
-      if (distance < closestDistance) {
-        closestDistance = distance;
-        closestIndex = lastIndex;
-      }
-    }
-
-    return closestIndex === -1 ? null : { index: closestIndex, distancePx: closestDistance };
+    return closestIndex === -1 ? null : { rawIndex: closestIndex, distancePx: closestDistance };
   }
 
   private pushEditUndoSnapshot(points: TrackPoint[]): void {
@@ -1104,8 +1144,9 @@ export class MapComponent implements OnInit, AfterViewInit {
     this.clearEditPointsLayer();
     const meta = this.trackMetas[0];
     if (!meta?.raw?.length) return;
-    const points = this.buildEditPointMarkers(meta.raw);
-    points.forEach(point => {
+    this.editIndexedPoints = this.buildEditIndexedPoints(meta.raw);
+    this.editSimplifiedPointCount = this.editIndexedPoints.length;
+    this.editIndexedPoints.forEach(({ point }) => {
       const element = this.createDotElement('#f8fafc', 8, '#0f172a', 1);
       element.style.pointerEvents = 'none';
       const marker = new maplibregl.Marker({
@@ -1115,25 +1156,113 @@ export class MapComponent implements OnInit, AfterViewInit {
     });
   }
 
-  private buildEditPointMarkers(points: TrackPoint[]): TrackPoint[] {
-    const maxPoints = 300;
+  private buildEditIndexedPoints(points: TrackPoint[]): IndexedTrackPoint[] {
+    const maxPoints = this.isMobileViewport ? 700 : 1200;
+    const indexed = points.map((point, index) => ({ point, index }));
+    if (indexed.length <= maxPoints) return indexed;
+
+    const tolerancesMeters = [2, 4, 7, 10, 15, 25, 40];
+    let simplified = indexed;
+    for (const tolerance of tolerancesMeters) {
+      simplified = this.simplifyIndexedTrackPoints(indexed, tolerance);
+      if (simplified.length <= maxPoints) {
+        return simplified;
+      }
+    }
+
+    return this.sampleIndexedTrackPoints(simplified, maxPoints);
+  }
+
+  private simplifyTrackPoints(points: TrackPoint[], toleranceMeters: number): TrackPoint[] {
+    return this.simplifyIndexedTrackPoints(
+      points.map((point, index) => ({ point, index })),
+      toleranceMeters
+    ).map(({ point }) => ({ ...point }));
+  }
+
+  private simplifyIndexedTrackPoints(points: IndexedTrackPoint[], toleranceMeters: number): IndexedTrackPoint[] {
+    if (points.length <= 2) return points;
+
+    const keep = new Uint8Array(points.length);
+    keep[0] = 1;
+    keep[points.length - 1] = 1;
+    const stack: Array<[number, number]> = [[0, points.length - 1]];
+
+    while (stack.length) {
+      const [start, end] = stack.pop() as [number, number];
+      if (end <= start + 1) continue;
+
+      let maxDistance = 0;
+      let maxIndex = -1;
+      for (let index = start + 1; index < end; index += 1) {
+        const distance = this.distanceToSegmentMeters(points[index].point, points[start].point, points[end].point);
+        if (distance > maxDistance) {
+          maxDistance = distance;
+          maxIndex = index;
+        }
+      }
+
+      if (maxIndex !== -1 && maxDistance > toleranceMeters) {
+        keep[maxIndex] = 1;
+        stack.push([start, maxIndex], [maxIndex, end]);
+      }
+    }
+
+    return points.filter((_, index) => keep[index] === 1);
+  }
+
+  private sampleIndexedTrackPoints(points: IndexedTrackPoint[], maxPoints: number): IndexedTrackPoint[] {
     if (points.length <= maxPoints) return points;
-    const step = this.getEditPointSampleStep(points.length, maxPoints);
-    const sampled = points.filter((_, index) => index % step === 0);
-    const last = points[points.length - 1];
-    if (sampled[sampled.length - 1] !== last) {
-      sampled.push(last);
+    const sampled: IndexedTrackPoint[] = [];
+    const lastIndex = points.length - 1;
+    for (let outputIndex = 0; outputIndex < maxPoints; outputIndex += 1) {
+      const sourceIndex = Math.round((outputIndex * lastIndex) / (maxPoints - 1));
+      const candidate = points[sourceIndex];
+      if (sampled[sampled.length - 1]?.index !== candidate.index) {
+        sampled.push(candidate);
+      }
     }
     return sampled;
   }
 
-  private getEditPointSampleStep(pointCount: number, maxPoints: number): number {
-    return Math.max(1, Math.ceil(pointCount / maxPoints));
+  private distanceToSegmentMeters(point: TrackPoint, start: TrackPoint, end: TrackPoint): number {
+    const originLatRad = start.lat * Math.PI / 180;
+    const pointXY = this.projectPointMeters(point, originLatRad);
+    const startXY = this.projectPointMeters(start, originLatRad);
+    const endXY = this.projectPointMeters(end, originLatRad);
+    const vx = endXY.x - startXY.x;
+    const vy = endXY.y - startXY.y;
+    const wx = pointXY.x - startXY.x;
+    const wy = pointXY.y - startXY.y;
+    const lengthSq = vx * vx + vy * vy;
+    if (lengthSq <= 0) {
+      const dx = pointXY.x - startXY.x;
+      const dy = pointXY.y - startXY.y;
+      return Math.sqrt(dx * dx + dy * dy);
+    }
+
+    const t = Math.max(0, Math.min(1, (wx * vx + wy * vy) / lengthSq));
+    const closestX = startXY.x + t * vx;
+    const closestY = startXY.y + t * vy;
+    const dx = pointXY.x - closestX;
+    const dy = pointXY.y - closestY;
+    return Math.sqrt(dx * dx + dy * dy);
+  }
+
+  private projectPointMeters(point: TrackPoint, originLatRad: number): { x: number; y: number } {
+    const earthRadius = 6371000;
+    const toRad = Math.PI / 180;
+    return {
+      x: earthRadius * point.lon * toRad * Math.cos(originLatRad),
+      y: earthRadius * point.lat * toRad
+    };
   }
 
   private clearEditPointsLayer(): void {
     this.editPointMarkers.forEach(marker => marker.remove());
     this.editPointMarkers = [];
+    this.editIndexedPoints = [];
+    this.editSimplifiedPointCount = 0;
   }
 
   private setEditRangeStartMarker(point: TrackPoint): void {

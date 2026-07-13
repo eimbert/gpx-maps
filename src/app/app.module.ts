@@ -40,6 +40,7 @@ import { ForgotPasswordDialogComponent } from './forgot-password-dialog/forgot-p
 import { ResetPasswordComponent } from './reset-password/reset-password.component';
 import { RoundTripOptionsDialogComponent } from './roundtrip-options-dialog/roundtrip-options-dialog.component';
 import { PrivacyPolicyComponent } from './privacy-policy/privacy-policy.component';
+import { RouteAnalyzerComponent } from './route-analyzer/route-analyzer.component';
 import localeEs from '@angular/common/locales/es';
 import { LOCALE_ID } from '@angular/core';
 import { registerLocaleData } from '@angular/common';
@@ -69,7 +70,8 @@ registerLocaleData(localeEs);
     ForgotPasswordDialogComponent,
     ResetPasswordComponent,
     RoundTripOptionsDialogComponent,
-    PrivacyPolicyComponent
+    PrivacyPolicyComponent,
+    RouteAnalyzerComponent
   ],
   imports: [
     MatCheckboxModule,

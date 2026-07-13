@@ -297,6 +297,7 @@
                 <th scope="col">Dureza</th>
                 <th scope="col">Descargar</th>
                 <th scope="col">Ver track</th>
+                <th scope="col">Analizar</th>
                 <th scope="col">Meteo</th>
                 <th scope="col"></th>
               </tr>
@@ -363,6 +364,13 @@
                     (click)="viewTrack(track)"
                     [attr.aria-label]="canViewTrack(track) ? 'Ver track en el mapa' : 'GPX no disponible'">
                     <mat-icon aria-hidden="true">map</mat-icon>
+                  </button>
+                </td>
+                <td class="plan__center">
+                  <button class="plan__maps-link plan__animate-link" type="button" [disabled]="!canViewTrack(track)"
+                    (click)="analyzeTrack(track)"
+                    [attr.aria-label]="canViewTrack(track) ? 'Analizar ruta' : 'GPX no disponible'">
+                    <mat-icon aria-hidden="true">analytics</mat-icon>
                   </button>
                 </td>
                 <td class="plan__center">
@@ -459,6 +467,11 @@
                   (click)="viewTrack(track)"
                   [attr.aria-label]="canViewTrack(track) ? 'Ver track en el mapa' : 'GPX no disponible'">
                   <mat-icon aria-hidden="true">map</mat-icon>
+                </button>
+                <button class="plan__maps-link plan__animate-link" type="button" [disabled]="!canViewTrack(track)"
+                  (click)="analyzeTrack(track)"
+                  [attr.aria-label]="canViewTrack(track) ? 'Analizar ruta' : 'GPX no disponible'">
+                  <mat-icon aria-hidden="true">analytics</mat-icon>
                 </button>
                 <button class="plan__ghost" *ngIf="canVoteOnTracks(); else noVoteMobile" type="button" (click)="toggleVote(track)">
                   {{ resolveVoteLabel(track) }}

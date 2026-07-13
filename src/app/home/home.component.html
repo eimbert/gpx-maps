@@ -4,7 +4,7 @@
     <img class="home__logo" src="assets/logo4.png" alt="Logo de Tracketeo Bike" />
     <p class="eyebrow">Te damos la Bienvenida</p>
     <h1 class="headline">¿Qué te apetece hacer ahora?</h1>
-    <p class="lead">Elige entre animar tus archivos GPX, planificar tus próximas salidas o descubrir eventos y rankings para competir</p>
+    <p class="lead">Elige entre animar tus archivos GPX, planificar próximas salidas o analizar una ruta con informe inteligente</p>
 
     <div class="home__actions">
       <a class="action-card action-card--primary" [routerLink]="['/load']" [queryParams]="{ mode: 'routes' }">
@@ -25,13 +25,13 @@
         <span class="action-card__cta">Planificar</span>
       </a>
 
-      <a class="action-card action-card--secondary" [routerLink]="['/events']">
-        <div class="action-card__icon">🏁</div>
+      <a class="action-card action-card--secondary" [routerLink]="['/analysis']">
+        <div class="action-card__icon">📈</div>
         <div class="action-card__texts">
-          <p class="action-card__title">Eventos y rankings</p>
-          <p class="action-card__subtitle">Encuentra carreras, sube tu track y compárate con otros riders</p>
+          <p class="action-card__title">Analizador de rutas</p>
+          <p class="action-card__subtitle">Sube un GPX y obtén resumen, dureza explicada, puntos destacados y advertencias</p>
         </div>
-        <span class="action-card__cta">Explorar</span>
+        <span class="action-card__cta">Analizar</span>
       </a>
     </div>
 

@@ -33,6 +33,8 @@ import { PlanService, PlanTrackImportPayload } from '../services/plan.service';
 import { PlanTrackDialogComponent, PlanTrackDialogData, PlanTrackDialogResult } from '../plan-track-dialog/plan-track-dialog.component';
 import { MapPayloadTransferService } from '../services/map-payload-transfer.service';
 import { environment } from 'src/environments/environment';
+import { PublicRouteAnalysis } from '../interfaces/route-analysis';
+import { RouteAnalysisService } from '../services/route-analysis.service';
 
 interface TrackPoint {
   lat: number;
@@ -168,7 +170,7 @@ type UserTracksSortColumn =
   | 'totalTimeSeconds'
   | 'proximityMeters';
 type SortDirection = 'asc' | 'desc';
-type UserTracksTab = 'personal' | 'events' | 'shared';
+type UserTracksTab = 'personal' | 'events' | 'analyses' | 'shared';
 type UserTracksGroupBy = 'autonomousCommunity' | 'province' | 'comarca' | 'population' | 'proximity';
 
 interface TrackTableState {
@@ -202,6 +204,7 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
   @ViewChild('fileInput') fileInputRef!: ElementRef<HTMLInputElement>;
   @ViewChild('masterGpxInput') masterGpxInputRef!: ElementRef<HTMLInputElement>;
   @ViewChild('userTracksSection') userTracksSectionRef?: ElementRef<HTMLElement>;
+  @ViewChild('publicAnalysisDetail') publicAnalysisDetailRef?: ElementRef<HTMLElement>;
 
   readonly maxTracks = 4;
   readonly maxComparison = 3;
@@ -246,40 +249,54 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
 
   userTracksLoading = false;
   sharedTracksLoading = false;
+  publicAnalysesLoading = false;
+  publicAnalysesError: string | null = null;
+  recentPublicAnalyses: PublicRouteAnalysis[] = [];
+  publicAnalyses: PublicRouteAnalysis[] = [];
+  selectedPublicAnalysis: PublicRouteAnalysis | null = null;
+  selectedDestination: GroupedUserTracks | null = null;
+  private readonly destinationDescriptions = new Map<string, string>();
+  destinationDescriptionLoading = false;
 
   private readonly userTrackRows: Record<UserTracksTab, UserTrackRow[]> = {
     personal: [],
     events: [],
+    analyses: [],
     shared: []
   };
 
   private readonly userTracksDerived: Record<UserTracksTab, UserTracksDerivedData> = {
     personal: { sorted: [], filtered: [], grouped: [] },
     events: { sorted: [], filtered: [], grouped: [] },
+    analyses: { sorted: [], filtered: [], grouped: [] },
     shared: { sorted: [], filtered: [], grouped: [] }
   };
 
   private readonly userTracksDataVersion: Record<UserTracksTab, number> = {
     personal: 0,
     events: 0,
+    analyses: 0,
     shared: 0
   };
 
   private readonly userTracksStateVersion: Record<UserTracksTab, number> = {
     personal: 0,
     events: 0,
+    analyses: 0,
     shared: 0
   };
 
   private readonly userTracksDerivedVersion: Record<UserTracksTab, { data: number; state: number }> = {
     personal: { data: -1, state: -1 },
     events: { data: -1, state: -1 },
+    analyses: { data: -1, state: -1 },
     shared: { data: -1, state: -1 }
   };
 
   private readonly tableState: Record<UserTracksTab, TrackTableState> = {
     personal: { sortColumn: 'year', sortDirection: 'asc', groupBy: 'province', filter: '', rows: 10, page: 0 },
     events: { sortColumn: 'year', sortDirection: 'asc', groupBy: 'province', filter: '', rows: 10, page: 0 },
+    analyses: { sortColumn: 'year', sortDirection: 'desc', groupBy: 'province', filter: '', rows: 10, page: 0 },
     shared: { sortColumn: 'year', sortDirection: 'asc', groupBy: 'province', filter: '', rows: 10, page: 0 }
   };
 
@@ -296,6 +313,7 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
   private readonly expandedProvinces: Record<UserTracksTab, Set<string>> = {
     personal: new Set<string>(),
     events: new Set<string>(),
+    analyses: new Set<string>(),
     shared: new Set<string>()
   };
 
@@ -358,6 +376,7 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
     private infoMessageService: InfoMessageService,
     private planService: PlanService,
     private mapPayloadTransfer: MapPayloadTransferService,
+    private routeAnalysisService: RouteAnalysisService,
     identityService: UserIdentityService
   ) {
     this.userId = identityService.getUserId();
@@ -406,6 +425,7 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
 
         if (session) {
           this.sessionExpiredNotified = false;
+          this.loadPublicAnalyses();
         }
 
         if (!this.isAuthenticated && this.mode === 'events') {
@@ -438,6 +458,7 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
         }
 
         if (this.isAuthenticated) {
+          this.loadPublicAnalyses();
           this.requestRefreshUserTracks();
         }
       });
@@ -2047,7 +2068,11 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
 
   setUserTracksTab(tab: UserTracksTab): void {
     this.activeUserTracksTab = tab;
+    this.selectedDestination = null;
     this.expandedProvinces[tab].clear();
+    if (tab === 'analyses' && !this.publicAnalysesLoading && !this.publicAnalyses.length) {
+      this.loadPublicAnalyses();
+    }
     this.scrollToUserTracksBottomOnMobile();
   }
 
@@ -2078,18 +2103,19 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
   }
 
   get activeTracksLoading(): boolean {
+    if (this.activeUserTracksTab === 'analyses') return this.publicAnalysesLoading;
     return this.activeUserTracksTab === 'shared' ? this.sharedTracksLoading : this.userTracksLoading;
   }
 
   get activeTracksLoadingLabel(): string {
+    if (this.activeUserTracksTab === 'analyses') return 'Cargando análisis públicos...';
     if (this.activeUserTracksTab === 'shared') return 'Cargando rutas compartidas...';
-    if (this.activeUserTracksTab === 'events') return 'Cargando tus rutas de eventos...';
     return 'Cargando tus rutas...';
   }
 
   get activeTracksEmptyMessage(): string {
+    if (this.activeUserTracksTab === 'analyses') return this.publicAnalysesError ?? 'Todavía no hay análisis públicos disponibles.';
     if (this.activeUserTracksTab === 'shared') return 'Aún no hay rutas compartidas.';
-    if (this.activeUserTracksTab === 'events') return 'Aún no has subido rutas de eventos.';
     return 'Aún no has subido rutas.';
   }
 
@@ -2116,7 +2142,14 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
     const comarca = track.comarca ?? event?.comarca ?? null;
     const province = track.province ?? event?.province ?? null;
     const distanceKm = this.toNumber(track.distanceKm);
-    const ascentMeters = this.toOptionalNumber(track.ascent);
+    const ascentMeters = this.toOptionalNumber(
+      (track as any).ascent
+      ?? (track as any).desnivel
+      ?? (track as any).elevationGain
+      ?? (track as any).elevation_gain
+      ?? (track as any).elevationGainM
+      ?? (track as any).elevation_gain_m
+    );
     const timeSeconds = this.toNumber(track.timeSeconds);
     const totalTimeSeconds = this.resolveTotalTimeSeconds(track);
     const difficultyScore = this.toOptionalNumber((track as any).difficultyScore ?? (track as any).difficulty_score);
@@ -3076,6 +3109,159 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
     this.router.navigate(['/map'], {
       queryParams: { from: this.mode },
       state: { gpxViewerPayload: payload }
+    });
+  }
+
+  openDestination(group: GroupedUserTracks): void {
+    this.selectedDestination = group;
+    this.resolveDestinationDescription(group);
+    setTimeout(() => this.userTracksSectionRef?.nativeElement.scrollIntoView({ behavior: 'smooth', block: 'start' }));
+  }
+
+  closeDestination(): void {
+    this.selectedDestination = null;
+  }
+
+  destinationDistanceRange(group: GroupedUserTracks): string {
+    const values = group.routes.map(route => route.distanceKm).filter(Number.isFinite);
+    if (!values.length) return 'Distancia por descubrir';
+    const min = Math.round(Math.min(...values));
+    const max = Math.round(Math.max(...values));
+    return min === max ? `${min} km` : `${min}–${max} km`;
+  }
+
+  destinationDescription(group: GroupedUserTracks): string {
+    return this.destinationDescriptions.get(this.destinationDescriptionKey(group)) ?? '';
+  }
+
+  routePopulationDescription(row: UserTrackRow): string {
+    if (!row.population) return '';
+    return this.destinationDescriptions.get(this.placeDescriptionKey('population', row.population, row.province)) ?? '';
+  }
+
+  private resolveDestinationDescription(group: GroupedUserTracks): void {
+    const key = this.destinationDescriptionKey(group);
+    if (this.destinationDescriptions.has(key) || this.destinationDescriptionLoading) return;
+    this.destinationDescriptionLoading = true;
+    const apiBase = environment.routeAnalysisApiBase.replace(/\/route-analysis\/?$/, '');
+    const populationPlaces = Array.from(new Set(group.routes.map(route => route.population).filter((value): value is string => !!value?.trim())))
+      .map(name => ({ type: 'population', name, context: group.province }));
+    this.http.post<Array<{ type: string; name: string; context: string | null; description: string }>>(`${apiBase}/destination-descriptions/resolve`, {
+      places: [
+        { type: this.userTracksGroupBy, name: group.province, context: group.autonomousCommunity },
+        ...populationPlaces
+      ]
+    }).subscribe({
+      next: response => {
+        response?.forEach(item => {
+          const description = item.description?.trim();
+          if (description) this.destinationDescriptions.set(this.placeDescriptionKey(item.type, item.name, item.context), description);
+        });
+        this.destinationDescriptionLoading = false;
+      },
+      error: () => this.destinationDescriptionLoading = false
+    });
+  }
+
+  private destinationDescriptionKey(group: GroupedUserTracks): string {
+    return this.placeDescriptionKey(this.userTracksGroupBy, group.province, group.autonomousCommunity);
+  }
+
+  private placeDescriptionKey(type: string, name: string, context: string | null | undefined): string {
+    return `${type}:${name}:${context ?? ''}`.toLocaleLowerCase();
+  }
+
+  destinationAverageAscent(group: GroupedUserTracks): string {
+    const values = group.routes.map(route => Number(route.ascentMeters)).filter(value => Number.isFinite(value) && value > 0);
+    if (!values.length) return 'Sin dato';
+    return `${Math.round(values.reduce((sum, value) => sum + value, 0) / values.length)} m`;
+  }
+
+  destinationPopulations(group: GroupedUserTracks): string {
+    const names = Array.from(new Set(group.routes.map(route => route.population).filter((value): value is string => !!value?.trim())));
+    if (!names.length) return 'Ubicaciones por catalogar';
+    const visible = names.slice(0, 3).join(' · ');
+    return names.length > 3 ? `${visible} · +${names.length - 3}` : visible;
+  }
+
+  destinationDifficultyRange(group: GroupedUserTracks): string {
+    const levels = group.routes.map(route => Number(route.difficultyLevel)).filter(value => Number.isFinite(value) && value > 0);
+    if (!levels.length) return 'Sin clasificar';
+    const label = (level: number) => level <= 1 ? 'Suave' : level <= 2 ? 'Media' : level <= 3 ? 'Dura' : 'Muy dura';
+    const min = label(Math.min(...levels));
+    const max = label(Math.max(...levels));
+    return min === max ? min : `${min}–${max}`;
+  }
+
+  openPublicAnalysis(item: PublicRouteAnalysis): void {
+    this.selectedPublicAnalysis = this.selectedPublicAnalysis?.id === item.id ? null : item;
+    if (this.selectedPublicAnalysis) {
+      setTimeout(() => this.publicAnalysisDetailRef?.nativeElement.scrollIntoView({ behavior: 'smooth', block: 'start' }));
+    }
+  }
+
+  formatPublicAnalysisDate(value: string | null | undefined): string {
+    if (!value) return 'Fecha no disponible';
+    const date = new Date(value);
+    return Number.isNaN(date.getTime()) ? 'Fecha no disponible' : date.toLocaleDateString('es-ES');
+  }
+
+  publicProfilePath(item: PublicRouteAnalysis): string {
+    const profile = item.routeStats?.elevationProfile ?? [];
+    if (profile.length < 2) return '';
+    const maxKm = Math.max(1, item.routeStats?.distanceKm ?? profile[profile.length - 1].distanceKm);
+    const elevations = profile.map(point => point.elevationM);
+    const min = Math.min(...elevations);
+    const range = Math.max(1, Math.max(...elevations) - min);
+    return profile.map((point, index) => {
+      const x = 20 + (point.distanceKm / maxKm) * 720;
+      const y = 175 - ((point.elevationM - min) / range) * 135;
+      return `${index ? 'L' : 'M'} ${x.toFixed(1)} ${y.toFixed(1)}`;
+    }).join(' ');
+  }
+
+  publicSectorX(item: PublicRouteAnalysis, km: number): number {
+    return 20 + (km / Math.max(1, item.routeStats?.distanceKm ?? 1)) * 720;
+  }
+
+  publicSectorWidth(item: PublicRouteAnalysis, startKm: number, endKm: number): number {
+    return Math.max(3, this.publicSectorX(item, endKm) - this.publicSectorX(item, startKm));
+  }
+
+  private loadPublicAnalyses(): void {
+    if (this.publicAnalysesLoading || this.publicAnalyses.length) return;
+    this.publicAnalysesLoading = true;
+    this.publicAnalysesError = null;
+    this.routeAnalysisService.getPublicAnalyses().subscribe({
+      next: analyses => {
+        this.publicAnalyses = analyses;
+        this.recentPublicAnalyses = [...analyses]
+          .sort((a, b) => String(b.createdAt ?? '').localeCompare(String(a.createdAt ?? '')))
+          .slice(0, 6);
+        this.publicAnalysesLoading = false;
+      },
+      error: () => {
+        this.publicAnalysesLoading = false;
+        this.publicAnalysesError = 'No se pudieron cargar los análisis públicos.';
+      }
+    });
+  }
+
+  async analyzeUserTrack(row: UserTrackRow): Promise<void> {
+    const gpx = await this.resolveGpxContentForRow(row);
+    if (!gpx) {
+      this.showMessage('No se pudo cargar el track para analizarlo.');
+      return;
+    }
+
+    this.router.navigate(['/analysis'], {
+      queryParams: { trackId: row.trackId, source: 'tracks' },
+      state: {
+        trackId: row.trackId,
+        source: 'tracks',
+        fileName: row.fileName || row.title || row.eventName || 'Track.gpx',
+        routeXml: gpx
+      }
     });
   }
 

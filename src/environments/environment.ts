@@ -18,7 +18,8 @@ export const environment = {
   usersApiBase: `http://${back}/users`,
   geoCode: `http://${back}/geocode/reverse`,
   mensajesApiBase: `http://${back}/mensajes`,
-  routingApiBase: `http://${back}/routing`
+  routingApiBase: `http://${back}/routing`,
+  routeAnalysisApiBase: `http://${back}/route-analysis`
 };
 
 /*

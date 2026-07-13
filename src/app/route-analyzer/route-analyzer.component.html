@@ -1,0 +1,255 @@
+<main class="analyzer">
+  <header class="analyzer__toolbar">
+    <div class="analyzer__brand">
+      <button type="button" class="analyzer__icon-button" (click)="goHome()" aria-label="Volver al inicio">
+        <mat-icon aria-hidden="true">home</mat-icon>
+      </button>
+      <div>
+        <p class="analyzer__eyebrow">Analizador de rutas</p>
+        <h1>Informe inteligente del track</h1>
+      </div>
+    </div>
+    <div class="analyzer__actions" *ngIf="analysis">
+      <button type="button" class="analyzer__action-button" (click)="downloadPdf()" [disabled]="isExportingPdf" aria-label="Descargar PDF">
+        <mat-icon aria-hidden="true">picture_as_pdf</mat-icon>
+        <span>PDF</span>
+      </button>
+      <button type="button" class="analyzer__action-button" (click)="shareReport()" [disabled]="isExportingPdf" aria-label="Compartir informe">
+        <mat-icon aria-hidden="true">share</mat-icon>
+        <span>Compartir</span>
+      </button>
+      <button type="button" class="analyzer__action-button" (click)="shareWhatsApp()" [disabled]="isExportingPdf" aria-label="Enviar por WhatsApp">
+        <mat-icon aria-hidden="true">chat</mat-icon>
+        <span>WhatsApp</span>
+      </button>
+      <button type="button" class="analyzer__action-button" (click)="shareEmail()" [disabled]="isExportingPdf" aria-label="Enviar por email">
+        <mat-icon aria-hidden="true">mail</mat-icon>
+        <span>Email</span>
+      </button>
+    </div>
+  </header>
+
+  <section class="analyzer__drop">
+    <div>
+      <h2>{{ fileName || 'Sube una ruta GPX' }}</h2>
+      <p>Genera un informe con lectura de dureza, puntos críticos, estrategia por objetivo y referencias visuales sobre el track y el perfil.</p>
+    </div>
+    <label class="analyzer__upload">
+      <mat-icon aria-hidden="true">upload_file</mat-icon>
+      <span>Elegir GPX</span>
+      <input type="file" accept=".gpx" (change)="onFileSelected($event)">
+    </label>
+    <button type="button" class="analyzer__primary" (click)="analyze(!!analysis)" [disabled]="isAnalyzing || !routeXml">
+      <mat-icon aria-hidden="true">{{ isAnalyzing ? 'hourglass_top' : 'auto_awesome' }}</mat-icon>
+      <span>{{ isAnalyzing ? 'Analizando...' : (analysis ? 'Actualizar informe' : 'Analizar ruta') }}</span>
+    </button>
+    <label class="analyzer__instructions">
+      <span>Instrucciones para la IA</span>
+      <textarea
+        [(ngModel)]="userInstructions"
+        maxlength="1200"
+        rows="3"
+        placeholder="Ej: divídelo en tres etapas, enfócalo para MTB, avisa de bajadas técnicas..."></textarea>
+    </label>
+  </section>
+
+  <p class="analyzer__status" *ngIf="statusMessage">{{ statusMessage }}</p>
+
+  <div class="analyzer__busy" *ngIf="isAnalyzing" aria-live="polite">
+    <div class="analyzer__busy-panel">
+      <span class="analyzer__spinner"></span>
+      <strong>Realizando análisis inteligente</strong>
+      <p>Estamos leyendo el GPX, localizando sectores clave y preparando recomendaciones por tipo de salida.</p>
+    </div>
+  </div>
+
+  <section class="analyzer__stack" *ngIf="points.length" #analysisExport>
+    <div class="analyzer__pdf-head analyzer__pdf-section" *ngIf="analysis">
+      <span class="analyzer__pdf-logo-frame">
+        <img src="assets/logo.png" alt="Tracketeo.bike">
+      </span>
+      <div>
+        <p>Informe Tracketeo.bike</p>
+        <h2>{{ fileName || 'Ruta GPX analizada' }}</h2>
+      </div>
+    </div>
+
+    <article class="analyzer__overview analyzer__pdf-section">
+      <div class="analyzer__card-header">
+        <div>
+          <h2>Lectura visual de la ruta</h2>
+          <p>Los sectores y puntos numerados se corresponden con el informe inferior.</p>
+        </div>
+        <span *ngIf="analysis" class="analyzer__type">{{ routeTypeLabel }}</span>
+      </div>
+
+      <div class="analyzer__stats analyzer__stats--inline" *ngIf="stats">
+        <div>
+          <span>Distancia</span>
+          <strong>{{ stats.distanceKm | number:'1.1-1' }} km</strong>
+        </div>
+        <div>
+          <span>Desnivel +</span>
+          <strong>{{ stats.elevationGain | number:'1.0-0' }} m</strong>
+        </div>
+        <div>
+          <span>Desnivel -</span>
+          <strong>{{ stats.elevationLoss | number:'1.0-0' }} m</strong>
+        </div>
+        <div>
+          <span>Cota</span>
+          <strong>{{ stats.minEle | number:'1.0-0' }}-{{ stats.maxEle | number:'1.0-0' }} m</strong>
+        </div>
+      </div>
+      <p class="analyzer__elevation-source" *ngIf="elevationSourceLabel">
+        Altimetría: {{ elevationSourceLabel }}
+      </p>
+
+      <svg class="analyzer__track-svg" viewBox="0 0 760 360" role="img" aria-label="Dibujo del track analizado">
+        <path class="analyzer__track-shadow" [attr.d]="trackPath"></path>
+        <path class="analyzer__track-line" [attr.d]="trackPath"></path>
+        <path *ngFor="let sector of sectorPaths; let i = index"
+              class="analyzer__sector-path"
+              [class.analyzer__sector-path--s1]="sector.colorIndex % 3 === 0"
+              [class.analyzer__sector-path--s2]="sector.colorIndex % 3 === 1"
+              [class.analyzer__sector-path--s3]="sector.colorIndex % 3 === 2"
+              [class.analyzer__sector-path--hard]="sector.effort === 'alto' || sector.effort === 'critico'"
+              [attr.d]="sector.path"></path>
+        <g *ngIf="startMarker">
+          <circle class="analyzer__endpoint analyzer__endpoint--start" [attr.cx]="startMarker.x" [attr.cy]="startMarker.y" r="10"></circle>
+          <text class="analyzer__endpoint-text" [attr.x]="startMarker.x" [attr.y]="startMarker.y + 4">I</text>
+        </g>
+        <g *ngIf="endMarker">
+          <circle class="analyzer__endpoint analyzer__endpoint--end" [attr.cx]="endMarker.x" [attr.cy]="endMarker.y" r="10"></circle>
+          <text class="analyzer__endpoint-text" [attr.x]="endMarker.x" [attr.y]="endMarker.y + 4">F</text>
+        </g>
+        <g *ngFor="let marker of highlightMarkers; let i = index">
+          <circle class="analyzer__marker" [class.analyzer__marker--high]="marker.severity === 'high'" [attr.cx]="marker.x" [attr.cy]="marker.y" r="8"></circle>
+          <text class="analyzer__marker-text" [attr.x]="marker.x" [attr.y]="marker.y + 4">{{ i + 1 }}</text>
+        </g>
+      </svg>
+
+      <svg class="analyzer__profile-svg" viewBox="0 0 760 190" role="img" aria-label="Perfil de elevación">
+        <rect *ngFor="let sector of sectorBands"
+              class="analyzer__sector-band"
+              [class.analyzer__sector-band--s1]="sector.colorIndex % 3 === 0"
+              [class.analyzer__sector-band--s2]="sector.colorIndex % 3 === 1"
+              [class.analyzer__sector-band--s3]="sector.colorIndex % 3 === 2"
+              [class.analyzer__sector-band--hard]="sector.effort === 'alto' || sector.effort === 'critico'"
+              [attr.x]="sector.x"
+              y="0"
+              [attr.width]="sector.width"
+              height="160"></rect>
+        <path class="analyzer__profile-fill" [attr.d]="profilePath + ' L 760 160 L 0 160 Z'"></path>
+        <path class="analyzer__profile-line" [attr.d]="profilePath"></path>
+        <g *ngFor="let sector of profileSectorLabels">
+          <rect class="analyzer__profile-sector-label-bg"
+                [class.analyzer__profile-sector-label-bg--s1]="sector.colorIndex % 3 === 0"
+                [class.analyzer__profile-sector-label-bg--s2]="sector.colorIndex % 3 === 1"
+                [class.analyzer__profile-sector-label-bg--s3]="sector.colorIndex % 3 === 2"
+                [class.analyzer__profile-sector-label-bg--hard]="sector.effort === 'alto' || sector.effort === 'critico'"
+                [attr.x]="sector.x - 15"
+                y="10"
+                width="30"
+                height="20"
+                rx="10"></rect>
+          <text class="analyzer__profile-sector-label" [attr.x]="sector.x" y="24">{{ sector.label }}</text>
+        </g>
+        <g *ngFor="let marker of profileMarkers; let i = index">
+          <line class="analyzer__profile-marker-line" [attr.x1]="marker.x" y1="0" [attr.x2]="marker.x" y2="160"></line>
+          <circle class="analyzer__profile-marker" [attr.cx]="marker.x" [attr.cy]="marker.y" r="7"></circle>
+          <text class="analyzer__marker-text" [attr.x]="marker.x" [attr.y]="marker.y + 4">{{ i + 1 }}</text>
+        </g>
+        <line class="analyzer__profile-axis" x1="0" y1="170" x2="760" y2="170"></line>
+        <g *ngFor="let tick of profileTicks">
+          <line class="analyzer__profile-tick" [attr.x1]="tick.x" y1="164" [attr.x2]="tick.x" y2="174"></line>
+          <text class="analyzer__profile-tick-text" [attr.x]="tick.x" y="187" [attr.text-anchor]="tick.anchor">{{ tick.label }}</text>
+        </g>
+      </svg>
+      <div class="analyzer__legend">
+        <span><i class="analyzer__dot analyzer__dot--start"></i>Inicio</span>
+        <span><i class="analyzer__dot analyzer__dot--end"></i>Final</span>
+        <span><i class="analyzer__dot analyzer__dot--highlight"></i>Punto destacado</span>
+        <span><i class="analyzer__dot analyzer__dot--sector"></i>Sector del informe</span>
+      </div>
+    </article>
+
+      <article class="analyzer__report" *ngIf="analysis; else noAnalysis">
+        <section class="analyzer__report-section analyzer__pdf-section">
+          <h2>Resumen</h2>
+          <p>{{ analysis.report.summary }}</p>
+
+          <h3>Dureza</h3>
+          <p>{{ analysis.report.difficultyExplanation }}</p>
+        </section>
+
+        <section class="analyzer__report-section analyzer__pdf-section" *ngIf="analysis.report.sectors?.length">
+          <h3>Sectores señalados en el perfil</h3>
+          <div class="analyzer__sectors">
+            <div *ngFor="let sector of analysis.report.sectors; let i = index"
+                 [class.analyzer__sector-card--s1]="i % 3 === 0"
+                 [class.analyzer__sector-card--s2]="i % 3 === 1"
+                 [class.analyzer__sector-card--s3]="i % 3 === 2">
+              <span class="analyzer__section-index">S{{ i + 1 }}</span>
+              <strong>{{ sector.name }}</strong>
+              <small>{{ formatKm(sector.kmStart) }} - {{ formatKm(sector.kmEnd) }} · esfuerzo {{ sector.effort }}</small>
+              <p>{{ sector.focus }}</p>
+            </div>
+          </div>
+        </section>
+
+        <section class="analyzer__report-section analyzer__pdf-section" *ngIf="hasApproaches">
+          <h3>Cómo afrontarla según objetivo</h3>
+          <div class="analyzer__approaches">
+            <section *ngIf="analysis.report.approaches?.recreational?.length">
+              <h4>Salida de recreo</h4>
+              <ul><li *ngFor="let item of analysis.report.approaches?.recreational">{{ item }}</li></ul>
+            </section>
+            <section *ngIf="analysis.report.approaches?.training?.length">
+              <h4>Entreno</h4>
+              <ul><li *ngFor="let item of analysis.report.approaches?.training">{{ item }}</li></ul>
+            </section>
+            <section *ngIf="analysis.report.approaches?.competition?.length">
+              <h4>Competición</h4>
+              <ul><li *ngFor="let item of analysis.report.approaches?.competition">{{ item }}</li></ul>
+            </section>
+          </div>
+        </section>
+
+        <section class="analyzer__report-section analyzer__pdf-section" *ngIf="analysis.report.highlights.length">
+          <h3>Puntos destacados</h3>
+          <ol class="analyzer__highlights">
+            <li *ngFor="let highlight of analysis.report.highlights; let i = index">
+              <span class="analyzer__highlight-index">{{ i + 1 }}</span>
+              <div>
+                <strong>{{ highlight.title }}</strong>
+                <small>{{ formatKm(highlight.kmStart) }}<ng-container *ngIf="highlight.kmEnd"> - {{ formatKm(highlight.kmEnd) }}</ng-container></small>
+                <p>{{ highlight.description }}</p>
+              </div>
+            </li>
+          </ol>
+        </section>
+
+        <section class="analyzer__report-section analyzer__pdf-section" *ngIf="analysis.report.warnings.length">
+          <h3>Advertencias</h3>
+          <ul>
+            <li *ngFor="let warning of analysis.report.warnings">{{ warning }}</li>
+          </ul>
+        </section>
+
+        <section class="analyzer__report-section analyzer__pdf-section" *ngIf="analysis.report.recommendations.length">
+          <h3>Recomendaciones</h3>
+          <ul>
+            <li *ngFor="let recommendation of analysis.report.recommendations">{{ recommendation }}</li>
+          </ul>
+        </section>
+      </article>
+
+      <ng-template #noAnalysis>
+        <article class="analyzer__report analyzer__report--empty">
+          <h2>Listo para analizar</h2>
+          <p>Cuando pulses “Analizar ruta”, el backend podrá reutilizar un análisis guardado o crear uno nuevo con OpenAI y guardarlo en BBDD.</p>
+        </article>
+      </ng-template>
+  </section>
+</main>

@@ -7,11 +7,13 @@ import { AuthGuard } from './services/auth.guard';
 import { PlanOutingComponent } from './plan-outing/plan-outing.component';
 import { ResetPasswordComponent } from './reset-password/reset-password.component';
 import { PrivacyPolicyComponent } from './privacy-policy/privacy-policy.component';
+import { RouteAnalyzerComponent } from './route-analyzer/route-analyzer.component';
 
 const routes: Routes = [
   { path: '', component: HomeComponent, pathMatch: 'full' },
   { path: 'load', component: LoadGpxComponent },
-  { path: 'events', component: LoadGpxComponent, canActivate: [AuthGuard], data: { mode: 'events' } },
+  { path: 'events', redirectTo: 'analysis', pathMatch: 'full' },
+  { path: 'analysis', component: RouteAnalyzerComponent, canActivate: [AuthGuard] },
   { path: 'plan', component: PlanOutingComponent, canActivate: [AuthGuard] },
   { path: 'map', component: MapComponent },
   { path: 'reset-password', component: ResetPasswordComponent },

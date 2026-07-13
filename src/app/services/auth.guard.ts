@@ -52,7 +52,7 @@ export class AuthGuard implements CanActivate {
   private showSessionExpiredDialog(): void {
     const dialogData: InfoDialogData = {
       title: 'Sesión expirada',
-      message: 'Tu sesión ha expirado. Inicia sesión de nuevo para acceder a eventos y rankings.',
+      message: 'Tu sesión ha expirado. Inicia sesión de nuevo para acceder a las funciones privadas.',
       confirmLabel: 'Volver al inicio'
     };
 

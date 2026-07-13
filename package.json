@@ -27,6 +27,7 @@
     "chart.js": "^4.4.3",
     "gpxparser": "^3.0.8",
     "html2canvas": "^1.4.1",
+    "jspdf": "^4.2.1",
     "leaflet": "^1.9.4",
     "maplibre-gl": "^5.13.0",
     "rxjs": "~7.5.0",

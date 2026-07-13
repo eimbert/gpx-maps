@@ -1240,6 +1240,23 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
     });
   }
 
+  analyzeTrack(track: PlanTrack): void {
+    if (!track.routeXml) {
+      this.showMessage('No hay un GPX disponible para analizar este track.');
+      return;
+    }
+
+    this.router.navigate(['/analysis'], {
+      queryParams: { trackId: track.id, source: 'plan', folderId: this.activeFolder?.id },
+      state: {
+        trackId: track.id,
+        source: 'plan',
+        fileName: this.buildTrackFileName(track),
+        routeXml: track.routeXml
+      }
+    });
+  }
+
   async viewSelectedTracks(): Promise<void> {
     const selectedTracks = this.tracks.filter(track => this.selectedTrackIds.has(track.id) && this.canViewTrack(track));
     if (!selectedTracks.length) {

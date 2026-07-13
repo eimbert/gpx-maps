@@ -56,7 +56,7 @@
     <section *ngIf="isAuthenticated && !isUserTracksPanelCollapsed" class="user-tracks" #userTracksSection>
       <div class="user-tracks__header">
         <div>
-          <p class="eyebrow">Tracks disponibles</p>
+          <p class="eyebrow">Archivo de rutas</p>
         </div>
       </div>
 
@@ -76,10 +76,10 @@
             <span class="user-tracks__tab-count">{{ getUserTrackRows('personal').length }}</span>
           </button>
           <button type="button" class="user-tracks__tab"
-            [class.user-tracks__tab--active]="activeUserTracksTab === 'events'" (click)="setUserTracksTab('events')"
-            aria-label="Ver tus tracks de eventos">
-            <span>Tus tracks en eventos</span>
-            <span class="user-tracks__tab-count">{{ getUserTrackRows('events').length }}</span>
+            [class.user-tracks__tab--active]="activeUserTracksTab === 'analyses'" (click)="setUserTracksTab('analyses')"
+            aria-label="Ver análisis públicos de rutas">
+            <span>Análisis de rutas</span>
+            <span class="user-tracks__tab-count">{{ publicAnalyses.length }}</span>
           </button>
           <button type="button" class="user-tracks__tab"
             [class.user-tracks__tab--active]="activeUserTracksTab === 'shared'" (click)="setUserTracksTab('shared')"
@@ -97,9 +97,99 @@
       </div>
 
       <p class="muted" *ngIf="activeTracksLoading">{{ activeTracksLoadingLabel }}</p>
-      <p class="muted" *ngIf="!activeTracksLoading && !getUserTrackRows(activeUserTracksTab).length">{{activeTracksEmptyMessage }}</p>
+      <p class="muted" *ngIf="!activeTracksLoading && ((activeUserTracksTab === 'analyses' && !publicAnalyses.length) || (activeUserTracksTab !== 'analyses' && !getUserTrackRows(activeUserTracksTab).length))">{{activeTracksEmptyMessage }}</p>
 
-      <div class="user-tracks__panel" *ngIf="!activeTracksLoading && getUserTrackRows(activeUserTracksTab).length">
+      <div class="analysis-library" *ngIf="activeUserTracksTab === 'analyses' && !activeTracksLoading && publicAnalyses.length">
+        <section>
+          <p class="eyebrow">Últimos análisis</p>
+          <div class="analysis-library__recent">
+            <article class="analysis-library__card" *ngFor="let item of recentPublicAnalyses">
+              <span class="analysis-library__type">{{ item.report.routeType }}</span>
+              <h3>{{ item.title }}</h3>
+              <p>{{ item.report.summary }}</p>
+              <div class="analysis-library__metrics">
+                <span>{{ item.routeStats?.distanceKm | number:'1.1-1' }} km</span>
+                <span>{{ item.routeStats?.elevationGainM | number:'1.0-0' }} m D+</span>
+              </div>
+              <button type="button" class="ghost ghost--small" (click)="openPublicAnalysis(item)">{{ selectedPublicAnalysis?.id === item.id ? 'Cerrar' : 'Ver análisis' }}</button>
+            </article>
+          </div>
+        </section>
+        <article class="analysis-library__detail" *ngIf="selectedPublicAnalysis as selected" #publicAnalysisDetail>
+          <div class="analysis-library__detail-head">
+            <div>
+              <p class="eyebrow">Informe público</p>
+              <h2>{{ selected.title }}</h2>
+            </div>
+            <button type="button" class="ghost ghost--small" (click)="openPublicAnalysis(selected)">Cerrar</button>
+          </div>
+          <div class="analysis-library__detail-metrics">
+            <strong>{{ selected.routeStats?.distanceKm | number:'1.1-1' }} km</strong>
+            <strong>{{ selected.routeStats?.elevationGainM | number:'1.0-0' }} m D+</strong>
+            <strong>{{ selected.report.routeType }}</strong>
+          </div>
+          <p>{{ selected.report.summary }}</p>
+          <section class="analysis-library__profile" *ngIf="publicProfilePath(selected)">
+            <h3>Perfil y sectores</h3>
+            <svg viewBox="0 0 760 205" role="img" aria-label="Perfil altimétrico y sectores de la ruta">
+              <rect *ngFor="let sector of selected.report.sectors; let i = index"
+                    class="analysis-library__sector-band"
+                    [class.analysis-library__sector-band--hard]="sector.effort === 'alto' || sector.effort === 'critico'"
+                    [attr.x]="publicSectorX(selected, sector.kmStart)" y="25"
+                    [attr.width]="publicSectorWidth(selected, sector.kmStart, sector.kmEnd)" height="150"></rect>
+              <path class="analysis-library__profile-fill" [attr.d]="publicProfilePath(selected) + ' L 740 175 L 20 175 Z'"></path>
+              <path class="analysis-library__profile-line" [attr.d]="publicProfilePath(selected)"></path>
+              <g *ngFor="let sector of selected.report.sectors; let i = index">
+                <circle class="analysis-library__sector-label-bg"
+                        [attr.cx]="publicSectorX(selected, (sector.kmStart + sector.kmEnd) / 2)" cy="18" r="14"></circle>
+                <text class="analysis-library__sector-label"
+                      [attr.x]="publicSectorX(selected, (sector.kmStart + sector.kmEnd) / 2)" y="22">S{{ i + 1 }}</text>
+              </g>
+              <line x1="20" y1="175" x2="740" y2="175" class="analysis-library__profile-axis"></line>
+              <text x="20" y="198" class="analysis-library__profile-text">0 km</text>
+              <text x="740" y="198" text-anchor="end" class="analysis-library__profile-text">{{ selected.routeStats?.distanceKm | number:'1.1-1' }} km</text>
+            </svg>
+            <div class="analysis-library__sector-cards">
+              <article *ngFor="let sector of selected.report.sectors; let i = index">
+                <strong>S{{ i + 1 }} · {{ sector.name }}</strong>
+                <small>{{ sector.kmStart | number:'1.1-1' }}–{{ sector.kmEnd | number:'1.1-1' }} km · {{ sector.effort }}</small>
+                <p>{{ sector.focus }}</p>
+              </article>
+            </div>
+          </section>
+          <h3>Dureza</h3>
+          <p>{{ selected.report.difficultyExplanation }}</p>
+          <div class="analysis-library__detail-columns">
+            <section *ngIf="selected.report.highlights.length">
+              <h3>Puntos destacados</h3>
+              <ul><li *ngFor="let highlight of selected.report.highlights"><strong>{{ highlight.title }}</strong>: {{ highlight.description }}</li></ul>
+            </section>
+            <section *ngIf="selected.report.warnings.length">
+              <h3>Advertencias</h3>
+              <ul><li *ngFor="let warning of selected.report.warnings">{{ warning }}</li></ul>
+            </section>
+            <section *ngIf="selected.report.recommendations.length">
+              <h3>Recomendaciones</h3>
+              <ul><li *ngFor="let recommendation of selected.report.recommendations">{{ recommendation }}</li></ul>
+            </section>
+          </div>
+        </article>
+        <section class="analysis-library__available">
+          <p class="eyebrow">Análisis disponibles</p>
+          <article class="analysis-library__row" *ngFor="let item of publicAnalyses">
+            <div>
+              <strong>{{ item.title }}</strong>
+              <small>{{ formatPublicAnalysisDate(item.createdAt) }} · {{ item.report.routeType }}</small>
+            </div>
+            <span>{{ item.routeStats?.distanceKm | number:'1.1-1' }} km</span>
+            <span>{{ item.routeStats?.elevationGainM | number:'1.0-0' }} m D+</span>
+            <button type="button" class="ghost ghost--small" (click)="openPublicAnalysis(item)">{{ selectedPublicAnalysis?.id === item.id ? 'Cerrar' : 'Ver' }}</button>
+          </article>
+        </section>
+        <p class="analysis-library__privacy">Los análisis se muestran sin nombre, perfil ni datos identificativos del usuario.</p>
+      </div>
+
+      <div class="user-tracks__panel" *ngIf="activeUserTracksTab !== 'analyses' && !activeTracksLoading && getUserTrackRows(activeUserTracksTab).length">
         <div class="user-tracks__table-toolbar">
           <label class="user-tracks__pagination-rows">
             <select [value]="userTracksGroupBy" (change)="onUserTracksGroupByChange($any($event.target)?.value || '')"
@@ -117,7 +207,76 @@
           </div>
         </div>
 
-        <div class="user-tracks__groups" *ngIf="paginatedUserTracks.length; else emptyGroups">
+        <div class="destination-browser" *ngIf="groupedUserTracks.length && !selectedDestination">
+          <div class="destination-browser__intro">
+            <div>
+              <p class="eyebrow">Explora el archivo</p>
+              <h2>Rutas clasificadas por {{ userTracksGroupByLabel | lowercase }}</h2>
+            </div>
+            <span>{{ groupedUserTracks.length }} {{ userTracksGroupByPluralLabel | lowercase }} clasificadas</span>
+          </div>
+          <div class="destination-grid">
+            <article class="destination-card" *ngFor="let group of groupedUserTracks; let i = index" (click)="openDestination(group)" tabindex="0" (keydown.enter)="openDestination(group)">
+              <header class="destination-card__header">
+                <span>{{ group.autonomousCommunity || 'Comunidad sin indicar' }}</span>
+                <strong>{{ group.province }}</strong>
+              </header>
+              <section class="destination-card__identity">
+                <small>{{ group.autonomousCommunity || 'Territorio ciclista' }}</small>
+                <h3>{{ group.province }}</h3>
+              </section>
+              <section class="destination-card__facts">
+                <div><small>Rutas</small><strong>{{ group.count }}</strong></div>
+                <div><small>Distancias</small><strong>{{ destinationDistanceRange(group) }}</strong></div>
+                <div><small>D+ medio</small><strong>{{ destinationAverageAscent(group) }}</strong></div>
+                <div><small>Dificultad</small><strong>{{ destinationDifficultyRange(group) }}</strong></div>
+              </section>
+              <section class="destination-card__places">
+                <small>Poblaciones incluidas</small>
+                <p>{{ destinationPopulations(group) }}</p>
+              </section>
+              <footer class="destination-card__go">Ver rutas <mat-icon aria-hidden="true">arrow_forward</mat-icon></footer>
+            </article>
+          </div>
+        </div>
+
+        <section class="destination-detail" *ngIf="selectedDestination as destination">
+          <header class="destination-detail__hero">
+            <div class="destination-detail__shade"></div>
+            <button type="button" class="destination-detail__back" (click)="closeDestination()"><mat-icon aria-hidden="true">arrow_back</mat-icon> Destinos</button>
+            <div class="destination-detail__title">
+              <span>{{ destination.autonomousCommunity || 'Territorio ciclista' }} · {{ destination.province }}</span>
+              <h2>{{ destination.province }}</h2>
+              <p *ngIf="destinationDescription(destination); else destinationDescriptionState">{{ destinationDescription(destination) }}</p>
+              <ng-template #destinationDescriptionState>
+                <p class="destination-detail__description-status" *ngIf="destinationDescriptionLoading">Preparando una breve descripción del lugar…</p>
+              </ng-template>
+            </div>
+          </header>
+          <div class="route-card-grid">
+            <article class="route-explorer-card" *ngFor="let row of destination.routes">
+              <div class="route-explorer-card__top">
+                <span class="route-explorer-card__difficulty" *ngIf="getUserTrackDifficulty(row) as difficulty">{{ difficulty.label }}</span>
+                <button *ngIf="activeUserTracksTab !== 'shared' && row.canDelete" type="button" class="route-explorer-card__menu" (click)="confirmDeleteUserTrack(row)" aria-label="Eliminar ruta"><mat-icon>delete_outline</mat-icon></button>
+              </div>
+              <h3>{{ row.title || row.eventName || 'Ruta sin título' }}</h3>
+              <p *ngIf="routePopulationDescription(row)">{{ routePopulationDescription(row) }}</p>
+              <div class="route-explorer-card__stats">
+                <span><mat-icon>straighten</mat-icon><strong>{{ row.distanceLabel }}</strong></span>
+                <span title="Desnivel positivo acumulado"><mat-icon>landscape</mat-icon><strong>{{ row.ascentMeters !== null ? ((row.ascentMeters | number:'1.0-0') + ' m D+') : 'Sin dato D+' }}</strong></span>
+                <span><mat-icon>schedule</mat-icon><strong>{{ row.movingTimeLabel }}</strong></span>
+              </div>
+              <div class="route-explorer-card__actions">
+                <button type="button" (click)="viewUserTrack(row)"><mat-icon>map</mat-icon> Ver</button>
+                <button type="button" (click)="analyzeUserTrack(row)"><mat-icon>analytics</mat-icon> Analizar</button>
+                <button type="button" (click)="animateUserTrack(row)"><mat-icon>play_arrow</mat-icon> Animar</button>
+                <button type="button" (click)="planUserTrack(row)"><mat-icon>event_available</mat-icon> Planificar</button>
+              </div>
+            </article>
+          </div>
+        </section>
+
+        <div class="user-tracks__groups" *ngIf="false">
           <table class="tabla-rutas" [attr.aria-label]="'Tracks guardadas agrupadas por ' + userTracksGroupByLabel.toLowerCase()">
             <thead>
               <tr class="head-tabla">
@@ -143,11 +302,10 @@
                 </tr>
                 <tr *ngIf="isProvinceExpanded(group.province)" class="user-tracks__routes-row">
                   <td colspan="2">
-                    <div style="width: 90%; margin: 0 auto;">
+                    <div class="user-tracks__nested-shell">
                       <table class="user-tracks__nested-table user-tracks__nested-table--desktop" [attr.aria-label]="'Tracks en ' + group.province">
                         <thead>
-                          <tr
-                            style="border-style:solid; border-width: 1px; border-color: rgb(231, 228, 228); font-size: 11px;">
+                          <tr>
                             <th scope="col">Track</th>
                             <th scope="col">
                               <button type="button" class="user-tracks__sort" (click)="sortUserTracksBy('year')" aria-label="Ordenar por año">Año 
@@ -196,6 +354,7 @@
                             <th scope="col">Dureza</th>
                             <th scope="col" class="user-tracks__action-col">Descargar</th>
                             <th scope="col" class="user-tracks__action-col">Ver track</th>
+                            <th scope="col" class="user-tracks__action-col">Analizar</th>
                             <th scope="col" class="user-tracks__action-col">Animar</th>
                             <th scope="col" class="user-tracks__action-col">Planificar salida</th>
                             <th scope="col" class="user-tracks__action-col">Eliminar</th>
@@ -203,9 +362,7 @@
                         </thead>
                         <tbody>
                           <!-- <tr style="border-style:solid; border-width: 0.5px; border-color: lightgrey;" *ngFor="let row of group.routes" >  -->
-                          <tr class="nested-row"
-                            style="border-style:solid; border-width: 0.5px; border-color: lightgrey;"
-                            *ngFor="let row of group.routes">
+                          <tr class="nested-row" *ngFor="let row of group.routes">
                             <td> <!-- class="user-tracks__title-col" -->
                               <div *ngIf="row.eventName && row.eventName !== '-'">
                                 <span style="color: rgb(8, 8, 158);">{{ row.eventName }} (E)</span>
@@ -257,6 +414,11 @@
                               <mat-icon aria-hidden="true" style="color: #0f766e; cursor: pointer;"
                                 (click)="viewUserTrack(row)"
                                 aria-label="Ver track en el mapa">map</mat-icon>
+                            </td>
+                            <td class="user-tracks__action-col">
+                              <mat-icon aria-hidden="true" style="color: #2563eb; cursor: pointer;"
+                                (click)="analyzeUserTrack(row)"
+                                aria-label="Analizar ruta">analytics</mat-icon>
                             </td>
                             <td class="user-tracks__action-col">
                               <!-- <button type="button" class="ghost ghost--small user-tracks__icon-button" (click)="animateUserTrack(row)" aria-label="Animar track"> -->
@@ -352,6 +514,9 @@
                             <mat-icon aria-hidden="true" style="color: #0f766e; cursor: pointer;"
                               (click)="viewUserTrack(row)"
                               aria-label="Ver track en el mapa">map</mat-icon>
+                            <mat-icon aria-hidden="true" style="color: #2563eb; cursor: pointer;"
+                              (click)="analyzeUserTrack(row)"
+                              aria-label="Analizar ruta">analytics</mat-icon>
                             <mat-icon aria-hidden="true" style="color: orange; cursor: pointer;"
                               (click)="animateUserTrack(row)">play_arrow</mat-icon>
                             <mat-icon aria-hidden="true" style="color: #7b1fa2; cursor: pointer;"
@@ -377,24 +542,6 @@
           <div class="user-tracks__empty">No hay tracks que coincidan con la búsqueda.</div>
         </ng-template>
 
-        <div class="user-tracks__pagination">
-          <div class="user-tracks__pagination-rows">
-            <label for="userTracksRows">Filas:</label>
-            <select id="userTracksRows" [value]="userTracksRows"
-              (change)="onUserTracksRowsChange($any($event.target).value)">
-              <option *ngFor="let option of userTracksRowsOptions" [value]="option">{{ option }}</option>
-            </select>
-          </div>
-          <div class="user-tracks__pagination-controls">
-            <button type="button" style="cursor: pointer;" class="ghost ghost--small" (click)="changeUserTracksPage(-1)"
-              [disabled]="userTracksPage === 0 || !userTracksPageCount">Anterior</button>
-            <span class="user-tracks__page-indicator">
-              Página {{ userTracksPageCount ? userTracksPage + 1 : 0 }} / {{ userTracksPageCount || 0 }}
-            </span>
-            <button type="button" style="cursor: pointer;" class="ghost ghost--small" (click)="changeUserTracksPage(1)"
-              [disabled]="!userTracksPageCount || userTracksPage + 1 >= userTracksPageCount">Siguiente</button>
-          </div>
-        </div>
       </div>
     </section>
   </section>

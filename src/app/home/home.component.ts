@@ -3,7 +3,7 @@ import { MatDialog } from '@angular/material/dialog';
 import { LoginDialogComponent } from '../login-dialog/login-dialog.component';
 import { LoginSuccessResponse } from '../interfaces/auth';
 import { RegisterDialogComponent } from '../register-dialog/register-dialog.component';
-import { AuthService } from '../services/auth.service';
+import { AuthService, EntitlementsResponse } from '../services/auth.service';
 import { Subscription } from 'rxjs';
 import { ActivatedRoute, Router } from '@angular/router';
 
@@ -14,6 +14,9 @@ import { ActivatedRoute, Router } from '@angular/router';
 })
 export class HomeComponent implements OnInit, OnDestroy {
   loggedUser: LoginSuccessResponse | null = null;
+  premiumDetailsOpen = false;
+  usageDetailsOpen = false;
+  entitlements: EntitlementsResponse | null = null;
   private sessionSub?: Subscription;
 
   constructor(
@@ -36,10 +39,13 @@ export class HomeComponent implements OnInit, OnDestroy {
     this.loggedUser = this.authService.getSession();
     this.sessionSub = this.authService.sessionChanges$.subscribe(session => {
       this.loggedUser = session;
+      if (session) this.loadEntitlements();
+      else this.entitlements = null;
     });
 
     this.authService.validateSessionWithBackend().subscribe(session => {
       this.loggedUser = session;
+      if (session) this.loadEntitlements();
       if (!session) {
         this.router.navigate(['/']);
       }
@@ -69,5 +75,29 @@ export class HomeComponent implements OnInit, OnDestroy {
   logout(): void {
     this.authService.clearSession();
     this.loggedUser = null;
+    this.entitlements = null;
+  }
+
+  togglePremiumDetails(): void {
+    this.premiumDetailsOpen = !this.premiumDetailsOpen;
+  }
+
+  toggleUsageDetails(): void {
+    this.usageDetailsOpen = !this.usageDetailsOpen;
+  }
+
+  compactRemaining(limit: number, used: number): string {
+    return limit < 0 ? '∞' : String(Math.max(0, limit - used));
+  }
+
+  remaining(limit: number, used: number): string {
+    return limit < 0 ? 'Ilimitado' : `${Math.max(0, limit - used)} restantes`;
+  }
+
+  private loadEntitlements(): void {
+    this.authService.getEntitlements().subscribe({
+      next: entitlements => this.entitlements = entitlements,
+      error: () => this.entitlements = null
+    });
   }
 }

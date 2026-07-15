@@ -55,6 +55,8 @@ export interface RouteAnalysis {
   updatedAt?: string | null;
   title?: string | null;
   fileName?: string | null;
+  usageCharged?: boolean;
+  reusedExisting?: boolean;
   report: RouteAnalysisReport;
 }
 

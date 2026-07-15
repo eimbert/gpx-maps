@@ -7,6 +7,9 @@ export interface LoginSuccessResponse {
   nickname: string;
   rol: string | null;
   premium: boolean;
+  plan: 'FREE' | 'PREMIUM' | 'ADMIN';
+  administrator: boolean;
+  lifetimePremium: boolean;
   verified: boolean;
 }
 

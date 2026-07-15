@@ -30,6 +30,12 @@ export class RouteAnalysisService {
     );
   }
 
+  lookupExisting(payload: RouteAnalysisRequest): Observable<RouteAnalysis | null> {
+    return this.http.post<RouteAnalysis>(`${this.apiBase}/lookup`, payload).pipe(
+      map(analysis => analysis ? this.normalizeAnalysis(analysis) : null)
+    );
+  }
+
   refreshAnalysis(analysisId: number): Observable<RouteAnalysis> {
     return this.http.post<RouteAnalysis>(`${this.apiBase}/${analysisId}/refresh`, {}).pipe(
       map(analysis => this.normalizeAnalysis(analysis))
@@ -75,6 +81,8 @@ export class RouteAnalysisService {
       updatedAt: analysis.updatedAt ?? (analysis as any).updated_at ?? null,
       title: analysis.title ?? (analysis as any).routeTitle ?? (analysis as any).route_title ?? null,
       fileName: analysis.fileName ?? (analysis as any).file_name ?? null,
+      usageCharged: Boolean(analysis.usageCharged ?? (analysis as any).usage_charged),
+      reusedExisting: Boolean(analysis.reusedExisting ?? (analysis as any).reused_existing),
       report: {
         summary: String(report.summary ?? ''),
         routeType: report.routeType ?? report.route_type ?? 'mixta',

@@ -11,7 +11,7 @@ export const environment = {
   resendVerificationUrl: `http://${back}/auth/resend-verification`,
   forgotPasswordUrl: `http://${back}/auth/forgot-password`,
   resetPasswordUrl: `http://${back}/auth/reset-password`,
-  meUrl: `http://${back}/tracks/me`,
+  meUrl: `http://${back}/auth/me`,
   routesApiBase: `http://${back}/routes`,
   tracksApiBase: `http://${back}/tracks`,
   planApiBase: `http://${back}/plan-folders`,
@@ -19,7 +19,8 @@ export const environment = {
   geoCode: `http://${back}/geocode/reverse`,
   mensajesApiBase: `http://${back}/mensajes`,
   routingApiBase: `http://${back}/routing`,
-  routeAnalysisApiBase: `http://${back}/route-analysis`
+  routeAnalysisApiBase: `http://${back}/route-analysis`,
+  accountApiBase: `http://${back}/account`
 };
 
 /*

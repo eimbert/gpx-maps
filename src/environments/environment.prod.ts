@@ -10,7 +10,7 @@ export const environment = {
   forgotPasswordUrl: `${apiBase}/auth/forgot-password`,
   resetPasswordUrl: `${apiBase}/auth/reset-password`,
 
-  meUrl: `${apiBase}/tracks/me`,
+  meUrl: `${apiBase}/auth/me`,
   routesApiBase: `${apiBase}/routes`,
   tracksApiBase: `${apiBase}/tracks`,
   planApiBase: `${apiBase}/plan-folders`,
@@ -19,4 +19,5 @@ export const environment = {
   geoCode: `${apiBase}/geocode/reverse`,
   routingApiBase: `${apiBase}/routing`,
   routeAnalysisApiBase: `${apiBase}/route-analysis`,
+  accountApiBase: `${apiBase}/account`,
 };

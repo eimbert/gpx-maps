@@ -35,9 +35,92 @@
       </a>
     </div>
 
+    <section *ngIf="loggedUser && entitlements as limits" class="usage-summary" [class.usage-summary--open]="usageDetailsOpen" aria-label="Límites de tu cuenta">
+      <div class="usage-summary__title" role="button" tabindex="0" [attr.aria-expanded]="usageDetailsOpen"
+           (click)="toggleUsageDetails()" (keydown.enter)="toggleUsageDetails()"
+           (keydown.space)="$event.preventDefault(); toggleUsageDetails()">
+        <div><span>Tu cuenta</span><strong>{{ limits.administrator ? 'Administrador' : limits.premium ? 'Premium' : 'Gratis' }}</strong></div>
+        <small>Uso actualizado</small>
+        <mat-icon class="usage-summary__chevron" aria-hidden="true">expand_more</mat-icon>
+      </div>
+      <div class="usage-summary__mobile" (click)="toggleUsageDetails()">
+        <span><small>IA</small><strong>{{ compactRemaining(limits.aiAnalysesPerSixHours, limits.aiAnalysesUsedLastSixHours) }}</strong></span>
+        <span><small>Tracks</small><strong>{{ limits.ownTracksUsed }}/{{ limits.maxOwnTracks < 0 ? '∞' : limits.maxOwnTracks }}</strong></span>
+        <span><small>Terceros</small><strong>{{ compactRemaining(limits.thirdPartyAccessesPer72Hours, limits.thirdPartyAccessesUsed) }}</strong></span>
+      </div>
+      <div class="usage-summary__items">
+        <article>
+          <span>Análisis IA</span>
+          <strong>{{ remaining(limits.aiAnalysesPerSixHours, limits.aiAnalysesUsedLastSixHours) }}</strong>
+          <small *ngIf="limits.aiAnalysesPerMonth >= 0">{{ limits.aiAnalysesUsedThisMonth }} de {{ limits.aiAnalysesPerMonth }} usados este mes</small>
+          <small *ngIf="limits.nextAiAvailability">Próxima liberación: {{ limits.nextAiAvailability | date:'HH:mm' }}</small>
+        </article>
+        <article>
+          <span>Tracks propios</span>
+          <strong>{{ limits.ownTracksUsed }} de {{ limits.maxOwnTracks < 0 ? 'ilimitados' : limits.maxOwnTracks }}</strong>
+          <small>Rutas guardadas en tu espacio</small>
+        </article>
+        <article>
+          <span>Rutas de terceros</span>
+          <strong>{{ remaining(limits.thirdPartyAccessesPer72Hours, limits.thirdPartyAccessesUsed) }}</strong>
+          <small>{{ limits.thirdPartyAccessesUsed }} abiertas en las últimas 72 horas</small>
+          <small *ngIf="limits.nextThirdPartyAccessAvailability">Próxima liberación: {{ limits.nextThirdPartyAccessAvailability | date:'dd/MM HH:mm' }}</small>
+        </article>
+      </div>
+    </section>
+
+    <section class="premium" id="premium" [class.premium--open]="premiumDetailsOpen">
+      <div
+        class="premium__heading"
+        role="button"
+        tabindex="0"
+        [attr.aria-expanded]="premiumDetailsOpen"
+        aria-controls="premium-details"
+        (click)="togglePremiumDetails()"
+        (keydown.enter)="togglePremiumDetails()"
+        (keydown.space)="$event.preventDefault(); togglePremiumDetails()">
+        <div>
+          <p class="premium__eyebrow">Tracketeo Premium</p>
+          <h2>Más rutas, más análisis, menos límites</h2>
+        </div>
+        <button class="premium__button" type="button" tabindex="-1">
+          {{ loggedUser?.administrator ? 'Ver ventajas Admin' : loggedUser?.premium ? 'Ver ventajas Premium' : 'Hazte Premium' }}
+          <span class="premium__chevron" aria-hidden="true">⌄</span>
+        </button>
+      </div>
+
+      <div class="premium__details" id="premium-details" [attr.aria-hidden]="!premiumDetailsOpen">
+        <div class="premium-pricing" aria-label="Precios Premium">
+          <article class="premium-price">
+            <span>Mensual</span>
+            <p><strong>4,99 €</strong><small>/mes</small></p>
+            <small>Flexibilidad para cancelar cuando quieras</small>
+            <button type="button" disabled>Próximamente</button>
+          </article>
+          <article class="premium-price premium-price--featured">
+            <span class="premium-price__badge">Mejor opción · ahorra 33 %</span>
+            <span>Anual</span>
+            <p><strong>39,99 €</strong><small>/año</small></p>
+            <small>Equivale a 3,33 € al mes</small>
+            <button type="button" disabled>Próximamente</button>
+          </article>
+        </div>
+        <div class="premium-table" id="premium-table">
+          <div class="premium-table__row premium-table__row--header">
+            <span>Funcionalidad</span><strong>Gratis</strong><strong>Premium</strong>
+          </div>
+          <div class="premium-table__row"><span>Análisis inteligentes</span><span>2 cada 6 h · 8 al mes</span><strong>20 cada 6 h · 100 al mes</strong></div>
+          <div class="premium-table__row"><span>Tracks propios</span><span>Hasta 25</span><strong>Sin límite</strong></div>
+          <div class="premium-table__row"><span>Tracks de otros usuarios</span><span>Explora todas · abre 25 distintas cada 72 h</span><strong>Acceso sin límite</strong></div>
+        </div>
+        <p class="premium__note">Precios previstos para el lanzamiento. La contratación estará disponible cuando activemos Stripe.</p>
+      </div>
+    </section>
+
     <div *ngIf="loggedUser; else authActions" class="home__auth">
       <span class="home__user-info">
-        Sesión iniciada como <strong>{{ loggedUser.name || loggedUser.email }}</strong>.
+        Sesión iniciada como <strong>{{ loggedUser.name || loggedUser.email }}</strong>
+        · <span class="plan-badge">{{ loggedUser.administrator ? 'ADMIN' : loggedUser.premium ? 'PREMIUM' : 'GRATIS' }}</span>
       </span>
       <button class="auth-link auth-button auth-button--logout" type="button" (click)="logout()">Cerrar sesión</button>
     </div>

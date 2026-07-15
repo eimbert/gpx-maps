@@ -6,6 +6,7 @@ import { TrackGpxFile } from '../interfaces/events';
 import { RouteAnalysis, RouteAnalysisHighlight, RouteAnalysisReport, RouteAnalysisSector } from '../interfaces/route-analysis';
 import { EventService } from '../services/event.service';
 import { RouteAnalysisService } from '../services/route-analysis.service';
+import { AuthService, EntitlementsResponse } from '../services/auth.service';
 
 interface AnalyzerPoint {
   lat: number;
@@ -94,15 +95,18 @@ export class RouteAnalyzerComponent implements OnInit {
   startMarker: SvgPoint | null = null;
   endMarker: SvgPoint | null = null;
   isExportingPdf = false;
+  entitlements: EntitlementsResponse | null = null;
 
   constructor(
     private route: ActivatedRoute,
     private router: Router,
     private eventService: EventService,
-    private routeAnalysisService: RouteAnalysisService
+    private routeAnalysisService: RouteAnalysisService,
+    private authService: AuthService
   ) {}
 
   ngOnInit(): void {
+    this.loadEntitlements();
     const state = (typeof window !== 'undefined' ? window.history.state : null) ?? {};
     const queryTrackId = Number(this.route.snapshot.queryParamMap.get('trackId'));
     this.trackId = Number.isFinite(queryTrackId) ? queryTrackId : this.toNullableNumber(state.trackId);
@@ -152,6 +156,10 @@ export class RouteAnalyzerComponent implements OnInit {
       this.statusMessage = 'Sube o selecciona una ruta GPX para analizar.';
       return;
     }
+    if (!this.canGenerateAnalysis) {
+      this.statusMessage = 'No tienes saldo disponible para generar un nuevo informe.';
+      return;
+    }
 
     this.isAnalyzing = true;
     this.statusMessage = 'Analizando ruta...';
@@ -192,10 +200,24 @@ export class RouteAnalyzerComponent implements OnInit {
       this.applyAnalyzedElevation(analysis);
       const fallbackReason = analysis.fallbackReason ?? analysis.errorDetail ?? 'revisa la respuesta/logs del backend';
       this.statusMessage = analysis.model === 'local-fallback'
-        ? `OpenAI no ha generado el informe (${fallbackReason}). Mostrando análisis técnico local provisional.`
-        : 'Análisis listo.';
+        ? `OpenAI no ha generado el informe (${fallbackReason}). Mostrando análisis técnico local provisional; no se ha descontado ningún uso.`
+        : analysis.usageCharged
+          ? 'Nuevo análisis generado: se ha descontado 1 uso de tu saldo.'
+          : 'Este informe ya estaba generado: puedes consultarlo sin descontar usos de tu saldo.';
       this.updateAnalysisVisuals();
+      this.loadEntitlements();
     });
+  }
+
+  get canGenerateAnalysis(): boolean {
+    const limits = this.entitlements;
+    if (!limits || limits.administrator) return true;
+    return limits.aiAnalysesUsedLastSixHours < limits.aiAnalysesPerSixHours
+      && limits.aiAnalysesUsedThisMonth < limits.aiAnalysesPerMonth;
+  }
+
+  get generateTooltip(): string {
+    return this.canGenerateAnalysis ? '' : 'Sin saldo para generar informes';
   }
 
   private cleanRouteTitle(value: unknown): string {
@@ -468,13 +490,37 @@ export class RouteAnalyzerComponent implements OnInit {
     if (trackId) {
       this.routeAnalysisService.getTrackAnalysis(trackId).pipe(catchError(() => of(null))).subscribe(saved => {
         if (saved) {
-          this.analysis = saved;
-          this.applyAnalyzedElevation(saved);
-          this.statusMessage = 'Análisis guardado cargado.';
-          this.updateAnalysisVisuals();
-        }
+          this.applyExistingAnalysis(saved);
+        } else this.lookupExistingAnalysis();
       });
-    }
+    } else this.lookupExistingAnalysis();
+  }
+
+  private lookupExistingAnalysis(): void {
+    if (!this.routeXml) return;
+    this.routeAnalysisService.lookupExisting({
+      trackId: this.trackId,
+      source: this.source,
+      fileName: this.fileName,
+      title: this.routeTitle,
+      routeXml: this.routeXml
+    }).pipe(catchError(() => of(null))).subscribe(saved => {
+      if (saved) this.applyExistingAnalysis(saved);
+    });
+  }
+
+  private applyExistingAnalysis(saved: RouteAnalysis): void {
+    this.analysis = saved;
+    this.applyAnalyzedElevation(saved);
+    this.statusMessage = 'Este informe ya estaba generado: se ha cargado automáticamente y no consume saldo.';
+    this.updateAnalysisVisuals();
+  }
+
+  private loadEntitlements(): void {
+    this.authService.getEntitlements().subscribe({
+      next: limits => this.entitlements = limits,
+      error: () => this.entitlements = null
+    });
   }
 
   private calculateMissingElevation(): void {

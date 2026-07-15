@@ -40,10 +40,12 @@
       <span>Elegir GPX</span>
       <input type="file" accept=".gpx" (change)="onFileSelected($event)">
     </label>
-    <button type="button" class="analyzer__primary" (click)="analyze(!!analysis)" [disabled]="isAnalyzing || !routeXml">
-      <mat-icon aria-hidden="true">{{ isAnalyzing ? 'hourglass_top' : 'auto_awesome' }}</mat-icon>
-      <span>{{ isAnalyzing ? 'Analizando...' : (analysis ? 'Actualizar informe' : 'Analizar ruta') }}</span>
-    </button>
+    <span class="analyzer__primary-wrap" [matTooltip]="generateTooltip" matTooltipPosition="above">
+      <button type="button" class="analyzer__primary" (click)="analyze(!!analysis)" [disabled]="isAnalyzing || !routeXml || !canGenerateAnalysis">
+        <mat-icon aria-hidden="true">{{ isAnalyzing ? 'hourglass_top' : 'auto_awesome' }}</mat-icon>
+        <span>{{ isAnalyzing ? 'Analizando...' : !canGenerateAnalysis ? 'Sin saldo' : (analysis ? 'Generar nuevo informe' : 'Analizar ruta') }}</span>
+      </button>
+    </span>
     <label class="analyzer__instructions">
       <span>Instrucciones para la IA</span>
       <textarea
@@ -55,6 +57,14 @@
   </section>
 
   <p class="analyzer__status" *ngIf="statusMessage">{{ statusMessage }}</p>
+
+  <div *ngIf="analysis" class="analyzer__usage-notice" [class.analyzer__usage-notice--charged]="analysis.usageCharged" [class.analyzer__usage-notice--neutral]="!analysis.usageCharged && !analysis.reusedExisting">
+    <mat-icon aria-hidden="true">{{ analysis.usageCharged ? 'remove_circle_outline' : analysis.reusedExisting ? 'verified' : 'info' }}</mat-icon>
+    <div>
+      <strong>{{ analysis.usageCharged ? 'Este análisis ha consumido 1 uso' : analysis.reusedExisting ? 'Informe existente · consulta sin consumo' : 'No se ha consumido saldo' }}</strong>
+      <span>{{ analysis.usageCharged ? 'Se ha generado un informe nuevo con IA.' : analysis.reusedExisting ? 'Se ha cargado automáticamente y no se descontará de tu saldo.' : 'No se ha podido generar un informe nuevo con IA.' }}</span>
+    </div>
+  </div>
 
   <div class="analyzer__busy" *ngIf="isAnalyzing" aria-live="polite">
     <div class="analyzer__busy-panel">

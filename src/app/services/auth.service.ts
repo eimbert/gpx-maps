@@ -11,6 +11,29 @@ interface UserInfoResponse {
   nom?: string;
   nickname?: string;
   rol?: string | null;
+  premium?: boolean;
+  plan?: 'FREE' | 'PREMIUM' | 'ADMIN';
+  administrator?: boolean;
+  lifetimePremium?: boolean;
+}
+
+export interface EntitlementsResponse {
+  plan: 'FREE' | 'PREMIUM' | 'ADMIN';
+  premium: boolean;
+  administrator: boolean;
+  lifetimePremium: boolean;
+  premiumUntil: string | null;
+  maxOwnTracks: number;
+  maxThirdPartyTracks: number;
+  aiAnalysesPerSixHours: number;
+  aiAnalysesPerMonth: number;
+  ownTracksUsed: number;
+  aiAnalysesUsedLastSixHours: number;
+  aiAnalysesUsedThisMonth: number;
+  nextAiAvailability: string | null;
+  thirdPartyAccessesPer72Hours: number;
+  thirdPartyAccessesUsed: number;
+  nextThirdPartyAccessAvailability: string | null;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -130,7 +153,11 @@ export class AuthService {
           id: userInfo.userId ?? session.id,
           name: userInfo.nom ?? session.name,
           nickname: userInfo.nickname ?? session.nickname,
-          rol: userInfo.rol ?? session.rol
+          rol: userInfo.rol ?? session.rol,
+          premium: userInfo.premium ?? session.premium,
+          plan: userInfo.plan ?? session.plan ?? (session.premium ? 'PREMIUM' : 'FREE'),
+          administrator: userInfo.administrator ?? session.administrator ?? false,
+          lifetimePremium: userInfo.lifetimePremium ?? session.lifetimePremium ?? false
         };
 
         this.saveSession(updatedSession);
@@ -141,6 +168,10 @@ export class AuthService {
         return of(null);
       })
     );
+  }
+
+  getEntitlements(): Observable<EntitlementsResponse> {
+    return this.http.get<EntitlementsResponse>(`${environment.accountApiBase}/entitlements`);
   }
 
   private readSessionFromStorage(): LoginSuccessResponse | null {

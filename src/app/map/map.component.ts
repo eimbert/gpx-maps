@@ -2008,7 +2008,8 @@ export class MapComponent implements OnInit, AfterViewInit {
       progSlopeSourceId: meta.progSlopeSourceId ?? this.trackId(meta, 'prog-slope-source'),
       progSlopeLayerId: meta.progSlopeLayerId ?? this.trackId(meta, 'prog-slope-layer'),
       mark: meta.mark ?? new maplibregl.Marker({
-        element: this.createDotElement(meta.color, 14)
+        element: this.createBikeElement(meta.color),
+        anchor: 'center'
       }),
       startMark: meta.startMark ?? new maplibregl.Marker({
         element: this.createEndpointElement('#22c55e')
@@ -2230,6 +2231,25 @@ export class MapComponent implements OnInit, AfterViewInit {
 
   private createEndpointElement(color: string): HTMLElement {
     return this.createDotElement(color, 12, '#fff', 2);
+  }
+
+  private createBikeElement(color: string): HTMLElement {
+    const element = document.createElement('span');
+    element.className = 'material-icons';
+    element.textContent = 'directions_bike';
+    element.setAttribute('aria-label', 'Bicicleta en movimiento');
+    element.style.display = 'inline-flex';
+    element.style.alignItems = 'center';
+    element.style.justifyContent = 'center';
+    element.style.width = '26px';
+    element.style.height = '26px';
+    element.style.border = '2px solid rgba(255,255,255,.95)';
+    element.style.borderRadius = '50%';
+    element.style.background = color;
+    element.style.color = '#fff';
+    element.style.fontSize = '17px';
+    element.style.boxShadow = '0 3px 10px rgba(15,23,42,.38)';
+    return element;
   }
 
   private createEndpointLabelMarker(label: string, position: [number, number], className: string): maplibregl.Marker {

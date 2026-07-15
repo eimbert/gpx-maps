@@ -75,8 +75,8 @@ export class EventService {
 
   addTrack(track: CreateTrackPayload): Observable<EventTrack> {
     const routeId = track.routeId ?? null;
-    return this.http.post<EventTrack>(`${this.tracksApiBase}`, track).pipe(
-      map(created => this.normalizeTrack(created, routeId ?? undefined)),
+    return this.http.post<{ id: number; message: string; code: number }>(`${this.tracksApiBase}`, track).pipe(
+      map(response => this.normalizeTrack({ ...track, id: response.id } as EventTrack, routeId ?? undefined)),
       tap(created => {
         if (routeId === null || routeId === undefined) return;
         const updated = this.events$.value.map(event =>

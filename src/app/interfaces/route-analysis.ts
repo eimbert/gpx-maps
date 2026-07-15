@@ -53,6 +53,8 @@ export interface RouteAnalysis {
   routeStats?: RouteAnalysisStats | null;
   createdAt?: string | null;
   updatedAt?: string | null;
+  title?: string | null;
+  fileName?: string | null;
   report: RouteAnalysisReport;
 }
 
@@ -78,6 +80,7 @@ export interface RouteAnalysisRequest {
   trackId?: number | null;
   source?: 'upload' | 'tracks' | 'plan';
   fileName?: string | null;
+  title?: string | null;
   routeXml: string;
   userInstructions?: string | null;
   forceRefresh?: boolean;

@@ -324,6 +324,7 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
   private readonly proximityLoadingTabs = new Set<UserTracksTab>();
 
   standaloneUploadInProgress = false;
+  recentlyAddedTrackId: number | null = null;
 
   private sessionExpiredNotified = false;
 
@@ -365,6 +366,7 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
   private destroy$ = new Subject<void>();
   private refreshRequest$ = new Subject<void>();
   private refreshInFlight?: Promise<void>;
+  private refreshAgainRequested = false;
 
   constructor(
     public dialog: MatDialog,
@@ -501,6 +503,10 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
   }
 
   private requestRefreshUserTracks(): void {
+    if (this.refreshInFlight) {
+      this.refreshAgainRequested = true;
+      return;
+    }
     this.refreshRequest$.next();
   }
 
@@ -2045,6 +2051,7 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
         this.bumpUserTracksDataVersion('personal');
         this.bumpUserTracksDataVersion('events');
         this.bumpUserTracksDataVersion('shared');
+        this.revealRecentlyAddedTrack();
       } catch {
         this.showMessage('No se pudieron cargar tus tracks. Inténtalo de nuevo más tarde.');
         this.resetUserTrackRows();
@@ -2054,6 +2061,10 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
       }
     })().finally(() => {
       this.refreshInFlight = undefined;
+      if (this.refreshAgainRequested) {
+        this.refreshAgainRequested = false;
+        this.requestRefreshUserTracks();
+      }
     });
 
     return this.refreshInFlight;
@@ -2073,29 +2084,6 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
     if (tab === 'analyses' && !this.publicAnalysesLoading && !this.publicAnalyses.length) {
       this.loadPublicAnalyses();
     }
-    this.scrollToUserTracksBottomOnMobile();
-  }
-
-  private scrollToUserTracksBottomOnMobile(): void {
-    if (!this.isMobileViewport || typeof window === 'undefined') return;
-
-    const scrollToBottom = () => {
-      const section = this.userTracksSectionRef?.nativeElement;
-      if (section) {
-        section.scrollIntoView({ behavior: 'smooth', block: 'end' });
-        return;
-      }
-
-      window.scrollTo({
-        top: document.documentElement.scrollHeight,
-        behavior: 'smooth'
-      });
-    };
-
-    setTimeout(() => {
-      scrollToBottom();
-      requestAnimationFrame(scrollToBottom);
-    }, 0);
   }
 
   getUserTrackRows(tab: UserTracksTab): UserTrackRow[] {
@@ -2555,6 +2543,34 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
 
   get groupedUserTracks(): GroupedUserTracks[] {
     return this.getGroupedUserTracksForTab(this.activeUserTracksTab);
+  }
+
+  groupContainsRecentlyAddedTrack(group: GroupedUserTracks): boolean {
+    return this.recentlyAddedTrackId !== null
+      && group.routes.some(route => route.trackId === this.recentlyAddedTrackId);
+  }
+
+  private revealRecentlyAddedTrack(): void {
+    if (this.recentlyAddedTrackId === null || typeof document === 'undefined') return;
+    this.activeUserTracksTab = 'personal';
+    this.selectedDestination = null;
+    const state = this.getTableState('personal');
+    if (state.filter) {
+      state.filter = '';
+      state.page = 0;
+      this.bumpUserTracksStateVersion('personal');
+    }
+    const findCard = (attempt: number) => {
+      const card = document.querySelector<HTMLElement>('.destination-card--recent');
+      if (!card && attempt < 20) {
+        setTimeout(() => findCard(attempt + 1), 100);
+        return;
+      }
+      if (!card) return;
+      card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      setTimeout(() => this.recentlyAddedTrackId = null, 3600);
+    };
+    setTimeout(() => findCard(0), 0);
   }
 
   private getFilteredUserTracksForTab(tab: UserTracksTab): UserTrackRow[] {
@@ -3067,7 +3083,7 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
         return;
       }
       this.tracks = updatedTracks;
-      await this.promptStartAnimationOnMobile();
+      await this.promptStartAnimation();
 
     } catch {
       this.showMessage('No se pudo procesar el track.');
@@ -3140,17 +3156,25 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
   }
 
   private resolveDestinationDescription(group: GroupedUserTracks): void {
-    const key = this.destinationDescriptionKey(group);
-    if (this.destinationDescriptions.has(key) || this.destinationDescriptionLoading) return;
+    const groupPlace = {
+      type: this.userTracksGroupBy,
+      name: group.province,
+      context: group.autonomousCommunity
+    };
+    const populationPlaces = Array.from(new Set(
+      group.routes
+        .map(route => route.population)
+        .filter((value): value is string => !!value?.trim())
+    )).map(name => ({ type: 'population', name, context: group.province }));
+    const missingPlaces = [groupPlace, ...populationPlaces].filter(place =>
+      !this.destinationDescriptions.has(this.placeDescriptionKey(place.type, place.name, place.context))
+    );
+    if (!missingPlaces.length) return;
+
     this.destinationDescriptionLoading = true;
     const apiBase = environment.routeAnalysisApiBase.replace(/\/route-analysis\/?$/, '');
-    const populationPlaces = Array.from(new Set(group.routes.map(route => route.population).filter((value): value is string => !!value?.trim())))
-      .map(name => ({ type: 'population', name, context: group.province }));
     this.http.post<Array<{ type: string; name: string; context: string | null; description: string }>>(`${apiBase}/destination-descriptions/resolve`, {
-      places: [
-        { type: this.userTracksGroupBy, name: group.province, context: group.autonomousCommunity },
-        ...populationPlaces
-      ]
+      places: missingPlaces
     }).subscribe({
       next: response => {
         response?.forEach(item => {
@@ -3259,22 +3283,23 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
       state: {
         trackId: row.trackId,
         source: 'tracks',
+        routeTitle: row.population || row.title || row.eventName || 'Ruta analizada',
         fileName: row.fileName || row.title || row.eventName || 'Track.gpx',
         routeXml: gpx
       }
     });
   }
 
-  private async promptStartAnimationOnMobile(): Promise<void> {
-    if (!this.isMobileViewport) {
-      return;
-    }
-
+  private async promptStartAnimation(): Promise<void> {
+    const remainingSlots = Math.max(0, this.maxTracks - this.tracks.length);
+    const remainingText = remainingSlots === 1
+      ? 'Puedes seleccionar 1 ruta más.'
+      : `Puedes seleccionar ${remainingSlots} rutas más.`;
     const decision = await this.openInfoDialog({
       title: 'Ruta añadida',
-      message: '¿Quieres seleccionar otra ruta para añadir a la animación o iniciar la animación?',
+      message: `${remainingText} ¿Quieres iniciar la animación ahora o añadir más rutas?`,
       confirmLabel: 'Iniciar animación',
-      cancelLabel: 'Seleccionar otra'
+      cancelLabel: 'Añadir más'
     });
 
     if (decision === 'confirm') {
@@ -3299,17 +3324,34 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
   private deleteUserTrack(row: UserTrackRow): void {
     if (this.isDeletingTrack(row)) return;
     this.deletingTracks.add(row.trackId);
+    const previousRows = (Object.keys(this.userTrackRows) as UserTracksTab[])
+      .reduce((snapshot, tab) => ({ ...snapshot, [tab]: this.userTrackRows[tab] }), {} as Record<UserTracksTab, UserTrackRow[]>);
+    const previousDestination = this.selectedDestination;
+    this.removeUserTrackLocally(row.trackId);
     this.eventService.removeTrackById(row.trackId).subscribe(removed => {
       this.deletingTracks.delete(row.trackId);
       if (!removed) {
+        (Object.keys(previousRows) as UserTracksTab[]).forEach(tab => {
+          this.userTrackRows[tab] = previousRows[tab];
+          this.bumpUserTracksDataVersion(tab);
+        });
+        this.selectedDestination = previousDestination;
         this.showMessage('No se pudo eliminar el track.');
-        return;
       }
-      (Object.keys(this.userTrackRows) as UserTracksTab[]).forEach(tab => {
-        this.userTrackRows[tab] = this.userTrackRows[tab].filter(current => current.trackId !== row.trackId);
-        this.bumpUserTracksDataVersion(tab);
-      });
     });
+  }
+
+  private removeUserTrackLocally(trackId: number): void {
+    (Object.keys(this.userTrackRows) as UserTracksTab[]).forEach(tab => {
+      this.userTrackRows[tab] = this.userTrackRows[tab].filter(current => Number(current.trackId) !== Number(trackId));
+      this.bumpUserTracksDataVersion(tab);
+    });
+    if (!this.selectedDestination) return;
+    const remainingRoutes = this.selectedDestination.routes
+      .filter(current => Number(current.trackId) !== Number(trackId));
+    this.selectedDestination = remainingRoutes.length
+      ? { ...this.selectedDestination, routes: remainingRoutes, count: remainingRoutes.length }
+      : null;
   }
 
   private bumpUserTracksDataVersion(tab: UserTracksTab): void {
@@ -3444,7 +3486,17 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
 
     this.standaloneUploadInProgress = true;
     this.eventService.addTrack(payload).subscribe({
-      next: () => this.requestRefreshUserTracks(),
+      next: created => {
+        this.recentlyAddedTrackId = Number(created.id);
+        const optimisticRow = this.toUserTrackRow(created, this.eventsById);
+        this.userTrackRows.personal = [
+          optimisticRow,
+          ...this.userTrackRows.personal.filter(row => Number(row.trackId) !== Number(created.id))
+        ];
+        this.bumpUserTracksDataVersion('personal');
+        this.revealRecentlyAddedTrack();
+        this.requestRefreshUserTracks();
+      },
       error: () => {
         this.showMessage('No se pudo subir el track.');
         this.standaloneUploadInProgress = false;

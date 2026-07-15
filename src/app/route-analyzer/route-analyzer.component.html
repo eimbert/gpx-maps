@@ -31,7 +31,8 @@
 
   <section class="analyzer__drop">
     <div>
-      <h2>{{ fileName || 'Sube una ruta GPX' }}</h2>
+      <h2>{{ routeXml ? routeTitle : 'Sube una ruta GPX' }}</h2>
+      <small class="analyzer__file-name" *ngIf="routeXml && fileName">{{ fileName }}</small>
       <p>Genera un informe con lectura de dureza, puntos críticos, estrategia por objetivo y referencias visuales sobre el track y el perfil.</p>
     </div>
     <label class="analyzer__upload">
@@ -69,8 +70,9 @@
         <img src="assets/logo.png" alt="Tracketeo.bike">
       </span>
       <div>
-        <p>Informe Tracketeo.bike</p>
-        <h2>{{ fileName || 'Ruta GPX analizada' }}</h2>
+        <p>Análisis de la ruta</p>
+        <h2>{{ routeTitle }}</h2>
+        <small class="analyzer__file-name" *ngIf="fileName">{{ fileName }}</small>
       </div>
     </div>
 

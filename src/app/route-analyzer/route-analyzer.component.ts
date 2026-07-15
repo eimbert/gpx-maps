@@ -72,6 +72,7 @@ export class RouteAnalyzerComponent implements OnInit {
   @ViewChild('analysisExport') private analysisExport?: ElementRef<HTMLElement>;
 
   fileName: string | null = null;
+  routeTitle = 'Ruta analizada';
   routeXml: string | null = null;
   trackId: number | null = null;
   source: 'upload' | 'tracks' | 'plan' = 'upload';
@@ -107,6 +108,7 @@ export class RouteAnalyzerComponent implements OnInit {
     this.trackId = Number.isFinite(queryTrackId) ? queryTrackId : this.toNullableNumber(state.trackId);
     this.source = state.source ?? (this.route.snapshot.queryParamMap.get('source') as any) ?? 'upload';
     this.fileName = state.fileName ?? null;
+    this.routeTitle = this.cleanRouteTitle(state.routeTitle);
 
     if (typeof state.routeXml === 'string' && state.routeXml.trim()) {
       this.loadRouteXml(state.routeXml, this.fileName, this.trackId, this.source);
@@ -157,6 +159,7 @@ export class RouteAnalyzerComponent implements OnInit {
       trackId: this.trackId,
       source: this.source,
       fileName: this.fileName,
+      title: this.routeTitle,
       routeXml: this.routeXml,
       userInstructions: this.normalizedInstructions(),
       forceRefresh
@@ -193,6 +196,11 @@ export class RouteAnalyzerComponent implements OnInit {
         : 'Análisis listo.';
       this.updateAnalysisVisuals();
     });
+  }
+
+  private cleanRouteTitle(value: unknown): string {
+    const title = typeof value === 'string' ? value.trim() : '';
+    return title && !/^activity(?:[_\-\s]|$)/i.test(title) ? title : 'Ruta analizada';
   }
 
   get routeTypeLabel(): string {

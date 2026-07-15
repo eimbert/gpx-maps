@@ -20,6 +20,7 @@ app-load-gpx .analysis-library { display:grid; gap:28px; margin-top:22px; }
 app-load-gpx .analysis-library__recent { display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:16px; margin-top:12px; }
 app-load-gpx .analysis-library__card { display:flex; flex-direction:column; padding:20px; border:1px solid #dbe4ee; border-radius:18px; background:rgba(255,255,255,.94); box-shadow:0 10px 26px rgba(15,23,42,.08); }
 app-load-gpx .analysis-library__card h3 { margin:8px 0; font-size:1.05rem; overflow-wrap:anywhere; }
+app-load-gpx .analysis-library__file { display:block; margin:-2px 0 8px; color:#64748b; font-size:.75rem; overflow-wrap:anywhere; }
 app-load-gpx .analysis-library__card p { color:#475569; line-height:1.5; display:-webkit-box; -webkit-line-clamp:4; -webkit-box-orient:vertical; overflow:hidden; }
 app-load-gpx .analysis-library__type { align-self:flex-start; padding:4px 9px; border-radius:999px; background:#dbeafe; color:#1d4ed8; font-size:.72rem; font-weight:800; text-transform:uppercase; }
 app-load-gpx .analysis-library__metrics { display:flex; gap:14px; margin:auto 0 14px; padding-top:12px; font-weight:800; color:#0f172a; }
@@ -31,6 +32,8 @@ app-load-gpx .analysis-library__detail { scroll-margin-top:20px; padding:24px; b
 app-load-gpx .analysis-library__detail h2, app-load-gpx .analysis-library__detail h3 { color:#fff; }
 app-load-gpx .analysis-library__detail-head { display:flex; justify-content:space-between; gap:20px; }
 app-load-gpx .analysis-library__detail-head h2 { margin:4px 0 14px; overflow-wrap:anywhere; }
+app-load-gpx .analysis-library__label { display:inline-flex; margin:0 0 6px; padding:5px 10px; border-radius:999px; background:#facc15; color:#422006; font-size:.72rem; font-weight:900; letter-spacing:.05em; text-transform:uppercase; }
+app-load-gpx .analysis-library__detail-file { display:block; margin:-8px 0 14px; color:#bae6fd; overflow-wrap:anywhere; }
 app-load-gpx .analysis-library__detail-metrics { display:flex; flex-wrap:wrap; gap:10px; margin-bottom:18px; }
 app-load-gpx .analysis-library__detail-metrics strong { padding:6px 11px; border-radius:999px; background:rgba(255,255,255,.12); }
 app-load-gpx .analysis-library__detail-columns { display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:20px; }
@@ -95,6 +98,8 @@ app-load-gpx .route-explorer-card__actions mat-icon { width:18px; height:18px; f
 /* Archivo editorial de rutas */
 app-load-gpx .destination-grid { grid-template-columns:repeat(auto-fill,minmax(310px,1fr)); }
 app-load-gpx .destination-card { min-height:0; display:flex; flex-direction:column; border:1px solid #cbd5e1; border-radius:18px; background:#fff; color:#0f172a; box-shadow:0 12px 28px rgba(15,23,42,.09); }
+app-load-gpx .destination-card--recent { animation:destination-card-arrival .72s ease-in-out 4; outline:3px solid #facc15; outline-offset:3px; }
+@keyframes destination-card-arrival { 0%,100% { transform:translateY(0); box-shadow:0 12px 28px rgba(15,23,42,.09); } 50% { transform:translateY(-5px); box-shadow:0 0 0 7px rgba(250,204,21,.3),0 20px 38px rgba(15,23,42,.2); } }
 app-load-gpx .destination-card::after { content:""; position:absolute; right:-38px; top:72px; width:150px; height:150px; border:1px solid rgba(14,116,144,.08); border-radius:50%; box-shadow:0 0 0 18px rgba(14,116,144,.035),0 0 0 36px rgba(14,116,144,.025); pointer-events:none; }
 app-load-gpx .destination-card__header { position:relative; z-index:1; display:flex; justify-content:space-between; gap:12px; padding:13px 17px; color:#e0f2fe; background:#0f2942; font-size:.72rem; letter-spacing:.09em; text-transform:uppercase; }
 app-load-gpx .destination-card__header strong { color:#7dd3fc; font-variant-numeric:tabular-nums; }

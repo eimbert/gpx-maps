@@ -106,6 +106,7 @@
             <article class="analysis-library__card" *ngFor="let item of recentPublicAnalyses">
               <span class="analysis-library__type">{{ item.report.routeType }}</span>
               <h3>{{ item.title }}</h3>
+              <small class="analysis-library__file" *ngIf="item.fileName">{{ item.fileName }}</small>
               <p>{{ item.report.summary }}</p>
               <div class="analysis-library__metrics">
                 <span>{{ item.routeStats?.distanceKm | number:'1.1-1' }} km</span>
@@ -118,8 +119,9 @@
         <article class="analysis-library__detail" *ngIf="selectedPublicAnalysis as selected" #publicAnalysisDetail>
           <div class="analysis-library__detail-head">
             <div>
-              <p class="eyebrow">Informe público</p>
+              <p class="analysis-library__label">Análisis de la ruta</p>
               <h2>{{ selected.title }}</h2>
+              <small class="analysis-library__detail-file" *ngIf="selected.fileName">{{ selected.fileName }}</small>
             </div>
             <button type="button" class="ghost ghost--small" (click)="openPublicAnalysis(selected)">Cerrar</button>
           </div>
@@ -179,6 +181,7 @@
           <article class="analysis-library__row" *ngFor="let item of publicAnalyses">
             <div>
               <strong>{{ item.title }}</strong>
+              <small *ngIf="item.fileName">{{ item.fileName }}</small>
               <small>{{ formatPublicAnalysisDate(item.createdAt) }} · {{ item.report.routeType }}</small>
             </div>
             <span>{{ item.routeStats?.distanceKm | number:'1.1-1' }} km</span>
@@ -216,7 +219,9 @@
             <span>{{ groupedUserTracks.length }} {{ userTracksGroupByPluralLabel | lowercase }} clasificadas</span>
           </div>
           <div class="destination-grid">
-            <article class="destination-card" *ngFor="let group of groupedUserTracks; let i = index" (click)="openDestination(group)" tabindex="0" (keydown.enter)="openDestination(group)">
+            <article class="destination-card" *ngFor="let group of groupedUserTracks; let i = index"
+              [class.destination-card--recent]="groupContainsRecentlyAddedTrack(group)"
+              (click)="openDestination(group)" tabindex="0" (keydown.enter)="openDestination(group)">
               <header class="destination-card__header">
                 <span>{{ group.autonomousCommunity || 'Comunidad sin indicar' }}</span>
                 <strong>{{ group.province }}</strong>

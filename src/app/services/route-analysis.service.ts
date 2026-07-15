@@ -53,7 +53,8 @@ export class RouteAnalysisService {
     const list = Array.isArray(body) ? body : body.content ?? body.items ?? body.analyses ?? [];
     return (Array.isArray(list) ? list : []).map((item: any) => ({
       ...this.normalizeAnalysis(item),
-      title: String(item.title ?? item.routeName ?? item.route_name ?? item.fileName ?? item.file_name ?? 'Ruta analizada')
+      title: String(item.title ?? item.routeName ?? item.route_name ?? 'Ruta analizada'),
+      fileName: item.fileName ?? item.file_name ?? null
     }));
   }
 
@@ -72,6 +73,8 @@ export class RouteAnalysisService {
       routeStats: this.normalizeRouteStats(analysis.routeStats ?? (analysis as any).route_stats),
       createdAt: analysis.createdAt ?? (analysis as any).created_at ?? null,
       updatedAt: analysis.updatedAt ?? (analysis as any).updated_at ?? null,
+      title: analysis.title ?? (analysis as any).routeTitle ?? (analysis as any).route_title ?? null,
+      fileName: analysis.fileName ?? (analysis as any).file_name ?? null,
       report: {
         summary: String(report.summary ?? ''),
         routeType: report.routeType ?? report.route_type ?? 'mixta',

@@ -1,21 +1,20 @@
 <h2 mat-dialog-title class="dialog-header">
-  Las rutas no coinciden
+  {{ 'routesMismatch' | uiText }}
 </h2>
 
 <mat-dialog-content class="dialog-content">
   <p class="dialog-subtitle">
-    Los tracks cargados parecen no corresponder a la misma ruta.
+    {{ 'routesMismatchIntro' | uiText }}
   </p>
   <p class="dialog-body">
-    Coincidencia mínima estimada: <strong>{{ data.percentage }}%</strong>. Si continúas, el resultado puede no ser el adecuado porque se
-    pintarán tracks en diferentes zonas del mapa.
+    {{ 'minimumMatch' | uiText }} <strong>{{ data.percentage }}%</strong>. {{ 'mismatchWarning' | uiText }}
   </p>
   <p class="dialog-body">
-    ¿Quieres continuar igualmente?
+    {{ 'continueAnyway' | uiText }}
   </p>
 </mat-dialog-content>
 
 <mat-dialog-actions align="end" class="dialog-actions">
-  <button mat-button (click)="cancelar()">Cancelar</button>
-  <button mat-flat-button color="primary" (click)="continuar()">Continuar</button>
+  <button mat-button (click)="cancelar()">{{ 'cancel' | uiText }}</button>
+  <button mat-flat-button color="primary" (click)="continuar()">{{ 'continue' | uiText }}</button>
 </mat-dialog-actions>

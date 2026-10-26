@@ -1,24 +1,24 @@
 <div class="upload-dialog">
   <header class="upload-dialog__header">
     <div>
-      <p class="eyebrow">Ranking social</p>
-      <h2>Sube tu track</h2>
-      <p class="muted">Elige evento y completa los datos para entrar en la clasificación.</p>
+      <p class="eyebrow">{{ 'socialRanking' | uiText }}</p>
+      <h2>{{ 'uploadYourTrack' | uiText }}</h2>
+      <p class="muted">{{ 'rankingUploadHint' | uiText }}</p>
     </div>
   </header>
 
   <div class="form-grid">
     <label>
-      <span>Evento</span>
+      <span>{{ 'event' | uiText }}</span>
       <select [ngModel]="selectedEventId" (ngModelChange)="onEventChange($event)">
-        <option [ngValue]="null">Selecciona un evento</option>
+        <option [ngValue]="null">{{ 'selectAnEvent' | uiText }}</option>
         <option *ngFor="let event of data.events" [ngValue]="event.id">
           {{ event.name }} ({{ event.year }})
         </option>
       </select>
     </label>
     <label>
-      <span>Categoría</span>
+      <span>{{ 'category' | uiText }}</span>
       <select [(ngModel)]="category">
         <option *ngFor="let categoryOption of data.categories" [ngValue]="categoryOption">
           {{ categoryOption }}
@@ -26,19 +26,19 @@
       </select>
     </label>
     <label>
-      <span>Tipo de bicicleta</span>
+      <span>{{ 'bicycleType' | uiText }}</span>
       <select [(ngModel)]="bikeType">
         <option *ngFor="let bike of data.bikeTypes" [ngValue]="bike">{{ bike }}</option>
       </select>
     </label>
     <label class="file-input">
-      <span>Track GPX</span>
+      <span>{{ 'trackGpx' | uiText }}</span>
       <input type="file" accept=".gpx" (change)="onFileChange($event)" />
     </label>
   </div>
 
   <div class="actions">
-    <button mat-button type="button" (click)="cancel()">Cancelar</button>
-    <button class="btn-start" type="button" (click)="confirm()">Enviar al ranking</button>
+    <button mat-button type="button" (click)="cancel()">{{ 'cancel' | uiText }}</button>
+    <button class="btn-start" type="button" (click)="confirm()">{{ 'submitToRanking' | uiText }}</button>
   </div>
 </div>

@@ -1,0 +1,47 @@
+<aside class="assistant" [class.assistant--open]="open" [class.assistant--route-page]="isRoutesPage">
+  <section class="assistant__panel" *ngIf="open" [attr.aria-label]="'assistantTitle' | uiText">
+    <header>
+      <img src="assets/tracketeo-assistant.png" [alt]="'cyclingMascot' | uiText">
+      <div><strong>Globi</strong><span>{{ authenticated ? usageLabel : ('specializedHelp' | uiText) }}</span></div>
+      <button type="button" (click)="toggle()" [attr.aria-label]="'closeAssistant' | uiText"><mat-icon>close</mat-icon></button>
+    </header>
+
+    <details class="assistant__guide">
+      <summary>{{ 'featureGuide' | uiText }}</summary>
+      <details *ngFor="let topic of helpTopics"><summary>{{ topic.title }}</summary><p>{{ topic.content }}</p></details>
+    </details>
+
+    <ng-container *ngIf="authenticated; else guestAssistant">
+    <div class="assistant__messages" #messageList aria-live="polite">
+      <div #chatMessage *ngFor="let message of messages" class="assistant__message" [class.assistant__message--user]="message.role === 'user'" [class.assistant__message--error]="message.error">
+        {{ formatMessage(message.content) }}
+      </div>
+      <div class="assistant__typing" *ngIf="sending"><i></i><i></i><i></i></div>
+    </div>
+
+    <div class="assistant__suggestions" *ngIf="messages.length === 1">
+      <button *ngFor="let suggestion of suggestions" type="button" (click)="useSuggestion(suggestion)">{{ suggestion }}</button>
+    </div>
+
+    <form (ngSubmit)="send()">
+      <textarea [(ngModel)]="draft" name="assistantMessage" maxlength="1200" rows="2" (keydown)="onKeydown($event)" [placeholder]="'askPlaceholder' | uiText"></textarea>
+      <button type="submit" [disabled]="sending || !draft.trim()" [attr.aria-label]="'sendQuestion' | uiText"><mat-icon>send</mat-icon></button>
+    </form>
+    <small class="assistant__disclaimer">{{ 'assistantDisclaimer' | uiText }}</small>
+    </ng-container>
+
+    <ng-template #guestAssistant>
+      <div class="assistant__guest">
+        <strong>{{ 'anyQuestions' | uiText }}</strong>
+        <p>{{ 'assistantGuestHelp' | uiText }}</p>
+        <button type="button" (click)="openLogin()">{{ 'signInToAsk' | uiText }}</button>
+        <small>{{ 'registeredHelpOnly' | uiText }}</small>
+      </div>
+    </ng-template>
+  </section>
+
+  <button *ngIf="!open" class="assistant__launcher" [class.assistant__launcher--hello]="waving" type="button" (click)="toggle()" [attr.aria-label]="'openAssistant' | uiText">
+    <span *ngIf="showHint" class="assistant__hint" aria-hidden="true">{{ hintText }}</span>
+    <img src="assets/tracketeo-assistant.png" [alt]="'assistantTitle' | uiText">
+  </button>
+</aside>

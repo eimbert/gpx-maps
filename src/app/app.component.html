@@ -7,6 +7,31 @@
 <!-- * * * * * * * * * * End of Placeholder * * * * * * * * * * * -->
 <!-- * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * -->
 
-<router-outlet></router-outlet>
+<div class="app-shell" [class.app-shell--immersive]="router.url.split('?')[0] === '/map' || router.url.split('?')[0] === '/discover' || router.url.split('?')[0] === '/reset-password' || router.url.split('?')[0] === '/privacy-policy'">
+  <aside class="app-rail" [attr.aria-label]="'mainNavigation' | uiText">
+    <a class="app-rail__brand" routerLink="/" [attr.aria-label]="'brandHome' | uiText"></a>
+    <span class="app-rail__label">{{ 'yourSpace' | uiText }}</span>
+    <nav>
+      <a routerLink="/" [class.is-active]="router.url.split('?')[0] === '/'"><mat-icon aria-hidden="true">home</mat-icon>{{ 'home' | uiText }}</a>
+      <a [routerLink]="['/load']" [queryParams]="{ mode: 'routes', view: 'archive' }" [class.is-active]="router.url.startsWith('/load') && !router.url.includes('view=animate')"><mat-icon aria-hidden="true">route</mat-icon>{{ 'myRoutes' | uiText }} <small *ngIf="dashboardState.routeCount">{{ dashboardState.routeCount }}</small></a>
+      <a routerLink="/plan" routerLinkActive="is-active"><mat-icon aria-hidden="true">event</mat-icon>{{ 'outingsNav' | uiText }}</a>
+      <a routerLink="/garmin" routerLinkActive="is-active"><mat-icon aria-hidden="true">inbox</mat-icon>{{ 'inboxNav' | uiText }}<span class="shell-count" *ngIf="dashboardState.pendingCount">{{ dashboardState.pendingCount }}</span></a>
+    </nav>
+    <span class="app-rail__label app-rail__label--tools">{{ 'tools' | uiText }}</span>
+    <nav>
+      <a routerLink="/analysis" routerLinkActive="is-active"><mat-icon aria-hidden="true">insights</mat-icon>{{ 'analyzeRoute' | uiText }}</a>
+      <a [routerLink]="['/load']" [queryParams]="{ mode: 'routes', view: 'animate' }" [class.is-active]="router.url.startsWith('/load') && router.url.includes('view=animate')"><mat-icon aria-hidden="true">play_arrow</mat-icon>{{ 'animateTitle' | uiText }}</a>
+    </nav>
+    <div class="app-rail__footer"><a routerLink="/" fragment="account" (click)="dashboardState.accountOpen = true"><mat-icon>tune</mat-icon>{{ 'accountUsage' | uiText }}</a><a href="mailto:soporte@tracketeo.bike"><mat-icon>help_outline</mat-icon>{{ 'helpNav' | uiText }}</a><small>{{ authService.getSession()?.administrator ? ('administrator' | uiText) : authService.getSession()?.premium ? 'Premium' : authService.getSession() ? ('freeAccount' | uiText) : 'Tracketeo.bike' }}</small></div>
+  </aside>
+  <div class="app-shell__page"><header *ngIf="referencePage" class="reference-topbar"><a class="reference-logo" routerLink="/" [attr.aria-label]="'brandHome' | uiText"></a><div class="reference-crumb"><span>{{ referenceSection | uiText }}</span><mat-icon>chevron_right</mat-icon><strong>{{ referencePage }}</strong></div><div class="reference-user"><app-language-selector></app-language-selector><a routerLink="/garmin" [attr.aria-label]="'inboxNav' | uiText" [matTooltip]="'inboxNav' | uiText"><mat-icon>inbox</mat-icon><i *ngIf="dashboardState.pendingCount"></i></a><a routerLink="/" fragment="account" (click)="dashboardState.accountOpen = true" [attr.aria-label]="'accountUsage' | uiText" [matTooltip]="'accountUsage' | uiText">{{ pageInitials }}</a></div></header><router-outlet></router-outlet></div>
+  <nav class="app-bottom-nav" [attr.aria-label]="'mobileNavigation' | uiText">
+    <a routerLink="/" [class.is-active]="router.url.split('?')[0] === '/'"><mat-icon aria-hidden="true">home</mat-icon><span>{{ 'home' | uiText }}</span></a>
+    <a [routerLink]="['/load']" [queryParams]="{ mode: 'routes', view: 'archive' }" [class.is-active]="router.url.startsWith('/load')"><mat-icon aria-hidden="true">route</mat-icon><span>{{ 'yourRoutes' | uiText }}</span></a>
+    <a routerLink="/plan" routerLinkActive="is-active"><mat-icon aria-hidden="true">event</mat-icon><span>{{ 'outingsNav' | uiText }}</span></a>
+    <a routerLink="/garmin" routerLinkActive="is-active"><mat-icon aria-hidden="true">inbox</mat-icon><span>{{ 'inboxNav' | uiText }}</span><b class="shell-count" *ngIf="dashboardState.pendingCount">{{ dashboardState.pendingCount }}</b></a>
+  </nav>
+</div>
+<app-assistant-widget *ngIf="router.url.split('?')[0] !== '/discover' && router.url.split('?')[0] !== '/map'"></app-assistant-widget>
 
 

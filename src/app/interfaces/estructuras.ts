@@ -1,3 +1,6 @@
+export type CamaraDescubrir = 'actual' | 'cercana';
+export type VelocidadDescubrir = 1 | 2;
+
 export interface DialogoConfiguracionData {
   eliminarPausasLargas: boolean;
   marcarPausasLargas?: boolean;
@@ -11,5 +14,10 @@ export interface DialogoConfiguracionData {
   relacionAspectoGrabacion?: '16:9' | '9:16';
   modoVisualizacion?: 'general' | 'zoomCabeza';
   mostrarPerfil?: boolean;
+  tipoAnimacion?: 'carrera' | 'descubrir';
+  tipoAnimacionFijado?: boolean;
+  camaraDescubrir?: CamaraDescubrir;
+  velocidadDescubrir?: VelocidadDescubrir;
+  nombresTracks?: string[];
 
 }

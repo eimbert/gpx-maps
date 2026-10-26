@@ -1,0 +1,76 @@
+<main class="inbox-page">
+  <a routerLink="/" class="back">← {{ t('back') }}</a>
+  <section class="inbox-shell">
+    <header class="inbox-header">
+      <div>
+        <p class="inbox-eyebrow">DEL DISPOSITIVO A TUS RUTAS</p><h1>{{ t('title') }}</h1>
+        <p>{{ t('subtitle') }}</p>
+      </div>
+    <button class="inbox-refresh" type="button" (click)="refresh()" [disabled]="loading">↻ &nbsp; {{ loading ? t('refreshing') : t('refresh') }}</button></header>
+
+    <section class="connection-panel">
+      <div class="connection-heading"><h2>Conexiones</h2><span>{{ (devices.length ? 1 : 0) + (polarConnected ? 1 : 0) + (wahooConnected ? 1 : 0) }} servicios vinculados</span></div>
+      <div class="providers">
+        <button type="button" class="provider" [class.provider--active]="selectedProvider === 'garmin'" [class.provider--linked]="devices.length" (click)="selectProvider('garmin')" [attr.aria-expanded]="selectedProvider === 'garmin'" aria-controls="garmin-settings"><img class="provider-logo provider-logo--garmin" src="assets/providers/garmin.svg" alt="Garmin" /><span>{{ devices.length ? '✓ ' + providerText.linked : providerText.pending }}</span></button>
+        <button type="button" class="provider" [class.provider--active]="selectedProvider === 'polar'" [class.provider--linked]="polarConnected" [disabled]="!polarAvailable && !polarConnected" (click)="selectProvider('polar')" [attr.aria-expanded]="selectedProvider === 'polar'" aria-controls="polar-settings"><img class="provider-logo provider-logo--polar" src="assets/providers/polar.svg" alt="Polar" /><span>{{ polarConnected ? '✓ ' + providerText.linked : (polarAvailable ? providerText.pending : providerText.unavailable) }}</span></button>
+        <button type="button" class="provider" [class.provider--active]="selectedProvider === 'wahoo'" [class.provider--linked]="wahooConnected" [disabled]="!wahooAvailable && !wahooConnected" (click)="selectProvider('wahoo')" [attr.aria-expanded]="selectedProvider === 'wahoo'" aria-controls="wahoo-settings"><img class="provider-logo provider-logo--wahoo" src="assets/providers/wahoo.png" alt="Wahoo" /><span>{{ wahooConnected ? '✓ ' + providerText.linked : (wahooAvailable ? providerText.pending : providerText.unavailable) }}</span></button>
+        <button type="button" class="provider" disabled><img class="provider-logo provider-logo--suunto" src="assets/providers/suunto.svg" alt="Suunto" /><span>{{ providerText.unavailable }}</span></button>
+      </div>
+      <div *ngIf="selectedProvider === 'garmin'" id="garmin-settings" class="pair-instructions">
+        <h3>{{ t('howToConnect') }}</h3>
+        <ol class="setup-steps">
+          <li><strong>{{ t('step1Title') }}</strong> {{ t('step1BeforeStore') }} <a href="https://apps.garmin.com/en-US" target="_blank" rel="noopener noreferrer">Connect IQ Store</a>{{ t('step1AfterStore') }}</li>
+          <li><strong>{{ t('step2Title') }}</strong> {{ t('step2BeforeScreens') }} <em>{{ t('dataScreens') }}</em>{{ t('step2Between') }} <em>Connect IQ</em>{{ t('step2AfterCategory') }} <a href="https://support.garmin.com/en-US/?faq=gTIEqA7g6h9md50pQsDpl6" target="_blank" rel="noopener noreferrer">{{ t('garminInstructions') }}</a>.</li>
+          <li><strong>{{ t('step3Title') }}</strong> {{ t('step3Text') }}</li>
+          <li><strong>{{ t('step4Title') }}</strong> {{ t('step4Text') }}</li>
+        </ol>
+        <p class="compatible-devices">{{ t('compatible') }}</p>
+        <form (ngSubmit)="pair()">
+          <label for="garmin-code">{{ t('codeLabel') }}</label>
+          <div class="pair-row">
+            <input id="garmin-code" name="garminCode" [(ngModel)]="code" inputmode="numeric" autocomplete="one-time-code" maxlength="12" placeholder="0000000000" />
+            <button type="submit" [disabled]="pairing">{{ pairing ? t('linking') : t('linkGarmin') }}</button>
+          </div>
+        </form>
+        <p *ngIf="devices.length" class="linked-device">{{ devices.length }} {{ t(devices.length === 1 ? 'linkedOne' : 'linkedMany') }} · {{ devices[0].totalPoints }} {{ t('firstPoints') }}</p>
+      </div>
+      <app-wahoo-inbox id="wahoo-settings" [expanded]="selectedProvider === 'wahoo'" (statusChange)="wahooStatusChanged($event)" (ridesChange)="wahooRidesChanged($event)" (openSettings)="selectedProvider = 'wahoo'"></app-wahoo-inbox>
+      <app-polar-inbox id="polar-settings" [expanded]="selectedProvider === 'polar'" (statusChange)="polarStatusChanged($event)" (ridesChange)="polarRidesChanged($event)" (openSettings)="selectedProvider = 'polar'"></app-polar-inbox>
+    </section>
+
+    <p *ngIf="messageKey" class="notice notice--success" role="status">{{ t(messageKey) }}<span *ngIf="messageKey === 'incorporatedMessage' && incorporatedRide && rideLocation(incorporatedRide)"> {{ rideLocation(incorporatedRide) }}</span></p>
+    <p *ngIf="errorKey" class="notice notice--error" role="alert">{{ t(errorKey) }}</p>
+
+    <div class="inbox-toolbar">
+      <strong class="pending-count">Pendientes <b>{{ pendingRides.length }}</b></strong>
+      
+      <span>{{ t('newestFirst') }}</span>
+    </div>
+
+    <div *ngIf="!loading && !pendingRides.length" class="empty-rides">{{ t('emptyRides') }}</div>
+    <div *ngFor="let ride of pendingRides; trackBy: trackRide" class="ride-card">
+      <div class="ride-card__top"><strong>{{ ride.provider }}</strong><time>{{ ride.lastReceivedAt | date:'dd/MM/yyyy · HH:mm' }}</time></div>
+      <div class="ride-title"><span class="ride-bike"><mat-icon>directions_bike</mat-icon></span><div><h2>{{ ride.name || t('rideTitle') }}</h2><p *ngIf="ride.rideStart">Actividad del {{ rideDate(ride) | date:'longDate' }}</p></div></div>
+      <div class="ride-stats">
+        <div><strong>{{ ride.distanceKm === null ? '—' : ((ride.distanceKm | number:'1.1-1') + ' km') }}</strong><small>{{ t('distance') }}</small></div>
+        <div><strong>{{ ride.ascentMeters === null ? '—' : ('+' + (ride.ascentMeters | number:'1.0-0') + ' m') }}</strong><small>{{ t('ascent') }}</small></div>
+        <div><strong>{{ duration(ride.durationSeconds) }}</strong><small>{{ t('duration') }}</small></div>
+      </div>
+      <div class="ride-actions">
+        <button type="button" class="incorporate-button" (click)="incorporate(ride)" [disabled]="busyRideId !== null"><mat-icon>create_new_folder</mat-icon>{{ t('incorporate') }}</button>
+        <button type="button" class="discard-button" (click)="discard(ride)" [disabled]="busyRideId !== null">{{ t('discard') }}</button>
+        <button type="button" class="preview-button" (click)="openPreview(ride)" [attr.aria-label]="previewRideId === ride.key ? t('closeMap') : t('viewRouteMap')" [attr.aria-expanded]="previewRideId === ride.key"><mat-icon>map</mat-icon>{{ previewRideId === ride.key ? t('closeMap') : t('viewMap') }}</button>
+      </div>
+      <div *ngIf="previewRideId === ride.key" id="garmin-preview-map" class="route-map" [attr.aria-label]="t('routeMap')"></div>
+    </div>
+
+    <section *ngIf="incorporatedRides.length" class="incorporated-section">
+      <h2>{{ t('incorporated') }} <b>{{ incorporatedRides.length }}</b></h2>
+      <div *ngFor="let ride of incorporatedRides; trackBy: trackRide" class="incorporated-row">
+        <div class="incorporated-name"><strong>{{ ride.name || t('rideTitle') }}</strong><small>✓ &nbsp; {{ ride.provider }} · {{ rideDate(ride) | date:'dd/MM/yyyy · HH:mm' }} <span *ngIf="rideLocation(ride)"> · {{ rideLocation(ride) }}</span></small></div>
+        
+        <span>{{ ride.distanceKm | number:'1.1-1' }} km</span>
+      </div>
+    </section>
+  </section>
+</main>

@@ -1,96 +1,99 @@
 .dialog-header {
-  margin: -24px -24px 16px;
-  padding: 16px 24px;
-  background: #2563eb;
+  margin: 0 0 10px;
   color: #fff;
 }
 
 .dialog-content {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 18px;
 }
 
 .dialog-subtitle {
   margin: 0;
-  color: #4b5563;
+  color: #cbd5e1;
+  line-height: 1.5;
+  text-align: center;
 }
 
 .track-list {
-  display: flex;
-  flex-direction: column;
+  display: grid;
   gap: 12px;
 }
 
 .track-row {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  padding: 12px;
-  border: 1px solid #e5e7eb;
-  border-radius: 12px;
-  background: #f9fafb;
+  display: grid;
+  gap: 14px;
+  padding: 16px;
+  border: 1px solid rgba(148, 163, 184, .28);
+  border-radius: 16px;
+  background: #202b42;
 }
 
 .track-label {
   display: flex;
   align-items: center;
   gap: 10px;
+  color: #fff;
   font-weight: 700;
-  color: #111827;
 }
 
 .badge {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
+  display: inline-grid;
+  place-items: center;
   width: 28px;
   height: 28px;
   border-radius: 8px;
-  background: #e0e7ff;
-  color: #312e81;
+  background: #facc15;
+  color: #172033;
   font-weight: 800;
 }
 
 .track-inputs {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  grid-template-columns: minmax(0, 1fr) 110px;
   gap: 12px;
 }
+.track-inputs--names-only { grid-template-columns: 1fr; }
 
 .field {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  padding: 10px 12px;
-  border-radius: 10px;
-  border: 1px solid #e5e7eb;
-  background: #fff;
-  font-weight: 600;
-  color: #1f2937;
-}
-
-.field input[type='color'] {
-  width: 64px;
-  height: 36px;
-  padding: 0;
-  border: none;
-  background: transparent;
-}
-
-.field input[type='text'],
-.field input[type='color'],
-.field input:not([type]) {
+  display: grid;
+  align-content: start;
+  gap: 7px;
+  min-width: 0;
+  color: #e2e8f0;
   font-size: 14px;
-  border: 1px solid #d1d5db;
-  border-radius: 8px;
-  padding: 8px 10px;
+  font-weight: 700;
 }
 
-.color-field {
-  max-width: 140px;
+.field input {
+  box-sizing: border-box;
+  width: 100%;
+  height: 42px;
+  border: 1px solid #65758f;
+  border-radius: 10px;
+  background: #172033;
+  color: #fff;
+  color-scheme: dark;
+  font: 400 16px Roboto, "Helvetica Neue", sans-serif;
 }
 
-.dialog-actions {
-  margin-top: 12px;
+.field input[type='text'] { padding: 0 12px; }
+.field input[type='text']::placeholder { color: #aab8cf; }
+.field input[type='color'] { padding: 4px; cursor: pointer; }
+.field input[type='color']::-webkit-color-swatch-wrapper { padding: 0; }
+.field input[type='color']::-webkit-color-swatch { border: 0; border-radius: 6px; }
+.field input[type='color']::-moz-color-swatch { border: 0; border-radius: 6px; }
+.field input:focus-visible {
+  border-color: #facc15;
+  outline: 2px solid rgba(250, 204, 21, .35);
+  outline-offset: 2px;
+}
+.field input[type='text']:-webkit-autofill {
+  -webkit-text-fill-color: #fff;
+  -webkit-box-shadow: 0 0 0 1000px #172033 inset;
+}
+
+@media (max-width: 420px) {
+  .track-inputs { grid-template-columns: 1fr; }
 }

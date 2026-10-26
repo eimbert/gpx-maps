@@ -1,73 +1,73 @@
-<h2 mat-dialog-title>Mis tracks en eventos</h2>
+<h2 mat-dialog-title>{{ 'eventTracks' | uiText }}</h2>
 <div mat-dialog-content class="table-wrapper">
   <table class="tracks-table">
     <thead>
       <tr>
         <th>
-          <button type="button" class="sort-button" (click)="sortBy('year')" aria-label="Ordenar por año">
-            Año <span class="sort-indicator">{{ resolveSortIndicator('year') }}</span>
+          <button type="button" class="sort-button" (click)="sortBy('year')" [attr.aria-label]="('sortBy' | uiText) + ' ' + ('year' | uiText)">
+            {{ 'year' | uiText }} <span class="sort-indicator">{{ resolveSortIndicator('year') }}</span>
           </button>
         </th>
-        <th>Evento</th>
+        <th>{{ 'event' | uiText }}</th>
         <th>
-          <button type="button" class="sort-button" (click)="sortBy('province')" aria-label="Ordenar por provincia">
-            Provincia <span class="sort-indicator">{{ resolveSortIndicator('province') }}</span>
-          </button>
-        </th>
-        <th>
-          <button type="button" class="sort-button" (click)="sortBy('population')" aria-label="Ordenar por población">
-            Población <span class="sort-indicator">{{ resolveSortIndicator('population') }}</span>
+          <button type="button" class="sort-button" (click)="sortBy('province')" [attr.aria-label]="('sortBy' | uiText) + ' ' + ('province' | uiText)">
+            {{ 'province' | uiText }} <span class="sort-indicator">{{ resolveSortIndicator('province') }}</span>
           </button>
         </th>
         <th>
-          <button type="button" class="sort-button" (click)="sortBy('autonomousCommunity')" aria-label="Ordenar por comunidad">
-            Comunidad <span class="sort-indicator">{{ resolveSortIndicator('autonomousCommunity') }}</span>
+          <button type="button" class="sort-button" (click)="sortBy('population')" [attr.aria-label]="('sortBy' | uiText) + ' ' + ('population' | uiText)">
+            {{ 'population' | uiText }} <span class="sort-indicator">{{ resolveSortIndicator('population') }}</span>
           </button>
         </th>
-        <th>Distancia (km)</th>
-        <th>Tiempo en movimiento</th>
-        <th>Tiempo total</th>
-        <th class="icon-col">Descargar</th>
-        <th class="icon-col">Eliminar</th>
+        <th>
+          <button type="button" class="sort-button" (click)="sortBy('autonomousCommunity')" [attr.aria-label]="('sortBy' | uiText) + ' ' + ('community' | uiText)">
+            {{ 'community' | uiText }} <span class="sort-indicator">{{ resolveSortIndicator('autonomousCommunity') }}</span>
+          </button>
+        </th>
+        <th>{{ 'distanceKm' | uiText }}</th>
+        <th>{{ 'movingTime' | uiText }}</th>
+        <th>{{ 'totalTime' | uiText }}</th>
+        <th class="icon-col">{{ 'download' | uiText }}</th>
+        <th class="icon-col">{{ 'delete' | uiText }}</th>
       </tr>
     </thead>
     <tbody>
       <tr *ngFor="let row of sortedRows">
-        <td data-label="Año">{{ row.year }}</td>
-        <td data-label="Evento">{{ row.eventName }}</td>
-        <td data-label="Provincia">{{ row.province || '—' }}</td>
-        <td data-label="Población">{{ row.population || '—' }}</td>
-        <td data-label="Comunidad">{{ row.autonomousCommunity || '—' }}</td>
-        <td data-label="Distancia (km)">{{ row.distanceKm | number:'1.1-1' }}</td>
-        <td data-label="Tiempo en movimiento">{{ formatDuration(row.timeSeconds) }}</td>
-        <td data-label="Tiempo total">{{ formatDuration(row.totalTimeSeconds) }}</td>
-        <td data-label="Descargar" class="icon-col">
+        <td [attr.data-label]="'year' | uiText">{{ row.year }}</td>
+        <td [attr.data-label]="'event' | uiText">{{ row.eventName }}</td>
+        <td [attr.data-label]="'province' | uiText">{{ row.province || '—' }}</td>
+        <td [attr.data-label]="'population' | uiText">{{ row.population || '—' }}</td>
+        <td [attr.data-label]="'community' | uiText">{{ row.autonomousCommunity || '—' }}</td>
+        <td [attr.data-label]="'distanceKm' | uiText">{{ row.distanceKm | number:'1.1-1' }}</td>
+        <td [attr.data-label]="'movingTime' | uiText">{{ formatDuration(row.timeSeconds) }}</td>
+        <td [attr.data-label]="'totalTime' | uiText">{{ formatDuration(row.totalTimeSeconds) }}</td>
+        <td [attr.data-label]="'download' | uiText" class="icon-col">
           <button
             type="button"
             class="icon-button"
             [disabled]="isDownloading(row)"
             (click)="downloadTrack(row)">
             <span aria-hidden="true">⬇️</span>
-            <span class="sr-only">Descargar</span>
+            <span class="sr-only">{{ 'download' | uiText }}</span>
           </button>
         </td>
-        <td data-label="Eliminar" class="icon-col">
+        <td [attr.data-label]="'delete' | uiText" class="icon-col">
           <button
             type="button"
             class="icon-button danger"
             [disabled]="isDeleting(row)"
             (click)="confirmDelete(row)">
             <span aria-hidden="true">🗑️</span>
-            <span class="sr-only">Eliminar</span>
+            <span class="sr-only">{{ 'delete' | uiText }}</span>
           </button>
         </td>
       </tr>
       <tr *ngIf="!rows.length">
-        <td colspan="10" class="empty">Sin tracks para mostrar.</td>
+        <td colspan="10" class="empty">{{ 'noTracksToShow' | uiText }}</td>
       </tr>
     </tbody>
   </table>
 </div>
 <div mat-dialog-actions align="end">
-  <button mat-button (click)="close()">Cerrar</button>
+  <button mat-button (click)="close()">{{ 'close' | uiText }}</button>
 </div>

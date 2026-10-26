@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, catchError, map, of, tap } from 'rxjs';
+import { Observable, catchError, map, of, tap, timeout } from 'rxjs';
 import { environment } from '../../environments/environment';
 import {
   PlanFolder,
@@ -86,13 +86,11 @@ export type RoundTripRoutingPreferences = {
   avoidFeatures?: string[];
   weightings?: RoundTripWeightings;
   extraInfo?: Array<'surface' | 'waytype'>;
-  seedAttempts?: number;
 };
 
 export type RoundTripRouteRequest = {
   profile: RoundTripProfile;
   complexity: RoundTripComplexity;
-  points: number;
   lengthKm: number;
   start: {
     lat: number;
@@ -111,6 +109,11 @@ export type RoundTripRouteResponse = {
   appliedOptions?: {
     avoidFeatures?: string[];
     weightings?: RoundTripWeightings;
+    traceability?: {
+      roadPercent?: number;
+      trackCyclewayPercent?: number;
+      unknownSurfacePercent?: number;
+    };
   } | null;
   fallbackLevel?: number | null;
   warnings?: string[];
@@ -172,7 +175,11 @@ export class PlanService {
   }
 
   generateRoundTripRoute(payload: RoundTripRouteRequest): Observable<RoundTripRouteResponse> {
-    return this.http.post<RoundTripRouteResponse>(`${this.routingApiBase}/round-trip`, payload);
+    return this.http.post<RoundTripRouteResponse>(`${this.routingApiBase}/round-trip`, payload).pipe(timeout(70000));
+  }
+
+  routeEditorSection(payload: { profile: string; coordinates: number[][] }): Observable<{ coordinates: number[][] }> {
+    return this.http.post<{ coordinates: number[][] }>(`${this.routingApiBase}/edit-section`, payload).pipe(timeout(15000));
   }
 
   getVotes(folderId: number): Observable<PlanFolderVotesResponse> {
@@ -341,6 +348,8 @@ export class PlanService {
       difficultyScore: track.difficultyScore ?? (track as any).difficultyScore ?? (track as any).difficulty_score ?? null,
       difficultyLevel: track.difficultyLevel ?? (track as any).difficultyLevel ?? (track as any).difficulty_level ?? null,
       difficultyVersion: track.difficultyVersion ?? (track as any).difficultyVersion ?? (track as any).difficulty_version ?? null,
+      irpScore: track.irpScore ?? null,
+      irpVersion: track.irpVersion ?? null,
       howToGetUrl: track.howToGetUrl ?? (track as any).how_to_get_url ?? null,
       sourceType: track.sourceType ?? (track as any).source_type ?? null,
       routeXml: track.routeXml ?? (track as any).routeXml ?? (track as any).route_xml ?? null,

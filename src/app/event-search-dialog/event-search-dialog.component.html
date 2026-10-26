@@ -1,9 +1,9 @@
 <div class="search-dialog">
   <header class="search-dialog__header">
     <div>
-      <p class="eyebrow">Buscador de eventos</p>
-      <h2>Explora por nombre, zona o distancia</h2>
-      <p class="muted">Pulsa en “Seleccionar” para elegir un evento y volver a la pantalla anterior.</p>
+      <p class="eyebrow">{{ 'eventFinder' | uiText }}</p>
+      <h2>{{ 'exploreEvents' | uiText }}</h2>
+      <p class="muted">{{ 'selectEventHint' | uiText }}</p>
     </div>
   </header>
 
@@ -11,13 +11,13 @@
     <table>
       <thead>
         <tr>
-          <th class="logo-col">Logo</th>
-          <th>Nombre</th>
-          <th>Año</th>
-          <th>Población</th>
-          <th>Comunidad</th>
-          <th class="distance-col"  style="text-align: right;">Distancias</th>
-          <th class="action-col">Acción</th>
+          <th class="logo-col">{{ 'logo' | uiText }}</th>
+          <th>{{ 'name' | uiText }}</th>
+          <th>{{ 'year' | uiText }}</th>
+          <th>{{ 'population' | uiText }}</th>
+          <th>{{ 'community' | uiText }}</th>
+          <th class="distance-col"  style="text-align: right;">{{ 'distances' | uiText }}</th>
+          <th class="action-col">{{ 'action' | uiText }}</th>
         </tr>
       </thead>
       <tbody>
@@ -26,20 +26,20 @@
           (dblclick)="onRowDoubleClick(row)"
           [class.is-selected]="isSelected(row)"
         >
-          <td data-label="Logo" class="logo-col">
+          <td [attr.data-label]="'logo' | uiText" class="logo-col">
             <div class="logo-wrapper" [class.logo-wrapper--placeholder]="!row.logo">
-              <img [src]="getLogo(row)" [alt]="row.logo ? row.name : 'Imagen no disponible'" />
+              <img [src]="getLogo(row)" [alt]="row.logo ? row.name : ('imageUnavailable' | uiText)" />
             </div>
           </td>
-          <td data-label="Nombre">
+          <td [attr.data-label]="'name' | uiText">
             <div class="main-text">{{ row.name }}</div>
           </td>
-          <td data-label="Año">{{ row.year }}</td>
-          <td data-label="Población">{{ row.population }}</td>
-          <td data-label="Comunidad">{{ row.autonomousCommunity }}</td>
-          <td data-label="Distancias" class="distance-col" style="text-align: right;">{{ getDistancesLabel(row) }}</td>
-          <td data-label="Acción" class="action-col">
-            <button type="button" class="select-button" (click)="onRowDoubleClick(row)">Seleccionar</button>
+          <td [attr.data-label]="'year' | uiText">{{ row.year }}</td>
+          <td [attr.data-label]="'population' | uiText">{{ row.population }}</td>
+          <td [attr.data-label]="'community' | uiText">{{ row.autonomousCommunity }}</td>
+          <td [attr.data-label]="'distances' | uiText" class="distance-col" style="text-align: right;">{{ getDistancesLabel(row) }}</td>
+          <td [attr.data-label]="'action' | uiText" class="action-col">
+            <button type="button" class="select-button" (click)="onRowDoubleClick(row)">{{ 'select' | uiText }}</button>
           </td>
         </tr>
       </tbody>

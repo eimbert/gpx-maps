@@ -3,6 +3,7 @@
 # Compiled output
 /dist
 /tmp
+/.elevation-work
 /out-tsc
 /bazel-out
 

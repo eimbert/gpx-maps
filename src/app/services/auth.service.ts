@@ -34,6 +34,7 @@ export interface EntitlementsResponse {
   thirdPartyAccessesPer72Hours: number;
   thirdPartyAccessesUsed: number;
   nextThirdPartyAccessAvailability: string | null;
+  nextAnimationAvailability: string | null;
 }
 
 @Injectable({ providedIn: 'root' })

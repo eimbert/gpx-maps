@@ -1,139 +1,181 @@
-<div class="container">
+<div class="container route-workspace" [class.container--routes]="mode === 'routes'" [class.animation-redesign]="mode === 'routes' && routeView === 'animate'" [class.archive-redesign]="mode === 'routes' && routeView === 'archive'">
+  <header *ngIf="mode === 'routes'" class="archive-topbar"><a class="archive-logo" routerLink="/" [attr.aria-label]="'brandHome' | uiText"></a><div class="archive-breadcrumb"><a routerLink="/">{{ 'start' | uiText }}</a><mat-icon>chevron_right</mat-icon><strong>{{ routeView === 'archive' ? ('myRoutes' | uiText) : ('animateTitle' | uiText) }}</strong></div><div class="archive-topbar-actions"><app-language-selector></app-language-selector><a routerLink="/garmin" [attr.aria-label]="'inboxNav' | uiText" [matTooltip]="'inboxNav' | uiText"><mat-icon>inbox</mat-icon><i *ngIf="dashboardState.pendingCount"></i></a><a class="archive-avatar" routerLink="/" fragment="account" [attr.aria-label]="'accountUsage' | uiText" [matTooltip]="'accountUsage' | uiText">{{ archiveInitials }}</a></div></header>
   <section *ngIf="mode === 'routes'" class="load-wrapper">
-    <header class="hero">
+    <nav *ngIf="false" class="workspace-nav" [attr.aria-label]="'routeNavigation' | uiText">
+      <button type="button" (click)="goBack()" class="workspace-home"><mat-icon aria-hidden="true">arrow_back</mat-icon> {{ 'back' | uiText }}</button>
       <div>
-        <h1>Organiza y Anima tus Tracks</h1>
-        <p>Arrastra y suelta hasta {{ maxTracks }} recorridos o pulsa para seleccionarlos.</p>
-        <p *ngIf="!isAuthenticated" class="guest-note">Sin sesión iniciada solo puedes cargar un archivo GPX a la vez.
-        </p>
+        <button type="button" (click)="setRouteView('archive')">{{ 'archive' | uiText }}</button>
+        <button type="button" [class.active]="routeView === 'animate'" [attr.aria-current]="routeView === 'animate' ? 'page' : null" (click)="setRouteView('animate')">{{ 'animate' | uiText }}</button>
       </div>
+    </nav>
 
-
+    <header class="workspace-heading">
+      <p class="workspace-eyebrow">{{ routeView === 'archive' ? ('yourLibrary' | uiText) : ('animationEyebrow' | uiText) }}</p>
+      <h1>{{ routeView === 'archive' ? ('myRoutes' | uiText) : ('animateTitle' | uiText) }}</h1>
+      <p>{{ routeView === 'archive' ? ('archiveDashboardLead' | uiText) : ('animateLead' | uiText) }}</p>
+      <button *ngIf="routeView === 'archive' && !choosingFromArchive" type="button" class="archive-import" (click)="openStandaloneUploadDialog()" [disabled]="standaloneUploadInProgress"><mat-icon>file_upload</mat-icon><span class="archive-import-long">{{ 'importGpxAction' | uiText }}</span><span class="archive-import-short">GPX</span></button>
     </header>
-    <div style=" margin-top:28px;">
-      <button type="button" class="event-action-button event-action-button--home hero__home" (click)="goHome()"
-        matTooltip="Volver al inicio" aria-label="Volver al inicio">
-        <mat-icon aria-hidden="true">home</mat-icon>
-      </button>
-    </div>
 
-    <div class="dropzone" [class.dropzone--active]="isDragOver" (click)="triggerFileDialog()"
-      (dragover)="onDragOver($event)" (dragleave)="onDragLeave()" (drop)="onDrop($event)">
-      <input #fileInput type="file" accept=".gpx" [attr.multiple]="isAuthenticated ? '' : null"
-        (change)="onFileInputChange($event)" hidden />
-
-      <div class="dropzone__content">
-        <div class="icon">📂</div>
-        <p class="title">Suelta aquí tus archivos GPX</p>
-        <p class="subtitle">También puedes pulsar para abrir el selector</p>
-        <button type="button" class="secondary" style="cursor: pointer;">Añadir archivos</button>
+    <ng-container *ngIf="routeView === 'animate' && !choosingFromArchive">
+      <p class="selection-note" *ngIf="!animationType && tracks.length" role="status">
+        <mat-icon aria-hidden="true">route</mat-icon>
+        <span><strong>{{ tracks.length }} {{ (tracks.length === 1 ? 'selectedTrackSingular' : 'selectedTrackPlural') | uiText }}<ng-container *ngIf="tracks.length === 1">: {{ tracks[0].name }}</ng-container></strong><small>{{ 'chooseAnimationMode' | uiText }}</small></span>
+      </p>
+      <div class="animation-types" *ngIf="!animationType; else animationSetup">
+        <button type="button" class="animation-type animation-type--discovery" (click)="selectAnimationType('descubrir')">
+          <span class="animation-type__visual"><mat-icon aria-hidden="true">landscape</mat-icon><span>{{ 'landscape3d' | uiText }}</span></span>
+          <span class="animation-type__body">
+            <strong>{{ 'discoverRoute' | uiText }}</strong>
+            <span class="animation-type__subtitle">{{ 'discoverSubtitle' | uiText }}</span>
+            <span>{{ 'discoverDescription' | uiText }}</span>
+            <small>{{ 'noGpxTimes' | uiText }}</small>
+            <span class="animation-type__cta">{{ 'chooseRoute' | uiText }} <mat-icon aria-hidden="true">arrow_forward</mat-icon></span>
+          </span>
+        </button>
+        <button type="button" class="animation-type animation-type--race" (click)="selectAnimationType('carrera')">
+          <span class="animation-type__visual"><mat-icon aria-hidden="true">directions_bike</mat-icon><span>{{ 'participantsTimes' | uiText }}</span></span>
+          <span class="animation-type__body">
+            <strong>{{ 'animateRace' | uiText }}</strong>
+            <span class="animation-type__subtitle">{{ 'raceSubtitle' | uiText }}</span>
+            <span>{{ 'raceDescription' | uiText }}</span>
+            <small>{{ 'oneOrMoreTracks' | uiText }}</small>
+            <span class="animation-type__cta">{{ 'chooseTracks' | uiText }} <mat-icon aria-hidden="true">arrow_forward</mat-icon></span>
+          </span>
+        </button>
       </div>
-    </div>
-
-    <section class="tracks" *ngIf="tracks.length">
-      <h2>Tracks cargadas</h2>
-      <ul class="file-list">
-        <li class="file-item" *ngFor="let track of tracks; index as i">
-          <span class="file-pill">{{ i + 1 }}</span>
-          <div class="file-texts">
-            <span class="file-name" [title]="track.fileName">{{ track.fileName }}</span>
-            <span class="file-alias" [title]="track.name">{{ track.name }}</span>
+      <ng-template #animationSetup>
+        <section class="animation-setup">
+          <div class="animation-setup__heading">
+            <div><span class="workspace-eyebrow">{{ 'yourAnimation' | uiText }}</span><h2>{{ (animationType === 'descubrir' ? 'discoverRoute' : 'animateRace') | uiText }}</h2></div>
+            <button type="button" class="workspace-link" (click)="animationType = null">{{ 'change' | uiText }}</button>
           </div>
-          <button type="button" style="cursor: pointer;" class="ghost" (click)="borrarFichero(i)">Quitar</button>
-        </li>
-      </ul>
+          <p>{{ (animationType === 'descubrir' ? 'choose3dRoute' : 'loadRaceTracks') | uiText }}</p>
+          <div class="track-sources" *ngIf="animationType !== 'descubrir' || !tracks.length" [class.track-sources--dragging]="isDragOver" (dragover)="onDragOver($event)" (dragleave)="onDragLeave()" (drop)="onDrop($event)">
+            <input #fileInput type="file" accept=".gpx" [attr.multiple]="isAuthenticated && animationType === 'carrera' ? '' : null" (change)="onFileInputChange($event)" hidden />
+            <button type="button" class="source-button" (click)="triggerFileDialog()"><mat-icon aria-hidden="true">upload_file</mat-icon><strong>{{ 'uploadGpx' | uiText }}</strong><small>{{ 'fromDevice' | uiText }}</small></button>
+            <button type="button" class="source-button" (click)="openAnimationArchive()"><mat-icon aria-hidden="true">folder_open</mat-icon><strong>{{ 'chooseFromArchive' | uiText }}</strong><small>{{ 'yourAndCommunityRoutes' | uiText }}</small></button>
+          </div>
+          <p class="workspace-hint" *ngIf="animationType === 'descubrir' && tracks.length">{{ 'removeSelected3dTrack' | uiText }}</p>
+          <p class="workspace-hint" *ngIf="!isAuthenticated">{{ 'animateWithoutLogin' | uiText }} {{ (animationType === 'descubrir' ? 'loginForArchive' : 'loginForArchiveRace') | uiText }}</p>
+          <section class="selected-tracks" *ngIf="tracks.length" [attr.aria-label]="'selectedTracks' | uiText">
+            <h3>{{ tracks.length }} {{ (tracks.length === 1 ? 'selectedTrackSingular' : 'selectedTrackPlural') | uiText }}</h3>
+            <ul>
+              <li *ngFor="let track of tracks; index as i"><mat-icon aria-hidden="true">route</mat-icon><span><strong>{{ track.name }}</strong><small>{{ track.details.distance | number:'1.1-1' }} km · {{ track.details.elevationStatus === 'unavailable' ? ('noElevation' | uiText) : ((track.details.ascent | number:'1.0-0') + ' m D+') }}<app-elevation-quality [quality]="track.details.elevationQuality"></app-elevation-quality></small></span><button type="button" (click)="borrarFichero(i)" [attr.aria-label]="('remove' | uiText) + ' ' + track.name"><mat-icon aria-hidden="true">close</mat-icon></button></li>
+            </ul>
+          </section>
+          <div class="animation-next"><button type="button" class="workspace-primary" (click)="iniciarVisualizacion()" [disabled]="!tracksCargados()">{{ 'configureAnimation' | uiText }} <mat-icon aria-hidden="true">arrow_forward</mat-icon></button></div>
+        </section>
+      </ng-template>
+    </ng-container>
+
+    <div class="archive-picker" *ngIf="choosingFromArchive"><div><strong>{{ 'chooseArchiveTrack' | uiText }}</strong><p>{{ 'addedToAnimation' | uiText }} {{ (animationType === 'descubrir' ? 'discoverRoute' : 'race') | uiText }}.</p></div><button type="button" class="workspace-link" (click)="setRouteView('animate')">{{ 'backToAnimation' | uiText }}</button></div>
+    <section class="archive-signin" *ngIf="choosingFromArchive && !isAuthenticated">
+      <mat-icon aria-hidden="true">folder_open</mat-icon><h2>{{ 'archiveStartsHere' | uiText }}</h2><p>{{ 'archiveSignInHint' | uiText }}</p><button type="button" class="workspace-primary" (click)="openArchiveLogin()">{{ 'signIn' | uiText }}</button>
     </section>
 
-    <div class="action-row">
-      <button (click)="iniciarVisualizacion()" [disabled]="!tracksCargados()" class="btn-start" matTooltip="Iniciar la animación de los tracks cargados">
-        <span>Iniciar</span>
-        <svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" class="btn-start__icon">
-          <path d="M5 3l14 9-14 9V3z" fill="currentColor" />
-        </svg>
-      </button>
-    </div>
-
-    <section *ngIf="isAuthenticated && !isUserTracksPanelCollapsed" class="user-tracks" #userTracksSection>
+    <section id="routeArchive" *ngIf="routeView === 'archive' || (choosingFromArchive && isAuthenticated)" class="user-tracks" #userTracksSection>
       <div class="user-tracks__header">
         <div>
-          <p class="eyebrow">Archivo de rutas</p>
+          <p class="eyebrow">{{ 'archiveTitle' | uiText }}</p>
         </div>
       </div>
 
       <div class="user-tracks__controls">
         <div class="user-tracks__filter">
           <mat-icon aria-hidden="true">search</mat-icon>
-          <input type="text" [value]="userTracksFilter" (input)="onUserTracksFilter($any($event.target)?.value || '')"
-            placeholder="Buscar por título, evento o ubicación" aria-label="Filtrar tracks guardadas">
+          <input type="text" [value]="userTracksFilter" (input)="onUserTracksFilter($any($event.target)?.value || '')" [disabled]="!isAuthenticated"
+            [placeholder]="isAuthenticated ? ('searchRoute' | uiText) : ('registerToSearch' | uiText)" [attr.aria-label]="'searchRoute' | uiText">
         </div>
 
         <!-- botones de totales -->
         <div class="user-tracks__tabs">
           <button type="button" class="user-tracks__tab"
             [class.user-tracks__tab--active]="activeUserTracksTab === 'personal'" (click)="setUserTracksTab('personal')"
-            aria-label="Ver tus tracks personales">
-            <span>Tus tracks</span>
-            <span class="user-tracks__tab-count">{{ getUserTrackRows('personal').length }}</span>
+            [attr.aria-label]="'yourRoutes' | uiText">
+            <span>{{ 'yourRoutes' | uiText }}</span>
+            <span class="user-tracks__tab-count">{{ isAuthenticated ? getUserTrackRows('personal').length : 0 }}</span>
           </button>
-          <button type="button" class="user-tracks__tab"
+          <button *ngIf="!choosingFromArchive" type="button" class="user-tracks__tab"
             [class.user-tracks__tab--active]="activeUserTracksTab === 'analyses'" (click)="setUserTracksTab('analyses')"
-            aria-label="Ver análisis públicos de rutas">
-            <span>Análisis de rutas</span>
-            <span class="user-tracks__tab-count">{{ publicAnalyses.length }}</span>
+            [attr.aria-label]="'analyses' | uiText">
+            <span>{{ 'analyses' | uiText }}</span>
+            <span class="user-tracks__tab-count">{{ isAuthenticated ? publicAnalyses.length : 0 }}</span>
           </button>
           <button type="button" class="user-tracks__tab"
             [class.user-tracks__tab--active]="activeUserTracksTab === 'shared'" (click)="setUserTracksTab('shared')"
-            aria-label="Ver tracks de otros usuarios">
-            <span>Tracks otros usuarios</span>
-            <span class="user-tracks__tab-count">{{ getUserTrackRows('shared').length }}</span>
+            [attr.aria-label]="'community' | uiText">
+            <span>{{ 'community' | uiText }}</span>
+            <span class="user-tracks__tab-count">{{ isAuthenticated ? getUserTrackRows('shared').length : publicSharedTrackCount }}</span>
           </button>
         </div>
 
-        <button *ngIf="activeUserTracksTab === 'personal'" type="button" class="cloud-upload"
+        <button *ngIf="routeView !== 'archive' && activeUserTracksTab === 'personal' && !choosingFromArchive" type="button" class="cloud-upload"
           (click)="openStandaloneUploadDialog()" [disabled]="standaloneUploadInProgress">
           <mat-icon aria-hidden="true">cloud_upload</mat-icon>
-          <span>Subir track</span>
+          <span>{{ 'saveGpxToArchive' | uiText }}</span>
         </button>
       </div>
 
-      <p class="muted" *ngIf="activeTracksLoading">{{ activeTracksLoadingLabel }}</p>
-      <p class="muted" *ngIf="!activeTracksLoading && ((activeUserTracksTab === 'analyses' && !publicAnalyses.length) || (activeUserTracksTab !== 'analyses' && !getUserTrackRows(activeUserTracksTab).length))">{{activeTracksEmptyMessage }}</p>
+      <div class="archive-guest-prompt" *ngIf="!isAuthenticated">
+        <span class="archive-guest-prompt__icon"><mat-icon aria-hidden="true">folder_open</mat-icon></span>
+        <div>
+          <h2>{{ 'archiveGuestTitle' | uiText }}</h2>
+          <p>{{ 'archiveGuestDescription' | uiText }}</p>
+          <p *ngIf="publicSharedTrackCount > 0" class="archive-guest-prompt__community">La comunidad ya comparte {{ publicSharedTrackCount }} {{ publicSharedTrackCount === 1 ? 'track' : 'tracks' }}.</p>
+        </div>
+        <div class="archive-guest-prompt__actions">
+          <button type="button" class="workspace-primary" (click)="openArchiveRegister()">{{ 'createFreeAccount' | uiText }}</button>
+          <button type="button" class="workspace-link" (click)="openArchiveLogin()">{{ 'haveAccount' | uiText }}</button>
+        </div>
+      </div>
 
-      <div class="analysis-library" *ngIf="activeUserTracksTab === 'analyses' && !activeTracksLoading && publicAnalyses.length">
+      <p class="muted" *ngIf="isAuthenticated && activeTracksLoading">{{ activeTracksLoadingLabel }}</p>
+      <p class="muted" *ngIf="isAuthenticated && !activeTracksLoading && ((activeUserTracksTab === 'analyses' && !publicAnalyses.length) || (activeUserTracksTab !== 'analyses' && !getUserTrackRows(activeUserTracksTab).length))">{{activeTracksEmptyMessage }}</p>
+
+      <div class="analysis-library" *ngIf="isAuthenticated && activeUserTracksTab === 'analyses' && !activeTracksLoading && publicAnalyses.length">
         <section>
-          <p class="eyebrow">Últimos análisis</p>
+          <p class="eyebrow">{{ 'recentAnalyses' | uiText }}</p>
           <div class="analysis-library__recent">
             <article class="analysis-library__card" *ngFor="let item of recentPublicAnalyses">
               <span class="analysis-library__type">{{ item.report.routeType }}</span>
               <h3>{{ item.title }}</h3>
               <small class="analysis-library__file" *ngIf="item.fileName">{{ item.fileName }}</small>
+              <small class="analysis-library__file">{{ (item.source === 'plan' ? 'planningRoute' : 'archiveRoute') | uiText }}</small>
               <p>{{ item.report.summary }}</p>
               <div class="analysis-library__metrics">
                 <span>{{ item.routeStats?.distanceKm | number:'1.1-1' }} km</span>
-                <span>{{ item.routeStats?.elevationGainM | number:'1.0-0' }} m D+</span>
+                <span>{{ item.routeStats?.elevationGainM != null ? ((item.routeStats?.elevationGainM | number:'1.0-0') + ' m D+') : ('noElevation' | uiText) }}<app-elevation-quality [quality]="item.routeStats?.elevationQuality"></app-elevation-quality></span>
               </div>
-              <button type="button" class="ghost ghost--small" (click)="openPublicAnalysis(item)">{{ selectedPublicAnalysis?.id === item.id ? 'Cerrar' : 'Ver análisis' }}</button>
+              <div class="analysis-library__actions">
+                <button type="button" class="analysis-library__route-link" *ngIf="item.trackId" (click)="openAnalysisRoute(item)" [disabled]="openingAnalysisTrackId !== null"><mat-icon aria-hidden="true">map</mat-icon>{{ 'viewRoute' | uiText }}</button>
+                <button type="button" class="analysis-library__route-link" *ngIf="item.trackId" (click)="planAnalysisRoute(item)" [disabled]="planningAnalysisTrackId !== null"><mat-icon aria-hidden="true">event_available</mat-icon>{{ (planningAnalysisTrackId === item.trackId ? 'preparing' : 'plan') | uiText }}</button>
+                <button type="button" class="analysis-library__view" (click)="openPublicAnalysis(item)">{{ (selectedPublicAnalysis?.id === item.id ? 'hideAnalysis' : 'viewAnalysis') | uiText }}</button>
+              </div>
             </article>
           </div>
         </section>
         <article class="analysis-library__detail" *ngIf="selectedPublicAnalysis as selected" #publicAnalysisDetail>
           <div class="analysis-library__detail-head">
             <div>
-              <p class="analysis-library__label">Análisis de la ruta</p>
+              <p class="analysis-library__label">{{ 'routeAnalysis' | uiText }}</p>
               <h2>{{ selected.title }}</h2>
               <small class="analysis-library__detail-file" *ngIf="selected.fileName">{{ selected.fileName }}</small>
             </div>
-            <button type="button" class="ghost ghost--small" (click)="openPublicAnalysis(selected)">Cerrar</button>
+            <button type="button" class="analysis-library__close" (click)="openPublicAnalysis(selected)" [attr.aria-label]="'closeAnalysis' | uiText" [title]="'closeAnalysis' | uiText"><mat-icon aria-hidden="true">close</mat-icon></button>
+          </div>
+          <div class="analysis-library__detail-actions" *ngIf="selected.trackId">
+            <button type="button" class="analysis-library__detail-route" (click)="openAnalysisRoute(selected)" [disabled]="openingAnalysisTrackId !== null"><mat-icon aria-hidden="true">map</mat-icon>{{ 'viewRouteOnMap' | uiText }}<mat-icon aria-hidden="true">arrow_forward</mat-icon></button>
+            <button type="button" class="analysis-library__detail-route" (click)="planAnalysisRoute(selected)" [disabled]="planningAnalysisTrackId !== null"><mat-icon aria-hidden="true">event_available</mat-icon>{{ (planningAnalysisTrackId === selected.trackId ? 'preparing' : 'plan') | uiText }}</button>
           </div>
           <div class="analysis-library__detail-metrics">
             <strong>{{ selected.routeStats?.distanceKm | number:'1.1-1' }} km</strong>
-            <strong>{{ selected.routeStats?.elevationGainM | number:'1.0-0' }} m D+</strong>
+            <strong>{{ selected.routeStats?.elevationGainM != null ? ((selected.routeStats?.elevationGainM | number:'1.0-0') + ' m D+') : ('noElevation' | uiText) }}</strong><app-elevation-quality [quality]="selected.routeStats?.elevationQuality"></app-elevation-quality>
             <strong>{{ selected.report.routeType }}</strong>
           </div>
           <p>{{ selected.report.summary }}</p>
           <section class="analysis-library__profile" *ngIf="publicProfilePath(selected)">
-            <h3>Perfil y sectores</h3>
-            <svg viewBox="0 0 760 205" role="img" aria-label="Perfil altimétrico y sectores de la ruta">
+            <h3>{{ 'profileAndSections' | uiText }}</h3>
+            <svg viewBox="0 0 760 205" role="img" [attr.aria-label]="'elevationAndSections' | uiText">
               <rect *ngFor="let sector of selected.report.sectors; let i = index"
                     class="analysis-library__sector-band"
                     [class.analysis-library__sector-band--hard]="sector.effort === 'alto' || sector.effort === 'critico'"
@@ -159,25 +201,25 @@
               </article>
             </div>
           </section>
-          <h3>Dureza</h3>
+          <h3>{{ 'reportDifficulty' | uiText }}</h3>
           <p>{{ selected.report.difficultyExplanation }}</p>
           <div class="analysis-library__detail-columns">
             <section *ngIf="selected.report.highlights.length">
-              <h3>Puntos destacados</h3>
+              <h3>{{ 'highlights' | uiText }}</h3>
               <ul><li *ngFor="let highlight of selected.report.highlights"><strong>{{ highlight.title }}</strong>: {{ highlight.description }}</li></ul>
             </section>
             <section *ngIf="selected.report.warnings.length">
-              <h3>Advertencias</h3>
+              <h3>{{ 'warnings' | uiText }}</h3>
               <ul><li *ngFor="let warning of selected.report.warnings">{{ warning }}</li></ul>
             </section>
             <section *ngIf="selected.report.recommendations.length">
-              <h3>Recomendaciones</h3>
+              <h3>{{ 'recommendations' | uiText }}</h3>
               <ul><li *ngFor="let recommendation of selected.report.recommendations">{{ recommendation }}</li></ul>
             </section>
           </div>
         </article>
         <section class="analysis-library__available">
-          <p class="eyebrow">Análisis disponibles</p>
+          <p class="eyebrow">{{ 'availableAnalyses' | uiText }}</p>
           <article class="analysis-library__row" *ngFor="let item of publicAnalyses">
             <div>
               <strong>{{ item.title }}</strong>
@@ -185,76 +227,71 @@
               <small>{{ formatPublicAnalysisDate(item.createdAt) }} · {{ item.report.routeType }}</small>
             </div>
             <span>{{ item.routeStats?.distanceKm | number:'1.1-1' }} km</span>
-            <span>{{ item.routeStats?.elevationGainM | number:'1.0-0' }} m D+</span>
-            <button type="button" class="ghost ghost--small" (click)="openPublicAnalysis(item)">{{ selectedPublicAnalysis?.id === item.id ? 'Cerrar' : 'Ver' }}</button>
+            <span>{{ item.routeStats?.elevationGainM != null ? ((item.routeStats?.elevationGainM | number:'1.0-0') + ' m D+') : ('noElevation' | uiText) }}</span>
+            <div class="analysis-library__row-actions">
+              <button type="button" class="analysis-library__route-link" *ngIf="item.trackId" (click)="openAnalysisRoute(item)" [disabled]="openingAnalysisTrackId !== null"><mat-icon aria-hidden="true">map</mat-icon>{{ 'viewRoute' | uiText }}</button>
+              <button type="button" class="analysis-library__route-link" *ngIf="item.trackId" (click)="planAnalysisRoute(item)" [disabled]="planningAnalysisTrackId !== null"><mat-icon aria-hidden="true">event_available</mat-icon>{{ (planningAnalysisTrackId === item.trackId ? 'preparing' : 'plan') | uiText }}</button>
+              <button type="button" class="analysis-library__view" (click)="openPublicAnalysis(item)">{{ (selectedPublicAnalysis?.id === item.id ? 'hide' : 'viewAnalysis') | uiText }}</button>
+            </div>
           </article>
         </section>
-        <p class="analysis-library__privacy">Los análisis se muestran sin nombre, perfil ni datos identificativos del usuario.</p>
+        <p class="analysis-library__privacy">{{ 'privacyAnalysis' | uiText }}</p>
       </div>
 
-      <div class="user-tracks__panel" *ngIf="activeUserTracksTab !== 'analyses' && !activeTracksLoading && getUserTrackRows(activeUserTracksTab).length">
+      <div class="user-tracks__panel" *ngIf="isAuthenticated && activeUserTracksTab !== 'analyses' && !activeTracksLoading && getUserTrackRows(activeUserTracksTab).length">
         <div class="user-tracks__table-toolbar">
-          <label class="user-tracks__pagination-rows">
-            <select [value]="userTracksGroupBy" (change)="onUserTracksGroupByChange($any($event.target)?.value || '')"
+          <div class="archive-group-label"><mat-icon>folder_open</mat-icon><strong>{{ 'groupByPrefix' | uiText }} {{ userTracksGroupByLabel | lowercase }}</strong><span>· {{ groupedUserTracks.length }} {{ 'destinations' | uiText }}</span></div>
+          <details #archiveFilters class="archive-filters"><summary><mat-icon>tune</mat-icon><span class="archive-sort-long">{{ 'groupAndSort' | uiText }}</span><span class="archive-sort-short">{{ 'sortShort' | uiText }}</span><mat-icon>expand_more</mat-icon></summary><div class="archive-filter-options" [attr.aria-label]="'selectTrackGrouping' | uiText">
+            <button type="button" *ngFor="let option of userTracksGroupByOptions; trackBy: trackGroupingOption"
+              class="archive-filter-option" [class.archive-filter-option--active]="userTracksGroupBy === option.value"
+              [attr.aria-current]="userTracksGroupBy === option.value ? 'true' : null"
               [disabled]="isActiveUserTracksProximityLoading"
-              aria-label="Seleccionar agrupación de tracks">
-              <option *ngFor="let option of userTracksGroupByOptions" [value]="option.value">{{ option.label }}</option>
-            </select>
-            <span *ngIf="isActiveUserTracksProximityLoading" class="muted" aria-live="polite">⏳ Ordenando por proximidad...</span>
-          </label>
+              (click)="onUserTracksGroupByChange(option.value); archiveFilters.open = false">
+              <span>{{ option.label }}</span><mat-icon *ngIf="userTracksGroupBy === option.value" aria-hidden="true">check</mat-icon>
+            </button>
+            <span *ngIf="isActiveUserTracksProximityLoading" class="muted" aria-live="polite">⏳ {{ 'sortingByProximity' | uiText }}</span>
+            <button *ngIf="isUserTracksProximityView" type="button" class="archive-filter-option archive-filter-option--secondary" (click)="onUserTracksGroupByChange('proximity'); archiveFilters.open = false" [disabled]="isActiveUserTracksProximityLoading">{{ 'changeReferencePoint' | uiText }}</button>
+          </div>
+          </details>
           <div class="user-tracks__counts" style="margin-left: auto;">
             <span class="user-tracks__count">{{ filteredUserTracks.length }} tracks</span>
-            <span class="user-tracks__range" *ngIf="groupedUserTracks.length && groupedUserTracks.length !== paginatedUserTracks.length">
-              {{ userTracksGroupByPluralLabel }} {{ userTracksRangeStart }}-{{ userTracksRangeEnd }} de {{ groupedUserTracks.length }}
-            </span>
           </div>
         </div>
 
+        <p *ngIf="isUserTracksProximityView && proximityOriginLabel" class="proximity-origin">{{ 'proximityFrom' | uiText }} {{ proximityOriginLabel }}</p>
         <div class="destination-browser" *ngIf="groupedUserTracks.length && !selectedDestination">
           <div class="destination-browser__intro">
             <div>
-              <p class="eyebrow">Explora el archivo</p>
-              <h2>Rutas clasificadas por {{ userTracksGroupByLabel | lowercase }}</h2>
+              <p class="eyebrow">{{ 'exploreArchive' | uiText }}</p>
+              <h2>{{ 'routesBy' | uiText }} {{ userTracksGroupByLabel | lowercase }}</h2>
             </div>
-            <span>{{ groupedUserTracks.length }} {{ userTracksGroupByPluralLabel | lowercase }} clasificadas</span>
+            <span>{{ groupedUserTracks.length }} {{ userTracksGroupByPluralLabel | lowercase }} {{ 'classified' | uiText }}</span>
           </div>
-          <div class="destination-grid">
-            <article class="destination-card" *ngFor="let group of groupedUserTracks; let i = index"
-              [class.destination-card--recent]="groupContainsRecentlyAddedTrack(group)"
-              (click)="openDestination(group)" tabindex="0" (keydown.enter)="openDestination(group)">
-              <header class="destination-card__header">
-                <span>{{ group.autonomousCommunity || 'Comunidad sin indicar' }}</span>
-                <strong>{{ group.province }}</strong>
-              </header>
-              <section class="destination-card__identity">
-                <small>{{ group.autonomousCommunity || 'Territorio ciclista' }}</small>
-                <h3>{{ group.province }}</h3>
-              </section>
-              <section class="destination-card__facts">
-                <div><small>Rutas</small><strong>{{ group.count }}</strong></div>
-                <div><small>Distancias</small><strong>{{ destinationDistanceRange(group) }}</strong></div>
-                <div><small>D+ medio</small><strong>{{ destinationAverageAscent(group) }}</strong></div>
-                <div><small>Dificultad</small><strong>{{ destinationDifficultyRange(group) }}</strong></div>
-              </section>
-              <section class="destination-card__places">
-                <small>Poblaciones incluidas</small>
-                <p>{{ destinationPopulations(group) }}</p>
-              </section>
-              <footer class="destination-card__go">Ver rutas <mat-icon aria-hidden="true">arrow_forward</mat-icon></footer>
-            </article>
+          <div class="archive-destinations">
+            <button type="button" class="archive-destination" *ngFor="let group of groupedUserTracks; let i = index" [class.archive-destination--recent]="groupContainsRecentlyAddedTrack(group)" (click)="openDestination(group)">
+              <span class="archive-destination-photo" [class.archive-destination-photo--mountain]="i % 4 === 1" [class.archive-destination-photo--city]="i % 4 === 2 || i % 4 === 3" aria-hidden="true"></span>
+              <span class="archive-destination-body"><small>{{ group.autonomousCommunity || ('cyclingTerritory' | uiText) }}</small><span class="archive-destination-title"><strong>{{ group.province }}</strong><mat-icon aria-hidden="true">north_east</mat-icon></span><span class="archive-destination-meta"><span><b>{{ group.count }}</b> {{ 'routes' | uiText }}</span><span>{{ destinationDistanceRange(group) }}</span></span></span>
+            </button>
           </div>
         </div>
 
         <section class="destination-detail" *ngIf="selectedDestination as destination">
           <header class="destination-detail__hero">
             <div class="destination-detail__shade"></div>
-            <button type="button" class="destination-detail__back" (click)="closeDestination()"><mat-icon aria-hidden="true">arrow_back</mat-icon> Destinos</button>
+            <button type="button" class="destination-detail__back" (click)="closeDestination()"><mat-icon aria-hidden="true">arrow_back</mat-icon> {{ 'destinations' | uiText }}</button>
             <div class="destination-detail__title">
-              <span>{{ destination.autonomousCommunity || 'Territorio ciclista' }} · {{ destination.province }}</span>
+              <span>{{ destination.autonomousCommunity || ('cyclingTerritory' | uiText) }} · {{ destination.province }}</span>
               <h2>{{ destination.province }}</h2>
-              <p *ngIf="destinationDescription(destination); else destinationDescriptionState">{{ destinationDescription(destination) }}</p>
+              <div class="place-description" *ngIf="destinationDescription(destination); else destinationDescriptionState">
+                <p>{{ destinationDescription(destination) }}</p>
+                <button type="button" class="place-description__refresh" (click)="refreshDestinationDescription(destination)"
+                  [disabled]="refreshingPlaceDescriptionKey !== null"
+                  [attr.aria-label]="'refreshPlaceDescription' | uiText" [attr.title]="'refreshPlaceDescription' | uiText">
+                  <mat-icon aria-hidden="true">refresh</mat-icon>
+                </button>
+              </div>
               <ng-template #destinationDescriptionState>
-                <p class="destination-detail__description-status" *ngIf="destinationDescriptionLoading">Preparando una breve descripción del lugar…</p>
+                <p class="destination-detail__description-status" *ngIf="destinationDescriptionLoading">{{ 'preparingPlaceDescription' | uiText }}</p>
               </ng-template>
             </div>
           </header>
@@ -262,21 +299,40 @@
             <article class="route-explorer-card" *ngFor="let row of destination.routes">
               <div class="route-explorer-card__top">
                 <span class="route-explorer-card__difficulty" *ngIf="getUserTrackDifficulty(row) as difficulty">{{ difficulty.label }}</span>
-                <button *ngIf="activeUserTracksTab !== 'shared' && row.canDelete" type="button" class="route-explorer-card__menu" (click)="confirmDeleteUserTrack(row)" aria-label="Eliminar ruta"><mat-icon>delete_outline</mat-icon></button>
+                <button *ngIf="activeUserTracksTab !== 'shared' && row.canDelete" type="button" class="route-explorer-card__menu" (click)="confirmDeleteUserTrack(row)" [attr.aria-label]="'deleteRoute' | uiText"><mat-icon>delete_outline</mat-icon></button>
               </div>
-              <h3>{{ row.title || row.eventName || 'Ruta sin título' }}</h3>
-              <p *ngIf="routePopulationDescription(row)">{{ routePopulationDescription(row) }}</p>
-              <div class="route-explorer-card__stats">
+              <h3>{{ row.title || row.eventName || ('untitledRoute' | uiText) }}</h3>
+              <div class="place-description place-description--card" *ngIf="routePopulationDescription(row)">
+                <p>{{ routePopulationDescription(row) }}</p>
+                <button type="button" class="place-description__refresh" (click)="refreshRoutePopulationDescription(row)"
+                  [disabled]="refreshingPlaceDescriptionKey !== null"
+                  [attr.aria-label]="'refreshPlaceDescription' | uiText" [attr.title]="'refreshPlaceDescription' | uiText">
+                  <mat-icon aria-hidden="true">refresh</mat-icon>
+                </button>
+              </div>
+              <div class="route-explorer-card__stats" [class.route-explorer-card__stats--with-quality]="row.elevationQuality === 'A' || row.elevationQuality === 'B' || row.elevationQuality === 'C'">
                 <span><mat-icon>straighten</mat-icon><strong>{{ row.distanceLabel }}</strong></span>
-                <span title="Desnivel positivo acumulado"><mat-icon>landscape</mat-icon><strong>{{ row.ascentMeters !== null ? ((row.ascentMeters | number:'1.0-0') + ' m D+') : 'Sin dato D+' }}</strong></span>
+                <span [title]="'ascent' | uiText"><mat-icon>landscape</mat-icon><strong>{{ row.ascentMeters !== null ? ((row.ascentMeters | number:'1.0-0') + ' m D+') : ('noAscentData' | uiText) }}</strong></span>
                 <span><mat-icon>schedule</mat-icon><strong>{{ row.movingTimeLabel }}</strong></span>
+                <span *ngIf="isUserTracksProximityView"><mat-icon>near_me</mat-icon><strong>{{ formatProximityMeters(row.proximityMeters) }}</strong><small>{{ 'fromReferencePoint' | uiText }}</small></span>
               </div>
+              <app-elevation-quality *ngIf="row.elevationQuality === 'A' || row.elevationQuality === 'B' || row.elevationQuality === 'C'" class="quality-detail-host route-explorer-card__quality" [quality]="row.elevationQuality" [detailed]="true"></app-elevation-quality>
               <div class="route-explorer-card__actions">
-                <button type="button" (click)="viewUserTrack(row)"><mat-icon>map</mat-icon> Ver</button>
-                <button type="button" (click)="analyzeUserTrack(row)"><mat-icon>analytics</mat-icon> Analizar</button>
-                <button type="button" (click)="animateUserTrack(row)"><mat-icon>play_arrow</mat-icon> Animar</button>
-                <button type="button" (click)="planUserTrack(row)"><mat-icon>event_available</mat-icon> Planificar</button>
+                <button *ngIf="!choosingFromArchive" type="button" (click)="viewUserTrack(row)"><mat-icon>map</mat-icon> {{ 'viewRoute' | uiText }}</button>
+                <ng-container *ngIf="!choosingFromArchive"><button *ngIf="analysisForTrack(row) as analysis" type="button" (click)="openTrackAnalysis(analysis)"><mat-icon>analytics</mat-icon> {{ 'viewAnalysis' | uiText }}</button></ng-container>
+                <button type="button" class="route-explorer-card__primary" (click)="animateUserTrack(row)" [disabled]="loadingAnimationTrackId !== null"><mat-icon>{{ choosingFromArchive ? 'add' : 'play_arrow' }}</mat-icon> {{ (loadingAnimationTrackId === row.trackId ? 'loading' : choosingFromArchive ? 'addThisTrack' : 'animate') | uiText }}</button>
               </div>
+              <details #actionMenu class="route-card-more" *ngIf="!choosingFromArchive"><summary>{{ 'moreActions' | uiText }}</summary>
+              <div class="route-explorer-card__actions">
+                <button type="button" (click)="actionMenu.open = false; analyzeUserTrack(row)"><mat-icon>analytics</mat-icon> {{ 'analyze' | uiText }}</button>
+                <button type="button" (click)="actionMenu.open = false; planUserTrack(row)"><mat-icon>event_available</mat-icon> {{ 'plan' | uiText }}</button>
+                <button type="button" class="route-explorer-card__download"
+                  [disabled]="isDownloadingTrack(row)" [attr.aria-busy]="isDownloadingTrack(row)"
+                  (click)="actionMenu.open = false; downloadUserTrack(row)">
+                  <mat-icon aria-hidden="true">{{ isDownloadingTrack(row) ? 'downloading' : 'file_download' }}</mat-icon>
+                  {{ (isDownloadingTrack(row) ? 'downloading' : 'downloadTrack') | uiText }}
+                </button>
+              </div></details>
             </article>
           </div>
         </section>
@@ -286,7 +342,7 @@
             <thead>
               <tr class="head-tabla">
                 <th scope="col" style="text-align: left; padding-left: 45px;">{{ userTracksGroupByLabel }}</th>
-                <th scope="col">Tracks</th>
+                <th scope="col">{{ 'tracksSection' | uiText }}</th>
               </tr>
             </thead>
             <tbody>
@@ -311,58 +367,58 @@
                       <table class="user-tracks__nested-table user-tracks__nested-table--desktop" [attr.aria-label]="'Tracks en ' + group.province">
                         <thead>
                           <tr>
-                            <th scope="col">Track</th>
+                            <th scope="col">{{ 'track' | uiText }}</th>
                             <th scope="col">
-                              <button type="button" class="user-tracks__sort" (click)="sortUserTracksBy('year')" aria-label="Ordenar por año">Año 
+                              <button type="button" class="user-tracks__sort" (click)="sortUserTracksBy('year')" aria-label="Ordenar por año">{{ 'year' | uiText }}
                                 <span class="user-tracks__sort-indicator">{{ resolveUserTracksSortIndicator('year')}}</span>
                               </button>
                             </th>
                             <th scope="col" style="text-align: left;" *ngIf="shouldShowUserTracksLocationColumn('autonomousCommunity')">
                               <button type="button" class="user-tracks__sort" (click)="sortUserTracksBy('autonomousCommunity')" aria-label="Ordenar por comunidad">
-                                Comunidad <span class="user-tracks__sort-indicator">{{resolveUserTracksSortIndicator('autonomousCommunity') }}</span>
+                                {{ 'community' | uiText }} <span class="user-tracks__sort-indicator">{{resolveUserTracksSortIndicator('autonomousCommunity') }}</span>
                               </button>
                             </th>
                             <th scope="col" style="text-align: left;" *ngIf="shouldShowUserTracksLocationColumn('province')">
                               <button type="button" class="user-tracks__sort" (click)="sortUserTracksBy('province')" aria-label="Ordenar por provincia">
-                                Provincia <span class="user-tracks__sort-indicator">{{resolveUserTracksSortIndicator('province') }}</span>
+                                {{ 'province' | uiText }} <span class="user-tracks__sort-indicator">{{resolveUserTracksSortIndicator('province') }}</span>
                               </button>
                             </th>
                             <th scope="col" style="text-align: left;" *ngIf="shouldShowUserTracksLocationColumn('comarca')">
                               <button type="button" class="user-tracks__sort" (click)="sortUserTracksBy('comarca')"
                                 aria-label="Ordenar por comarca">
-                                Comarca <span class="user-tracks__sort-indicator">{{resolveUserTracksSortIndicator('comarca') }}</span>
+                                {{ 'county' | uiText }} <span class="user-tracks__sort-indicator">{{resolveUserTracksSortIndicator('comarca') }}</span>
                               </button>
                             </th>
                             <th scope="col" style="text-align: left;" *ngIf="shouldShowUserTracksLocationColumn('population')">
                               <button type="button" class="user-tracks__sort" (click)="sortUserTracksBy('population')" aria-label="Ordenar por población">
-                                Población <span class="user-tracks__sort-indicator">{{resolveUserTracksSortIndicator('population') }}</span>
+                                {{ 'population' | uiText }} <span class="user-tracks__sort-indicator">{{resolveUserTracksSortIndicator('population') }}</span>
                               </button>
                             </th>
-                            <th scope="col" class="user-tracks__action-col">Cómo llegar</th>
-                            <th scope="col" *ngIf="isUserTracksProximityView">Proximidad</th>
+                            <th scope="col" class="user-tracks__action-col">{{ 'directions' | uiText }}</th>
+                            <th scope="col" *ngIf="isUserTracksProximityView">{{ 'proximity' | uiText }}</th>
                             <th scope="col">
                               <button type="button" class="user-tracks__sort" (click)="sortUserTracksBy('distanceKm')" aria-label="Ordenar por distancia">
-                                Distancia <span class="user-tracks__sort-indicator">{{resolveUserTracksSortIndicator('distanceKm') }}</span>
+                                {{ 'distance' | uiText }} <span class="user-tracks__sort-indicator">{{resolveUserTracksSortIndicator('distanceKm') }}</span>
                               </button>
                             </th>
                             <th scope="col">
                               <button type="button" class="user-tracks__sort" (click)="sortUserTracksBy('timeSeconds')"
-                                aria-label="Ordenar por tiempo en movimiento">Tiempo <span class="user-tracks__sort-indicator">{{resolveUserTracksSortIndicator('timeSeconds') }}</span>
+                                aria-label="Ordenar por tiempo en movimiento">{{ 'duration' | uiText }} <span class="user-tracks__sort-indicator">{{resolveUserTracksSortIndicator('timeSeconds') }}</span>
                               </button>
                             </th>
                             <th scope="col">
                               <button type="button" class="user-tracks__sort"
                                 (click)="sortUserTracksBy('totalTimeSeconds')" aria-label="Ordenar por tiempo total">
-                                Tiempo total <span class="user-tracks__sort-indicator">{{resolveUserTracksSortIndicator('totalTimeSeconds') }}</span>
+                                {{ 'totalTime' | uiText }} <span class="user-tracks__sort-indicator">{{resolveUserTracksSortIndicator('totalTimeSeconds') }}</span>
                               </button>
                             </th>
-                            <th scope="col">Dureza</th>
-                            <th scope="col" class="user-tracks__action-col">Descargar</th>
-                            <th scope="col" class="user-tracks__action-col">Ver track</th>
-                            <th scope="col" class="user-tracks__action-col">Analizar</th>
-                            <th scope="col" class="user-tracks__action-col">Animar</th>
-                            <th scope="col" class="user-tracks__action-col">Planificar salida</th>
-                            <th scope="col" class="user-tracks__action-col">Eliminar</th>
+                            <th scope="col">{{ 'reportDifficulty' | uiText }}</th>
+                            <th scope="col" class="user-tracks__action-col">{{ 'download' | uiText }}</th>
+                            <th scope="col" class="user-tracks__action-col">{{ 'viewRoute' | uiText }}</th>
+                            <th scope="col" class="user-tracks__action-col">{{ 'analyze' | uiText }}</th>
+                            <th scope="col" class="user-tracks__action-col">{{ 'animate' | uiText }}</th>
+                            <th scope="col" class="user-tracks__action-col">{{ 'planOuting' | uiText }}</th>
+                            <th scope="col" class="user-tracks__action-col">{{ 'delete' | uiText }}</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -386,8 +442,8 @@
                             <td class="user-tracks__action-col">
                               <a class="user-tracks__maps-link user-tracks__maps-link--icon"
                                 [href]="row.googleMapsLink" target="_blank" rel="noopener noreferrer"
-                                aria-label="Cómo llegar al inicio de la ruta en Google Maps"
-                                title="Cómo llegar al inicio de la ruta" (click)="$event.stopPropagation()">
+                                [attr.aria-label]="'routeStartDirections' | uiText"
+                                [title]="'routeStartDirectionsShort' | uiText" (click)="$event.stopPropagation()">
                                 <mat-icon aria-hidden="true">directions_car</mat-icon>
                                 <mat-icon class="user-tracks__maps-pin" aria-hidden="true">location_on</mat-icon>
                               </a>
@@ -408,10 +464,10 @@
                               </ng-container>
                             </td>
                             <td class="user-tracks__action-col">
-                              <!-- <button type="button" class="ghost ghost--small user-tracks__icon-button" [disabled]="isDownloadingTrack(row)" (click)="downloadUserTrack(row)" [attr.aria-label]="isDownloadingTrack(row) ? 'Descargando track' : 'Descargar track'"> -->
+                              <!-- <button type="button" class="ghost ghost--small user-tracks__icon-button" [disabled]="isDownloadingTrack(row)" (click)="downloadUserTrack(row)" [attr.aria-label]="isDownloadingTrack(row) ? 'Descargando track' : ('downloadTrack' | uiText)"> -->
                               <mat-icon aria-hidden="true" style="color: blue; cursor: pointer;"
                                 (click)="downloadUserTrack(row)"
-                                [attr.aria-label]="isDownloadingTrack(row) ? 'Descargando track' : 'Descargar track'">{{
+                                [attr.aria-label]="isDownloadingTrack(row) ? 'Descargando track' : ('downloadTrack' | uiText)">{{
                                 isDownloadingTrack(row) ? 'downloading' : 'file_download' }}</mat-icon>
                               <!-- </button> -->
                             </td>
@@ -423,7 +479,7 @@
                             <td class="user-tracks__action-col">
                               <mat-icon aria-hidden="true" style="color: #2563eb; cursor: pointer;"
                                 (click)="analyzeUserTrack(row)"
-                                aria-label="Analizar ruta">analytics</mat-icon>
+                                [attr.aria-label]="'analyzeRoute' | uiText">analytics</mat-icon>
                             </td>
                             <td class="user-tracks__action-col">
                               <!-- <button type="button" class="ghost ghost--small user-tracks__icon-button" (click)="animateUserTrack(row)" aria-label="Animar track"> -->
@@ -434,13 +490,13 @@
                             <td class="user-tracks__action-col">
                               <mat-icon aria-hidden="true" style="color: #7b1fa2; cursor: pointer;"
                                 (click)="planUserTrack(row)"
-                                [attr.aria-label]="isPlanningTrack(row) ? 'Guardando planificación' : 'Planificar salida'">{{
+                                [attr.aria-label]="isPlanningTrack(row) ? ('savingPlan' | uiText) : ('planOuting' | uiText)">{{
                                 isPlanningTrack(row) ? 'hourglass_top' : 'event_available' }}</mat-icon>
                             </td>
                             <td class="user-tracks__action-col">
                               <mat-icon *ngIf="row.canDelete; else noDeleteAction" aria-hidden="true" style="color: red; cursor: pointer;"
                                 (click)="confirmDeleteUserTrack(row)"
-                                [attr.aria-label]="isDeletingTrack(row) ? 'Eliminando track' : 'Eliminar track'">{{
+                                [attr.aria-label]="isDeletingTrack(row) ? ('deletingTrack' | uiText) : ('deleteTrack' | uiText)">{{
                                 isDeletingTrack(row) ? 'hourglass_top' : 'delete' }}</mat-icon>
                               <ng-template #noDeleteAction>
                                 <span style="color: #94a3b8;">—</span>
@@ -457,42 +513,42 @@
                               <div *ngIf="row.eventName && row.eventName !== '-'" class="user-tracks__mobile-event">
                                 {{ row.eventName }} (E)
                               </div>
-                              <div class="user-tracks__mobile-title">{{ row.title || 'Sin título' }}</div>
+                              <div class="user-tracks__mobile-title">{{ row.title || ('untitled' | uiText) }}</div>
                             </div>
                             <span class="user-tracks__mobile-year">{{ row.year || '-' }}</span>
                           </header>
 
                           <div class="user-tracks__mobile-grid">
                             <div class="user-tracks__mobile-item" *ngIf="shouldShowUserTracksLocationColumn('autonomousCommunity')">
-                              <span class="user-tracks__mobile-label">Comunidad</span>
+                              <span class="user-tracks__mobile-label">{{ 'community' | uiText }}</span>
                               <span>{{ row.autonomousCommunity || '—' }}</span>
                             </div>
                             <div class="user-tracks__mobile-item" *ngIf="shouldShowUserTracksLocationColumn('province')">
-                              <span class="user-tracks__mobile-label">Provincia</span>
+                              <span class="user-tracks__mobile-label">{{ 'province' | uiText }}</span>
                               <span>{{ row.province || '—' }}</span>
                             </div>
                             <div class="user-tracks__mobile-item" *ngIf="shouldShowUserTracksLocationColumn('comarca')">
-                              <span class="user-tracks__mobile-label">Comarca</span>
+                              <span class="user-tracks__mobile-label">{{ 'county' | uiText }}</span>
                               <span>{{ row.comarca || '—' }}</span>
                             </div>
                             <div class="user-tracks__mobile-item" *ngIf="shouldShowUserTracksLocationColumn('population')">
-                              <span class="user-tracks__mobile-label">Población</span>
+                              <span class="user-tracks__mobile-label">{{ 'population' | uiText }}</span>
                               <span>{{ row.population || '—' }}</span>
                             </div>
                             <div class="user-tracks__mobile-item">
-                              <span class="user-tracks__mobile-label">Distancia</span>
+                              <span class="user-tracks__mobile-label">{{ 'distance' | uiText }}</span>
                               <span>{{ row.distanceLabel }}</span>
                             </div>
                             <div class="user-tracks__mobile-item">
-                              <span class="user-tracks__mobile-label">Tiempo</span>
+                              <span class="user-tracks__mobile-label">{{ 'duration' | uiText }}</span>
                               <span>{{ row.movingTimeLabel }}</span>
                             </div>
                             <div class="user-tracks__mobile-item">
-                              <span class="user-tracks__mobile-label">Tiempo total</span>
+                              <span class="user-tracks__mobile-label">{{ 'totalTime' | uiText }}</span>
                               <span>{{ row.totalTimeLabel }}</span>
                             </div>
                             <div class="user-tracks__mobile-item">
-                              <span class="user-tracks__mobile-label">Dureza</span>
+                              <span class="user-tracks__mobile-label">{{ 'reportDifficulty' | uiText }}</span>
                               <ng-container *ngIf="getUserTrackDifficulty(row) as difficulty">
                                 <span style="display:inline-flex;align-items:center;gap:6px;">
                                   <span [ngStyle]="getUserTrackDifficultyStyle(difficulty.key)" style="width:24px;height:24px;border-radius:999px;display:inline-flex;align-items:center;justify-content:center;">
@@ -507,30 +563,30 @@
                           <div class="user-tracks__mobile-actions">
                             <a class="user-tracks__maps-link user-tracks__maps-link--icon"
                               [href]="row.googleMapsLink" target="_blank" rel="noopener noreferrer"
-                              aria-label="Cómo llegar al inicio de la ruta en Google Maps"
-                              title="Cómo llegar al inicio de la ruta" (click)="$event.stopPropagation()">
+                              [attr.aria-label]="'routeStartDirections' | uiText"
+                              [title]="'routeStartDirectionsShort' | uiText" (click)="$event.stopPropagation()">
                               <mat-icon aria-hidden="true">directions_car</mat-icon>
                               <mat-icon class="user-tracks__maps-pin" aria-hidden="true">location_on</mat-icon>
                             </a>
                             <mat-icon aria-hidden="true" style="color: blue; cursor: pointer;"
                               (click)="downloadUserTrack(row)"
-                              [attr.aria-label]="isDownloadingTrack(row) ? 'Descargando track' : 'Descargar track'">{{
+                              [attr.aria-label]="isDownloadingTrack(row) ? 'Descargando track' : ('downloadTrack' | uiText)">{{
                               isDownloadingTrack(row) ? 'downloading' : 'file_download' }}</mat-icon>
                             <mat-icon aria-hidden="true" style="color: #0f766e; cursor: pointer;"
                               (click)="viewUserTrack(row)"
                               aria-label="Ver track en el mapa">map</mat-icon>
                             <mat-icon aria-hidden="true" style="color: #2563eb; cursor: pointer;"
                               (click)="analyzeUserTrack(row)"
-                              aria-label="Analizar ruta">analytics</mat-icon>
+                              [attr.aria-label]="'analyzeRoute' | uiText">analytics</mat-icon>
                             <mat-icon aria-hidden="true" style="color: orange; cursor: pointer;"
                               (click)="animateUserTrack(row)">play_arrow</mat-icon>
                             <mat-icon aria-hidden="true" style="color: #7b1fa2; cursor: pointer;"
                               (click)="planUserTrack(row)"
-                              [attr.aria-label]="isPlanningTrack(row) ? 'Guardando planificación' : 'Planificar salida'">{{
+                              [attr.aria-label]="isPlanningTrack(row) ? ('savingPlan' | uiText) : ('planOuting' | uiText)">{{
                               isPlanningTrack(row) ? 'hourglass_top' : 'event_available' }}</mat-icon>
                             <mat-icon *ngIf="activeUserTracksTab !== 'shared' && row.canDelete" aria-hidden="true" style="color: red; cursor: pointer;"
                               (click)="confirmDeleteUserTrack(row)"
-                              [attr.aria-label]="isDeletingTrack(row) ? 'Eliminando track' : 'Eliminar track'">{{
+                              [attr.aria-label]="isDeletingTrack(row) ? ('deletingTrack' | uiText) : ('deleteTrack' | uiText)">{{
                               isDeletingTrack(row) ? 'hourglass_top' : 'delete' }}</mat-icon>
                           </div>
                         </article>
@@ -544,271 +600,12 @@
         </div>
 
         <ng-template #emptyGroups>
-          <div class="user-tracks__empty">No hay tracks que coincidan con la búsqueda.</div>
+          <div class="user-tracks__empty">{{ 'noSearchMatches' | uiText }}</div>
         </ng-template>
 
       </div>
     </section>
   </section>
 
-  <section *ngIf="mode === 'events'" class="events-wrapper">
-    <header class="hero events-hero">
-      <div>
-        <p style="color: beige; padding-bottom: 10px;">Ranking social</p>
-        <h1 style="color: lightyellow;">Elige evento, sube tu track y anima la carrera</h1>
-        <p style="color: beige;">Explora recorridos</p>
-        <p style="color: beige;">Súmate al ranking por categoría</p>
-        <p style="color: beige;">Compara tu GPX con otros riders</p>
-      </div>
-    </header>
-    <div *ngIf="!isAuthenticated" class="events-locked">
-      <p class="events-locked__title">Explora y anima eventos sin registrarte.</p>
-      <p class="muted">Inicia sesión o regístrate desde la pantalla principal si quieres subir o gestionar tracks.</p>
-      <button type="button" class="secondary" (click)="goHome()">Volver a la pantalla principal</button>
-    </div>
 
-    <div class="events-actions" style="margin-top:28px;">
-      <div class="events-actions__buttons">
-        <button type="button" class="event-action-button event-action-button--home" (click)="goHome()"
-          matTooltip="Volver al inicio" aria-label="Volver al inicio">
-          <mat-icon aria-hidden="true">home</mat-icon>
-        </button>
-        <button type="button" class="event-action-button" (click)="openUploadTrackDialog()" matTooltip="Subir track"
-          aria-label="Subir track">
-          <mat-icon aria-hidden="true">file_upload</mat-icon>
-        </button>
-        <button type="button" class="event-action-button" (click)="openCreateEventDialog()" matTooltip="Crear evento"
-          aria-label="Crear evento">
-          <mat-icon aria-hidden="true">add_circle</mat-icon>
-        </button>
-        <button type="button" class="event-action-button" (click)="openEventSearch()" matTooltip="Lista de eventos"
-          aria-label="Lista de eventos">
-          <mat-icon aria-hidden="true">format_list_bulleted</mat-icon>
-        </button>
-        <button type="button" class="event-action-button" [disabled]="!canDeleteSelectedEvent()"
-          (click)="deleteSelectedEvent()" matTooltip="Eliminar evento" aria-label="Eliminar evento">
-          <mat-icon aria-hidden="true">delete</mat-icon>
-        </button>
-      </div>
-    </div>
-    <input #masterGpxInput type="file" accept=".gpx" hidden (change)="onMasterGpxFileChange($event)" />
-
-    <ng-container *ngIf="events.length; else emptyEvents">
-      <section class="events-layout">
-        <div class="events-layout__left">
-          <div class="events-carousel">
-            <div class="carousel-window">
-              <div class="carousel-track">
-
-                <article *ngFor="let event of events; index as i" class="event-card event-card--carousel"
-                  [class.event-card--active]="event.id === selectedEventId"
-                  [class.event-card--current]="i === carouselIndex" (click)="handleCarouselSelection(event.id)">
-                  <div class="event-card__content event-card__content--stacked">
-                    <div class="event-card__info">
-                      <p class="eyebrow">Edición {{ event.year }}</p>
-                      <div class="event-card__title-row">
-                        <div class="event-logo event-logo--badge">
-                          <ng-container *ngIf="event.logoBlob; else logoPlaceholderSmall">
-                            <img [src]="getEventLogo(event)" [alt]="event.name + ' logo'" />
-                          </ng-container>
-                          <ng-template #logoPlaceholderSmall>
-                            <span class="muted">Logo</span>
-                          </ng-template>
-                        </div>
-                        <div>
-                          <p class="event-card__title">{{ event.name }}</p>
-                          <p class="muted event-card__subtitle">{{ getEventLocation(event) || 'Ubicación pendiente' }}</p>
-                          <a *ngIf="getEventExternalUrl(event) as eventLink" style="display:inline-flex;margin-top:4px;width:fit-content;font-size:13px;font-weight:700;color:#1d4ed8" [href]="eventLink"
-                            target="_blank" rel="noopener noreferrer" (click)="$event.stopPropagation()">
-                            Ir al evento
-                          </a>
-                        </div>
-                      </div>
-                      <div class="carousel-controls carousel-controls--inline">
-                        <button type="button" class="carousel-button" (click)="prevEvent(true); $event.stopPropagation()" aria-label="Evento anterior"
-                          matTooltip="Ir al evento anterior del carrusel">
-                          <mat-icon aria-hidden="true">skip_previous</mat-icon>
-                        </button>
-                        <button type="button" class="carousel-button carousel-button--primary" (click)="toggleCarouselPlayback(); $event.stopPropagation()"
-                          [attr.aria-label]="isCarouselPaused ? 'Reanudar carrusel' : 'Pausar carrusel'"
-                          [matTooltip]="isCarouselPaused ? 'Reanudar reproducción automática' : 'Pausar reproducción automática'">
-                          <mat-icon aria-hidden="true">{{ isCarouselPaused ? 'play_arrow' : 'pause' }}</mat-icon>
-                        </button>
-                        <button type="button" class="carousel-button" (click)="nextEvent(true); $event.stopPropagation()" aria-label="Siguiente evento"
-                          matTooltip="Avanzar al siguiente evento del carrusel">
-                          <mat-icon aria-hidden="true">skip_next</mat-icon>
-                        </button>
-                      </div>
-                    </div>
-
-                    <div class="event-card__map"
-                      [style.--event-map-url]="eventVisuals[event.id].mapTileUrl ? 'url(' + eventVisuals[event.id].mapTileUrl + ')' : 'none'">
-                      <ng-container *ngIf="eventVisuals[event.id]?.trackPath; else missingTrack">
-                        <svg viewBox="0 0 320 240" preserveAspectRatio="none" class="track-drawing">
-                          <polyline [attr.points]="eventVisuals[event.id].trackPath"></polyline>
-                        </svg>
-                      </ng-container>
-                      <ng-template #missingTrack>
-                        <div class="no-track">
-                          <p class="muted">No se dispone de track</p>
-                          <button *ngIf="canUploadMasterGpx(event)" type="button" class="secondary"
-                            (click)="promptMasterGpxUpload(event.id); $event.stopPropagation();">
-                            Subir track
-                          </button>
-                        </div>
-                      </ng-template>
-                    </div>
-
-                    <div class="event-profile">
-                      <ng-container *ngIf="eventVisuals[event.id]?.profile?.points; else noProfile">
-                        <div class="profile-chart-wrapper">
-                          <svg [attr.viewBox]="'0 0 ' + profileWidth + ' ' + profileHeight" preserveAspectRatio="none"
-                            class="profile-chart">
-                            <g class="grid-lines">
-                              <ng-container *ngFor="let line of eventVisuals[event.id].profile?.gridLines">
-                                <line x1="0" [attr.y1]="line.y" [attr.y2]="line.y" [attr.x2]="profileWidth" />
-                                <text class="grid-label" x="4" [attr.y]="line.labelY">{{ line.label }}</text>
-                              </ng-container>
-                            </g>
-                            <polyline [attr.points]="eventVisuals[event.id].profile?.points"></polyline>
-                          </svg>
-                          <div class="profile-legend" *ngIf="eventVisuals[event.id].profile as profile">
-                            <div class="legend-row legend-row--altitude">
-                              <span>Altura inicial:</span>
-                              <strong>{{ profile.stats.initialElevation | number: '1.0-0' }} m</strong>
-                            </div>
-                            <div class="legend-row legend-row--altitude">
-                              <span>Altura máxima:</span>
-                              <strong>{{ profile.stats.maxElevation | number: '1.0-0' }} m</strong>
-                            </div>
-                            <div class="legend-row legend-row--altitude">
-                              <span>Distancia:</span>
-                              <strong>{{ profile.stats.distanceKm | number: '1.0-1' }} km</strong>
-                            </div>
-                            <!-- <div class="legend-row legend-row--tracks">
-                              <span>Tracks:</span>
-                              <strong>{{ event.tracks.length }}</strong>
-                            </div> -->
-                          </div>
-
-                          <!-- <div class="legend-row legend-row--tracks" style="margin-top: 10px;"> -->
-                            <!-- <span>Track maestro:</span> -->
-                            <button type="button" class="cloud-download" style="margin-top: 10px;"
-                              [disabled]="!hasMasterTrack(event) || isDownloadingMaster(event.id)"
-                              (click)="downloadEventMaster(event, $event)">
-                              <mat-icon aria-hidden="true">cloud_download</mat-icon>
-                              <span *ngIf="!isDownloadingMaster(event.id)">Bajar track</span>
-                              <span *ngIf="isDownloadingMaster(event.id)">Bajando...</span>
-                            </button>
-                          <!-- </div> -->
-
-                        </div>
-                      </ng-container>
-                      <ng-template #noProfile>
-                        <p class="muted profile-empty">Perfil no disponible</p>
-                      </ng-template>
-                    </div>
-                  </div>
-
-                </article>
-              </div>
-            </div>
-          </div>
-
-        </div>
-
-        <article class="panel events-layout__right" *ngIf="!isEventRankingPanelCollapsed">
-          <ng-container *ngIf="selectedEvent; else routeTimesPlaceholder">
-            <div class="panel__header panel__header--ranking">
-              <div>
-                <h3>Ranking del evento</h3>
-                <p class="muted">Tracks ordenados por tiempo real (el más rápido primero).</p>
-              </div>
-              <label class="ranking-category-filter" aria-label="Filtrar ranking por categoría">
-                <span>Categoría</span>
-                <select [value]="selectedRankingCategory" (change)="onRankingCategoryChange($any($event.target).value)">
-                  <option value="all">Todas</option>
-                  <option *ngFor="let category of rankingCategories" [value]="category">{{ category }}</option>
-                </select>
-              </label>
-              <button class="ranking-animate" type="button" (click)="animateSelectedTracks()"
-                [disabled]="!selectedComparisonIds.size" aria-label="Animar tracks seleccionados"
-                matTooltip="Animar en el mapa los tracks seleccionados en la tabla">
-                <span class="ranking-animate__icon" aria-hidden="true">🚴‍♀️</span>
-              </button>
-            </div>
-            <ng-container *ngIf="routeTrackTimes.length; else emptyRouteTimes">
-              <div class="ranking ranking--grid">
-                <div class="ranking__header ranking__header--event">
-                  <span>#</span>
-                  <span>Usuario</span>
-                  <span>Tiempo</span>
-                  <span class="ranking__select-col">Seleccionar</span>
-                  <span class="ranking__download-col">Descargar</span>
-                </div>
-                <div class="ranking__row ranking__row--event" *ngFor="let track of filteredRouteTrackTimes; index as i">
-                  <span class="position">#{{ i + 1 }}</span>
-                  <div class="ranking__rider">
-                    <p class="strong">{{ track.nickname }}</p>
-                    <p class="muted">{{ track.category }}</p>
-                  </div>
-                  <div class="ranking__meta">
-                    <span class="time">{{ formatTime(track.tiempoReal) }}</span>
-                  </div>
-                  <label class="ranking__checkbox" aria-label="Seleccionar track para animar">
-                    <input type="checkbox" [checked]="selectedComparisonIds.has(track.id)"
-                      [disabled]="isComparisonSelectionDisabled(track.id)" (change)="toggleComparisonSelection(track.id)" />
-                    <span class="ranking__checkbox-box"></span>
-                  </label>
-                  <button type="button" class="ranking__download" (click)="downloadComparisonTrack(track.id)"
-                    aria-label="Descargar track del ranking">
-                    <mat-icon aria-hidden="true">file_download</mat-icon>
-                  </button>
-                </div>
-              </div>
-              <p *ngIf="!filteredRouteTrackTimes.length" class="muted">No hay tracks en la categoría seleccionada.</p>
-            </ng-container>
-            <ng-template #emptyRouteTimes>
-              <p class="muted">No hay tiempos registrados para este recorrido aún.</p>
-            </ng-template>
-          </ng-container>
-          <ng-template #routeTimesPlaceholder>
-            <div class="panel__header">
-              <h3>Ranking del evento</h3>
-              <p class="muted">Selecciona un evento para cargar los tiempos.</p>
-            </div>
-          </ng-template>
-        </article>
-      </section>
-    </ng-container>
-
-    <ng-template #emptyEvents>
-      <p class="muted">No hay eventos disponibles todavía.</p>
-    </ng-template>
-
-    <section *ngIf="events.length" class="event-detail">
-      <article class="panel" *ngIf="personalHistory.length">
-        <div class="panel__header">
-          <h3>Historial de {{ personalNickname }}</h3>
-          <p class="muted">Guardamos todos tus intentos, el ranking usa tu mejor tiempo.</p>
-        </div>
-        <ul class="history">
-          <li *ngFor="let track of personalHistory">
-            <div>
-              <p class="strong">{{ findModalityName(track.modalityId) }}</p>
-              <p class="muted">{{ track.category }} · {{ track.bikeType }}</p>
-            </div>
-            <div class="history__meta">
-              <span class="pill">{{ formatTime(track.timeSeconds) }}</span>
-              <span class="muted">{{ track.uploadedAt | date:'medium' }}</span>
-              <button *ngIf="canDeleteTrack(track)" type="button" class="icon-button"
-                (click)="deleteTrack(track.id, selectedEventId || undefined)">
-                🗑️
-              </button>
-            </div>
-          </li>
-        </ul>
-      </article>
-    </section>
-  </section>
 </div>

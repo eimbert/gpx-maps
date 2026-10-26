@@ -1,9 +1,7 @@
-<h2 mat-dialog-title>Subir nuevo track</h2>
+<h2 mat-dialog-title>{{ 'uploadNewTrack' | uiText }}</h2>
 <div mat-dialog-content class="form">
-  <mat-form-field appearance="fill">
-    <mat-label>Título opcional</mat-label>
-    <input matInput [(ngModel)]="title" />
-  </mat-form-field>
+  <p class="dialog-description">{{ 'uploadTrackIntro' | uiText }}</p>
+  <label class="auth-field"><span>{{ 'optionalTitle' | uiText }}</span><input [(ngModel)]="title" [placeholder]="'routeName' | uiText" /></label>
 
   <!-- <mat-form-field appearance="fill">
     <mat-label>Descripción opcional</mat-label>
@@ -11,18 +9,18 @@
   </mat-form-field> -->
 
   <div class="file-picker">
-    <label class="file-picker__label" for="standaloneTrackInput">Archivo GPX *</label>
+    <label class="file-picker__label" for="standaloneTrackInput">{{ 'gpxFileRequired' | uiText }}</label>
     <input id="standaloneTrackInput" type="file" accept=".gpx" (change)="onFileChange($event)" />
-    <p class="file-picker__hint" *ngIf="!file">Selecciona el track a subir.</p>
+    <p class="file-picker__hint" *ngIf="!file">{{ 'chooseTrackUpload' | uiText }}</p>
     <p class="file-picker__selected" *ngIf="file">{{ file.name }}</p>
   </div>
 
   <mat-checkbox [(ngModel)]="shared">
-    Compartir ruta con otros usuarios
+    {{ 'shareRouteUsers' | uiText }}
   </mat-checkbox>
 </div>
 
 <div mat-dialog-actions align="end">
-  <button mat-button type="button" (click)="cancel()">Cancelar</button>
-  <button mat-flat-button color="primary" type="button" [disabled]="!file" (click)="confirm()">Subir</button>
+  <button mat-button type="button" (click)="cancel()">{{ 'cancel' | uiText }}</button>
+  <button mat-flat-button color="primary" type="button" [disabled]="!file" (click)="confirm()">{{ 'upload' | uiText }}</button>
 </div>

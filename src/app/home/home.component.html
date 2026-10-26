@@ -1,70 +1,67 @@
-<div class="home">
-  <div class="home__background"></div>
-  <main class="home__content">
-    <img class="home__logo" src="assets/logo4.png" alt="Logo de Tracketeo Bike" />
-    <p class="eyebrow">Te damos la Bienvenida</p>
-    <h1 class="headline">¿Qué te apetece hacer ahora?</h1>
-    <p class="lead">Elige entre animar tus archivos GPX, planificar próximas salidas o analizar una ruta con informe inteligente</p>
-
-    <div class="home__actions">
-      <a class="action-card action-card--primary" [routerLink]="['/load']" [queryParams]="{ mode: 'routes' }">
-        <div class="action-card__icon">🚵‍♀️</div>
-        <div class="action-card__texts">
-          <p class="action-card__title">Animar GPX</p>
-          <p class="action-card__subtitle">Organiza tus tracks, visualizalos y comparte animaciones llamativas</p>
-        </div>
-        <span class="action-card__cta">Empezar</span>
-      </a>
-
-      <a class="action-card action-card--planner" [routerLink]="['/plan']">
-        <div class="action-card__icon">🗺️📅</div>
-        <div class="action-card__texts">
-          <p class="action-card__title">Planifica tus próximas salidas</p>
-          <p class="action-card__subtitle">Planifica salidas, guarda ideas y prepara tu calendario de aventuras</p>
-        </div>
-        <span class="action-card__cta">Planificar</span>
-      </a>
-
-      <a class="action-card action-card--secondary" [routerLink]="['/analysis']">
-        <div class="action-card__icon">📈</div>
-        <div class="action-card__texts">
-          <p class="action-card__title">Analizador de rutas</p>
-          <p class="action-card__subtitle">Sube un GPX y obtén resumen, dureza explicada, puntos destacados y advertencias</p>
-        </div>
-        <span class="action-card__cta">Analizar</span>
-      </a>
+<div class="dashboard">
+  <header class="dashboard-header">
+    <span class="dashboard-breadcrumb">{{ 'home' | uiText }} / {{ 'yourSpace' | uiText }}</span>
+    <a class="dashboard-logo" routerLink="/" [attr.aria-label]="'brandHome' | uiText"></a>
+    <div class="dashboard-header-actions"><app-language-selector></app-language-selector>
+      <a class="dashboard-inbox" routerLink="/garmin" [attr.aria-label]="'inboxNav' | uiText" [matTooltip]="'inboxNav' | uiText"><mat-icon>inbox</mat-icon><i *ngIf="inboxPendingCount"></i></a>
+      <button class="dashboard-avatar" type="button" (click)="loggedUser ? accountOpen = !accountOpen : openLoginDialog()" [attr.aria-label]="'accountUsage' | uiText" [matTooltip]="'accountUsage' | uiText">{{ initials }}</button>
     </div>
-
-    <section *ngIf="loggedUser && entitlements as limits" class="usage-summary" [class.usage-summary--open]="usageDetailsOpen" aria-label="Límites de tu cuenta">
+  </header>
+  <main class="dashboard-main">
+    <div class="dashboard-greeting"><div><h1>{{ loggedUser ? ('hello' | uiText) + ' ' + firstName + '.' : ('nextAdventure' | uiText) }}</h1><p>{{ 'dashboardLead' | uiText }}</p></div><a class="dashboard-primary dashboard-plan" routerLink="/plan"><mat-icon>add</mat-icon>{{ 'planOuting' | uiText }}</a></div>
+    <a *ngIf="inboxPendingCount" class="dashboard-notice" routerLink="/garmin"><mat-icon>inbox</mat-icon><div><strong>{{ (inboxPendingCount === 1 ? 'newRouteNotice' : 'newRoutesNotice') | uiText:{count: inboxPendingCount} }}</strong><span>{{ (inboxPendingCount === 1 ? 'receivedDevice' : 'receivedDevices') | uiText }}</span></div><span class="dashboard-notice-action">{{ 'reviewInbox' | uiText }} <mat-icon>arrow_forward</mat-icon></span></a>
+    <div class="dashboard-feature-grid">
+      <article class="dashboard-feature" *ngIf="dashboardTracks[0] as track; else noRoutes">
+        <div class="dashboard-feature-copy"><p class="dashboard-kicker">{{ 'lastRoute' | uiText }}</p><h2>{{ trackName(track) }}</h2><div class="dashboard-metrics"><strong>{{ track.distanceKm | number:'1.1-1' }}<small>km</small></strong><strong>{{ track.ascent == null ? '—' : (track.ascent | number:'1.0-0') }}<small>m D+</small></strong></div></div>
+        <svg *ngIf="dashboardProfiles[track.id] as profile; else noProfile" class="dashboard-profile" viewBox="0 -10 640 160" preserveAspectRatio="none" role="img" [attr.aria-label]="'routeElevationProfile' | uiText"><defs><linearGradient id="dashboard-elevation" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#e6ca40" stop-opacity=".4"/><stop offset="1" stop-color="#aabb64" stop-opacity=".02"/></linearGradient></defs><polygon [attr.points]="'0,150 ' + profile + ' 640,150'" fill="url(#dashboard-elevation)"/><polyline [attr.points]="profile" fill="none" stroke="#edcf3d" stroke-width="3" vector-effect="non-scaling-stroke"/></svg>
+        <ng-template #noProfile><div class="dashboard-no-profile">{{ 'noElevationProfile' | uiText }}</div></ng-template>
+        <div class="dashboard-feature-actions"><button type="button" class="dashboard-primary" (click)="openDashboardTrack(track)">{{ 'openRoute' | uiText }} <mat-icon>north_east</mat-icon></button><button type="button" class="dashboard-secondary" (click)="analyzeDashboardTrack(track)">{{ 'analyze' | uiText }}</button></div>
+      </article>
+      <ng-template #noRoutes><article class="dashboard-feature dashboard-feature--empty"><div class="dashboard-feature-copy"><p class="dashboard-kicker">{{ 'yourArchive' | uiText }}</p><h2>{{ dashboardLoading ? ('loadingYourRoutes' | uiText) : ('nextRouteHere' | uiText) }}</h2><p>{{ loggedUser ? ('saveDashboardGpx' | uiText) : ('signInDashboard' | uiText) }}</p></div><div class="dashboard-feature-actions"><a *ngIf="loggedUser" class="dashboard-primary" [routerLink]="['/load']" [queryParams]="{mode:'routes',view:'archive'}">{{ 'myRoutes' | uiText }} <mat-icon>north_east</mat-icon></a><button *ngIf="!loggedUser" type="button" class="dashboard-primary" (click)="openLoginDialog()">{{ 'signIn' | uiText }}</button></div></article></ng-template>
+      <div class="dashboard-quick-actions">
+        <a routerLink="/plan"><mat-icon>event</mat-icon><span><strong>{{ 'planOuting' | uiText }}</strong><small>{{ 'prepareMeeting' | uiText }}</small></span><mat-icon class="dashboard-quick-arrow">north_east</mat-icon></a>
+        <a routerLink="/analysis"><mat-icon>insights</mat-icon><span><strong>{{ 'analyzeRoute' | uiText }}</strong><small>{{ 'knowAhead' | uiText }}</small></span><mat-icon class="dashboard-quick-arrow">north_east</mat-icon></a>
+        <a [routerLink]="['/load']" [queryParams]="{mode:'routes',view:'animate'}"><mat-icon>movie</mat-icon><span><strong>{{ 'animateTitle' | uiText }}</strong><small>{{ 'relive3d' | uiText }}</small></span><mat-icon class="dashboard-quick-arrow">north_east</mat-icon></a>
+      </div>
+    </div>
+    <section class="dashboard-recent"><div class="dashboard-section-heading"><h2>{{ 'recentRoutes' | uiText }}</h2><a [routerLink]="['/load']" [queryParams]="{mode:'routes',view:'archive'}">{{ 'viewAll' | uiText }} <mat-icon>arrow_forward</mat-icon></a></div><div class="dashboard-route-list" *ngIf="dashboardTracks.length > 1; else recentEmpty"><button type="button" class="dashboard-route-row" *ngFor="let track of dashboardTracks.slice(1)" (click)="openDashboardTrack(track)"><svg viewBox="0 0 640 150" preserveAspectRatio="none" aria-hidden="true"><polygon *ngIf="dashboardProfiles[track.id] as profile" [attr.points]="'0,150 ' + profile + ' 640,150'" fill="#b8c58a" opacity=".35"/><polyline [attr.points]="dashboardProfiles[track.id] || ''" fill="none" stroke="#bac987" stroke-width="1.3" vector-effect="non-scaling-stroke"/></svg><span><strong>{{ trackName(track) }}</strong><small>{{ track.distanceKm | number:'1.1-1' }} km · {{ track.ascent == null ? '—' : (track.ascent | number:'1.0-0') }} m D+</small></span><span class="dashboard-view-route">{{ 'viewRoute' | uiText }}</span><mat-icon>chevron_right</mat-icon></button></div><ng-template #recentEmpty><p class="dashboard-empty">{{ dashboardLoading ? ('loading' | uiText) : ('futureRoutesHere' | uiText) }}</p></ng-template></section>
+    <section *ngIf="accountOpen" #accountSection class="dashboard-account" id="account"><div class="dashboard-section-heading"><h2>{{ 'accountUsage' | uiText }}</h2><button type="button" class="dashboard-secondary" (click)="accountOpen = false">{{ 'close' | uiText }}</button></div>
+    <section *ngIf="loggedUser && entitlements as limits" class="usage-summary" [class.usage-summary--open]="usageDetailsOpen" [attr.aria-label]="t('accountLimits')">
       <div class="usage-summary__title" role="button" tabindex="0" [attr.aria-expanded]="usageDetailsOpen"
            (click)="toggleUsageDetails()" (keydown.enter)="toggleUsageDetails()"
            (keydown.space)="$event.preventDefault(); toggleUsageDetails()">
-        <div><span>Tu cuenta</span><strong>{{ limits.administrator ? 'Administrador' : limits.premium ? 'Premium' : 'Gratis' }}</strong></div>
-        <small>Uso actualizado</small>
+        <div><span>{{ t('account') }}</span><strong>{{ limits.administrator ? t('administrator') : limits.premium ? 'Premium' : t('free') }}</strong></div>
+        <small>{{ t('usageUpdated') }}</small>
         <mat-icon class="usage-summary__chevron" aria-hidden="true">expand_more</mat-icon>
       </div>
       <div class="usage-summary__mobile" (click)="toggleUsageDetails()">
-        <span><small>IA</small><strong>{{ compactRemaining(limits.aiAnalysesPerSixHours, limits.aiAnalysesUsedLastSixHours) }}</strong></span>
-        <span><small>Tracks</small><strong>{{ limits.ownTracksUsed }}/{{ limits.maxOwnTracks < 0 ? '∞' : limits.maxOwnTracks }}</strong></span>
-        <span><small>Terceros</small><strong>{{ compactRemaining(limits.thirdPartyAccessesPer72Hours, limits.thirdPartyAccessesUsed) }}</strong></span>
+        <span><small>{{ t('compactAi') }}</small><strong>{{ compactRemaining(limits.aiAnalysesPerSixHours, limits.aiAnalysesUsedLastSixHours) }}</strong></span>
+        <span><small>{{ t('compactTracks') }}</small><strong>{{ limits.ownTracksUsed }}/{{ limits.maxOwnTracks < 0 ? '∞' : limits.maxOwnTracks }}</strong></span>
+        <span><small>{{ t('compactOthers') }}</small><strong>{{ compactRemaining(limits.thirdPartyAccessesPer72Hours, limits.thirdPartyAccessesUsed) }}</strong></span>
       </div>
       <div class="usage-summary__items">
         <article>
-          <span>Análisis IA</span>
+          <span>{{ t('aiAnalyses') }}</span>
           <strong>{{ remaining(limits.aiAnalysesPerSixHours, limits.aiAnalysesUsedLastSixHours) }}</strong>
-          <small *ngIf="limits.aiAnalysesPerMonth >= 0">{{ limits.aiAnalysesUsedThisMonth }} de {{ limits.aiAnalysesPerMonth }} usados este mes</small>
-          <small *ngIf="limits.nextAiAvailability">Próxima liberación: {{ limits.nextAiAvailability | date:'HH:mm' }}</small>
+          <small *ngIf="limits.aiAnalysesPerMonth >= 0">{{ limits.aiAnalysesUsedThisMonth }} {{ t('of') }} {{ limits.aiAnalysesPerMonth }} {{ t('usedThisMonth') }}</small>
+          <small *ngIf="limits.nextAiAvailability">{{ t('nextRelease') }} {{ limits.nextAiAvailability | date:'HH:mm' }}</small>
         </article>
         <article>
-          <span>Tracks propios</span>
-          <strong>{{ limits.ownTracksUsed }} de {{ limits.maxOwnTracks < 0 ? 'ilimitados' : limits.maxOwnTracks }}</strong>
-          <small>Rutas guardadas en tu espacio</small>
+          <span>{{ t('ownTracks') }}</span>
+          <strong>{{ limits.ownTracksUsed }} {{ t('of') }} {{ limits.maxOwnTracks < 0 ? t('unlimited') : limits.maxOwnTracks }}</strong>
+          <small>{{ t('tracksStored') }}</small>
         </article>
         <article>
-          <span>Rutas de terceros</span>
+          <span>{{ t('thirdPartyRoutes') }}</span>
           <strong>{{ remaining(limits.thirdPartyAccessesPer72Hours, limits.thirdPartyAccessesUsed) }}</strong>
-          <small>{{ limits.thirdPartyAccessesUsed }} abiertas en las últimas 72 horas</small>
-          <small *ngIf="limits.nextThirdPartyAccessAvailability">Próxima liberación: {{ limits.nextThirdPartyAccessAvailability | date:'dd/MM HH:mm' }}</small>
+          <small>{{ limits.thirdPartyAccessesUsed }} {{ t('openedLast72') }}</small>
+          <small *ngIf="limits.nextThirdPartyAccessAvailability">{{ t('nextRelease') }} {{ limits.nextThirdPartyAccessAvailability | date:'dd/MM HH:mm' }}</small>
+        </article>
+        <article>
+          <span>{{ t('fullAnimations') }}</span>
+          <strong>{{ limits.premium ? t('unlimited') : limits.nextAnimationAvailability ? t('waiting') : t('oneAvailable') }}</strong>
+          <small *ngIf="!limits.premium">{{ t('oneEvery15Days') }}</small>
+          <small *ngIf="limits.nextAnimationAvailability">{{ t('next') }} {{ limits.nextAnimationAvailability | date:'dd/MM/yyyy HH:mm' }}</small>
         </article>
       </div>
     </section>
@@ -81,65 +78,81 @@
         (keydown.space)="$event.preventDefault(); togglePremiumDetails()">
         <div>
           <p class="premium__eyebrow">Tracketeo Premium</p>
-          <h2>Más rutas, más análisis, menos límites</h2>
+          <h2>{{ t('premiumHeadline') }}</h2>
         </div>
-        <button class="premium__button" type="button" tabindex="-1">
-          {{ loggedUser?.administrator ? 'Ver ventajas Admin' : loggedUser?.premium ? 'Ver ventajas Premium' : 'Hazte Premium' }}
-          <span class="premium__chevron" aria-hidden="true">⌄</span>
+        <button *ngIf="billingStatus?.canManageSubscription; else premiumHeadingButton" class="premium__button" type="button" (click)="openBillingPortal($event)" [disabled]="!!billingBusy">
+          {{ billingBusy === 'portal' ? t('openingStripe') : t('manageSubscription') }}
         </button>
+        <ng-template #premiumHeadingButton><button class="premium__button" type="button" tabindex="-1">
+          {{ loggedUser?.administrator ? t('viewAdminBenefits') : loggedUser?.premium ? t('viewPremiumBenefits') : t('becomePremium') }}
+          <span class="premium__chevron" aria-hidden="true">⌄</span>
+        </button></ng-template>
       </div>
 
       <div class="premium__details" id="premium-details" [attr.aria-hidden]="!premiumDetailsOpen">
-        <div class="premium-pricing" aria-label="Precios Premium">
+        <div class="premium-pricing" [attr.aria-label]="t('premiumPrices')">
           <article class="premium-price">
-            <span>Mensual</span>
-            <p><strong>4,99 €</strong><small>/mes</small></p>
-            <small>Flexibilidad para cancelar cuando quieras</small>
-            <button type="button" disabled>Próximamente</button>
+            <span>{{ t('monthly') }}</span>
+            <p><strong>{{ t('monthlyPrice') }}</strong><small>{{ t('month') }}</small></p>
+            <small>{{ t('flexibility') }}</small>
+            <small>{{ t('unlimitedAnimations') }}</small>
+            <button type="button" (click)="startCheckout('monthly', $event)" [disabled]="!!billingBusy || !!loggedUser?.premium">
+              {{ loggedUser?.premium ? t('activePlan') : billingBusy === 'monthly' ? t('openingStripe') : t('chooseMonthly') }}
+            </button>
           </article>
           <article class="premium-price premium-price--featured">
-            <span class="premium-price__badge">Mejor opción · ahorra 33 %</span>
-            <span>Anual</span>
-            <p><strong>39,99 €</strong><small>/año</small></p>
-            <small>Equivale a 3,33 € al mes</small>
-            <button type="button" disabled>Próximamente</button>
+            <span class="premium-price__badge">{{ t('bestOptionSave') }}</span>
+            <span>{{ t('annual') }}</span>
+            <p><strong>{{ t('annualPrice') }}</strong><small>{{ t('year') }}</small></p>
+            <small>{{ t('equivalentMonthly') }}</small>
+            <small>{{ t('unlimitedAnimations') }}</small>
+            <button type="button" (click)="startCheckout('annual', $event)" [disabled]="!!billingBusy || !!loggedUser?.premium">
+              {{ loggedUser?.premium ? t('activePlan') : billingBusy === 'annual' ? t('openingStripe') : t('chooseAnnual') }}
+            </button>
           </article>
         </div>
         <div class="premium-table" id="premium-table">
           <div class="premium-table__row premium-table__row--header">
-            <span>Funcionalidad</span><strong>Gratis</strong><strong>Premium</strong>
+            <span>{{ t('feature') }}</span><strong>{{ t('freePlan') }}</strong><strong>Premium</strong>
           </div>
-          <div class="premium-table__row"><span>Análisis inteligentes</span><span>2 cada 6 h · 8 al mes</span><strong>20 cada 6 h · 100 al mes</strong></div>
-          <div class="premium-table__row"><span>Tracks propios</span><span>Hasta 25</span><strong>Sin límite</strong></div>
-          <div class="premium-table__row"><span>Tracks de otros usuarios</span><span>Explora todas · abre 25 distintas cada 72 h</span><strong>Acceso sin límite</strong></div>
+          <div class="premium-table__row"><span>{{ t('smartAnalysis') }}</span><span>{{ t('freeAnalyses') }}</span><strong>{{ t('premiumAnalyses') }}</strong></div>
+          <div class="premium-table__row"><span>{{ t('fullAnimations') }}</span><span>{{ t('freeAnimations') }}</span><strong>{{ t('unlimited') }}</strong></div>
+          <div class="premium-table__row"><span>{{ t('ownTracksFeature') }}</span><span>{{ t('upTo25') }}</span><strong>{{ t('unlimited') }}</strong></div>
+          <div class="premium-table__row"><span>{{ t('otherTracks') }}</span><span>{{ t('exploreAndOpen') }}</span><strong>{{ t('unlimitedAccess') }}</strong></div>
+          <div class="premium-table__row"><span>{{ t('aiAssistant') }}</span><span>{{ t('daily10') }}</span><strong>{{ t('daily100') }}</strong></div>
         </div>
-        <p class="premium__note">Precios previstos para el lanzamiento. La contratación estará disponible cuando activemos Stripe.</p>
+        <p class="premium__note">{{ t('stripeNote') }}</p>
+        <p *ngIf="billingMessage" class="premium__message" role="status">{{ billingMessage }}</p>
       </div>
     </section>
 
     <div *ngIf="loggedUser; else authActions" class="home__auth">
       <span class="home__user-info">
-        Sesión iniciada como <strong>{{ loggedUser.name || loggedUser.email }}</strong>
-        · <span class="plan-badge">{{ loggedUser.administrator ? 'ADMIN' : loggedUser.premium ? 'PREMIUM' : 'GRATIS' }}</span>
+        {{ t('signedInAs') }} <strong>{{ loggedUser.name || loggedUser.email }}</strong>
+        · <span class="plan-badge">{{ loggedUser.administrator ? 'ADMIN' : loggedUser.premium ? 'PREMIUM' : t('free').toUpperCase() }}</span>
       </span>
-      <button class="auth-link auth-button auth-button--logout" type="button" (click)="logout()">Cerrar sesión</button>
+      <button class="auth-link auth-button auth-button--logout" type="button" (click)="logout()">{{ t('logout') }}</button>
     </div>
 
     <ng-template #authActions>
       <div class="home__auth">
-        <button class="auth-link auth-button" type="button" (click)="openLoginDialog()">Iniciar sesión</button>
+        <button class="auth-link auth-button" type="button" (click)="openLoginDialog()">{{ t('login') }}</button>
         <span aria-hidden="true">·</span>
-        <button class="auth-link auth-button" type="button" (click)="openRegisterDialog()">Registrarse</button>
+        <button class="auth-link auth-button" type="button" (click)="openRegisterDialog()">{{ t('register') }}</button>
       </div>
     </ng-template>
 
+    <app-install-prompt></app-install-prompt>
+
     <p class="home__support">
-      ¿Necesitas ayuda?
+      {{ t('help') }}
       <a class="home__support-link" href="mailto:soporte@tracketeo.bike">soporte@tracketeo.bike</a>
     </p>
 
     <p class="home__support">
-      <a class="home__support-link" [routerLink]="['/privacy-policy']">Política de privacidad / Privacy Policy</a>
+      <a class="home__support-link" [routerLink]="['/privacy-policy']">{{ t('privacy') }}</a>
     </p>
+
+    </section>
   </main>
 </div>

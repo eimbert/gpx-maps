@@ -1,0 +1,29 @@
+<section *ngIf="ready && installation.canOffer" class="install-card" aria-labelledby="install-title">
+  <div class="install-card__heading">
+    <span class="install-card__icon"><mat-icon aria-hidden="true">install_mobile</mat-icon></span>
+    <div>
+      <h2 id="install-title">{{ 'installTitle' | uiText }}</h2>
+      <p>{{ 'installLead' | uiText }}</p>
+    </div>
+  </div>
+  <div class="install-card__actions">
+    <button *ngIf="!installation.error" type="button" class="install-card__primary" (click)="install()"
+      [disabled]="installation.busy"
+      [attr.aria-expanded]="installation.isIos ? instructionsOpen : null"
+      [attr.aria-controls]="installation.isIos ? 'install-instructions' : null">
+      {{ installation.busy ? ('openingInstall' | uiText) : instructionsOpen ? ('hideSteps' | uiText) : ('installApp' | uiText) }}
+    </button>
+    <button type="button" class="install-card__secondary" (click)="installation.dismiss()">{{ 'notNow' | uiText }}</button>
+  </div>
+  <div *ngIf="instructionsOpen" id="install-instructions" class="install-card__instructions">
+    <h3>{{ 'onIos' | uiText }}</h3>
+    <ol>
+      <li>{{ 'openBrowserMenu' | uiText }} <strong>{{ 'share' | uiText }}</strong> {{ 'browserMenuEnd' | uiText }} <mat-icon [attr.aria-label]="'share' | uiText">ios_share</mat-icon>.</li>
+      <li>{{ 'tap' | uiText }} <strong>{{ 'addHomeScreen' | uiText }}</strong>.</li>
+      <li>{{ 'ifOpenAsWebApp' | uiText }} <strong>{{ 'add' | uiText }}</strong>.</li>
+    </ol>
+    <p>{{ 'useSafari' | uiText }}</p>
+  </div>
+  <p *ngIf="installation.error" class="install-card__error" role="status">{{ installation.error }}</p>
+  <button type="button" class="install-card__installed" (click)="installation.markInstalled()">{{ 'alreadyInstalled' | uiText }}</button>
+</section>

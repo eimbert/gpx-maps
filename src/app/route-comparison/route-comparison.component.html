@@ -1,0 +1,75 @@
+<section class="comparison" [attr.aria-label]="'compareLabel' | uiText">
+  <div class="comparison__toolbar">
+    <div *ngIf="!savedOnly"><span class="comparison__eyebrow">{{ 'compareKicker' | uiText }}</span>
+      <h4>{{ 'compareQuestion' | uiText }}</h4>
+      <p *ngIf="tracks.length < 2">{{ 'compareSelectTwo' | uiText }}</p>
+      <p *ngIf="tracks.length === 2">{{ tracks[0].name }} <span aria-hidden="true">↔</span> {{ tracks[1].name }}</p>
+      <p *ngIf="tracks.length > 2" class="comparison__warning" role="status">{{ 'compareTooMany' | uiText:{count:tracks.length} }}</p>
+    </div>
+    <div class="comparison__actions">
+      <button *ngIf="report" type="button" class="comparison__toggle" [attr.aria-expanded]="expanded" (click)="expanded = !expanded">{{ expanded ? ('hideReport' | uiText) : ('showReport' | uiText) }}</button>
+      <button *ngIf="report" type="button" class="comparison__toggle" [disabled]="exportingPdf" (click)="downloadPdf()" [attr.aria-label]="'downloadPdf' | uiText"><mat-icon aria-hidden="true">picture_as_pdf</mat-icon> PDF</button>
+      <button *ngIf="report" type="button" class="comparison__toggle" [disabled]="exportingPdf" (click)="shareReport()" [attr.aria-label]="'shareReport' | uiText"><mat-icon aria-hidden="true">share</mat-icon> {{ 'share' | uiText }}</button>
+      <button *ngIf="!savedOnly" type="button" class="comparison__button" [disabled]="tracks.length !== 2 || loading" (click)="compare()">
+        <mat-icon aria-hidden="true">auto_awesome</mat-icon>{{ loading ? ('preparingReport' | uiText) : report ? ('regenerateReport' | uiText) : ('compareWithAi' | uiText) }}
+      </button>
+    </div>
+  </div>
+  <p *ngIf="loading" class="comparison__notice" role="status">{{ savedOnly ? ('openingReport' | uiText) : ('comparisonBusy' | uiText) }}</p>
+  <p *ngIf="error" class="comparison__warning" role="alert">{{ error }}</p>
+  <p *ngIf="shareStatus" class="comparison__notice" role="status">{{ shareStatus }}</p>
+  <article *ngIf="report as result" #pdfReport [hidden]="!expanded" class="comparison__report" [attr.aria-label]="'comparisonReport' | uiText" [attr.aria-busy]="loading">
+    <header class="comparison__report-heading comparison__pdf-section"><span class="comparison__eyebrow">{{ 'physicalDemandReport' | uiText }} · {{ result.createdAt | date:'dd/MM/yyyy' }}</span><h3>{{ 'reportLabel' | uiText }}: {{ reportTitle }}</h3>
+      <p *ngIf="result.narrative">{{ result.narrative.summary }}</p>
+      <p *ngIf="result.aiStatus !== 'generated'" class="comparison__notice" role="status">{{ 'comparisonNoAi' | uiText }}</p>
+    </header>
+    <div class="comparison__routes comparison__pdf-section">
+      <section *ngFor="let route of result.routes; let i = index" class="comparison__route" [class.comparison__route--b]="i === 1">
+        <div class="comparison__route-name"><span class="comparison__letter">{{ i === 0 ? 'A' : 'B' }}</span><h4>{{ route.title }}</h4></div>
+        <div class="comparison__irp"><span>{{ value(route.metrics.irp) }}<small *ngIf="route.metrics.irp !== null"> / 10</small></span><div>{{ 'legBreakerIndex' | uiText }}<small>{{ 'estimatedRating' | uiText }}</small></div></div>
+        <p class="comparison__stats">{{ value(route.metrics.distanceKm, 'km') }} · {{ value(route.metrics.gainM, 'm D+') }}<app-elevation-quality [quality]="route.metrics.elevationQuality"></app-elevation-quality> · {{ route.metrics.climbCount }} {{ 'climbsLabel' | uiText }}</p>
+        <p *ngIf="route.metrics.irp === null" class="comparison__notice">{{ 'irpUnavailable' | uiText }}</p>
+        <p *ngIf="result.narrative">{{ i === 0 ? result.narrative.routeA : result.narrative.routeB }}</p>
+      </section>
+    </div>
+    <section class="comparison__profile comparison__pdf-section"><h4>{{ 'sameScaleProfile' | uiText }}</h4>
+      <svg viewBox="0 0 780 225" role="img" [attr.aria-label]="'comparisonProfileLabel' | uiText">
+        <line x1="48" y1="190" x2="748" y2="190" stroke="currentColor" opacity=".25"/>
+        <line x1="48" y1="35" x2="748" y2="35" stroke="currentColor" opacity=".15" stroke-dasharray="4 4"/>
+        <text x="0" y="40">{{ value(profileAltitude(true), 'm') }}</text><text x="0" y="187">{{ value(profileAltitude(false), 'm') }}</text>
+        <text x="48" y="218">0 km</text><text x="748" y="218" text-anchor="end">{{ value(profileDistance, 'km') }}</text>
+        <ng-container *ngFor="let route of result.routes; let i = index"><path *ngFor="let path of profilePaths(route)" [attr.d]="path" fill="none" [attr.stroke]="i === 0 ? '#dba522' : '#32b6a2'" stroke-width="2.5" [attr.stroke-dasharray]="i === 1 ? '7 3' : null"/></ng-container>
+      </svg><p class="comparison__profile-scale">{{ value(profileAltitude(false)) }}–{{ value(profileAltitude(true), 'm') }} {{ 'altitudeLabel' | uiText }} · 0–{{ value(profileDistance, 'km') }}</p>
+      <p class="comparison__muted">{{ 'profileLineLegend' | uiText }}</p>
+    </section>
+    <section class="comparison__pdf-section"><h4>{{ 'effortKinds' | uiText }}</h4><p class="comparison__muted">{{ 'effortScoresHelp' | uiText }}</p>
+      <div class="comparison__dimensions"><div *ngFor="let dimension of dimensions" class="comparison__dimension"><strong>{{ dimension.label }}</strong>
+        <div *ngFor="let route of result.routes; let i = index" class="comparison__meter" [class.comparison__meter--b]="i === 1"><span>{{ i === 0 ? 'A' : 'B' }}</span><div class="comparison__bar"><span [style.width.%]="(score(route, dimension.key) || 0) * 10"></span></div><span>{{ value(score(route, dimension.key)) }}</span></div>
+      </div></div>
+    </section>
+    <details class="comparison__details comparison__pdf-section" open><summary>{{ 'allIndicators' | uiText }}</summary><div class="comparison__scroll"><table class="comparison__indicators">
+      <thead><tr><th scope="col">{{ 'indicatorLabel' | uiText }}</th><th scope="col" [title]="result.routes[0].title">{{ 'routeA' | uiText }}</th><th scope="col" [title]="result.routes[1].title">{{ 'routeB' | uiText }}</th></tr></thead>
+      <tbody><tr *ngFor="let indicator of indicators"><th scope="row">{{ indicator.label }}</th><td *ngFor="let route of result.routes">{{ value(route.metrics[indicator.key], indicator.unit) }}</td></tr></tbody>
+    </table></div></details>
+    <details *ngFor="let route of result.routes; let i = index" class="comparison__details comparison__pdf-section"><summary>{{ 'detectedClimbs' | uiText:{route:i === 0 ? 'A' : 'B',count:route.metrics.climbCount} }}</summary>
+      <p *ngIf="!route.metrics.climbs.length">{{ 'noDetectedClimbs' | uiText }}</p>
+      <div class="comparison__scroll" *ngIf="route.metrics.climbs.length"><table><thead><tr><th>{{ 'startFinish' | uiText }}</th><th>{{ 'distance' | uiText }}</th><th>D+</th><th>{{ 'averageLabel' | uiText }}</th><th>100 m</th><th>250 m</th><th>500 m</th><th>{{ 'characterLabel' | uiText }}</th></tr></thead>
+      <tbody><tr *ngFor="let climb of route.metrics.climbs"><td>{{ value(climb.startKm) }}–{{ value(climb.endKm, 'km') }}</td><td>{{ value(climb.distanceKm, 'km') }}</td><td>{{ value(climb.gainM, 'm') }}</td><td>{{ value(climb.averageGrade, '%') }}</td><td>{{ value(climb.max100, '%') }}</td><td>{{ value(climb.max250, '%') }}</td><td>{{ value(climb.max500, '%') }}</td><td>{{ climb.character.join(' · ') }}</td></tr></tbody></table></div>
+    </details>
+    <section *ngIf="result.narrative as narrative" class="comparison__answers comparison__pdf-section"><h4>{{ 'cyclingComparison' | uiText }}</h4>
+      <div *ngFor="let answer of narrative.answers; let i = index"><h5>{{ i + 1 }}. {{ questions[i] }}</h5><p>{{ answer }}</p></div>
+      <div class="comparison__verdict"><span class="comparison__eyebrow">{{ 'verdictLabel' | uiText }}</span><p>{{ narrative.verdict }}</p></div>
+    </section>
+    <details class="comparison__details comparison__pdf-section"><summary>{{ 'recordedActivity' | uiText }}</summary><p>{{ 'recordedActivityHelp' | uiText }}</p>
+      <section *ngFor="let route of result.routes; let i = index"><h5>{{ i === 0 ? 'A' : 'B' }} · {{ route.title }}</h5>
+        <p>{{ 'recordedTime' | uiText }}: {{ value(route.recorded.elapsedSeconds === null ? null : route.recorded.elapsedSeconds / 60, 'min') }}. {{ 'heartRateMeanMax' | uiText }}: {{ value(route.recorded.heartRate.mean) }} / {{ value(route.recorded.heartRate.maximum, 'bpm') }} ({{ route.recorded.heartRate.count }} {{ 'samplesLabel' | uiText }}). {{ 'powerMeanMax' | uiText }}: {{ value(route.recorded.power.mean) }} / {{ value(route.recorded.power.maximum, 'W') }} ({{ route.recorded.power.count }} {{ 'samplesLabel' | uiText }}).</p>
+        <p *ngFor="let note of route.recorded.notes" class="comparison__muted">{{ note }}</p>
+      </section>
+    </details>
+    <details class="comparison__details comparison__pdf-section"><summary>{{ 'methodLimitations' | uiText }}</summary>
+      <p>{{ 'comparisonMethod' | uiText }}</p>
+      <p>{{ 'comparisonIrpMethod' | uiText }}</p>
+      <div *ngFor="let route of result.routes; let i = index"><h5>{{ i === 0 ? 'A' : 'B' }} · {{ route.metrics.version }}</h5><p *ngFor="let limitation of route.metrics.limitations">{{ limitation }}</p></div>
+    </details>
+  </article>
+</section>

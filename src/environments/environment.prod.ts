@@ -17,7 +17,10 @@ export const environment = {
   usersApiBase: `${apiBase}/users`,
   mensajesApiBase: `${apiBase}/mensajes`,
   geoCode: `${apiBase}/geocode/reverse`,
+  routePlacesUrl: `${apiBase}/geocode/route-places`,
   routingApiBase: `${apiBase}/routing`,
   routeAnalysisApiBase: `${apiBase}/route-analysis`,
   accountApiBase: `${apiBase}/account`,
+  assistantApiBase: `${apiBase}/assistant`,
+  billingApiBase: `${apiBase}/billing`,
 };

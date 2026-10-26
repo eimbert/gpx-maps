@@ -1,25 +1,74 @@
 <h2 mat-dialog-title class="dialog-header">
-  Configurar opciones
+  {{ (data?.tipoAnimacionFijado ? (tipoAnimacion === 'descubrir' ? 'discoverRoute' : 'animateRace') : 'animationSettings') | uiText }}
 </h2>
 
 <mat-dialog-content class="dialog-content">
   <p class="dialog-subtitle">
-    Personaliza la experiencia de tu vídeo antes de generar el recorrido.
+    {{ 'customizeVideo' | uiText }}
   </p>
 
-  <section class="option-section">
-    <div class="section-header">
-      <h3>Preferencias de la animación</h3>
-      <p class="section-hint">Selecciona los ajustes que mejor se adapten a tu proyecto.</p>
+  <section class="option-section" [attr.aria-label]="'animationType' | uiText">
+    <div class="section-header" *ngIf="!data?.tipoAnimacionFijado"><h3>{{ 'tellRoute' | uiText }}</h3></div>
+    <div class="animation-choices" *ngIf="!data?.tipoAnimacionFijado">
+      <label class="animation-choice" [class.selected]="tipoAnimacion === 'carrera'">
+        <input type="radio" name="tipo-animacion" value="carrera" [(ngModel)]="tipoAnimacion">
+        <span><b>{{ 'raceAnimation' | uiText }}</b><small>{{ 'raceAnimationHint' | uiText }}</small></span>
+      </label>
+      <label class="animation-choice" *ngIf="nombresTracks.length <= 1" [class.selected]="tipoAnimacion === 'descubrir'">
+        <input type="radio" name="tipo-animacion" value="descubrir" [(ngModel)]="tipoAnimacion">
+        <span><b>{{ 'discoverRoute' | uiText }}</b><small>{{ 'discoveryAnimationHint' | uiText }}</small></span>
+      </label>
     </div>
+    <ng-container *ngIf="tipoAnimacion === 'descubrir'">
+      <div class="discovery-field">
+        <span>{{ 'automaticDuration' | uiText }}</span>
+        <p class="section-hint">{{ 'durationHint' | uiText }}</p>
+      </div>
+      <fieldset class="discovery-speed">
+        <legend>{{ 'playbackSpeed' | uiText }}</legend>
+        <div class="discovery-speed__choices">
+          <label class="animation-choice" [class.selected]="velocidadDescubrir === 1">
+            <input type="radio" name="velocidad-descubrir" [value]="1" [(ngModel)]="velocidadDescubrir">
+            <span><b>×1</b><small>{{ 'normal' | uiText }}</small></span>
+          </label>
+          <label class="animation-choice" [class.selected]="velocidadDescubrir === 2">
+            <input type="radio" name="velocidad-descubrir" [value]="2" [(ngModel)]="velocidadDescubrir">
+            <span><b>×2</b><small>{{ 'doubleSpeed' | uiText }}</small></span>
+          </label>
+        </div>
+      </fieldset>
+      <fieldset class="discovery-camera">
+        <legend>{{ 'camera3d' | uiText }}</legend>
+        <div class="discovery-camera__choices">
+          <label class="animation-choice" [class.selected]="camaraDescubrir === 'actual'">
+            <input type="radio" name="camara-descubrir" value="actual" [(ngModel)]="camaraDescubrir">
+            <span><b>{{ 'currentCamera' | uiText }}</b><small>{{ 'currentCameraHint' | uiText }}</small></span>
+          </label>
+          <label class="animation-choice" [class.selected]="camaraDescubrir === 'cercana'">
+            <input type="radio" name="camara-descubrir" value="cercana" [(ngModel)]="camaraDescubrir">
+            <span><b>{{ 'closer' | uiText }}</b><small>{{ 'closerCameraHint' | uiText }}</small></span>
+          </label>
+        </div>
+      </fieldset>
+      <p class="section-hint">{{ 'discoveryViewHint' | uiText }}</p>
+    </ng-container>
+  </section>
+
+  <div class="checkbox-grid basic-options">
+    <mat-checkbox [(ngModel)]="activarMusica">{{ 'enableMusic' | uiText }}</mat-checkbox>
+    <mat-checkbox [(ngModel)]="mostrarPerfil">{{ 'showElevationProfile' | uiText }}</mat-checkbox>
+  </div>
+  <details class="animation-more-options">
+    <summary>{{ 'moreOptions' | uiText }}</summary>
+  <section class="option-section">
     <div class="checkbox-grid">
-      <mat-checkbox [(ngModel)]="eliminarPausasLargas">
-        Depurar el track para eliminar pausas largas
+      <mat-checkbox *ngIf="tipoAnimacion === 'carrera'" [(ngModel)]="eliminarPausasLargas">
+        {{ 'removeLongPauses' | uiText }}
       </mat-checkbox>
 
-      <div class="pause-option">
+      <div class="pause-option" *ngIf="tipoAnimacion === 'carrera'">
         <mat-checkbox [(ngModel)]="marcarPausasLargas">
-          Informar pausas de
+          {{ 'reportPauses' | uiText }}
         </mat-checkbox>
         <div class="pause-threshold">
           <input
@@ -28,9 +77,9 @@
             step="1"
             [(ngModel)]="umbralPausaMinutos"
             [disabled]="!marcarPausasLargas"
-            aria-label="Umbral de pausa en minutos"
+            [attr.aria-label]="'pauseThreshold' | uiText"
           />
-          <span>minutos, o mayores</span>
+          <span>{{ 'minutesOrMore' | uiText }}</span>
         </div>
       </div>
 
@@ -38,21 +87,17 @@
         Añadir un logo a los títulos (ej. logo de la carrera)
       </mat-checkbox> -->
 
-      <mat-checkbox [(ngModel)]="activarMusica">
-        Activar la música
-      </mat-checkbox>
+
 
       <mat-checkbox *ngIf="!esMovil" [(ngModel)]="grabarAnimacion">
-        Grabar automáticamente la animación
+        {{ 'recordAutomatically' | uiText }}
       </mat-checkbox>
 
-      <mat-checkbox [(ngModel)]="mostrarPerfil">
-        Mostrar perfil de elevación durante la reproducción
-      </mat-checkbox>
+
     </div>
 
-    <div class="visualization-modes" *ngIf="!esMovil">
-      <span class="orientation-label">Modo de visualización:</span>
+    <div class="visualization-modes" *ngIf="!esMovil && tipoAnimacion === 'carrera'">
+      <span class="orientation-label">{{ 'displayMode' | uiText }}</span>
       <label class="orientation-option">
         <input
           type="radio"
@@ -60,7 +105,7 @@
           value="general"
           [(ngModel)]="modoVisualizacion"
         />
-        Vista actual (general)
+        {{ 'generalView' | uiText }}
       </label>
       <label class="orientation-option">
         <input
@@ -69,12 +114,12 @@
           value="zoomCabeza"
           [(ngModel)]="modoVisualizacion"
         />
-        Zoom a la cabeza de carrera
+        {{ 'raceLeaderZoom' | uiText }}
       </label>
     </div>
 
-    <div class="recording-orientation" *ngIf="!esMovil">
-      <span class="orientation-label">Relación de aspecto:</span>
+    <div class="recording-orientation" *ngIf="!esMovil || tipoAnimacion === 'descubrir'">
+      <span class="orientation-label">{{ 'aspectRatio' | uiText }}</span>
       <label class="orientation-option">
         <input
           type="radio"
@@ -82,7 +127,7 @@
           value="16:9"
           [(ngModel)]="relacionAspectoGrabacion"
         />
-        16:9 (horizontal)
+        16:9 ({{ 'horizontal' | uiText }})
       </label>
       <label class="orientation-option">
         <input
@@ -91,24 +136,24 @@
           value="9:16"
           [(ngModel)]="relacionAspectoGrabacion"
         />
-        9:16 (vertical)
+        9:16 ({{ 'vertical' | uiText }})
       </label>
     </div>
   </section>
 
-  <ng-container *ngIf="permitirAdversarioVirtual">
+  <ng-container *ngIf="permitirAdversarioVirtual && tipoAnimacion === 'carrera'">
     <section class="option-section">
       <div class="section-header">
-        <h3>Adversario virtual</h3>
-        <p class="section-hint">Añade un segundo corredor para comparar ritmos.</p>
+        <h3>{{ 'virtualOpponent' | uiText }}</h3>
+        <p class="section-hint">{{ 'virtualOpponentHint' | uiText }}</p>
       </div>
 
       <mat-checkbox [(ngModel)]="incluirAdversarioVirtual">
-        Incluir adversario virtual (player 2)
+        {{ 'includeVirtualOpponent' | uiText }}
       </mat-checkbox>
 
       <div class="virtual-time" *ngIf="incluirAdversarioVirtual">
-        <label for="virtual-time-input">Tiempo objetivo (hh:mm)</label>
+        <label for="virtual-time-input">{{ 'targetTime' | uiText }}</label>
         <input
           id="virtual-time-input"
           type="time"
@@ -118,9 +163,10 @@
       </div>
     </section>
   </ng-container>
+  </details>
 </mat-dialog-content>
 
 <mat-dialog-actions align="end" class="dialog-actions">
-  <button mat-button (click)="cancelar()">Cancelar</button>
-  <button mat-flat-button color="primary" (click)="guardar()">Continuar</button>
+  <button mat-button (click)="cancelar()">{{ 'cancel' | uiText }}</button>
+  <button mat-flat-button color="primary" (click)="guardar()">{{ 'continue' | uiText }}</button>
 </mat-dialog-actions>

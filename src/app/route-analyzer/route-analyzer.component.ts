@@ -1,3 +1,4 @@
+import { workspaceReturnUrl } from '../utils/workspace-return';
 import { Component, ElementRef, OnInit, ViewChild } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { catchError, of } from 'rxjs';
@@ -6,27 +7,34 @@ import { TrackGpxFile } from '../interfaces/events';
 import { RouteAnalysis, RouteAnalysisHighlight, RouteAnalysisReport, RouteAnalysisSector } from '../interfaces/route-analysis';
 import { EventService } from '../services/event.service';
 import { RouteAnalysisService } from '../services/route-analysis.service';
+import { PlanService } from '../services/plan.service';
 import { AuthService, EntitlementsResponse } from '../services/auth.service';
+import { calculateGpxElevation, ElevationResult } from '../utils/gpx-elevation';
+import { AppLanguage, resolveLanguage } from '../services/language.service';
+import { REPORT_TEXTS, ReportTextKey } from './report-texts';
+import { selectedUiText } from '../services/screen-texts';
 
 interface AnalyzerPoint {
   lat: number;
   lon: number;
   ele: number;
   distanceKm: number;
+  segment: number;
 }
 
 interface AnalyzerStats {
   distanceKm: number;
-  elevationGain: number;
-  elevationLoss: number;
-  minEle: number;
-  maxEle: number;
+  elevationGain: number | null;
+  elevationLoss: number | null;
+  minEle: number | null;
+  maxEle: number | null;
   points: number;
 }
 
 interface SvgPoint {
   x: number;
   y: number;
+  segment?: number;
 }
 
 interface TrackProjection {
@@ -67,7 +75,7 @@ interface ProfileSectorLabel {
 @Component({
   selector: 'app-route-analyzer',
   templateUrl: './route-analyzer.component.html',
-  styleUrls: ['./route-analyzer.component.css']
+  styleUrls: ['./route-analyzer.component.css', './analysis-design.css']
 })
 export class RouteAnalyzerComponent implements OnInit {
   @ViewChild('analysisExport') private analysisExport?: ElementRef<HTMLElement>;
@@ -79,7 +87,8 @@ export class RouteAnalyzerComponent implements OnInit {
   source: 'upload' | 'tracks' | 'plan' = 'upload';
   userInstructions = '';
   isAnalyzing = false;
-  isCalculatingElevation = false;
+  elevationResult: ElevationResult | null = null;
+  private routeRevision = 0;
   statusMessage: string | null = null;
   analysis: RouteAnalysis | null = null;
   stats: AnalyzerStats | null = null;
@@ -102,15 +111,16 @@ export class RouteAnalyzerComponent implements OnInit {
     private router: Router,
     private eventService: EventService,
     private routeAnalysisService: RouteAnalysisService,
-    private authService: AuthService
+    private authService: AuthService,
+    private planService: PlanService
   ) {}
 
   ngOnInit(): void {
     this.loadEntitlements();
     const state = (typeof window !== 'undefined' ? window.history.state : null) ?? {};
-    const queryTrackId = Number(this.route.snapshot.queryParamMap.get('trackId'));
-    this.trackId = Number.isFinite(queryTrackId) ? queryTrackId : this.toNullableNumber(state.trackId);
-    this.source = state.source ?? (this.route.snapshot.queryParamMap.get('source') as any) ?? 'upload';
+    const queryTrackId = this.toNullableNumber(this.route.snapshot.queryParamMap.get('trackId'));
+    this.trackId = queryTrackId && queryTrackId > 0 ? queryTrackId : this.toNullableNumber(state.trackId);
+    this.source = (this.route.snapshot.queryParamMap.get('source') as any) ?? state.source ?? (this.trackId ? 'tracks' : 'upload');
     this.fileName = state.fileName ?? null;
     this.routeTitle = this.cleanRouteTitle(state.routeTitle);
 
@@ -120,24 +130,56 @@ export class RouteAnalyzerComponent implements OnInit {
     }
 
     if (this.trackId) {
-      this.statusMessage = 'Cargando GPX del track...';
+      this.statusMessage = selectedUiText('loadingTrackGpx');
+      if (this.source === 'plan') {
+        const folderId = Number(this.route.snapshot.queryParamMap.get('folderId'));
+        if (!folderId) { this.statusMessage = selectedUiText('openRouteFromFolder'); return; }
+        this.planService.getTracks(folderId).subscribe({
+          next: tracks => {
+            const track = tracks.find(item => item.id === this.trackId);
+            if (!track?.routeXml) { this.statusMessage = selectedUiText('trackNotInFolder'); return; }
+            this.routeTitle = track.name || this.routeTitle;
+            this.loadRouteXml(track.routeXml, track.name, track.id, 'plan');
+          },
+          error: () => this.statusMessage = selectedUiText('plannedRouteLoadFailed')
+        });
+        return;
+      }
       this.eventService.getTrackGpx(this.trackId).subscribe({
         next: (gpxFile: TrackGpxFile) => {
           if (!gpxFile.routeXml) {
-            this.statusMessage = 'No se encontró GPX para analizar.';
+            this.statusMessage = selectedUiText('noGpxToAnalyze');
             return;
           }
           this.loadRouteXml(gpxFile.routeXml, gpxFile.fileName ?? this.fileName, gpxFile.id, this.source);
         },
-        error: () => this.statusMessage = 'No se pudo cargar el GPX del track.'
+        error: () => this.statusMessage = selectedUiText('trackGpxLoadFailed')
       });
     }
   }
 
-  goHome(): void {
-    this.router.navigate(['/']);
+  goBack(): void {
+    const returnTo = workspaceReturnUrl(this.route.snapshot.queryParamMap.get('returnTo'));
+    if (returnTo) { void this.router.navigateByUrl(returnTo); return; }
+    const source = this.route.snapshot.queryParamMap.get('source');
+    if (source === 'tracks') {
+      void this.router.navigate(['/load'], { queryParams: { view: 'archive' } });
+    } else if (source === 'plan') {
+      void this.router.navigate(['/plan'], { queryParams: { folderId: this.route.snapshot.queryParamMap.get('folderId') } });
+    } else {
+      void this.router.navigate(['/']);
+    }
   }
 
+  addAnalysisInstruction(value: string): void { this.userInstructions = [this.userInstructions, value].filter(Boolean).join('. ').slice(0,1200); }
+  readonly analysisSuggestions = ['focusMtb', 'splitStages', 'technicalDescents'] as const;
+  addSuggestedInstruction(key: typeof this.analysisSuggestions[number]): void { this.addAnalysisInstruction(selectedUiText(key)); }
+  onAnalysisDrop(event: DragEvent): void {
+    event.preventDefault();
+    const file = event.dataTransfer?.files[0];
+    if (!file || !/\.gpx$/i.test(file.name)) return;
+    this.onFileSelected({ target: { files: [file], value: '' } } as unknown as Event);
+  }
   onFileSelected(event: Event): void {
     const input = event.target as HTMLInputElement;
     const file = input.files?.[0];
@@ -145,6 +187,7 @@ export class RouteAnalyzerComponent implements OnInit {
     const reader = new FileReader();
     reader.onload = () => {
       const content = String(reader.result ?? '');
+      this.routeTitle = this.cleanRouteTitle(file.name.replace(/\.gpx$/i, ''));
       this.loadRouteXml(content, file.name, null, 'upload');
     };
     reader.readAsText(file);
@@ -153,16 +196,17 @@ export class RouteAnalyzerComponent implements OnInit {
 
   analyze(forceRefresh = false): void {
     if (!this.routeXml) {
-      this.statusMessage = 'Sube o selecciona una ruta GPX para analizar.';
+      this.statusMessage = selectedUiText('chooseGpxToAnalyze');
       return;
     }
     if (!this.canGenerateAnalysis) {
-      this.statusMessage = 'No tienes saldo disponible para generar un nuevo informe.';
+      this.statusMessage = selectedUiText('noReportCredit');
       return;
     }
 
     this.isAnalyzing = true;
-    this.statusMessage = 'Analizando ruta...';
+    const revision = this.routeRevision;
+    this.statusMessage = selectedUiText('analyzingRouteStatus');
     const payload = {
       trackId: this.trackId,
       source: this.source,
@@ -170,6 +214,7 @@ export class RouteAnalyzerComponent implements OnInit {
       title: this.routeTitle,
       routeXml: this.routeXml,
       userInstructions: this.normalizedInstructions(),
+      reportLanguage: this.requestedReportLanguage,
       forceRefresh
     };
     console.info('[RouteAnalyzer] Enviando análisis IA', {
@@ -183,27 +228,30 @@ export class RouteAnalyzerComponent implements OnInit {
     this.routeAnalysisService.analyzeRoute(payload).pipe(
       catchError((error: unknown) => {
         console.error('[RouteAnalyzer] Error llamando al backend de análisis', error);
-        const report = this.buildLocalReport();
+        const report = this.buildLocalReport(payload.reportLanguage);
         const detail = this.describeAnalysisError(error);
         return of({
           id: null,
           trackId: this.trackId,
           model: 'local-fallback',
           userInstructions: this.normalizedInstructions(),
+          reportLanguage: payload.reportLanguage,
           errorDetail: detail,
           report
         } as RouteAnalysis & { errorDetail: string });
       })
     ).subscribe((analysis: RouteAnalysis & { errorDetail?: string }) => {
+      if (revision !== this.routeRevision) return;
       this.isAnalyzing = false;
       this.analysis = analysis;
-      this.applyAnalyzedElevation(analysis);
-      const fallbackReason = analysis.fallbackReason ?? analysis.errorDetail ?? 'revisa la respuesta/logs del backend';
-      this.statusMessage = analysis.model === 'local-fallback'
-        ? `OpenAI no ha generado el informe (${fallbackReason}). Mostrando análisis técnico local provisional; no se ha descontado ningún uso.`
+      this.adoptSavedRoute(analysis);
+      this.statusMessage = !analysis.id
+        ? selectedUiText('reportNotSaved')
+        : analysis.model?.startsWith('local')
+        ? selectedUiText('technicalReportSaved')
         : analysis.usageCharged
-          ? 'Nuevo análisis generado: se ha descontado 1 uso de tu saldo.'
-          : 'Este informe ya estaba generado: puedes consultarlo sin descontar usos de tu saldo.';
+          ? selectedUiText('analysisSavedCharged')
+          : selectedUiText('analysisSavedFree');
       this.updateAnalysisVisuals();
       this.loadEntitlements();
     });
@@ -217,7 +265,31 @@ export class RouteAnalyzerComponent implements OnInit {
   }
 
   get generateTooltip(): string {
-    return this.canGenerateAnalysis ? '' : 'Sin saldo para generar informes';
+    return this.canGenerateAnalysis ? '' : selectedUiText('noReportCredit');
+  }
+
+  get requestedReportLanguage(): AppLanguage {
+    return resolveLanguage(typeof document === 'undefined' ? undefined : document.documentElement.lang);
+  }
+
+  get requestedReportLanguageName(): 'reportLanguageEnglish' | 'reportLanguageSpanish' | 'reportLanguageCatalan' | 'reportLanguageGalician' | 'reportLanguageBasque' {
+    const keys: Record<AppLanguage, 'reportLanguageEnglish' | 'reportLanguageSpanish' | 'reportLanguageCatalan' | 'reportLanguageGalician' | 'reportLanguageBasque'> = {
+      en: 'reportLanguageEnglish', es: 'reportLanguageSpanish', ca: 'reportLanguageCatalan',
+      gl: 'reportLanguageGalician', eu: 'reportLanguageBasque'
+    };
+    return keys[this.requestedReportLanguage];
+  }
+
+  get reportDisplayLanguage(): AppLanguage {
+    return this.analysis ? resolveLanguage(this.analysis.reportLanguage ?? 'es') : this.requestedReportLanguage;
+  }
+
+  reportText(key: ReportTextKey): string {
+    return REPORT_TEXTS[key][this.reportDisplayLanguage];
+  }
+
+  private localReportText(key: ReportTextKey, language: AppLanguage): string {
+    return REPORT_TEXTS[key][language];
   }
 
   private cleanRouteTitle(value: unknown): string {
@@ -227,23 +299,29 @@ export class RouteAnalyzerComponent implements OnInit {
 
   get routeTypeLabel(): string {
     const value = this.analysis?.report.routeType;
-    const labels: Record<string, string> = {
-      rodadora: 'Rodadora',
-      tecnica: 'Técnica',
-      subida_dura: 'Subida dura',
-      mixta: 'Mixta',
-      suave: 'Suave',
-      exigente: 'Exigente'
+    const labels: Record<string, ReportTextKey> = {
+      rodadora: 'rolling', tecnica: 'technical', subida_dura: 'hardClimb',
+      mixta: 'mixed', suave: 'easy', exigente: 'demanding', 'sin-altimetria': 'noAltimetry'
     };
-    return value ? labels[value] ?? value : '-';
+    return value ? (labels[value] ? this.reportText(labels[value]) : value) : '-';
+  }
+
+  effortLabel(value: RouteAnalysisSector['effort']): string {
+    const labels: Record<RouteAnalysisSector['effort'], ReportTextKey> = {
+      suave: 'easy', medio: 'mediumEffort', alto: 'highEffort', critico: 'criticalEffort'
+    };
+    return this.reportText(labels[value]);
   }
 
   get elevationSourceLabel(): string | null {
-    const source = this.analysis?.elevationSource;
-    if (!source || source === 'gpx') return null;
-    if (source === 'opentopodata-eudem25m') return 'OpenTopoData EU-DEM';
-    if (source === 'gpx-unreliable') return 'GPX no fiable';
-    return source;
+    if (!this.elevationResult) return null;
+    if (this.elevationResult.status === 'unavailable') return this.reportText('elevationUnavailable');
+    if (this.elevationResult.status === 'partial') return this.reportText('elevationPartial');
+    return this.reportText('elevationCalculated');
+  }
+
+  formatElevation(value: number | null | undefined): string {
+    return value !== null && value !== undefined && Number.isFinite(value) ? `${Math.round(value)} m` : this.reportText('noElevation');
   }
 
   formatKm(value: number | null | undefined): string {
@@ -254,10 +332,10 @@ export class RouteAnalyzerComponent implements OnInit {
     try {
       const blob = await this.createPdfBlob();
       this.saveBlob(blob, this.pdfFileName());
-      this.statusMessage = 'PDF del informe descargado.';
+      this.statusMessage = selectedUiText('pdfDownloaded');
     } catch (error) {
       console.error('[RouteAnalyzer] No se pudo generar el PDF', error);
-      this.statusMessage = 'No se pudo generar el PDF del informe.';
+      this.statusMessage = selectedUiText('pdfFailed');
     }
   }
 
@@ -271,69 +349,20 @@ export class RouteAnalyzerComponent implements OnInit {
         share?: (data: ShareData & { files?: File[] }) => Promise<void>;
       };
       if (nav.share && (!nav.canShare || nav.canShare({ files: [file] }))) {
-        await nav.share({ title: 'Informe Tracketeo', text, files: [file] });
-        this.statusMessage = 'Informe compartido.';
+        await nav.share({ title: this.reportText('reportTitle'), text, files: [file] });
+        this.statusMessage = selectedUiText('reportShared');
         return;
       }
       if (nav.share) {
-        await nav.share({ title: 'Informe Tracketeo', text, url: window.location.href });
-        this.statusMessage = 'Enlace del informe compartido.';
+        await nav.share({ title: this.reportText('reportTitle'), text, url: window.location.href });
+        this.statusMessage = selectedUiText('reportLinkShared');
         return;
       }
       await navigator.clipboard?.writeText(`${text}\n${window.location.href}`);
-      this.statusMessage = 'No hay compartir nativo; he copiado el texto del informe al portapapeles.';
+      this.statusMessage = selectedUiText('reportCopied');
     } catch (error) {
       console.error('[RouteAnalyzer] No se pudo compartir el informe', error);
-      this.statusMessage = 'No se pudo compartir el informe.';
-    }
-  }
-
-  async shareWhatsApp(): Promise<void> {
-    const text = this.shareText();
-    try {
-      const blob = await this.createPdfBlob();
-      const file = new File([blob], this.pdfFileName(), { type: 'application/pdf' });
-      const nav = navigator as Navigator & {
-        canShare?: (data: ShareData & { files?: File[] }) => boolean;
-        share?: (data: ShareData & { files?: File[] }) => Promise<void>;
-      };
-      if (nav.share && (!nav.canShare || nav.canShare({ files: [file] }))) {
-        await nav.share({ title: 'Informe Tracketeo', text, files: [file] });
-        this.statusMessage = 'Informe listo para enviar por WhatsApp.';
-        return;
-      }
-      this.saveBlob(blob, this.pdfFileName());
-      window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank', 'noopener');
-      this.statusMessage = 'PDF descargado. En escritorio, adjúntalo manualmente en WhatsApp Web.';
-    } catch (error) {
-      console.error('[RouteAnalyzer] No se pudo preparar WhatsApp', error);
-      window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank', 'noopener');
-      this.statusMessage = 'No se pudo adjuntar PDF automáticamente; he abierto WhatsApp con el resumen.';
-    }
-  }
-
-  async shareEmail(): Promise<void> {
-    const subject = `Informe Tracketeo - ${this.fileName || 'ruta GPX'}`;
-    const body = this.shareText();
-    try {
-      const blob = await this.createPdfBlob();
-      const file = new File([blob], this.pdfFileName(), { type: 'application/pdf' });
-      const nav = navigator as Navigator & {
-        canShare?: (data: ShareData & { files?: File[] }) => boolean;
-        share?: (data: ShareData & { files?: File[] }) => Promise<void>;
-      };
-      if (nav.share && (!nav.canShare || nav.canShare({ files: [file] }))) {
-        await nav.share({ title: subject, text: body, files: [file] });
-        this.statusMessage = 'Informe listo para enviar por email.';
-        return;
-      }
-      this.saveBlob(blob, this.pdfFileName());
-      window.location.href = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(`${body}\n\nPDF descargado: adjúntalo a este correo.`)}`;
-      this.statusMessage = 'PDF descargado. Adjunta el archivo al correo que se ha abierto.';
-    } catch (error) {
-      console.error('[RouteAnalyzer] No se pudo preparar email', error);
-      window.location.href = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-      this.statusMessage = 'No se pudo generar el PDF; he abierto un email con el resumen.';
+      this.statusMessage = selectedUiText('reportShareFailed');
     }
   }
 
@@ -353,7 +382,7 @@ export class RouteAnalyzerComponent implements OnInit {
       throw new Error('No hay informe preparado para exportar');
     }
     this.isExportingPdf = true;
-    this.statusMessage = 'Preparando PDF del informe...';
+    this.statusMessage = selectedUiText('preparingPdf');
     await new Promise(resolve => setTimeout(resolve, 50));
     try {
       const [{ default: html2canvas }, { jsPDF }] = await Promise.all([
@@ -362,7 +391,7 @@ export class RouteAnalyzerComponent implements OnInit {
       ]);
       const pdf = new jsPDF('p', 'mm', 'a4');
       pdf.setProperties({
-        title: `Informe Tracketeo - ${this.fileName || 'ruta GPX'}`,
+        title: `${this.reportText('reportTitle')} - ${this.fileName || this.reportText('gpxRoute')}`,
         subject: 'Informe inteligente de ruta',
         creator: 'tracketeo.bike'
       });
@@ -460,60 +489,106 @@ export class RouteAnalyzerComponent implements OnInit {
   }
 
   private shareText(): string {
-    const summary = this.analysis?.report.summary ?? 'Informe inteligente de ruta Tracketeo.';
+    const summary = this.analysis?.report.summary ?? this.reportText('routeAnalysis');
     const stats = this.stats
-      ? `${this.stats.distanceKm.toFixed(1)} km, ${Math.round(this.stats.elevationGain)} m D+`
-      : 'ruta GPX analizada';
-    return `Informe Tracketeo de ${this.fileName || 'ruta GPX'}: ${stats}. ${summary}`;
+      ? `${this.stats.distanceKm.toFixed(1)} km, ${this.formatElevation(this.stats.elevationGain)}${this.stats.elevationGain !== null ? ' D+' : ''}`
+      : this.reportText('preparedGpxRoute');
+    return `${this.reportText('reportIntro')} ${this.fileName || this.reportText('gpxRoute')}: ${stats}. ${summary}`;
   }
 
   private loadRouteXml(routeXml: string, fileName: string | null, trackId: number | null, source: 'upload' | 'tracks' | 'plan'): void {
+    const revision = ++this.routeRevision;
+    this.isAnalyzing = false;
     this.routeXml = routeXml;
     this.fileName = fileName;
     this.trackId = trackId;
     this.source = source;
     this.analysis = null;
     this.statusMessage = null;
-    this.points = this.parseGpx(routeXml);
+    this.stats = null;
+    this.elevationResult = null;
+    this.points = [];
+    this.trackPath = '';
+    this.profilePath = '';
+    try {
+      this.elevationResult = calculateGpxElevation(routeXml);
+      this.points = this.parseGpx(routeXml);
+    } catch {
+      this.routeXml = null;
+      this.statusMessage = selectedUiText('invalidGpx');
+      return;
+    }
     if (this.points.length < 2) {
-      this.statusMessage = 'El GPX no contiene suficientes puntos.';
+      this.statusMessage = selectedUiText('insufficientGpxPoints');
       this.stats = null;
       this.profileTicks = [];
       this.profileSectorLabels = [];
       return;
     }
-    this.stats = this.calculateStats(this.points);
+    this.stats = {
+      distanceKm: this.elevationResult.distanceKm,
+      elevationGain: this.elevationResult.gain,
+      elevationLoss: this.elevationResult.loss,
+      minEle: this.elevationResult.min,
+      maxEle: this.elevationResult.max,
+      points: this.points.length
+    };
     this.updateTrackPath();
     this.updateProfilePath();
     this.updateAnalysisVisuals();
-    this.calculateMissingElevation();
-    if (trackId) {
-      this.routeAnalysisService.getTrackAnalysis(trackId).pipe(catchError(() => of(null))).subscribe(saved => {
+    if (trackId && source !== 'upload') {
+      this.routeAnalysisService.getTrackAnalysis(trackId, source).pipe(catchError(() => of(null))).subscribe(saved => {
+        if (revision !== this.routeRevision || this.isAnalyzing) return;
         if (saved) {
           this.applyExistingAnalysis(saved);
-        } else this.lookupExistingAnalysis();
+        }
       });
     } else this.lookupExistingAnalysis();
   }
 
   private lookupExistingAnalysis(): void {
     if (!this.routeXml) return;
+    const revision = this.routeRevision;
     this.routeAnalysisService.lookupExisting({
       trackId: this.trackId,
       source: this.source,
       fileName: this.fileName,
       title: this.routeTitle,
-      routeXml: this.routeXml
+      routeXml: this.routeXml,
+      reportLanguage: this.requestedReportLanguage
     }).pipe(catchError(() => of(null))).subscribe(saved => {
+      if (revision !== this.routeRevision || this.isAnalyzing) return;
       if (saved) this.applyExistingAnalysis(saved);
     });
   }
 
   private applyExistingAnalysis(saved: RouteAnalysis): void {
     this.analysis = saved;
-    this.applyAnalyzedElevation(saved);
-    this.statusMessage = 'Este informe ya estaba generado: se ha cargado automáticamente y no consume saldo.';
+    this.adoptSavedRoute(saved);
+    this.statusMessage = selectedUiText('existingReportLoaded');
     this.updateAnalysisVisuals();
+  }
+
+  private adoptSavedRoute(analysis: RouteAnalysis): void {
+    if (!analysis.id || !analysis.trackId || (analysis.source !== 'tracks' && analysis.source !== 'plan')) return;
+    // Only uploads can acquire a new identity. Saved routes stay in their original workspace.
+    if (this.source !== 'upload' && (analysis.source !== this.source || analysis.trackId !== this.trackId)) return;
+    this.trackId = analysis.trackId;
+    this.source = analysis.source;
+    void this.router.navigate([], { relativeTo: this.route, replaceUrl: true,
+      queryParams: { trackId: this.trackId, source: this.source, folderId: analysis.folderId ?? this.route.snapshot.queryParamMap.get('folderId') },
+      queryParamsHandling: 'merge',
+      state: { routeXml: this.routeXml, fileName: this.fileName, routeTitle: this.routeTitle, trackId: this.trackId, source: this.source }
+    });
+  }
+
+  openSavedRoute(): void {
+    if (!this.trackId || this.source === 'upload') return;
+    if (this.source === 'plan') {
+      this.router.navigate(['/plan'], { queryParams: { folderId: this.analysis?.folderId ?? this.route.snapshot.queryParamMap.get('folderId') } });
+    } else {
+      this.router.navigate(['/load'], { queryParams: { view: 'archive', analysisTrackId: this.trackId } });
+    }
   }
 
   private loadEntitlements(): void {
@@ -523,223 +598,87 @@ export class RouteAnalyzerComponent implements OnInit {
     });
   }
 
-  private calculateMissingElevation(): void {
-    if (!this.routeXml || this.points.length < 2 || this.hasUsableElevation(this.points)) return;
-    this.isCalculatingElevation = true;
-    this.statusMessage = 'Calculando altimetría del terreno...';
-    this.routeAnalysisService.calculateElevation({
-      trackId: this.trackId,
-      source: this.source,
-      fileName: this.fileName,
-      routeXml: this.routeXml
-    }).pipe(catchError(error => {
-      console.error('[RouteAnalyzer] No se pudo calcular la altimetría', error);
-      return of(null);
-    })).subscribe(routeStats => {
-      this.isCalculatingElevation = false;
-      if (!routeStats || routeStats.elevationProfile.length < 2 || routeStats.maxEleM - routeStats.minEleM < 1) {
-        this.statusMessage = 'No se pudo obtener la altimetría del terreno.';
-        return;
-      }
-      this.applyAnalyzedElevation({ report: this.analysis?.report ?? this.buildLocalReport(), routeStats });
-      this.statusMessage = 'Altimetría del terreno calculada.';
-      this.updateAnalysisVisuals();
-    });
-  }
-
-  private hasUsableElevation(points: AnalyzerPoint[]): boolean {
-    const elevations = points.map(point => point.ele).filter(Number.isFinite);
-    if (elevations.length < 2) return false;
-    const nonZero = elevations.filter(value => Math.abs(value) > 0.1).length;
-    return nonZero > Math.max(2, points.length / 20) && Math.max(...elevations) - Math.min(...elevations) >= 10;
-  }
-
-  private applyAnalyzedElevation(analysis: RouteAnalysis): void {
-    const routeStats = analysis.routeStats;
-    const profile = routeStats?.elevationProfile ?? [];
-    if (!routeStats || profile.length < 2 || !this.points.length) return;
-
-    let profileIndex = 0;
-    for (const point of this.points) {
-      while (profileIndex < profile.length - 2 && profile[profileIndex + 1].distanceKm < point.distanceKm) {
-        profileIndex += 1;
-      }
-      const start = profile[profileIndex];
-      const end = profile[Math.min(profileIndex + 1, profile.length - 1)];
-      const span = end.distanceKm - start.distanceKm;
-      const ratio = span > 0 ? Math.max(0, Math.min(1, (point.distanceKm - start.distanceKm) / span)) : 0;
-      point.ele = start.elevationM + (end.elevationM - start.elevationM) * ratio;
-    }
-    this.stats = {
-      distanceKm: routeStats.distanceKm,
-      elevationGain: routeStats.elevationGainM,
-      elevationLoss: routeStats.elevationLossM,
-      minEle: routeStats.minEleM,
-      maxEle: routeStats.maxEleM,
-      points: this.points.length
-    };
-    this.updateProfilePath();
-  }
-
   private parseGpx(gpx: string): AnalyzerPoint[] {
     const xml = new DOMParser().parseFromString(gpx, 'application/xml');
-    const nodes = Array.from(xml.getElementsByTagName('trkpt'));
-    const raw = nodes.map(node => ({
-      lat: Number(node.getAttribute('lat')),
-      lon: Number(node.getAttribute('lon')),
-      ele: this.parseNumber(node.getElementsByTagName('ele')[0]?.textContent ?? 0),
-      distanceKm: 0
-    })).filter(point => Number.isFinite(point.lat) && Number.isFinite(point.lon));
-
-    let distance = 0;
-    for (let index = 1; index < raw.length; index += 1) {
-      distance += this.distanceMeters(raw[index - 1], raw[index]) / 1000;
-      raw[index].distanceKm = distance;
+    const elements = (root: Document | Element, name: string): Element[] =>
+      Array.from(root.getElementsByTagNameNS('*', name));
+    let groups = elements(xml, 'trkseg');
+    let pointName = 'trkpt';
+    if (!groups.length) {
+      groups = elements(xml, 'trk');
+      if (!groups.length) { groups = elements(xml, 'rte'); pointName = 'rtept'; }
     }
-    return raw;
-  }
-
-  private calculateStats(points: AnalyzerPoint[]): AnalyzerStats {
-    let minEle = Number.POSITIVE_INFINITY;
-    let maxEle = Number.NEGATIVE_INFINITY;
-    for (const point of points) {
-      minEle = Math.min(minEle, point.ele);
-      maxEle = Math.max(maxEle, point.ele);
-    }
-    const elevation = this.calculateElevationTotals(points, {
-      stepMeters: 20,
-      smoothWindowMeters: 40,
-      minStepMeters: 0.25
-    });
-    let elevationGain = elevation.gain;
-    let elevationLoss = elevation.loss;
-    if (elevationGain < 1 && Number.isFinite(maxEle - minEle) && maxEle - minEle > 8) {
-      elevationGain = maxEle - minEle;
-    }
-    return {
-      distanceKm: points[points.length - 1]?.distanceKm ?? 0,
-      elevationGain,
-      elevationLoss,
-      minEle,
-      maxEle,
-      points: points.length
-    };
-  }
-
-  private calculateElevationTotals(
-    points: AnalyzerPoint[],
-    opts: { stepMeters: number; smoothWindowMeters: number; minStepMeters: number; maxJumpMeters?: number }
-  ): { gain: number; loss: number } {
-    if (points.length < 2) {
-      return { gain: 0, loss: 0 };
-    }
-    const { ele } = this.resampleByDistance(points, opts.stepMeters);
-    const windowPoints = Math.max(3, Math.round(opts.smoothWindowMeters / opts.stepMeters));
-    const smooth = this.movingAverageCentered(ele, windowPoints);
-    const maxJumpMeters = opts.maxJumpMeters ?? 50;
-    let gain = 0;
-    let loss = 0;
-    let prev = smooth[0];
-    for (let index = 1; index < smooth.length; index += 1) {
-      let diff = smooth[index] - prev;
-      if (Math.abs(diff) > maxJumpMeters) {
-        diff = 0;
-      }
-      if (diff > opts.minStepMeters) {
-        gain += diff;
-      } else if (diff < -opts.minStepMeters) {
-        loss += Math.abs(diff);
-      }
-      prev = smooth[index];
-    }
-    return { gain, loss };
-  }
-
-  private resampleByDistance(points: AnalyzerPoint[], stepMeters: number): { dist: number[]; ele: number[] } {
-    const totalMeters = (points[points.length - 1]?.distanceKm ?? 0) * 1000;
-    if (totalMeters <= 0) {
-      return { dist: [0], ele: [points[0]?.ele ?? 0] };
-    }
-    const dist: number[] = [];
-    const ele: number[] = [];
+    if (!groups.length) groups = [xml.documentElement];
+    const points: AnalyzerPoint[] = [];
+    let distanceKm = 0;
     let segment = 0;
-    for (let target = 0; target <= totalMeters; target += stepMeters) {
-      while (segment < points.length - 2 && points[segment + 1].distanceKm * 1000 < target) {
-        segment += 1;
+    for (const group of groups) {
+      let previous: AnalyzerPoint | null = null;
+      for (const node of elements(group, pointName)) {
+        const lat = Number(node.getAttribute('lat') ?? NaN);
+        const lon = Number(node.getAttribute('lon') ?? NaN);
+        if (!Number.isFinite(lat) || !Number.isFinite(lon) || Math.abs(lat) > 90 || Math.abs(lon) > 180) {
+          previous = null;
+          segment++;
+          continue;
+        }
+        const text = elements(node, 'ele')[0]?.textContent?.trim();
+        const ele = text ? Number(text.replace(',', '.')) : Number.NaN;
+        const point = { lat, lon, ele, distanceKm, segment };
+        if (previous) distanceKm += this.distanceMeters(previous, point) / 1000;
+        point.distanceKm = distanceKm;
+        points.push(point);
+        previous = point;
       }
-      const start = points[segment];
-      const end = points[Math.min(segment + 1, points.length - 1)];
-      const startMeters = start.distanceKm * 1000;
-      const endMeters = end.distanceKm * 1000;
-      const length = Math.max(1e-9, endMeters - startMeters);
-      const ratio = (target - startMeters) / length;
-      dist.push(target);
-      ele.push(start.ele + (end.ele - start.ele) * ratio);
+      segment++;
     }
-    if (dist[dist.length - 1] < totalMeters) {
-      dist.push(totalMeters);
-      ele.push(points[points.length - 1].ele);
-    }
-    return { dist, ele };
+    return points;
   }
 
-  private movingAverageCentered(values: number[], windowPoints: number): number[] {
-    if (!values.length) {
-      return [];
-    }
-    let size = Math.max(3, windowPoints);
-    if (size % 2 === 0) {
-      size += 1;
-    }
-    const half = Math.floor(size / 2);
-    return values.map((_, index) => {
-      let total = 0;
-      for (let offset = -half; offset <= half; offset += 1) {
-        const valueIndex = Math.max(0, Math.min(values.length - 1, index + offset));
-        total += values[valueIndex];
-      }
-      return total / size;
-    });
-  }
-
-  private buildLocalReport(): RouteAnalysisReport {
+  private buildLocalReport(language: AppLanguage): RouteAnalysisReport {
     const stats = this.stats;
-    const hardClimbs = this.findClimbHighlights();
-    const routeType = !stats ? 'mixta' : stats.elevationGain > 1200 ? 'subida_dura' : stats.elevationGain > 700 ? 'exigente' : 'mixta';
+    const t = (key: ReportTextKey) => this.localReportText(key, language);
+    const hardClimbs = this.findClimbHighlights(language);
+    const gain = stats?.elevationGain;
+    const routeType = gain == null ? 'sin-altimetria' : gain > 1200 ? 'subida_dura' : gain > 700 ? 'exigente' : 'mixta';
     return {
       summary: stats
-        ? `Ruta de ${stats.distanceKm.toFixed(1)} km con ${Math.round(stats.elevationGain)} m de desnivel positivo.`
-        : 'Ruta GPX preparada para análisis.',
+        ? `${t('localRouteOf')} ${stats.distanceKm.toFixed(1)} km. ${gain == null ? t('localNoGain') : `${t('localWithGain')} ${gain} m ${t('localPositiveGain')}${this.elevationResult?.status === 'partial' ? ` ${t('localPartialGain')}` : ''}.`}`
+        : t('localGpxReady'),
       routeType,
-      difficultyExplanation: stats
-        ? `La dificultad viene marcada por la relación entre distancia y desnivel: ${Math.round(stats.elevationGain)} m positivos repartidos en ${stats.distanceKm.toFixed(1)} km.`
-        : 'No hay suficientes datos para explicar la dureza.',
+      difficultyExplanation: stats && gain != null
+        ? `${t('localDifficultyPrefix')} ${gain} m ${t('localGainAcross')} ${stats.distanceKm.toFixed(1)} km.`
+        : t('localDifficultyUnavailable'),
       highlights: hardClimbs,
-      warnings: stats && stats.elevationGain > 900 ? ['Revisa el reparto del desnivel y reserva energía para los tramos de subida.'] : [],
-      recommendations: [
-        'Usa los puntos numerados como referencias para decidir dónde regular, reagrupar o cambiar el ritmo.',
-        'Revisa el perfil antes de salir: el valor está en anticipar los bloques duros, no en descubrirlos tarde.'
+      warnings: [
+        ...(gain != null && gain > 900 ? [t('localPaceClimbs')] : []),
+        ...(this.elevationResult?.status === 'partial' ? [t('elevationPartial')] : this.elevationResult?.status === 'unavailable' ? [t('elevationUnavailable')] : [])
       ],
-      sectors: this.buildLocalSectors(),
-      approaches: this.buildLocalApproaches()
+      recommendations: [
+        t('localNumberedPoints'),
+        t('localReviewProfile')
+      ],
+      sectors: this.buildLocalSectors(language),
+      approaches: this.buildLocalApproaches(language)
     };
   }
 
-  private findClimbHighlights(): RouteAnalysisHighlight[] {
-    if (!this.points.length) return [];
+  private findClimbHighlights(language: AppLanguage): RouteAnalysisHighlight[] {
+    const points = this.elevationResult?.profile ?? [];
+    if (!points.length) return [];
     const highlights: RouteAnalysisHighlight[] = [];
     const windowKm = 1.5;
-    for (let start = 0; start < this.points.length; start += 25) {
-      const startPoint = this.points[start];
-      const end = this.points.findIndex(point => point.distanceKm >= startPoint.distanceKm + windowKm);
+    for (let start = 0; start < points.length; start += 25) {
+      const startPoint = points[start];
+      const end = points.findIndex(point => point.segment === startPoint.segment && point.distanceKm >= startPoint.distanceKm + windowKm);
       if (end <= start) continue;
-      const endPoint = this.points[end];
+      const endPoint = points[end];
       const gain = endPoint.ele - startPoint.ele;
       const slope = (gain / (windowKm * 1000)) * 100;
       if (gain > 90 && slope > 5) {
         highlights.push({
-          title: 'Subida destacada',
-          description: `Tramo de ${windowKm.toFixed(1)} km con pendiente media aproximada del ${slope.toFixed(1)}%.`,
+          title: this.localReportText('localClimbTitle', language),
+          description: `${windowKm.toFixed(1)} km ${this.localReportText('localClimbSection', language)} ${slope.toFixed(1)}%.`,
           kmStart: startPoint.distanceKm,
           kmEnd: endPoint.distanceKm,
           lat: startPoint.lat,
@@ -759,21 +698,24 @@ export class RouteAnalyzerComponent implements OnInit {
   }
 
   private updateProfilePath(): void {
-    if (!this.points.length) {
+    const points = this.elevationResult?.profile ?? [];
+    this.profileTicks = [];
+    if (!points.length) {
       this.profilePath = '';
       return;
     }
     const width = 760;
     const height = 160;
-    const maxDistance = this.points[this.points.length - 1].distanceKm || 1;
-    const elevations = this.points.map(point => point.ele);
-    const minEle = Math.min(...elevations);
-    const maxEle = Math.max(...elevations);
+    const maxDistance = this.elevationResult?.distanceKm || 1;
+    const minEle = this.elevationResult?.min ?? 0;
+    const maxEle = this.elevationResult?.max ?? minEle;
     const range = Math.max(1, maxEle - minEle);
-    const profile = this.points.filter((_, index) => index % Math.max(1, Math.ceil(this.points.length / 350)) === 0)
+    const profile = points.filter((point, index) => index % Math.max(1, Math.ceil(points.length / 350)) === 0
+        || points[index - 1]?.segment !== point.segment || points[index + 1]?.segment !== point.segment)
       .map(point => ({
         x: (point.distanceKm / maxDistance) * width,
-        y: height - ((point.ele - minEle) / range) * height
+        y: height - ((point.ele - minEle) / range) * height,
+        segment: point.segment
       }));
     this.profilePath = this.buildSvgPath(profile);
     this.profileTicks = this.buildProfileTicks(width);
@@ -792,13 +734,13 @@ export class RouteAnalyzerComponent implements OnInit {
         ...this.projectPoint(point, projection)
       };
     });
-    this.profileMarkers = reportHighlights.map(highlight => {
+    this.profileMarkers = this.profilePath ? reportHighlights.map(highlight => {
       const point = this.findPointForHighlight(highlight);
       return {
         ...highlight,
         ...this.projectProfilePoint(point, 760, 160)
       };
-    });
+    }) : [];
     this.sectorBands = reportSectors.map((sector, index) => this.projectSectorBand(sector, index, 760));
     this.profileSectorLabels = reportSectors.map((sector, index) => this.projectSectorLabel(sector, index, 760));
     this.sectorPaths = reportSectors.map((sector, index) => ({
@@ -832,12 +774,13 @@ export class RouteAnalyzerComponent implements OnInit {
   }
 
   private buildProjection(width: number, height: number): TrackProjection {
-    const lats = this.points.map(point => point.lat);
-    const lons = this.points.map(point => point.lon);
-    const minLat = Math.min(...lats);
-    const maxLat = Math.max(...lats);
-    const minLon = Math.min(...lons);
-    const maxLon = Math.max(...lons);
+    let minLat = Infinity, maxLat = -Infinity, minLon = Infinity, maxLon = -Infinity;
+    for (const point of this.points) {
+      minLat = Math.min(minLat, point.lat);
+      maxLat = Math.max(maxLat, point.lat);
+      minLon = Math.min(minLon, point.lon);
+      maxLon = Math.max(maxLon, point.lon);
+    }
     const padding = 22;
     return { points: [], minLat, maxLat, minLon, maxLon, width, height, padding };
   }
@@ -847,19 +790,21 @@ export class RouteAnalyzerComponent implements OnInit {
     const lonRange = Math.max(0.000001, projection.maxLon - projection.minLon);
     return {
       x: projection.padding + ((point.lon - projection.minLon) / lonRange) * (projection.width - projection.padding * 2),
-      y: projection.padding + ((projection.maxLat - point.lat) / latRange) * (projection.height - projection.padding * 2)
+      y: projection.padding + ((projection.maxLat - point.lat) / latRange) * (projection.height - projection.padding * 2),
+      segment: point.segment
     };
   }
 
   private projectProfilePoint(point: AnalyzerPoint, width: number, height: number): SvgPoint {
-    const maxDistance = this.points[this.points.length - 1]?.distanceKm || 1;
-    const elevations = this.points.map(item => item.ele);
-    const minEle = Math.min(...elevations);
-    const maxEle = Math.max(...elevations);
+    const maxDistance = this.elevationResult?.distanceKm || 1;
+    const profile = this.elevationResult?.profile ?? [];
+    const nearest = profile.reduce((best, current) => Math.abs(current.distanceKm - point.distanceKm) < Math.abs(best.distanceKm - point.distanceKm) ? current : best, profile[0]);
+    const minEle = this.elevationResult?.min ?? 0;
+    const maxEle = this.elevationResult?.max ?? minEle;
     const range = Math.max(1, maxEle - minEle);
     return {
       x: (point.distanceKm / maxDistance) * width,
-      y: height - ((point.ele - minEle) / range) * height
+      y: height - (((nearest?.ele ?? minEle) - minEle) / range) * height
     };
   }
 
@@ -914,7 +859,7 @@ export class RouteAnalyzerComponent implements OnInit {
   }
 
   private buildSvgPath(points: SvgPoint[]): string {
-    return points.map((point, index) => `${index === 0 ? 'M' : 'L'} ${point.x.toFixed(1)} ${point.y.toFixed(1)}`).join(' ');
+    return points.map((point, index) => `${index === 0 || point.segment !== points[index - 1].segment ? 'M' : 'L'} ${point.x.toFixed(1)} ${point.y.toFixed(1)}`).join(' ');
   }
 
   private distanceMeters(a: { lat: number; lon: number }, b: { lat: number; lon: number }): number {
@@ -933,52 +878,47 @@ export class RouteAnalyzerComponent implements OnInit {
     return Number.isFinite(parsed) ? parsed : null;
   }
 
-  private parseNumber(value: unknown): number {
-    const parsed = Number(String(value ?? '0').trim().replace(',', '.'));
-    return Number.isFinite(parsed) ? parsed : 0;
-  }
-
-  private buildLocalSectors() {
+  private buildLocalSectors(language: AppLanguage) {
     if (!this.stats) return [];
     const third = this.stats.distanceKm / 3;
     return [
       {
-        name: 'Entrada en ruta',
+        name: this.localReportText('localOpening', language),
         kmStart: 0,
         kmEnd: third,
-        focus: 'Ajustar ritmo, leer el terreno y no gastar de más antes de que aparezcan los bloques duros.',
+        focus: this.localReportText('localOpeningFocus', language),
         effort: 'medio' as const
       },
       {
-        name: 'Bloque central',
+        name: this.localReportText('localMiddle', language),
         kmStart: third,
         kmEnd: third * 2,
-        focus: 'Gestionar los repechos señalados y recuperar en cada transición antes de volver a apretar.',
-        effort: this.stats.elevationGain > 700 ? 'alto' as const : 'medio' as const
+        focus: this.localReportText('localMiddleFocus', language),
+        effort: (this.stats.elevationGain ?? 0) > 700 ? 'alto' as const : 'medio' as const
       },
       {
-        name: 'Cierre',
+        name: this.localReportText('localFinish', language),
         kmStart: third * 2,
         kmEnd: this.stats.distanceKm,
-        focus: 'Llegar con margen para responder al cansancio acumulado y no perder fluidez al final.',
+        focus: this.localReportText('localFinishFocus', language),
         effort: 'medio' as const
       }
     ];
   }
 
-  private buildLocalApproaches() {
+  private buildLocalApproaches(language: AppLanguage) {
     return {
       recreational: [
-        'Sal con ritmo cómodo y usa los puntos numerados como referencias para parar, reagrupar o comer algo.',
-        'En las subidas destacadas prioriza cadencia y conversación: si dejas de poder hablar, baja un punto.'
+        this.localReportText('localRecreationOne', language),
+        this.localReportText('localRecreationTwo', language)
       ],
       training: [
-        'Convierte las subidas destacadas en bloques de tempo controlado y recupera en las zonas de enlace.',
-        'No quemes el primer tercio: busca progresión y termina con sensación de haber podido apretar un poco más.'
+        this.localReportText('localTrainingOne', language),
+        this.localReportText('localTrainingTwo', language)
       ],
       competition: [
-        'Reserva los cambios de ritmo para los repechos señalados; son los lugares donde el esfuerzo tiene retorno.',
-        'Reconoce antes las zonas críticas para decidir si atacar, regular o conservar rueda sin improvisar.'
+        this.localReportText('localCompetitionOne', language),
+        this.localReportText('localCompetitionTwo', language)
       ]
     };
   }

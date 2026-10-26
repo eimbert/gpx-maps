@@ -1,4 +1,4 @@
-export type RouteAnalysisType = 'rodadora' | 'tecnica' | 'subida_dura' | 'mixta' | 'suave' | 'exigente';
+export type RouteAnalysisType = 'rodadora' | 'tecnica' | 'subida_dura' | 'mixta' | 'suave' | 'exigente' | 'sin-altimetria';
 
 export type RouteAnalysisHighlightType = 'climb' | 'descent' | 'technical' | 'fast' | 'warning' | 'landmark';
 
@@ -43,6 +43,8 @@ export interface RouteAnalysisApproaches {
 export interface RouteAnalysis {
   id?: number | null;
   trackId?: number | null;
+  source?: 'upload' | 'tracks' | 'plan';
+  folderId?: number | null;
   userId?: number | null;
   gpxHash?: string | null;
   analysisVersion?: string | null;
@@ -55,6 +57,7 @@ export interface RouteAnalysis {
   updatedAt?: string | null;
   title?: string | null;
   fileName?: string | null;
+  reportLanguage?: 'en' | 'es' | 'ca' | 'gl' | 'eu' | null;
   usageCharged?: boolean;
   reusedExisting?: boolean;
   report: RouteAnalysisReport;
@@ -66,15 +69,18 @@ export interface PublicRouteAnalysis extends RouteAnalysis {
 
 export interface RouteAnalysisElevationPoint {
   distanceKm: number;
-  elevationM: number;
+  elevationM: number | null;
 }
 
 export interface RouteAnalysisStats {
   distanceKm: number;
-  elevationGainM: number;
-  elevationLossM: number;
-  minEleM: number;
-  maxEleM: number;
+  elevationGainM: number | null;
+  elevationLossM: number | null;
+  minEleM: number | null;
+  maxEleM: number | null;
+  elevationStatus?: 'ok' | 'partial' | 'unavailable' | null;
+  elevationVersion?: number | null;
+  elevationQuality?: 'A' | 'B' | 'C' | null;
   elevationProfile: RouteAnalysisElevationPoint[];
 }
 
@@ -85,5 +91,6 @@ export interface RouteAnalysisRequest {
   title?: string | null;
   routeXml: string;
   userInstructions?: string | null;
+  reportLanguage?: 'en' | 'es' | 'ca' | 'gl' | 'eu';
   forceRefresh?: boolean;
 }

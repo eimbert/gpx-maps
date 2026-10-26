@@ -22,8 +22,10 @@ export class EventService {
   private readonly routesApiBase = environment.routesApiBase;
   private readonly tracksApiBase = environment.tracksApiBase;
 
-  constructor(private http: HttpClient) {
-    this.refreshEvents().subscribe();
+  constructor(private http: HttpClient) {}
+
+  clearEvents(): void {
+    this.events$.next([]);
   }
 
   getEvents(): Observable<RaceEvent[]> {
@@ -179,6 +181,10 @@ export class EventService {
     );
   }
 
+  getPublicSharedTrackCount(): Observable<number> {
+    return this.http.get<number>(`${this.tracksApiBase}/shared/count`);
+  }
+
   getTrackGpx(trackId: number): Observable<TrackGpxFile> {
     return this.http.get<TrackGpxFile>(`${this.tracksApiBase}/${trackId}/gpx`).pipe(
       map(res => ({
@@ -187,6 +193,10 @@ export class EventService {
         routeXml: res.routeXml ?? null
       }))
     );
+  }
+
+  updateTrackGpx(trackId: number, routeXml: string): Observable<TrackGpxFile> {
+    return this.http.put<TrackGpxFile>(`${this.tracksApiBase}/${trackId}/gpx`, { routeXml });
   }
 
   private loadFallbackEvents(): Observable<RaceEvent[]> {

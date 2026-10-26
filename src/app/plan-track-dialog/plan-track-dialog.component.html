@@ -1,35 +1,36 @@
-<h2 mat-dialog-title>Planificar salida</h2>
+<h2 mat-dialog-title>{{ 'planOuting' | uiText }}</h2>
 
 <div mat-dialog-content class="plan-track-dialog">
-  <p class="plan-track-dialog__hint">Elige si quieres crear una carpeta nueva o añadir este track a una existente.</p>
+  <p class="dialog-description">{{ 'choosePlanFolder' | uiText }}</p>
 
   <label class="plan-track-dialog__option">
     <input type="radio" name="planMode" [(ngModel)]="mode" value="new" />
-    <span>Crear carpeta nueva</span>
+    <span>{{ 'createNewFolder' | uiText }}</span>
   </label>
 
   <div class="plan-track-dialog__block" *ngIf="mode === 'new'">
-    <mat-form-field appearance="fill">
-      <mat-label>Nombre de carpeta</mat-label>
-      <input matInput [(ngModel)]="newFolderName" />
-    </mat-form-field>
+    <label class="auth-field">
+      <span>{{ 'folderName' | uiText }}</span>
+      <input [(ngModel)]="newFolderName" [placeholder]="'outingName' | uiText" />
+    </label>
   </div>
 
   <label class="plan-track-dialog__option">
     <input type="radio" name="planMode" [(ngModel)]="mode" value="existing" />
-    <span>Añadir a carpeta existente</span>
+    <span>{{ 'addExistingFolder' | uiText }}</span>
   </label>
 
   <div class="plan-track-dialog__block" *ngIf="mode === 'existing'">
-    <label class="plan-track-dialog__label" for="existingFolder">Carpeta</label>
-    <select id="existingFolder" [(ngModel)]="selectedFolderId" [disabled]="!data.folders.length">
+    <label class="plan-track-dialog__label" for="existingFolder">{{ 'folder' | uiText }}</label>
+    <select id="existingFolder" [(ngModel)]="selectedFolderId" [disabled]="!data.folders.length"
+      [attr.aria-describedby]="!data.folders.length ? 'plan-folder-hint' : null">
       <option *ngFor="let folder of data.folders" [ngValue]="folder.id">{{ folder.name }}</option>
     </select>
-    <p class="plan-track-dialog__hint" *ngIf="!data.folders.length">No tienes carpetas aún. Crea una nueva.</p>
+    <p class="plan-track-dialog__hint" id="plan-folder-hint" *ngIf="!data.folders.length">{{ 'noFoldersYet' | uiText }}</p>
   </div>
 </div>
 
 <div mat-dialog-actions align="end">
-  <button mat-button type="button" (click)="cancel()">Cancelar</button>
-  <button mat-flat-button color="primary" type="button" [disabled]="!canConfirm" (click)="confirm()">Guardar</button>
+  <button mat-flat-button color="primary" class="plan-track-dialog__save" type="button" [disabled]="!canConfirm" (click)="confirm()">{{ 'save' | uiText }}</button>
+  <button mat-button type="button" (click)="cancel()">{{ 'cancel' | uiText }}</button>
 </div>

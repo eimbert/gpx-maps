@@ -1,47 +1,50 @@
-<h2 mat-dialog-title>Iniciar sesión</h2>
+<h2 mat-dialog-title>{{ t('loginTitle') }}</h2>
 <form #loginForm="ngForm" (ngSubmit)="onSubmit(loginForm)" novalidate>
   <mat-dialog-content>
-    <p class="dialog-description">Introduce tus credenciales para acceder.</p>
+    <p class="dialog-description">{{ t('loginDescription') }}</p>
 
-    <mat-form-field appearance="outline" class="full-width">
-      <mat-label>Correo electrónico</mat-label>
+    <label class="auth-field" for="login-email">
+      <span>{{ t('email') }} <span aria-hidden="true">*</span></span>
       <input
-        matInput
+        id="login-email"
         name="email"
         [(ngModel)]="email"
+        #emailField="ngModel"
         type="email"
         required
+        email
         autocomplete="email"
         placeholder="tu@correo.com"
       />
-      <mat-error>El correo es obligatorio</mat-error>
-    </mat-form-field>
+      <small class="auth-field__error" *ngIf="(emailField.touched || loginForm.submitted) && emailField.invalid">{{ t('validEmail') }}</small>
+    </label>
 
-    <mat-form-field appearance="outline" class="full-width">
-      <mat-label>Contraseña</mat-label>
+    <label class="auth-field" for="login-password">
+      <span>{{ t('password') }} <span aria-hidden="true">*</span></span>
       <input
-        matInput
+        id="login-password"
         name="password"
         [(ngModel)]="password"
+        #passwordField="ngModel"
         type="password"
         required
         minlength="4"
         autocomplete="current-password"
       />
-      <mat-error>Introduce tu contraseña</mat-error>
-    </mat-form-field>
+      <small class="auth-field__error" *ngIf="(passwordField.touched || loginForm.submitted) && passwordField.invalid">{{ t('enterPassword') }}</small>
+    </label>
 
     <button class="forgot-link" type="button" mat-button (click)="openForgotPasswordDialog()">
-      ¿Olvidaste tu contraseña?
+      {{ t('forgotPassword') }}
     </button>
 
     <p *ngIf="errorMessage" class="error">{{ errorMessage }}</p>
   </mat-dialog-content>
 
   <mat-dialog-actions align="end">
-    <button type="button" mat-button (click)="close()">Cancelar</button>
+    <button type="button" mat-button (click)="close()">{{ t('cancel') }}</button>
     <button type="submit" mat-flat-button color="primary" [disabled]="loading">
-      {{ loading ? 'Accediendo...' : 'Iniciar sesión' }}
+      {{ loading ? t('signingIn') : t('loginTitle') }}
     </button>
   </mat-dialog-actions>
 </form>

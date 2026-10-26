@@ -2,6 +2,8 @@ import { Component, Inject } from '@angular/core';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { AuthService } from '../services/auth.service';
 import { RegisterErrorResponse, RegisterSuccessResponse } from '../interfaces/auth';
+import { LanguageService } from '../services/language.service';
+import { homeTranslations, HomeTranslationKey } from '../home/home-translations';
 
 interface VerificationDialogData {
   email: string;
@@ -20,8 +22,11 @@ export class VerificationDialogComponent {
   constructor(
     private dialogRef: MatDialogRef<VerificationDialogComponent>,
     @Inject(MAT_DIALOG_DATA) public data: VerificationDialogData,
-    private authService: AuthService
+    private authService: AuthService,
+    public languageService: LanguageService
   ) {}
+
+  t(key: HomeTranslationKey): string { return homeTranslations[this.languageService.current][key]; }
 
   resendVerification(): void {
     if (this.loading) {
@@ -37,15 +42,15 @@ export class VerificationDialogComponent {
         this.loading = false;
 
         if ((response as RegisterErrorResponse).exitCode && (response as RegisterErrorResponse).exitCode !== 0) {
-          this.errorMessage = (response as RegisterErrorResponse).message || 'No se pudo reenviar el correo de verificación.';
+          this.errorMessage = (response as RegisterErrorResponse).message || this.t('resendDefaultError');
           return;
         }
 
-        this.successMessage = (response as RegisterSuccessResponse).message || 'Te reenviamos el correo de verificación.';
+        this.successMessage = (response as RegisterSuccessResponse).message || this.t('verificationSent');
       },
       error: () => {
         this.loading = false;
-        this.errorMessage = 'No se pudo reenviar el correo de verificación.';
+        this.errorMessage = this.t('resendDefaultError');
       }
     });
   }

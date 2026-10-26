@@ -2,6 +2,8 @@ export interface TrackPointWithElevation {
   lat: number;
   lon: number;
   ele: number;
+  segment?: number;
+  sourceTrack?: number;
 }
 
 export interface ProfileVisual {
@@ -19,7 +21,8 @@ export function buildCumulativeDistances(points: TrackPointWithElevation[]): num
   for (let i = 1; i < points.length; i++) {
     const prev = points[i - 1];
     const current = points[i];
-    const delta = calculateDistance(prev.lat, prev.lon, current.lat, current.lon);
+    const delta = current.segment !== prev.segment || current.sourceTrack !== prev.sourceTrack
+      ? 0 : calculateDistance(prev.lat, prev.lon, current.lat, current.lon);
     distances.push(distances[i - 1] + delta);
   }
   return distances;
@@ -35,8 +38,8 @@ export function buildProfileVisual(
   const elevations = points.map(p => p.ele ?? 0);
   const distances = buildCumulativeDistances(points);
   const initialEle = elevations[0];
-  const minEle = Math.min(...elevations);
-  const maxEle = Math.max(...elevations);
+  const minEle = elevations.reduce((min, elevation) => Math.min(min, elevation), Infinity);
+  const maxEle = elevations.reduce((max, elevation) => Math.max(max, elevation), -Infinity);
   const eleRange = Math.max(1, maxEle - minEle);
   const totalDistance = distances[distances.length - 1];
   const safeWidth = Math.max(1, width);

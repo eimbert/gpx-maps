@@ -1,0 +1,63 @@
+<main class="discovery" [class.discovery--vertical]="vertical">
+  <div #mapContainer class="discovery-map" [attr.aria-label]="'satellite3dView' | uiText"></div>
+  <div class="shade" aria-hidden="true"></div>
+
+  <header class="discovery-header">
+    <button type="button" class="back-button" (click)="goBack()" [attr.aria-label]="'backToTracks' | uiText">
+      <span class="material-icons" aria-hidden="true">arrow_back</span>
+    </button>
+    <div class="route-heading">
+      <span class="eyebrow">TRACKETEO · {{ 'discoverRoute' | uiText }}</span>
+      <h1>{{ name }}</h1>
+      <div class="route-stats" *ngIf="!error">
+        <span>{{ distanceKm | number:'1.1-1' }} km</span>
+        <span *ngIf="gain !== null">↗ {{ gain | number:'1.0-0' }} m<app-elevation-quality [quality]="elevationQuality" [interactive]="false"></app-elevation-quality></span>
+        <span>{{ durationLabel }}</span>
+      </div>
+    </div>
+    <span class="terrain-badge" *ngIf="!error">{{ terrainAvailable ? ('terrain3d' | uiText) : ('satellite' | uiText) }}</span>
+  </header>
+
+  <div class="message-card" *ngIf="error" role="alert">
+    <span class="material-icons" aria-hidden="true">explore</span>
+    <h2>{{ canRetryLoading ? ('landscapeLoadFailed' | uiText) : ('nextRouteStartsHere' | uiText) }}</h2><p>{{ error }}</p>
+    <button *ngIf="canRetryLoading" type="button" class="primary" (click)="retryLoading()">{{ 'retry' | uiText }}</button>
+    <button *ngIf="!canRetryLoading" type="button" class="primary" (click)="goBack()">{{ 'chooseTrack' | uiText }}</button>
+  </div>
+  <div class="message-card" *ngIf="!error && !ready" role="status">
+    <span class="loading-dot" aria-hidden="true"></span><p>{{ 'preparingLandscape' | uiText }}</p>
+  </div>
+
+  <section class="playback" *ngIf="ready && !error" [attr.aria-label]="'routePlayback' | uiText">
+    <p class="notice" *ngIf="notice" role="status">{{ notice }}</p>
+    <div class="place-slot" *ngIf="elapsed > 0 && elapsed < duration - 4">
+      <div class="place-label" [class.place-label--visible]="nearbyPlace" role="status" aria-live="polite" aria-atomic="true">
+        <span class="material-icons" aria-hidden="true" *ngIf="nearbyPlace">place</span>
+        <div *ngIf="nearbyPlace"><span class="eyebrow">{{ 'near' | uiText }}</span><strong>{{ nearbyPlace.name }}</strong></div>
+      </div>
+    </div>
+    <div class="journey-caption">
+      <span class="eyebrow">{{ elapsed >= duration - 4 ? ('routeDiscovered' | uiText) : elapsed === 0 ? ('anotherWayToSee' | uiText) : ('followRoute' | uiText) }}</span>
+      <h2 *ngIf="elapsed === 0">{{ 'landscapeLeads' | uiText }}</h2>
+      <h2 *ngIf="elapsed >= duration - 4">{{ 'everyTurnPerspective' | uiText }}</h2>
+    </div>
+    <div class="profile" *ngIf="profilePoints" [attr.aria-label]="'elevationProfile' | uiText">
+      <svg viewBox="0 0 600 70" preserveAspectRatio="none" aria-hidden="true">
+        <polyline [attr.points]="profilePoints" fill="none" stroke="currentColor" stroke-width="2" vector-effect="non-scaling-stroke"></polyline>
+        <line [attr.x1]="progress * 600" [attr.x2]="progress * 600" y1="0" y2="70" stroke="white" stroke-width="1"></line>
+      </svg>
+    </div>
+    <div class="playback-row">
+      <button type="button" class="primary" [disabled]="preparing" (click)="playing ? pause() : play()">
+        <span class="material-icons" aria-hidden="true">{{ playing ? 'pause' : completed ? 'replay' : 'play_arrow' }}</span>
+        {{ preparing ? ('preparing' | uiText) : playing ? ('pause' | uiText) : completed ? ('rediscover' | uiText) : elapsed > 0 ? ('continue' | uiText) : ('discoverRoute' | uiText) }}
+      </button>
+      <div class="progress-info">
+        <div class="progress-label"><span>{{ progress * distanceKm | number:'1.1-1' }} / {{ distanceKm | number:'1.1-1' }} km</span><span>{{ progress * 100 | number:'1.0-0' }}%</span></div>
+        <div class="progress-track" role="progressbar" [attr.aria-label]="'discoveredDistance' | uiText" [attr.aria-valuenow]="progress * 100" aria-valuemin="0" aria-valuemax="100"><span [style.width.%]="progress * 100"></span></div>
+      </div>
+      <span class="recording-badge" *ngIf="recorder.isRecording"><i></i> REC</span>
+    </div>
+  </section>
+  <app-animation-gate [gate]="gate" (back)="goBack()"></app-animation-gate>
+</main>

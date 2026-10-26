@@ -16,6 +16,7 @@ export interface EventModality {
 }
 
 export interface EventTrack {
+  elevationQuality?: 'A' | 'B' | 'C' | null;
   id: number;
   routeId?: number | null;
   year?: number | null;

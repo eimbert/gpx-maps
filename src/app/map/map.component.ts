@@ -1,17 +1,23 @@
-import { Component, OnInit, AfterViewInit, HostListener } from '@angular/core';
+import { workspaceReturnUrl } from '../utils/workspace-return';
+import { Component, OnInit, AfterViewInit, OnDestroy, HostListener, NgZone } from '@angular/core';
+import { EditableGpxPoint, readEditableGpx, writeEditableGpx } from '../utils/editable-gpx';
+import { calculateElevation, calculateGpxElevation } from '../utils/gpx-elevation';
+import { calculateTrackSlopes, slopeColor, SLOPE_SCALE } from '../utils/track-slopes';
 import { ActivatedRoute, Router } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
-import { firstValueFrom } from 'rxjs';
+import { firstValueFrom, Observable } from 'rxjs';
 
 import maplibregl, { GeoJSONSource, Map as MapLibreMap } from 'maplibre-gl';
 import { RecorderService } from '../recording/recorder.service';
 import { PlanService } from '../services/plan.service';
 import { MapPayloadTransferService } from '../services/map-payload-transfer.service';
 import { EventTrack, RaceEvent } from '../interfaces/events';
-import { environment } from '../../environments/environment';
 import { ProfileVisual, TrackPointWithElevation, buildCumulativeDistances, buildProfileVisual } from '../utils/profile-visual';
+import { AnimationAccessService, AnimationGate } from '../services/animation-access.service';
+import { AuthService } from '../services/auth.service';
+import { EventService } from '../services/event.service';
 
-interface TrackPoint { lat: number; lon: number; ele: number; time: string; }
+interface TrackPoint extends EditableGpxPoint { }
 interface TPx extends TrackPoint { t: number; }
 
 interface PauseInterval {
@@ -43,6 +49,7 @@ interface TrackMeta {
   endpointLabelMarkers?: maplibregl.Marker[];
   fullSvgPath?: SVGPathElement;
   progSvgPath?: SVGPathElement;
+  slopeSvgGroups?: { path: SVGPathElement; segments: TrackPoint[][] }[];
   pauses: PauseInterval[];
   pauseMarkers?: maplibregl.Marker[];
   cursor: number;
@@ -78,9 +85,9 @@ interface IndexedTrackPoint {
 @Component({
   selector: 'app-map',
   templateUrl: './map.component.html',
-  styleUrls: ['./map.component.css']
+  styleUrls: ['./map.component.css', './playback-design.css']
 })
-export class MapComponent implements OnInit, AfterViewInit {
+export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
 
   private map!: MapLibreMap;
   private mapReady = false;
@@ -108,8 +115,6 @@ export class MapComponent implements OnInit, AfterViewInit {
   private countdownAudio!: HTMLAudioElement;
   isVerticalViewport = false;
   isMobileViewport = false;
-  showRanking = false;
-  ranking: RankingEntry[] = [];
 
   private visualizationMode: 'general' | 'zoomCabeza' = 'general';
   private zoomPhase: 'focus' | 'overview' = 'focus';
@@ -145,11 +150,23 @@ export class MapComponent implements OnInit, AfterViewInit {
   private readonly slopeColorVeryHard = '#dc2626';
 
   trackMetas: TrackMeta[] = [];
+  readonly slopeScale = SLOPE_SCALE;
+  private ascentCachePoints?: TrackPoint[];
+  private ascentCacheLabel = '—';
+  editorElevationQuality: string | null = null;
   private relMs = 0;
   private rafId = 0;
   private started = false;
+  racePaused = false;
+  comparisonOptionsOpen = false;
+  comparisonProfileVisible = false;
+  gate: AnimationGate | null = null;
+  private accessGranted = false;
+  private checkingAccess = false;
 
   showUniformSpeedDialog = false;
+  showRanking = false;
+  ranking: RankingEntry[] = [];
 
   profileEnabled = true;
   profileVisual: ProfileVisual | null = null;
@@ -207,6 +224,27 @@ export class MapComponent implements OnInit, AfterViewInit {
   private baseLayerSourceId = 'base-raster-source';
   viewOnly = false;
   editMode = false;
+  editTool: 'move' | 'insert' | 'extend' | 'range' | 'erase' = 'move';
+  readonly editorTools = [
+    { id: 'move', icon: 'open_with', label: 'Mover', hint: 'Arrastra los puntos de control para ajustar el trazado.' },
+    { id: 'insert', icon: 'add_circle_outline', label: 'Insertar', hint: 'Pulsa sobre la línea para insertar un punto. Después puedes arrastrarlo.' },
+    { id: 'extend', icon: 'edit', label: 'Ampliar', hint: 'Pulsa en el mapa para continuar desde el final del recorrido.' },
+    { id: 'range', icon: 'content_cut', label: 'Tramo', hint: 'Marca el inicio y el final del tramo. Revisa la selección antes de aplicar una acción.' },
+    { id: 'erase', icon: 'backspace', label: 'Borrar', hint: 'Pulsa cerca de un punto para eliminarlo. Deshacer recupera el cambio.' }
+  ] as const;
+  editorPanelOpen = true;
+  editRouting: 'direct' | 'paths' = 'direct';
+  editBikeProfile = 'cycling-mountain';
+  isRoutingEdit = false;
+  editSelectedIndex: number | null = null;
+  editRangeEndIndex: number | null = null;
+  simplifyTolerance = 5;
+  private editRedoStack: TrackPoint[][] = [];
+  private editDirty = false;
+  private editorDestroyed = false;
+  private editDragActive = false;
+  private suppressMapClickUntil = 0;
+  private editSelectionPath?: SVGPathElement;
   editDeleteMode: EditDeleteMode = 'radius';
   editDeleteRadiusMeters = 15;
   readonly editDeleteRadiusOptions = [5, 10, 15, 25, 50];
@@ -214,6 +252,8 @@ export class MapComponent implements OnInit, AfterViewInit {
   editStatusMessage: string | null = null;
   private editStatusTimeout: number | null = null;
   private editableTrackId: number | null = null;
+  private editableTrackSource: 'archive' | 'plan' = 'plan';
+  private editableTrackAllowed = true;
   private originalTrackPoints: TrackPoint[] | null = null;
   private originalRouteXml: string | null = null;
   private originalPointsSnapshot: string | null = null;
@@ -221,7 +261,7 @@ export class MapComponent implements OnInit, AfterViewInit {
   private editIndexedPoints: IndexedTrackPoint[] = [];
   editSimplifiedPointCount = 0;
   private editUndoStack: TrackPoint[][] = [];
-  private editRangeStartIndex: number | null = null;
+  editRangeStartIndex: number | null = null;
   private editRangeStartMarker: maplibregl.Marker | null = null;
   isLocatingUser = false;
   private userLocationMarker: maplibregl.Marker | null = null;
@@ -232,19 +272,27 @@ export class MapComponent implements OnInit, AfterViewInit {
     public rec: RecorderService,
     private http: HttpClient,
     private planService: PlanService,
-    private mapPayloadTransfer: MapPayloadTransferService) { }
+    private mapPayloadTransfer: MapPayloadTransferService,
+    private animationAccess: AnimationAccessService,
+    private authService: AuthService,
+    private eventService: EventService,
+    private zone: NgZone) { }
 
   goBack(): void {
+    if (this.isSavingEdits || this.isRoutingEdit) return;
+    if (this.hasEditChanges && !window.confirm('Hay cambios sin guardar. ¿Quieres salir y descartarlos?')) return;
+    const returnTo = workspaceReturnUrl(this.route.snapshot.queryParamMap.get('returnTo'));
+    if (returnTo) { void this.router.navigateByUrl(returnTo); return; }
     const origin = this.route.snapshot.queryParamMap.get('from');
     const folderId = this.route.snapshot.queryParamMap.get('folderId');
 
     if (origin === 'events') {
-      this.router.navigate(['/events']);
+      this.router.navigate(['/load'], { queryParams: { view: 'archive' } });
       return;
     }
 
-    if (origin === 'routes') {
-      this.router.navigate(['/load'], { queryParams: { mode: 'routes' } });
+    if (origin === 'routes' || origin === 'archive') {
+      this.router.navigate(['/load'], { queryParams: { mode: 'routes', view: origin === 'archive' ? 'archive' : 'animate' } });
       return;
     }
 
@@ -415,6 +463,15 @@ export class MapComponent implements OnInit, AfterViewInit {
     const parsed = validCoords.map(p => ({ ...p, t: this.ms(p.time) }));
     const withTime = parsed.filter(p => Number.isFinite(p.t));
 
+    // A 2D editor must retain source order and every point, including newly drawn points without times.
+    if (this.viewOnly) {
+      let elapsed = 0;
+      const allTimedInOrder = withTime.length === parsed.length && withTime.every((p, i) => !i || p.t >= withTime[i - 1].t);
+      return parsed.map((point, index) => {
+        if (index) elapsed += this.distanceBetween(parsed[index - 1], point) / this.fallbackUniformSpeedMs * 1000;
+        return { ...point, t: allTimedInOrder ? point.t : elapsed };
+      });
+    }
     if (withTime.length >= 2) {
       const xs = withTime.sort((a, b) => a.t - b.t);
       const out: TPx[] = [xs[0]];
@@ -487,36 +544,11 @@ export class MapComponent implements OnInit, AfterViewInit {
 
 
   private resolveDisplayColor(candidate: string | undefined, index: number): string {
-    const fallback = this.defaultColors[index % this.defaultColors.length];
-    if (!candidate) return fallback;
-    return this.isReservedTrackColor(candidate) ? fallback : candidate;
-  }
-
-  private isReservedTrackColor(color: string): boolean {
-    const normalized = color.trim().toLowerCase();
-    if (!normalized) return true;
-
-    if (normalized.startsWith('#')) {
-      const hex = normalized.slice(1);
-      const fullHex = hex.length === 3 ? hex.split('').map((ch) => ch + ch).join('') : hex;
-      if (fullHex.length !== 6) return true;
-      const r = parseInt(fullHex.slice(0, 2), 16);
-      const g = parseInt(fullHex.slice(2, 4), 16);
-      const b = parseInt(fullHex.slice(4, 6), 16);
-      if ([r, g, b].some((value) => Number.isNaN(value))) return true;
-      const max = Math.max(r, g, b);
-      const min = Math.min(r, g, b);
-      const delta = max - min;
-      if (delta === 0) return false;
-      let hue = 0;
-      if (max === r) hue = ((g - b) / delta) % 6;
-      else if (max === g) hue = (b - r) / delta + 2;
-      else hue = (r - g) / delta + 4;
-      const hueDeg = (hue * 60 + 360) % 360;
-      return hueDeg <= 70 || hueDeg >= 330 || (hueDeg >= 80 && hueDeg <= 170);
-    }
-
-    return /(red|orange|yellow|amber|gold|green|lime|olive)/.test(normalized);
+    const color = candidate?.trim();
+    // Explicit user choices also apply to greens, reds and yellows. Slope colors
+    // belong to their own optional overlay and must not replace track colors.
+    return color && CSS.supports('color', color)
+      ? color : this.defaultColors[index % this.defaultColors.length];
   }
 
   private applySanitization(): void {
@@ -525,11 +557,11 @@ export class MapComponent implements OnInit, AfterViewInit {
       let pauses: PauseInterval[] = [];
       const pauseThresholdMs = Math.max(1, this.pauseThresholdSeconds) * 1000;
 
-      if (this.removeStops) {
+      if (this.removeStops && !this.viewOnly) {
         const result = this.removeStopsAdaptive(sanitized, pauseThresholdMs);
         sanitized = result.track;
         pauses = this.markLongPauses ? result.pauses.filter(p => p.durationMs >= pauseThresholdMs) : [];
-      } else if (this.markLongPauses) {
+      } else if (this.markLongPauses && !this.viewOnly) {
         pauses = this.removeStopsAdaptive(sanitized, pauseThresholdMs).pauses
           .filter(p => p.durationMs >= pauseThresholdMs);
       }
@@ -563,7 +595,7 @@ export class MapComponent implements OnInit, AfterViewInit {
 
     const meta = this.trackMetas[this.profileTrackIndex];
     this.profileTrackColor = meta?.color ?? '#f97316';
-    if (!meta || !meta.sanitized.length || meta.totalDistance <= 0) {
+    if (!meta || !meta.sanitized.length || meta.totalDistance <= 0 || (this.viewOnly && meta.sanitized.some(point => !Number.isFinite(point.ele)))) {
       this.profileVisual = null;
       this.profileCursorX = 0;
       return;
@@ -667,6 +699,7 @@ export class MapComponent implements OnInit, AfterViewInit {
     this.profileCursorX = clampedRatio * this.profileWidth;
     const position = this.positionAtDistance(meta, distance);
     meta.hoverMark?.setLngLat(position).addTo(this.map);
+    this.setMarkerVisible(meta.hoverMark, meta.visible);
   }
 
   onProfileHoverEnd(): void {
@@ -719,14 +752,28 @@ export class MapComponent implements OnInit, AfterViewInit {
       this.mapPayloadTransfer.clear();
       this.clearWindowNamePayload();
       this.viewOnly = !!payload.viewOnly;
+      if (this.viewOnly && !this.baseLayerOptions.some(option => option.id === 'ign-topo')) {
+        this.baseLayerOptions.unshift({ id: 'ign-topo', name: 'Topográfico IGN · España', maxZoom: 20,
+          url: 'https://www.ign.es/wmts/mapa-raster?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=MTN&STYLE=default&TILEMATRIXSET=GoogleMapsCompatible&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}&FORMAT=image/jpeg',
+          attribution: '© <a href="https://www.ign.es" target="_blank" rel="noopener">Instituto Geográfico Nacional</a>' });
+      }
       this.editableTrackId = Number.isFinite(Number(payload.trackId)) ? Number(payload.trackId) : null;
+      this.editableTrackSource = payload.trackSource === 'archive' ? 'archive' : 'plan';
+      this.editableTrackAllowed = payload.allowEditing !== false;
       this.originalRouteXml = typeof payload.routeXml === 'string' ? payload.routeXml : null;
       this.names = Array.isArray(payload.names) ? payload.names : [];
       this.colors = Array.isArray(payload.colors) ? payload.colors : [];
       const trks = Array.isArray(payload.tracks) ? payload.tracks : [];
       this.trackMetas = this.buildMetas(this.names, this.colors, trks);
+      if (this.viewOnly && this.originalRouteXml && this.trackMetas.length === 1) {
+        const editable = readEditableGpx(this.originalRouteXml);
+        if (editable.length >= 2) this.trackMetas[0].raw = editable;
+        this.desktopTimesVisible = false;
+        this.mobileTimesVisible = false;
+        this.editorPanelOpen = !this.isMobileViewport;
+      }
       if (trks.length && Array.isArray(trks[0]?.trkpts)) {
-        const originalPoints = trks[0].trkpts.map((point: TrackPoint) => ({ ...point }));
+        const originalPoints = this.trackMetas[0].raw.map((point: TrackPoint) => ({ ...point }));
         this.originalTrackPoints = originalPoints;
         this.originalPointsSnapshot = this.serializeTrackPoints(originalPoints);
       }
@@ -743,7 +790,7 @@ export class MapComponent implements OnInit, AfterViewInit {
         this.recordingAspect = '9:16';
       }
       this.visualizationMode = payload.modoVisualizacion === 'zoomCabeza' ? 'zoomCabeza' : 'general';
-      this.profileEnabled = payload.mostrarPerfil ?? true;
+      this.profileEnabled = this.viewOnly ? true : payload.mostrarPerfil ?? true;
       this.mobileProfileVisible = this.profileEnabled;
       this.desktopProfileVisible = this.profileEnabled;
       this.isVerticalViewport = this.recordingAspect === '9:16';
@@ -784,6 +831,7 @@ export class MapComponent implements OnInit, AfterViewInit {
     if (!this.profileEnabled) {
       return false;
     }
+    if (this.isComparisonView) return this.comparisonProfileVisible && !!this.profileVisual;
     if (!this.isMobileViewport) {
       return this.desktopProfileVisible;
     }
@@ -878,6 +926,30 @@ export class MapComponent implements OnInit, AfterViewInit {
     return this.rafId !== 0;
   }
 
+  get isComparisonView(): boolean {
+    return !this.viewOnly && this.trackMetas.length > 1;
+  }
+
+  get raceElapsedMs(): number {
+    return this.relMs;
+  }
+
+  get canPauseRace(): boolean {
+    return this.isComparisonView && this.started && !this.showStartOverlay && !this.showRanking && !this.gate && this.rafId !== 0;
+  }
+
+  toggleRacePause(): void {
+    if (!this.canPauseRace) return;
+    this.racePaused = !this.racePaused;
+    if (this.racePaused) {
+      this.audio?.pause();
+      this.rec.pauseCapture();
+    } else {
+      if (this.musicEnabled) void this.audio?.play().catch(() => { /* La animación continúa sin música. */ });
+      this.rec.resumeCapture();
+    }
+  }
+
   private applyTimesLayerVisibility(): void {
     if (!this.map) return;
     const showTimes = this.shouldShowTimes;
@@ -891,12 +963,23 @@ export class MapComponent implements OnInit, AfterViewInit {
   onTrackVisibilityToggle(trackIndex: number, checked: boolean): void {
     const meta = this.trackMetas[trackIndex];
     if (!meta) return;
+    if (this.viewOnly && !checked && meta.visible && this.visibleTrackCount <= 1) return;
     meta.visible = checked;
+    if (this.viewOnly && !checked && trackIndex === this.primaryTrackIndex) {
+      for (let offset = 1; offset < this.trackMetas.length; offset++) {
+        const next = (trackIndex + offset) % this.trackMetas.length;
+        if (this.trackMetas[next].visible) {
+          this.selectPrimaryTrack(next);
+          break;
+        }
+      }
+    }
     if (!this.map) return;
+    this.setTrackLayerVisibility(meta, checked);
 
     [meta.mark, meta.startMark, meta.endMark, meta.hoverMark, ...(meta.endpointLabelMarkers ?? [])]
       .forEach(marker => this.setMarkerVisible(marker, checked));
-    [meta.fullSvgPath, meta.progSvgPath].forEach(path => {
+    [meta.fullSvgPath, meta.progSvgPath, ...(meta.slopeSvgGroups ?? []).map(group => group.path)].forEach(path => {
       if (!path) return;
       path.style.display = checked ? '' : 'none';
     });
@@ -912,19 +995,239 @@ export class MapComponent implements OnInit, AfterViewInit {
 
   get canEditTrack(): boolean {
     return this.viewOnly
+      && this.editableTrackAllowed
       && this.trackMetas.length === 1
       && Number.isFinite(this.editableTrackId ?? NaN)
       && !!this.originalRouteXml;
   }
 
   get hasEditChanges(): boolean {
-    if (!this.canEditTrack) return false;
-    const raw = this.trackMetas[0]?.raw ?? [];
-    return this.serializeTrackPoints(raw) !== this.originalPointsSnapshot;
+    return this.canEditTrack && this.editDirty;
   }
 
   get canUndoEdit(): boolean {
-    return this.editUndoStack.length > 0 && !this.isSavingEdits;
+    return this.editUndoStack.length > 0 && !this.isSavingEdits && !this.isRoutingEdit;
+  }
+
+  get canRedoEdit(): boolean { return this.editRedoStack.length > 0 && !this.isSavingEdits && !this.isRoutingEdit; }
+  get editorHint(): string { return this.getEditHintMessage(); }
+  get selectedRangeCount(): number {
+    return this.editRangeStartIndex !== null && this.editRangeEndIndex !== null
+      ? this.editRangeEndIndex - this.editRangeStartIndex + 1 : 0;
+  }
+  get primaryTrackIndex(): number { return this.profileTrackIndex; }
+  get visibleTrackCount(): number { return this.trackMetas.filter(meta => meta.visible).length; }
+  private get primaryTrack(): TrackMeta | undefined { return this.trackMetas[this.profileTrackIndex] ?? this.trackMetas[0]; }
+
+  selectPrimaryTrack(index: number): void {
+    if (!this.viewOnly || !this.trackMetas[index]?.visible || index === this.profileTrackIndex) return;
+    this.setMarkerVisible(this.primaryTrack?.hoverMark, false);
+    this.profileTrackIndex = index;
+    this.profileDragging = false;
+    this.profilePointerId = null;
+    this.updateProfileVisual();
+    const meta = this.trackMetas[index];
+    if (this.map && meta.sanitized.length && meta.totalDistance > 0) this.syncProfilePosition(meta, 0);
+  }
+
+  get editorDistanceLabel(): string { return this.formatDistance(this.primaryTrack?.totalDistance ?? 0); }
+  get editorAscentLabel(): string {
+    const points = this.primaryTrack?.raw ?? [];
+    if (points === this.ascentCachePoints) return this.ascentCacheLabel;
+    this.ascentCachePoints = points;
+    if (points.length < 2) { this.editorElevationQuality = null; return this.ascentCacheLabel = '—'; }
+    let segment = 0;
+    const elevation = this.originalRouteXml && this.trackMetas.length === 1 && !this.editDirty
+      ? calculateGpxElevation(this.originalRouteXml)
+      : calculateElevation(points.map((point, index) => {
+      const previous = points[index - 1];
+      if (previous && (previous.segment !== point.segment || previous.sourceTrack !== point.sourceTrack)) segment++;
+      return { lat: point.lat, lon: point.lon, ele: Number.isFinite(point.ele) ? point.ele : null, segment };
+    }));
+    this.editorElevationQuality = elevation.quality;
+    const gain = elevation.gain;
+    return this.ascentCacheLabel = gain === null ? '—' : `${gain} m`;
+  }
+  get editorTrackName(): string { return this.primaryTrack?.name || 'Tu recorrido'; }
+  get editorPointCount(): number { return this.trackMetas[0]?.raw.length ?? 0; }
+  get selectedPoint(): TrackPoint | null { return this.editSelectedIndex === null ? null : this.trackMetas[0]?.raw[this.editSelectedIndex] ?? null; }
+  get editorProfileVisible(): boolean { return this.isMobileViewport ? this.mobileProfileVisible : this.desktopProfileVisible; }
+
+  setEditorTool(tool: 'move' | 'insert' | 'extend' | 'range' | 'erase'): void {
+    if (!this.canEditTrack || this.isSavingEdits || this.isRoutingEdit) return;
+    this.editMode = true;
+    this.editTool = tool;
+    this.clearEditRangeSelection();
+    this.updateEditPointsLayer();
+    if (tool === 'range') this.editorPanelOpen = true;
+  }
+
+  redoLastEdit(): void {
+    if (!this.canRedoEdit) return;
+    const next = this.editRedoStack.pop();
+    if (!next) return;
+    this.editUndoStack.push(this.trackMetas[0].raw.map(point => ({ ...point })));
+    this.clearEditRangeSelection();
+    this.updateTrackRaw(0, next);
+    this.applySanitization();
+    this.setEditStatusMessage('Cambio rehecho.');
+  }
+
+  private commitEditorChange(points: TrackPoint[], message: string): void {
+    if (this.editorDestroyed || this.isSavingEdits || points.length < 2) return;
+    this.pushEditUndoSnapshot(this.trackMetas[0].raw);
+    this.clearEditRangeSelection();
+    this.updateTrackRaw(0, points);
+    this.applySanitization();
+    this.applyTimesLayerVisibility();
+    this.setEditStatusMessage(message);
+  }
+
+  applyRangeEdit(keep: boolean): void {
+    if (!this.selectedRangeCount || this.isSavingEdits || this.isRoutingEdit) return;
+    const raw = this.trackMetas[0].raw;
+    const start = this.editRangeStartIndex!, end = this.editRangeEndIndex!;
+    // Keep the boundary points when deleting a section, so the gap is explicit and reversible.
+    const updated = keep ? raw.slice(start, end + 1) : raw.filter((_, index) => index <= start || index >= end);
+    if (updated.length === raw.length) { this.setEditStatusMessage('Selecciona un tramo con puntos interiores.'); return; }
+    this.commitEditorChange(updated, keep ? 'Recorrido recortado al tramo seleccionado.' : 'Interior del tramo eliminado. Los extremos quedan unidos en línea recta.');
+  }
+
+  deleteEditablePoint(index: number | null = this.editSelectedIndex): void {
+    if (index === null || this.isSavingEdits || this.isRoutingEdit) return;
+    const raw = this.trackMetas[0].raw;
+    if (raw.length <= 2) { this.setEditStatusMessage('El recorrido necesita al menos dos puntos.'); return; }
+    this.commitEditorChange(raw.filter((_, i) => i !== index), 'Punto eliminado.');
+  }
+
+  reverseEditableTrack(): void {
+    if (!this.editMode || this.isSavingEdits || this.isRoutingEdit) return;
+    this.commitEditorChange([...this.trackMetas[0].raw].reverse().map(point => ({ ...point, time: '' })),
+      'Sentido invertido. Se han retirado los tiempos originales del recorrido.');
+  }
+
+  private newEditorPoint(base: TrackPoint, lat: number, lon: number, ele = base.ele): TrackPoint {
+    return { lat, lon, ele, time: '', sourceTrack: base.sourceTrack, segment: base.segment, estimatedElevation: true };
+  }
+
+  private insertEditablePoint(event: maplibregl.MapMouseEvent): void {
+    const raw = this.trackMetas[0].raw;
+    let best: { index: number; distance: number; ratio: number; x: number; y: number } | null = null;
+    for (let i = 1; i < raw.length; i++) {
+      if (raw[i].segment !== raw[i - 1].segment || raw[i].sourceTrack !== raw[i - 1].sourceTrack) continue;
+      const a = this.map.project(this.toLngLat(raw[i - 1])), b = this.map.project(this.toLngLat(raw[i]));
+      const dx = b.x - a.x, dy = b.y - a.y, length = dx * dx + dy * dy;
+      const ratio = length ? Math.max(0, Math.min(1, ((event.point.x - a.x) * dx + (event.point.y - a.y) * dy) / length)) : 0;
+      const x = a.x + dx * ratio, y = a.y + dy * ratio;
+      const distance = Math.hypot(x - event.point.x, y - event.point.y);
+      if (!best || distance < best.distance) best = { index: i, distance, ratio, x, y };
+    }
+    if (!best || best.distance > (this.isMobileViewport ? 30 : 20)) {
+      this.setEditStatusMessage('Pulsa sobre el trazado para insertar un punto.'); return;
+    }
+    const location = this.map.unproject([best.x, best.y]);
+    const prev = raw[best.index - 1], next = raw[best.index];
+    const ele = prev.ele + (next.ele - prev.ele) * best.ratio;
+    const point = this.newEditorPoint(prev, location.lat, location.lng, ele);
+    const updated = [...raw.slice(0, best.index), point, ...raw.slice(best.index)];
+    this.commitEditorChange(updated, 'Punto insertado. Puedes arrastrarlo para ajustar el recorrido.');
+    this.editSelectedIndex = best.index;
+    this.updateEditPointsLayer();
+  }
+
+  private async extendEditableTrack(lat: number, lon: number): Promise<void> {
+    const raw = this.trackMetas[0].raw, last = raw[raw.length - 1];
+    if (this.distanceBetween(last, { lat, lon }) < 1) return;
+    const target = this.newEditorPoint(last, lat, lon);
+    if (this.editRouting === 'direct') {
+      this.commitEditorChange([...raw, target], 'Recorrido ampliado en línea recta.');
+    } else {
+      const routed = await this.routeEditorPoints([last, target]);
+      if (routed) this.commitEditorChange([...raw.slice(0, -1), ...routed], 'Recorrido ampliado siguiendo caminos.');
+    }
+  }
+
+  private async moveEditablePoint(index: number, lat: number, lon: number): Promise<void> {
+    if (this.isSavingEdits || this.isRoutingEdit) return;
+    const raw = this.trackMetas[0].raw, current = raw[index];
+    if (!current || this.distanceBetween(current, { lat, lon }) < .1) return;
+    const moved = this.newEditorPoint(current, lat, lon);
+    if (this.editRouting === 'direct') {
+      this.commitEditorChange(raw.map((point, i) => i === index ? moved : point), 'Punto movido. Altitud estimada a partir del track original.');
+    } else {
+      const handles = this.simplifyIndexedTrackPoints(raw.map((point, i) => ({ point, index: i })), 15);
+      const sameSegment = handles.filter(handle => handle.point.segment === current.segment && handle.point.sourceTrack === current.sourceTrack);
+      const before = [...sameSegment].reverse().find(handle => handle.index < index);
+      const after = sameSegment.find(handle => handle.index > index);
+      const start = before?.index ?? index, end = after?.index ?? index;
+      const controls = [...(before ? [before.point] : []), moved, ...(after ? [after.point] : [])];
+      const routed = controls.length >= 2 ? await this.routeEditorPoints(controls) : null;
+      if (routed) this.commitEditorChange([...raw.slice(0, start), ...routed, ...raw.slice(end + 1)], 'Tramos vecinos recalculados por caminos.');
+      else this.updateEditPointsLayer();
+    }
+  }
+
+  private async routeEditorPoints(points: TrackPoint[]): Promise<TrackPoint[] | null> {
+    this.isRoutingEdit = true;
+    this.updateEditPointsLayer();
+    this.setEditStatusMessage('Buscando un trazado por caminos…');
+    try {
+      const result = await firstValueFrom(this.planService.routeEditorSection({ profile: this.editBikeProfile,
+        coordinates: points.map(point => [point.lon, point.lat]) }));
+      if (this.editorDestroyed) return null;
+      if (!result.coordinates || result.coordinates.length < 2 || result.coordinates.some(p => p.length < 2 || !Number.isFinite(p[0]) || !Number.isFinite(p[1]))) throw new Error('Invalid geometry');
+      return result.coordinates.map(p => ({ ...this.newEditorPoint(points[0], p[1], p[0], Number.isFinite(p[2]) ? p[2] : points[0].ele), estimatedElevation: !Number.isFinite(p[2]) }));
+    } catch (error) {
+      if (!this.editorDestroyed) this.setEditStatusMessage('No se pudo calcular el tramo por caminos. El trazado se conserva; puedes reintentar o elegir Línea recta.');
+      return null;
+    } finally {
+      this.isRoutingEdit = false;
+      if (!this.editorDestroyed) this.updateEditPointsLayer();
+    }
+  }
+
+  fitEditorTrack(): void {
+    if (this.allTracksBounds) this.map.fitBounds(this.allTracksBounds, { ...this.computeFitOptions(), maxZoom: 17, duration: 450 });
+  }
+  toggleEditorProfile(): void {
+    if (this.isMobileViewport) this.onMobileProfileToggle(!this.mobileProfileVisible);
+    else this.onDesktopProfileToggle(!this.desktopProfileVisible);
+  }
+  zoomEditor(delta: number): void { this.map?.zoomTo(this.map.getZoom() + delta, { duration: 200 }); }
+
+  downloadEditedGpx(): void {
+    if (!this.originalRouteXml) return;
+    const xml = this.buildGpxFromPoints(this.trackMetas[0].raw, this.trackMetas[0].name);
+    const url = URL.createObjectURL(new Blob([xml], { type: 'application/gpx+xml' }));
+    const link = document.createElement('a'); link.href = url;
+    link.download = this.trackMetas[0].name.replace(/\.gpx$/i, '') + '.gpx'; link.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+
+  @HostListener('window:beforeunload', ['$event'])
+  preventEditorDataLoss(event: BeforeUnloadEvent): void {
+    if (this.hasEditChanges) { event.preventDefault(); event.returnValue = ''; }
+  }
+
+  @HostListener('window:keydown', ['$event'])
+  onEditorKey(event: KeyboardEvent): void {
+    if (!this.viewOnly || !this.canEditTrack || (event.target as HTMLElement)?.closest('input,select,textarea,[contenteditable=true]')) return;
+    if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 's') { event.preventDefault(); this.saveEdits(); }
+    if (!this.editMode || this.isSavingEdits || this.isRoutingEdit) return;
+    if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'z') { event.preventDefault(); event.shiftKey ? this.redoLastEdit() : this.undoLastEdit(); }
+    if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'y') { event.preventDefault(); this.redoLastEdit(); }
+    if (event.key === 'Escape') { this.clearEditRangeSelection(); this.updateEditPointsLayer(); }
+    if (event.key === 'Delete' && this.editSelectedIndex !== null) { event.preventDefault(); this.deleteEditablePoint(); }
+  }
+
+  ngOnDestroy(): void {
+    this.editorDestroyed = true;
+    this.clearEditStatusMessage();
+    this.clearCountdownTimer();
+    this.clearTransientTickTimeouts();
+    if (this.rafId) cancelAnimationFrame(this.rafId);
+    this.audio?.pause(); this.countdownAudio?.pause();
+    this.map?.remove();
   }
 
   get editPointReductionLabel(): string | null {
@@ -941,7 +1244,7 @@ export class MapComponent implements OnInit, AfterViewInit {
   }
 
   toggleEditMode(): void {
-    if (!this.canEditTrack) return;
+    if (!this.canEditTrack || this.isSavingEdits || this.isRoutingEdit) return;
     this.editMode = !this.editMode;
     if (this.editMode) {
       this.setEditStatusMessage(this.getEditHintMessage());
@@ -982,14 +1285,15 @@ export class MapComponent implements OnInit, AfterViewInit {
     if (!this.canUndoEdit || !this.canEditTrack) return;
     const previous = this.editUndoStack.pop();
     if (!previous) return;
+    this.editRedoStack.push(this.trackMetas[0].raw.map(point => ({ ...point })));
     this.updateTrackRaw(0, previous.map(point => ({ ...point })));
     this.clearEditRangeSelection();
     this.applySanitization();
-    this.setEditStatusMessage('Último borrado deshecho.');
+    this.setEditStatusMessage('Cambio deshecho.');
   }
 
   simplifyEditableTrack(): void {
-    if (!this.canEditTrack || this.isSavingEdits) return;
+    if (!this.canEditTrack || this.isSavingEdits || this.isRoutingEdit) return;
     const meta = this.trackMetas[0];
     const raw = meta?.raw ?? [];
     if (raw.length < 3) {
@@ -997,7 +1301,7 @@ export class MapComponent implements OnInit, AfterViewInit {
       return;
     }
 
-    const simplified = this.simplifyTrackPoints(raw, 5);
+    const simplified = this.simplifyTrackPoints(raw, this.simplifyTolerance);
     if (simplified.length >= raw.length) {
       this.setEditStatusMessage('No hay puntos redundantes que simplificar.');
       return;
@@ -1015,6 +1319,8 @@ export class MapComponent implements OnInit, AfterViewInit {
   }
 
   cancelEdits(): void {
+    if (this.isSavingEdits || this.isRoutingEdit) return;
+    if (this.hasEditChanges && !window.confirm('¿Descartar todos los cambios de esta edición?')) return;
     if (!this.originalTrackPoints || !this.canEditTrack) {
       return;
     }
@@ -1022,13 +1328,15 @@ export class MapComponent implements OnInit, AfterViewInit {
     this.applySanitization();
     this.editMode = false;
     this.editUndoStack = [];
+    this.editRedoStack = [];
+    this.editDirty = false;
     this.clearEditRangeSelection();
     this.setEditStatusMessage('Cambios descartados.');
     this.clearEditPointsLayer();
   }
 
   saveEdits(): void {
-    if (!this.canEditTrack || !this.hasEditChanges || this.isSavingEdits) {
+    if (!this.canEditTrack || !this.hasEditChanges || this.isSavingEdits || this.isRoutingEdit) {
       return;
     }
     const raw = this.trackMetas[0]?.raw ?? [];
@@ -1049,14 +1357,22 @@ export class MapComponent implements OnInit, AfterViewInit {
     }
 
     this.isSavingEdits = true;
+    this.updateEditPointsLayer();
     this.setEditStatusMessage('Guardando cambios...');
-    this.planService.updateTrack({ id: this.editableTrackId, routeXml: gpxData }).subscribe({
+    const saveRequest: Observable<unknown> = this.editableTrackSource === 'archive'
+      ? this.eventService.updateTrackGpx(this.editableTrackId, gpxData)
+      : this.planService.updateTrack({ id: this.editableTrackId, routeXml: gpxData });
+    saveRequest.subscribe({
       next: () => {
-        this.originalTrackPoints = raw.map(point => ({ ...point }));
         this.originalRouteXml = gpxData;
-        this.originalPointsSnapshot = this.serializeTrackPoints(raw);
+        const rebased = readEditableGpx(gpxData);
+        this.updateTrackRaw(0, rebased);
+        this.originalTrackPoints = rebased.map(point => ({ ...point }));
+        this.originalPointsSnapshot = this.serializeTrackPoints(rebased);
         this.editMode = false;
         this.editUndoStack = [];
+        this.editRedoStack = [];
+        this.editDirty = false;
         this.clearEditRangeSelection();
         this.setEditStatusMessage('Cambios guardados.');
         this.isSavingEdits = false;
@@ -1064,25 +1380,32 @@ export class MapComponent implements OnInit, AfterViewInit {
       },
       error: () => {
         this.isSavingEdits = false;
+        this.updateEditPointsLayer();
         this.setEditStatusMessage('No se pudo guardar el track.');
       }
     });
   }
 
   private handleMapClick(event: maplibregl.MapMouseEvent): void {
-    if (!this.editMode || !this.canEditTrack) return;
+    if (!this.editMode || !this.canEditTrack || this.isSavingEdits || this.isRoutingEdit || Date.now() < this.suppressMapClickUntil) return;
     const meta = this.trackMetas[0];
-    if (!meta?.raw?.length || meta.raw.length < 3) {
-      this.setEditStatusMessage('El track necesita al menos dos puntos.');
-      return;
-    }
-
-    if (this.editDeleteMode === 'range') {
+    if (!meta?.raw?.length) return;
+    if (this.editTool === 'range') {
       this.handleRangeDeleteClick(event, meta);
       return;
     }
-
-    this.handleRadiusDeleteClick(event, meta);
+    if (this.editTool === 'extend') {
+      void this.extendEditableTrack(event.lngLat.lat, event.lngLat.lng);
+      return;
+    }
+    if (this.editTool === 'insert') {
+      this.insertEditablePoint(event);
+      return;
+    }
+    const closest = this.findClosestEditPoint(event, meta.raw);
+    if (!closest || closest.distancePx > (this.isMobileViewport ? 30 : 20)) return;
+    if (this.editTool === 'erase') this.deleteEditablePoint(closest.rawIndex);
+    else { this.editSelectedIndex = closest.rawIndex; this.updateEditPointsLayer(); }
   }
 
   private handleRadiusDeleteClick(event: maplibregl.MapMouseEvent, meta: TrackMeta): void {
@@ -1125,7 +1448,8 @@ export class MapComponent implements OnInit, AfterViewInit {
       return;
     }
 
-    if (this.editRangeStartIndex === null) {
+    if (this.editRangeStartIndex === null || this.editRangeEndIndex !== null) {
+      this.clearEditRangeSelection();
       this.editRangeStartIndex = closest.rawIndex;
       this.setEditRangeStartMarker(meta.raw[closest.rawIndex]);
       this.setEditStatusMessage('Inicio del tramo marcado. Haz clic en el final.');
@@ -1134,31 +1458,24 @@ export class MapComponent implements OnInit, AfterViewInit {
 
     const start = Math.min(this.editRangeStartIndex, closest.rawIndex);
     const end = Math.max(this.editRangeStartIndex, closest.rawIndex);
-    this.clearEditRangeSelection();
-
     if (start === end) {
       this.setEditStatusMessage('El segundo clic debe estar en otro punto del track.');
       return;
     }
 
-    const deleteCount = end - start + 1;
-    if (meta.raw.length - deleteCount < 2) {
-      this.setEditStatusMessage('El track necesita al menos dos puntos.');
-      return;
-    }
-
-    this.pushEditUndoSnapshot(meta.raw);
-    const updated = meta.raw.filter((_, index) => index < start || index > end);
-    this.updateTrackRaw(0, updated);
-    this.applySanitization();
-    this.setEditStatusMessage(`Tramo eliminado: ${deleteCount} puntos.`);
+    this.editRangeStartIndex = start;
+    this.editRangeEndIndex = end;
+    this.editorPanelOpen = true;
+    this.updateSvgTracks();
+    this.setEditStatusMessage('Tramo seleccionado. Elige conservarlo o eliminar su interior.');
   }
 
   private findClosestEditPoint(event: maplibregl.MapMouseEvent, points: TrackPoint[]): { rawIndex: number; distancePx: number } | null {
     const clickPoint = event.point;
     let closestIndex = -1;
     let closestDistance = Number.POSITIVE_INFINITY;
-    const editPoints = this.editIndexedPoints.length ? this.editIndexedPoints : this.buildEditIndexedPoints(points);
+    // Selection searches the source points, not just the displayed handles.
+    const editPoints = points.map((point, index) => ({ point, index }));
 
     editPoints.forEach(({ point, index }) => {
       const layerPoint = this.map.project(this.toLngLat(point));
@@ -1175,14 +1492,15 @@ export class MapComponent implements OnInit, AfterViewInit {
   }
 
   private pushEditUndoSnapshot(points: TrackPoint[]): void {
+    this.editRedoStack = [];
     this.editUndoStack.push(points.map(point => ({ ...point })));
-    if (this.editUndoStack.length > 20) {
+    if (this.editUndoStack.length > 50) {
       this.editUndoStack.shift();
     }
   }
 
   private updateEditPointsLayer(): void {
-    if (!this.map) return;
+    if (!this.map || !this.mapReady || this.editDragActive) return;
     if (!this.editMode || !this.canEditTrack) {
       this.clearEditPointsLayer();
       return;
@@ -1192,17 +1510,55 @@ export class MapComponent implements OnInit, AfterViewInit {
     if (!meta?.raw?.length) return;
     this.editIndexedPoints = this.buildEditIndexedPoints(meta.raw);
     this.editSimplifiedPointCount = this.editIndexedPoints.length;
-    this.editIndexedPoints.forEach(({ point }) => {
-      const element = this.createDotElement('#f8fafc', this.isMobileViewport ? 7 : 6, '#0f172a', 1);
-      element.style.pointerEvents = 'none';
-      const marker = new maplibregl.Marker({
-        element
-      }).setLngLat(this.toLngLat(point)).addTo(this.map);
+    this.editIndexedPoints.forEach(({ point, index }) => {
+      const interactive = this.editTool === 'move' || this.editTool === 'insert';
+      const element = document.createElement('button');
+      element.type = 'button';
+      element.className = 'editor-handle' + (this.editSelectedIndex === index ? ' editor-handle--selected' : '');
+      element.title = `Punto ${index + 1} · arrastra para mover`;
+      element.setAttribute('aria-label', `Punto ${index + 1} del recorrido`);
+      element.dataset['pointIndex'] = String(index);
+      element.style.pointerEvents = interactive ? 'auto' : 'none';
+      element.tabIndex = interactive ? 0 : -1;
+      const marker = new maplibregl.Marker({ element, draggable: interactive && !this.isSavingEdits && !this.isRoutingEdit })
+        .setLngLat(this.toLngLat(point)).addTo(this.map);
+      element.addEventListener('click', event => {
+        event.stopPropagation();
+        if (Date.now() < this.suppressMapClickUntil) return;
+        this.zone.run(() => { this.editSelectedIndex = index; this.editorPanelOpen = true; this.updateEditPointsLayer(); });
+      });
+      marker.on('dragstart', () => { this.editDragActive = true; });
+      marker.on('drag', () => {
+        const location = marker.getLngLat();
+        const preview = [meta.raw[index - 1], { ...point, lat: location.lat, lon: location.lng }, meta.raw[index + 1]].filter(Boolean);
+        this.editSelectionPath ??= this.createTrackSvgPath('#e9ac35', 6, 1);
+        this.setSvgPath(this.editSelectionPath, preview);
+      });
+      marker.on('dragend', () => this.zone.run(() => {
+        this.editDragActive = false;
+        this.suppressMapClickUntil = Date.now() + 350;
+        const location = marker.getLngLat();
+        this.editSelectionPath?.setAttribute('d', '');
+        void this.moveEditablePoint(index, location.lat, location.lng);
+      }));
       this.editPointMarkers.push(marker);
     });
   }
 
   private buildEditIndexedPoints(points: TrackPoint[]): IndexedTrackPoint[] {
+    if (this.map && this.mapReady) {
+      const cells = new Set<string>();
+      const rect = this.map.getContainer();
+      const spacing = this.isMobileViewport ? 32 : 22;
+      return points.map((point, index) => ({ point, index })).filter(({ point, index }) => {
+        const screen = this.map.project(this.toLngLat(point));
+        if (screen.x < -20 || screen.y < -20 || screen.x > rect.clientWidth + 20 || screen.y > rect.clientHeight + 20) return false;
+        const key = `${Math.floor(screen.x / spacing)}:${Math.floor(screen.y / spacing)}`;
+        if (index === this.editSelectedIndex || index === 0 || index === points.length - 1) return true;
+        if (cells.has(key) || cells.size > 350) return false;
+        cells.add(key); return true;
+      });
+    }
     const maxPoints = this.isMobileViewport ? 120 : 220;
     const indexed = points.map((point, index) => ({ point, index }));
     if (indexed.length <= maxPoints) return indexed;
@@ -1220,10 +1576,13 @@ export class MapComponent implements OnInit, AfterViewInit {
   }
 
   private simplifyTrackPoints(points: TrackPoint[], toleranceMeters: number): TrackPoint[] {
-    return this.simplifyIndexedTrackPoints(
-      points.map((point, index) => ({ point, index })),
-      toleranceMeters
-    ).map(({ point }) => ({ ...point }));
+    const groups: IndexedTrackPoint[][] = [];
+    points.forEach((point, index) => {
+      const previous = points[index - 1];
+      if (!previous || point.segment !== previous.segment || point.sourceTrack !== previous.sourceTrack) groups.push([]);
+      groups[groups.length - 1].push({ point, index });
+    });
+    return groups.flatMap(group => this.simplifyIndexedTrackPoints(group, toleranceMeters)).map(({ point }) => ({ ...point }));
   }
 
   private simplifyIndexedTrackPoints(points: IndexedTrackPoint[], toleranceMeters: number): IndexedTrackPoint[] {
@@ -1322,8 +1681,11 @@ export class MapComponent implements OnInit, AfterViewInit {
 
   private clearEditRangeSelection(): void {
     this.editRangeStartIndex = null;
+    this.editRangeEndIndex = null;
+    this.editSelectedIndex = null;
     this.editRangeStartMarker?.remove();
     this.editRangeStartMarker = null;
+    this.editSelectionPath?.setAttribute('d', '');
   }
 
   private setUserLocationMarker(latitude: number, longitude: number, distanceToStart: number | null): void {
@@ -1360,9 +1722,7 @@ export class MapComponent implements OnInit, AfterViewInit {
   }
 
   private getEditHintMessage(): string {
-    return this.editDeleteMode === 'range'
-      ? 'Modo tramo: haz clic en el inicio y luego en el final.'
-      : `Modo radio: cada clic borra puntos cercanos (${this.editDeleteRadiusMeters} m).`;
+    return this.editorTools.find(tool => tool.id === this.editTool)?.hint ?? '';
   }
 
   private updateTrackRaw(index: number, raw: TrackPoint[]): void {
@@ -1370,9 +1730,11 @@ export class MapComponent implements OnInit, AfterViewInit {
       if (metaIndex !== index) return meta;
       return { ...meta, raw: raw.map(point => ({ ...point })) };
     });
+    this.editDirty = this.serializeTrackPoints(this.trackMetas[0]?.raw ?? []) !== this.originalPointsSnapshot;
   }
 
   private buildGpxFromPoints(points: TrackPoint[], name: string): string {
+    if (this.originalRouteXml) return writeEditableGpx(this.originalRouteXml, points);
     const safeName = this.escapeXml(name || 'Track');
     const trkpts = points.map(point => {
       const lat = this.roundCoord(point.lat);
@@ -1432,10 +1794,15 @@ export class MapComponent implements OnInit, AfterViewInit {
     this.editStatusMessage = null;
   }
 
-  private loadTracksFromBackend(routeId: number): void {
+  private loadTracksFromEvents(routeId: number): void {
     this.resetPlaybackState();
-    this.http.get<RaceEvent>(`${environment.routesApiBase}/${routeId}`).subscribe({
-      next: async (event) => {
+    this.eventService.refreshEvents().subscribe({
+      next: async (events) => {
+        const event = events.find(item => item.id === routeId);
+        if (!event) {
+          this.loadTracksFromSessionOrQuery();
+          return;
+        }
         const normalizedEvent = this.normalizeEventFromBackend(event);
         await this.buildTrackMetasFromEvent(normalizedEvent);
       },
@@ -1591,6 +1958,14 @@ export class MapComponent implements OnInit, AfterViewInit {
   }
 
   private resetPlaybackState(): void {
+    this.gate = null;
+    this.racePaused = false;
+    this.comparisonOptionsOpen = false;
+    this.comparisonProfileVisible = false;
+    this.showRanking = false;
+    this.ranking = [];
+    this.accessGranted = false;
+    this.checkingAccess = false;
     this.clearTransientTickTimeouts();
     this.clearCountdownTimer();
     if (this.rafId) {
@@ -1609,8 +1984,6 @@ export class MapComponent implements OnInit, AfterViewInit {
     this.hasTracksReady = false;
     this.countdownInProgress = false;
     this.startSequenceLaunched = false;
-    this.showRanking = false;
-    this.ranking = [];
     this.relMs = 0;
     this.started = false;
     this.viewOnly = false;
@@ -1654,6 +2027,7 @@ export class MapComponent implements OnInit, AfterViewInit {
       [...(meta.tickMarkers ?? []), ...(meta.pauseMarkers ?? []), ...(meta.endpointLabelMarkers ?? [])].forEach(marker => marker.remove());
       meta.fullSvgPath?.remove();
       meta.progSvgPath?.remove();
+      meta.slopeSvgGroups?.forEach(group => group.path.remove());
     });
     this.clearEditPointsLayer();
   }
@@ -1685,8 +2059,8 @@ export class MapComponent implements OnInit, AfterViewInit {
 
         this.setLineData(meta.fullSourceId, meta.sanitized);
         this.setLineData(meta.progSourceId, []);
-        this.setSlopeData(meta.fullSlopeSourceId, meta.sanitized, meta.color);
-        this.setSlopeData(meta.progSlopeSourceId, meta.sanitized, meta.color);
+        this.renderStaticSlopes(meta);
+        this.setSlopeData(meta.progSlopeSourceId, [], meta.color);
         meta.tickMarkers = this.clearMarkers(meta.tickMarkers);
         meta.pauseMarkers = this.clearMarkers(meta.pauseMarkers);
 
@@ -1715,6 +2089,8 @@ export class MapComponent implements OnInit, AfterViewInit {
         meta.sanitized.forEach(point => { bounds = this.extendBounds(bounds, point); });
       } else {
         (meta as any).currentProgressPoints = [];
+        meta.slopeSvgGroups?.forEach(group => group.path.remove());
+        meta.slopeSvgGroups = [];
         this.setLineData(meta.fullSourceId, []);
         this.setLineData(meta.progSourceId, []);
         this.setSlopeData(meta.fullSlopeSourceId, [], meta.color);
@@ -1723,9 +2099,11 @@ export class MapComponent implements OnInit, AfterViewInit {
         meta.pauseMarkers = this.clearMarkers(meta.pauseMarkers);
         meta.endpointLabelMarkers = this.clearMarkers(meta.endpointLabelMarkers);
       }
+      this.onTrackVisibilityToggle(this.trackMetas.indexOf(meta), meta.visible);
     });
 
     this.allTracksBounds = this.hasValidBounds(bounds) ? bounds : null;
+    this.applyTimesLayerVisibility();
     if (this.allTracksBounds && !this.editMode) {
       this.map.fitBounds(this.allTracksBounds, {
         ...this.computeFitOptions(),
@@ -1738,15 +2116,17 @@ export class MapComponent implements OnInit, AfterViewInit {
   // ---------- lifecycle ----------
   ngOnInit(): void {
     this.updateViewportFlags();
+    void this.animationAccess.refreshAvailability();
 
     const startFlag = this.route.snapshot.queryParamMap.get('s');
     this.autoStartRequested = false // (startFlag === '1' || startFlag === 'true');
 
     this.hydrateRemoveStopsFlag();
 
-    const backendRouteId = Number(this.route.snapshot.queryParamMap.get('routeId'));
-    if (Number.isFinite(backendRouteId)) {
-      this.loadTracksFromBackend(backendRouteId);
+    const routeIdParam = this.route.snapshot.queryParamMap.get('routeId');
+    const backendRouteId = routeIdParam === null ? NaN : Number(routeIdParam);
+    if (Number.isInteger(backendRouteId) && backendRouteId > 0 && this.authService.isAuthenticated()) {
+      this.loadTracksFromEvents(backendRouteId);
       return;
     }
 
@@ -1846,10 +2226,20 @@ export class MapComponent implements OnInit, AfterViewInit {
 
   private async startRaceFlow(): Promise<void> {
     if (this.startSequenceLaunched) return;
-
-    this.startSequenceLaunched = true;
+    this.racePaused = false;
     this.showRanking = false;
     this.ranking = [];
+    const cooldown = this.animationAccess.getKnownCooldown();
+    if (cooldown) {
+      this.gate = cooldown;
+      this.clearCountdownTimer();
+      this.countdownAudio?.pause();
+      this.countdownInProgress = false;
+      this.showStartOverlay = false;
+      return;
+    }
+
+    this.startSequenceLaunched = true;
     this.autoStartDone = true;
     this.autoStartRequested = false;
     this.startArmed = true;
@@ -1949,6 +2339,7 @@ export class MapComponent implements OnInit, AfterViewInit {
     });
     this.map.touchZoomRotate.enableRotation();
     this.map.addControl(new maplibregl.NavigationControl({ visualizePitch: false }), 'top-left');
+    if (this.viewOnly) this.map.addControl(new maplibregl.ScaleControl({ unit: 'metric' }), 'bottom-left');
     this.map.on('load', () => {
       this.mapReady = true;
       this.ensureTrackSvgOverlay();
@@ -1963,7 +2354,8 @@ export class MapComponent implements OnInit, AfterViewInit {
       }
     });
     this.map.on('render', () => this.updateSvgTracks());
-    this.map.on('click', (event: maplibregl.MapMouseEvent) => this.handleMapClick(event));
+    this.map.on('click', (event: maplibregl.MapMouseEvent) => this.zone.run(() => this.handleMapClick(event)));
+    this.map.on('moveend', () => { if (this.editMode && !this.editDragActive) this.zone.run(() => this.updateEditPointsLayer()); });
   }
 
   onBaseLayerChange(baseLayerId: string): void {
@@ -1990,7 +2382,7 @@ export class MapComponent implements OnInit, AfterViewInit {
       type: 'raster',
       source: this.baseLayerSourceId,
       minzoom: 0,
-      maxzoom: option.maxZoom ?? 19,
+      maxzoom: this.viewOnly ? 24 : option.maxZoom ?? 19,
     }, this.firstTrackLayerId());
   }
 
@@ -2032,6 +2424,7 @@ export class MapComponent implements OnInit, AfterViewInit {
       this.ensureLineLayer(meta.progSourceId!, meta.progLayerId!, meta.color, 4, this.progressOpacity);
       this.ensureSlopeLayer(meta.fullSlopeSourceId!, meta.fullSlopeLayerId!, this.ghostWeight, this.ghostOpacity);
       this.ensureSlopeLayer(meta.progSlopeSourceId!, meta.progSlopeLayerId!, 4, this.progressOpacity);
+      this.setTrackLayerVisibility(meta, meta.visible);
     });
     this.updateSvgTracks();
   }
@@ -2079,8 +2472,19 @@ export class MapComponent implements OnInit, AfterViewInit {
     this.trackMetas.forEach(meta => {
       this.setSvgPath(meta.fullSvgPath, meta.visible ? meta.sanitized : []);
       const progressPoints = (meta as any).currentProgressPoints as Array<TrackPoint | TPx> | undefined;
-      this.setSvgPath(meta.progSvgPath, meta.visible ? (progressPoints ?? []) : []);
+      this.setSvgPath(meta.progSvgPath, meta.visible && !this.viewOnly ? (progressPoints ?? []) : []);
+      meta.slopeSvgGroups?.forEach(group => {
+        const d = meta.visible ? group.segments.map(segment => segment.map((point, index) => {
+          const projected = this.map.project(this.toLngLat(point));
+          return `${index ? 'L' : 'M'}${projected.x.toFixed(1)} ${projected.y.toFixed(1)}`;
+        }).join(' ')).join(' ') : '';
+        group.path.setAttribute('d', d);
+      });
     });
+    if (this.editMode && this.selectedRangeCount && !this.editDragActive) {
+      this.editSelectionPath ??= this.createTrackSvgPath('#e9ac35', 7, 1);
+      this.setSvgPath(this.editSelectionPath, this.trackMetas[0].raw.slice(this.editRangeStartIndex!, this.editRangeEndIndex! + 1));
+    }
   }
 
   private setSvgPath(path: SVGPathElement | undefined, points: Array<TrackPoint | TPx>): void {
@@ -2092,7 +2496,8 @@ export class MapComponent implements OnInit, AfterViewInit {
     const d = points
       .map((point, index) => {
         const projected = this.map.project(this.toLngLat(point));
-        return `${index === 0 ? 'M' : 'L'}${projected.x.toFixed(1)} ${projected.y.toFixed(1)}`;
+        const newSegment = this.viewOnly && index > 0 && (point.segment !== points[index - 1].segment || point.sourceTrack !== points[index - 1].sourceTrack);
+        return `${index === 0 || newSegment ? 'M' : 'L'}${projected.x.toFixed(1)} ${projected.y.toFixed(1)}`;
       })
       .join(' ');
     path.setAttribute('d', d);
@@ -2111,7 +2516,7 @@ export class MapComponent implements OnInit, AfterViewInit {
           type: 'raster',
           source: this.baseLayerSourceId,
           minzoom: 0,
-          maxzoom: option?.maxZoom ?? 19,
+          maxzoom: this.viewOnly ? 24 : option?.maxZoom ?? 19,
         }
       ]
     } as maplibregl.StyleSpecification;
@@ -2192,6 +2597,16 @@ export class MapComponent implements OnInit, AfterViewInit {
 
   private setLineData(sourceId: string | undefined, points: Array<TrackPoint | TPx>): void {
     if (!sourceId || !this.map.getSource(sourceId)) return;
+    if (this.viewOnly) {
+      const groups: number[][][] = [];
+      points.forEach((point, index) => {
+        const previous = points[index - 1];
+        if (!previous || point.segment !== previous.segment || point.sourceTrack !== previous.sourceTrack) groups.push([]);
+        groups[groups.length - 1].push(this.toLngLat(point));
+      });
+      (this.map.getSource(sourceId) as GeoJSONSource).setData({ type: 'FeatureCollection', features: groups.filter(group => group.length > 1).map(coordinates => ({ type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates } })) });
+      return;
+    }
     const coordinates = points.map(point => this.toLngLat(point));
     const data: GeoJSON.FeatureCollection<GeoJSON.LineString> = coordinates.length >= 2
       ? { type: 'FeatureCollection', features: [{ type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates } }] }
@@ -2205,6 +2620,7 @@ export class MapComponent implements OnInit, AfterViewInit {
     for (let index = 1; index < points.length; index += 1) {
       const from = points[index - 1];
       const to = points[index];
+        if (this.viewOnly && (to.segment !== from.segment || to.sourceTrack !== from.sourceTrack)) continue;
       features.push({
         type: 'Feature',
         properties: { color: this.resolveSlopeColor(from, to, baseColor) },
@@ -2212,6 +2628,46 @@ export class MapComponent implements OnInit, AfterViewInit {
       });
     }
     (this.map.getSource(sourceId) as GeoJSONSource).setData({ type: 'FeatureCollection', features });
+  }
+
+  private renderStaticSlopes(meta: TrackMeta): void {
+    const grades = calculateTrackSlopes(meta.sanitized);
+    const groups = [...this.slopeScale.map(entry => ({ color: entry.color as string, segments: [] as TrackPoint[][] })),
+      { color: meta.color, segments: [] as TrackPoint[][] }];
+    let active: TrackPoint[] | undefined;
+    let previousColor = '';
+    for (let i = 1; i < meta.sanitized.length; i++) {
+      const from = meta.sanitized[i - 1], to = meta.sanitized[i];
+      if (from.segment !== to.segment || from.sourceTrack !== to.sourceTrack) { active = undefined; continue; }
+      const color = slopeColor(grades[i], meta.color);
+      if (active && color === previousColor) active.push(to);
+      else {
+        active = [from, to];
+        groups.find(group => group.color === color)!.segments.push(active);
+      }
+      previousColor = color;
+    }
+    meta.slopeSvgGroups?.forEach(group => group.path.remove());
+    meta.slopeSvgGroups = groups.map(group => {
+      const path = this.createTrackSvgPath(group.color, 4, 1);
+      path.style.filter = 'none';
+      return { path, segments: group.segments };
+    });
+    // A white casing keeps yellow/green readable over terrain. Both renderers
+    // use the same grades, so the SVG fallback cannot cover them with a solid track.
+    meta.fullSvgPath?.setAttribute('stroke', '#ffffff');
+    meta.fullSvgPath?.setAttribute('stroke-width', '7');
+    meta.fullSvgPath?.setAttribute('stroke-opacity', '0.9');
+    if (meta.fullLayerId && this.map.getLayer(meta.fullLayerId)) {
+      this.map.setPaintProperty(meta.fullLayerId, 'line-color', '#ffffff');
+      this.updateLineLayerStyle(meta.fullLayerId, 7, 0.9);
+    }
+    this.updateLineLayerStyle(meta.fullSlopeLayerId, 4, 1);
+    const source = meta.fullSlopeSourceId && this.map.getSource(meta.fullSlopeSourceId) as GeoJSONSource;
+    if (source) source.setData({ type: 'FeatureCollection', features: groups.flatMap(group => group.segments.map(segment => ({
+      type: 'Feature' as const, properties: { color: group.color },
+      geometry: { type: 'LineString' as const, coordinates: segment.map(point => this.toLngLat(point)) }
+    }))) });
   }
 
   private clearMarkers(markers: maplibregl.Marker[] | undefined): maplibregl.Marker[] {
@@ -2276,7 +2732,7 @@ export class MapComponent implements OnInit, AfterViewInit {
 
   private startIfReady(): boolean {
     if (this.started) return true;
-
+    this.racePaused = false;
     this.showRanking = false;
     this.ranking = [];
 
@@ -2364,9 +2820,14 @@ export class MapComponent implements OnInit, AfterViewInit {
 
     let last = performance.now();
     const step = (now: number) => {
+      if (this.racePaused) {
+        last = now;
+        this.rafId = requestAnimationFrame(step);
+        return;
+      }
       const rawDt = now - last; last = now;
       const dt = Math.min(rawDt, 50);
-      this.relMs += dt * this.replaySpeed;
+      this.relMs = Math.min(this.accessGranted ? Infinity : this.maxRaceDurationMs / 2, this.relMs + dt * this.replaySpeed);
 
       let allDone = true;
 
@@ -2412,10 +2873,19 @@ export class MapComponent implements OnInit, AfterViewInit {
       const someoneFinished = this.hasAnyFinished(this.relMs);
       this.updateVisualization(now, this.relMs, someoneFinished);
 
-      if (!allDone) {
+      if (!this.accessGranted && this.relMs >= this.maxRaceDurationMs / 2) {
+        this.rafId = 0;
+        this.audio?.pause();
+        this.rec.pauseCapture();
+        void this.checkFullAccess(() => {
+          last = performance.now();
+          this.rafId = requestAnimationFrame(step);
+        });
+      } else if (!allDone) {
         this.rafId = requestAnimationFrame(step);
       } else {
         cancelAnimationFrame(this.rafId);
+        this.rafId = 0;
         this.audio?.pause();
         this.stopRecordingAndDownload();
         this.ranking = this.buildRanking();
@@ -2424,6 +2894,24 @@ export class MapComponent implements OnInit, AfterViewInit {
     };
 
     this.rafId = requestAnimationFrame(step);
+  }
+
+  private async checkFullAccess(resume: () => void): Promise<void> {
+    if (this.checkingAccess || this.gate) return;
+    this.checkingAccess = true;
+    const gate = await this.animationAccess.claimFullPlayback();
+    this.checkingAccess = false;
+    if (gate) {
+      if (this.rec.hasCapture) {
+        try { await this.rec.stopAndGetBlob(); } catch { /* Discard partial preview. */ }
+      }
+      this.gate = gate;
+    } else {
+      this.accessGranted = true;
+      this.rec.resumeCapture();
+      if (this.musicEnabled) void this.audio.play().catch(() => { /* Music is optional. */ });
+      resume();
+    }
   }
 
   private hasAnyFinished(relMs: number): boolean {
@@ -2468,36 +2956,20 @@ export class MapComponent implements OnInit, AfterViewInit {
   }
 
   private computeFitOptions(): maplibregl.FitBoundsOptions {
-    const basePadding = this.computeBasePadding();
-    const basePaddingOptions = {
-      top: basePadding[1],
-      bottom: basePadding[1],
-      left: basePadding[0],
-      right: basePadding[0],
-    };
-    if (!this.isVerticalViewport) return { padding: basePaddingOptions };
-
-    const mapEl = document.getElementById('map');
-    if (!mapEl) return { padding: basePaddingOptions };
-
-    const mapRect = mapEl.getBoundingClientRect();
-    const topOverlay = document.querySelector('.map-ui') as HTMLElement | null;
-    const bottomOverlay = (document.querySelector('.map-logo img') || document.querySelector('.map-logo')) as HTMLElement | null;
-
-    const topOverlap = topOverlay ? this.measureVerticalOverlap(topOverlay.getBoundingClientRect(), mapRect) : 0;
-    const bottomOverlap = bottomOverlay ? this.measureVerticalOverlap(bottomOverlay.getBoundingClientRect(), mapRect) : 0;
-
-    const paddingTop = basePadding[1] + topOverlap;
-    const paddingBottom = basePadding[1] + bottomOverlap;
-
-    return {
-      padding: {
-        top: paddingTop,
-        bottom: paddingBottom,
-        left: basePadding[0],
-        right: basePadding[0],
-      }
-    };
+    if (this.viewOnly) return { padding: this.isMobileViewport
+      ? { top: 190, bottom: this.editorProfileVisible ? 160 : 60, left: 35, right: 55 }
+      : { top: 115, bottom: this.editorProfileVisible ? 200 : 60, left: this.editorPanelOpen ? 390 : 100, right: 100 } };
+    if (this.isComparisonView) return { padding: this.isMobileViewport || this.isVerticalViewport
+      ? { top: 175, bottom: this.comparisonProfileVisible ? 145 : 55, left: 45, right: 60 }
+      : { top: 115, bottom: this.comparisonProfileVisible ? 130 : 55, left: 65, right: 75 } };
+    const compact = this.isMobileViewport || this.isVerticalViewport;
+    const shortViewport = (this.map?.getContainer().clientHeight ?? 700) < 500;
+    return { padding: {
+      top: shortViewport ? 80 : compact ? 160 : 110,
+      bottom: this.shouldRenderProfileOverlay ? (shortViewport ? 135 : 205) : 45,
+      left: compact ? 30 : 50,
+      right: compact ? 30 : 95,
+    } };
   }
 
   private computeBasePadding(): [number, number] {
@@ -2765,21 +3237,14 @@ export class MapComponent implements OnInit, AfterViewInit {
         color: meta.color,
         durationMs: meta.sanitized[meta.sanitized.length - 1].t - meta.sanitized[0].t
       }))
-      .filter(r => Number.isFinite(r.durationMs) && r.durationMs > 0)
+      .filter(entry => Number.isFinite(entry.durationMs) && entry.durationMs > 0)
       .sort((a, b) => a.durationMs - b.durationMs);
 
     if (valid.length < 2) return [];
 
     return valid.map((entry, index): RankingEntry => ({
       ...entry,
-      medal: index === 0
-        ? 'gold'
-        : index === 1
-          ? 'silver'
-          : index === 2
-            ? 'bronze'
-            : undefined
-
+      medal: index === 0 ? 'gold' : index === 1 ? 'silver' : index === 2 ? 'bronze' : undefined
     }));
   }
 

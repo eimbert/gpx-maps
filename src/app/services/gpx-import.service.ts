@@ -8,6 +8,7 @@ type TrackPoint = {
   lon: number;
   time: string;
   ele?: number;
+  segment?: number;
 };
 
 type TrackLocationDetails = {
@@ -41,73 +42,31 @@ export class GpxImportService {
     try {
       const parser = new DOMParser();
       const gpx = parser.parseFromString(gpxData, 'application/xml');
-      const trkpts = Array.from(gpx.getElementsByTagName('trkpt'));
+      const trackPoints = gpx.getElementsByTagNameNS('*', 'trkpt');
+      const trkpts = Array.from(trackPoints.length ? trackPoints : gpx.getElementsByTagNameNS('*', 'rtept'));
       if (gpx.getElementsByTagName('parsererror').length || !trkpts.length) return [];
+      const segments = new Map<Node, number>();
+      trkpts.forEach(point => {
+        const parent = point.parentNode!;
+        if (!segments.has(parent)) segments.set(parent, segments.size);
+      });
       return trkpts.map(trkpt => ({
-        lat: parseFloat(trkpt.getAttribute('lat') || '0'),
-        lon: parseFloat(trkpt.getAttribute('lon') || '0'),
-        time: trkpt.getElementsByTagName('time')[0]?.textContent || '',
-        ele: parseFloat(trkpt.getElementsByTagName('ele')[0]?.textContent || '0')
-      }));
+        lat: Number(trkpt.getAttribute('lat') ?? NaN),
+        lon: Number(trkpt.getAttribute('lon') ?? NaN),
+        time: trkpt.getElementsByTagNameNS('*', 'time')[0]?.textContent || '',
+        ele: this.readElevation(trkpt),
+        segment: segments.get(trkpt.parentNode!)
+      })).filter(point => Number.isFinite(point.lat) && Number.isFinite(point.lon)
+        && Math.abs(point.lat) <= 90 && Math.abs(point.lon) <= 180);
     } catch {
       return [];
     }
   }
 
-  extractReportedAscentMeters(gpxData: string): number | null {
-    try {
-      const parser = new DOMParser();
-      const gpx = parser.parseFromString(gpxData, 'application/xml');
-      if (gpx.getElementsByTagName('parsererror').length) return null;
-
-      const buckets: Record<'strong' | 'medium' | 'weak', number[]> = {
-        strong: [],
-        medium: [],
-        weak: []
-      };
-
-      const nodes = Array.from(gpx.getElementsByTagName('*'));
-      for (const node of nodes) {
-        const rawName = (node.localName || node.nodeName || '').toLowerCase();
-        const normalizedName = rawName.replace(/[^a-z]/g, '');
-
-        let bucket: keyof typeof buckets | null = null;
-        if (normalizedName === 'totalascent' || normalizedName === 'totalclimb') {
-          bucket = 'strong';
-        } else if (normalizedName === 'elevationgain' || normalizedName === 'totalascend') {
-          bucket = 'medium';
-        } else if (normalizedName === 'ascent') {
-          bucket = 'weak';
-        }
-
-        if (!bucket) continue;
-
-        const text = node.textContent?.trim() ?? '';
-        let value = Number.parseFloat(text.replace(',', '.'));
-        if (!Number.isFinite(value)) continue;
-
-        const unit = ((node.getAttribute('unit') || node.getAttribute('units') || node.getAttribute('uom') || '')
-          .toLowerCase()
-          .trim());
-        if (unit === 'ft' || unit === 'feet' || unit === 'foot') {
-          value *= 0.3048;
-        }
-
-        if (value >= 0 && value <= 20_000) {
-          buckets[bucket].push(value);
-        }
-      }
-
-      const pick = (values: number[]): number | null => {
-        if (!values.length) return null;
-        // Muchos GPX repiten ascensos parciales; para total acumulado interesa el mayor valor válido.
-        return Math.max(...values);
-      };
-
-      return pick(buckets.strong) ?? pick(buckets.medium) ?? pick(buckets.weak);
-    } catch {
-      return null;
-    }
+  private readElevation(point: Element): number | undefined {
+    const text = point.getElementsByTagNameNS('*', 'ele')[0]?.textContent?.trim();
+    const value = text ? Number(text.replace(',', '.')) : NaN;
+    return Number.isFinite(value) ? value : undefined;
   }
 
   calculateTotalDistanceKm(trkpts: TrackPoint[]): number {
@@ -200,11 +159,11 @@ export class GpxImportService {
     try {
       const parser = new DOMParser();
       const xml = parser.parseFromString(gpx, 'application/xml');
-      const trkpt = xml.getElementsByTagName('trkpt')[0] ?? xml.querySelector('trkpt');
+      const trkpt = xml.getElementsByTagNameNS('*', 'trkpt')[0] ?? xml.getElementsByTagNameNS('*', 'rtept')[0];
       if (!trkpt) return null;
       const lat = parseFloat(trkpt.getAttribute('lat') || '');
       const lon = parseFloat(trkpt.getAttribute('lon') || '');
-      if (!Number.isFinite(lat) || !Number.isFinite(lon)) return null;
+      if (!Number.isFinite(lat) || !Number.isFinite(lon) || Math.abs(lat) > 90 || Math.abs(lon) > 180) return null;
       return { lat, lon };
     } catch {
       return null;

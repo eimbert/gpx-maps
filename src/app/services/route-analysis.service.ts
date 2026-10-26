@@ -3,6 +3,11 @@ import { HttpClient } from '@angular/common/http';
 import { Observable, map } from 'rxjs';
 import { environment } from '../../environments/environment';
 import { PublicRouteAnalysis, RouteAnalysis, RouteAnalysisRequest, RouteAnalysisStats } from '../interfaces/route-analysis';
+import { selectedUiText } from './screen-texts';
+
+export function matchesAnalysisRoute(analysis: RouteAnalysis, trackId: number, source: 'tracks' | 'plan'): boolean {
+  return analysis.trackId === trackId && analysis.source === source;
+}
 
 @Injectable({ providedIn: 'root' })
 export class RouteAnalysisService {
@@ -13,7 +18,14 @@ export class RouteAnalysisService {
   analyzeRoute(payload: RouteAnalysisRequest): Observable<RouteAnalysis> {
     console.info('[RouteAnalysisService] POST', this.apiBase);
     return this.http.post<RouteAnalysis>(this.apiBase, payload).pipe(
-      map(analysis => this.normalizeAnalysis(analysis))
+      map(analysis => {
+        const normalized = this.normalizeAnalysis(analysis);
+        if (payload.trackId && payload.source && payload.source !== 'upload'
+          && !matchesAnalysisRoute(normalized, payload.trackId, payload.source)) {
+          throw new Error(selectedUiText('analysisScopeMismatch'));
+        }
+        return normalized;
+      })
     );
   }
 
@@ -23,16 +35,28 @@ export class RouteAnalysisService {
     );
   }
 
-  getTrackAnalysis(trackId: number): Observable<RouteAnalysis | null> {
+  getTrackAnalysis(trackId: number, source: 'tracks' | 'plan' = 'tracks'): Observable<RouteAnalysis | null> {
     console.info('[RouteAnalysisService] GET', `${this.apiBase}/track/${trackId}`);
-    return this.http.get<RouteAnalysis | null>(`${this.apiBase}/track/${trackId}`).pipe(
-      map(analysis => analysis ? this.normalizeAnalysis(analysis) : null)
+    return this.http.get<RouteAnalysis | null>(`${this.apiBase}/track/${trackId}`, { params: { source } }).pipe(
+      map(analysis => {
+        if (!analysis) return null;
+        const normalized = this.normalizeAnalysis(analysis);
+        // Legacy scoped endpoints omit source; the request supplies it. Explicit conflicts are rejected.
+        normalized.source = normalized.source ?? source;
+        return matchesAnalysisRoute(normalized, trackId, source) ? normalized : null;
+      })
     );
   }
 
   lookupExisting(payload: RouteAnalysisRequest): Observable<RouteAnalysis | null> {
     return this.http.post<RouteAnalysis>(`${this.apiBase}/lookup`, payload).pipe(
-      map(analysis => analysis ? this.normalizeAnalysis(analysis) : null)
+      map(analysis => {
+        if (!analysis) return null;
+        const normalized = this.normalizeAnalysis(analysis);
+        if (payload.trackId && payload.source && payload.source !== 'upload'
+          && !matchesAnalysisRoute(normalized, payload.trackId, payload.source)) return null;
+        return normalized;
+      })
     );
   }
 
@@ -70,6 +94,7 @@ export class RouteAnalysisService {
       ...analysis,
       id: this.toNullableNumber(analysis.id),
       trackId: this.toNullableNumber(analysis.trackId ?? (analysis as any).track_id),
+      folderId: this.toNullableNumber(analysis.folderId ?? (analysis as any).folder_id),
       userId: this.toNullableNumber(analysis.userId ?? (analysis as any).user_id),
       gpxHash: analysis.gpxHash ?? (analysis as any).gpx_hash ?? null,
       analysisVersion: analysis.analysisVersion ?? (analysis as any).analysis_version ?? null,
@@ -81,6 +106,7 @@ export class RouteAnalysisService {
       updatedAt: analysis.updatedAt ?? (analysis as any).updated_at ?? null,
       title: analysis.title ?? (analysis as any).routeTitle ?? (analysis as any).route_title ?? null,
       fileName: analysis.fileName ?? (analysis as any).file_name ?? null,
+      reportLanguage: analysis.reportLanguage ?? (analysis as any).report_language ?? null,
       usageCharged: Boolean(analysis.usageCharged ?? (analysis as any).usage_charged),
       reusedExisting: Boolean(analysis.reusedExisting ?? (analysis as any).reused_existing),
       report: {
@@ -101,18 +127,22 @@ export class RouteAnalysisService {
     const profile = value.elevationProfile ?? value.elevation_profile ?? [];
     return {
       distanceKm: Number(value.distanceKm ?? value.distance_km),
-      elevationGainM: Number(value.elevationGainM ?? value.elevation_gain_m),
-      elevationLossM: Number(value.elevationLossM ?? value.elevation_loss_m),
-      minEleM: Number(value.minEleM ?? value.min_ele_m),
-      maxEleM: Number(value.maxEleM ?? value.max_ele_m),
+      elevationGainM: this.toNullableNumber(value.elevationGainM ?? value.elevation_gain_m),
+      elevationLossM: this.toNullableNumber(value.elevationLossM ?? value.elevation_loss_m),
+      minEleM: this.toNullableNumber(value.minEleM ?? value.min_ele_m),
+      maxEleM: this.toNullableNumber(value.maxEleM ?? value.max_ele_m),
+      elevationQuality: value.elevationQuality ?? null,
+      elevationStatus: value.elevationStatus ?? value.elevation_status ?? null,
+      elevationVersion: this.toNullableNumber(value.elevationVersion ?? value.elevation_version ?? value.elevationAlgorithmVersion ?? value.elevation_algorithm_version),
       elevationProfile: Array.isArray(profile) ? profile.map((point: any) => ({
         distanceKm: Number(point.distanceKm ?? point.distance_km),
-        elevationM: Number(point.elevationM ?? point.elevation_m)
-      })).filter((point: any) => Number.isFinite(point.distanceKm) && Number.isFinite(point.elevationM)) : []
+        elevationM: this.toNullableNumber(point.elevationM ?? point.elevation_m)
+      })).filter((point: any) => Number.isFinite(point.distanceKm)) : []
     };
   }
 
   private toNullableNumber(value: unknown): number | null {
+    if (value === null || value === undefined || value === '') return null;
     const parsed = Number(value);
     return Number.isFinite(parsed) ? parsed : null;
   }

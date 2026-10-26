@@ -6,6 +6,10 @@ export interface TrackMetadataDialogResult {
   colors: string[];
 }
 
+export interface TrackMetadataDialogData extends TrackMetadataDialogResult {
+  showColor: boolean;
+}
+
 @Component({
   selector: 'app-track-metadata-dialog',
   templateUrl: './track-metadata-dialog.component.html',
@@ -16,7 +20,7 @@ export class TrackMetadataDialogComponent {
 
   constructor(
     private dialogRef: MatDialogRef<TrackMetadataDialogComponent, TrackMetadataDialogResult>,
-    @Inject(MAT_DIALOG_DATA) public data: TrackMetadataDialogResult
+    @Inject(MAT_DIALOG_DATA) public data: TrackMetadataDialogData
   ) {
     this.entries = data.names.map((name, index) => ({
       name: name ?? `Track ${index + 1}`,

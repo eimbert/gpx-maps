@@ -2,7 +2,7 @@
   display: flex;
   flex-direction: column;
   gap: 12px;
-  min-width: 320px;
+  min-width: 0;
 }
 
 .file-picker {
@@ -12,17 +12,25 @@
 
 .file-picker__label {
   font-weight: 700;
-  color: #0f172a;
+  color: var(--ui-muted);
 }
 
 .file-picker__hint {
   margin: 0;
-  color: #64748b;
+  color: var(--ui-muted);
   font-size: 13px;
 }
 
 .file-picker__selected {
   margin: 0;
-  color: #0f172a;
+  color: var(--ui-muted);
   font-weight: 600;
 }
+
+.file-picker input { width: 100%; min-width: 0; box-sizing: border-box; padding: 12px; border: 1px dashed var(--ui-border); border-radius: 12px; color: var(--ui-muted); background: var(--ui-raised); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.file-picker input::file-selector-button { padding: 9px 12px; margin: 0 10px 6px 0; border: 0; border-radius: 8px; background: var(--ui-accent); color: var(--ui-accent-ink); cursor: pointer; font-weight: 700; }
+.file-picker__selected { overflow-wrap: anywhere; }
+
+/* Let the dialog grow to its content on ordinary screens. */
+:host { display: block; min-width: 0; }
+.form { max-height: none; overflow: visible; }

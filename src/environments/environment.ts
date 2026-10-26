@@ -17,10 +17,13 @@ export const environment = {
   planApiBase: `http://${back}/plan-folders`,
   usersApiBase: `http://${back}/users`,
   geoCode: `http://${back}/geocode/reverse`,
+  routePlacesUrl: `http://${back}/geocode/route-places`,
   mensajesApiBase: `http://${back}/mensajes`,
   routingApiBase: `http://${back}/routing`,
   routeAnalysisApiBase: `http://${back}/route-analysis`,
-  accountApiBase: `http://${back}/account`
+  accountApiBase: `http://${back}/account`,
+  assistantApiBase: `http://${back}/assistant`,
+  billingApiBase: `http://${back}/billing`
 };
 
 /*

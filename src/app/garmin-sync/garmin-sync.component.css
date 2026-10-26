@@ -1,0 +1,102 @@
+:host { display: block; min-height: 100vh; background: #0d100e; color: #f3f5f1; }
+.inbox-page { max-width: 980px; margin: 0 auto; padding: 28px 20px 70px; }
+.back { color: #eac44d; text-decoration: none; font-weight: 650; }
+.inbox-shell { margin-top: 24px; padding: 22px; border: 1px solid #30372f; border-radius: 20px; background: #1c211e; }
+.inbox-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; }
+h1 { font-size: 24px; margin: 0 0 3px; }
+.inbox-header p { margin: 0; color: #c2cbc4; font-size: 14px; }
+button { font: inherit; cursor: pointer; }
+button:disabled { opacity: .55; cursor: wait; }
+.settings-button { border: 0; background: transparent; color: #e9ece8; font-size: 23px; padding: 1px 8px; }
+.empty-device, .empty-rides { margin-top: 22px; padding: 22px; border: 1px dashed #777d71; border-radius: 13px; background: #262d28; }
+.empty-device p { margin: 5px 0 0; color: #bbc4bb; }
+.connection-panel { margin-top: 22px; padding: 20px; border: 1px solid #52674c; border-radius: 14px; background: #252e27; }
+.connection-panel h2 { margin: 0 0 14px; font-size: 18px; }
+.providers { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.provider { display: flex; flex-direction: column; gap: 6px; border: 1px solid #6a7465; border-radius: 10px; padding: 14px; background: transparent; text-align: left; color: #f3f5f1; }
+.provider:hover:not(:disabled), .provider:focus-visible { border-color: #eac44d; background: #303a2e; }
+.provider:focus-visible { outline: 2px solid #eac44d; outline-offset: 3px; }
+.provider--linked span { color: #b3efb0; }
+.provider:disabled { opacity: .5; cursor: default; }
+.provider--active { border-color: #eac44d; color: #ffdc62; }
+.provider--disabled { opacity: .55; }
+.provider span { font-size: 12px; color: #c7cfc4; }
+.pair-instructions p { max-width: 760px; line-height: 1.5; color: #c9d2c9; }
+.pair-instructions h3 { margin: 19px 0 10px; font-size: 16px; }
+.setup-steps { margin: 0; padding-left: 24px; color: #d3dbd1; line-height: 1.55; }
+.setup-steps li { padding: 5px 0 5px 5px; }
+.setup-steps li::marker { color: #eac44d; font-weight: 800; }
+.setup-steps strong { color: #fff; }
+.setup-steps a { color: #ffdc62; text-underline-offset: 3px; }
+.pair-instructions .compatible-devices { margin: 13px 0 20px; font-size: 12px; color: #b7c7b6; }
+label { display: block; font-weight: 700; margin-bottom: 7px; }
+.pair-row { display: flex; gap: 10px; }
+.pair-row input { min-width: 0; flex: 1; background: #151a16; color: #fff; border: 1px solid #7a8678; border-radius: 9px; padding: 11px 12px; font-size: 17px; letter-spacing: .12em; }
+.pair-row button, .incorporate-button { border: 0; border-radius: 999px; padding: 10px 18px; color: #20221f; background: #f1f2ee; font-weight: 750; }
+.linked-device { margin: 16px 0 0; color: #bad0ba; font-size: 13px; }
+.notice { padding: 10px 12px; border-radius: 8px; }
+.notice--success { color: #aeedaa; background: #23452e; }
+.notice--error { color: #ffd0ca; background: #5e2b2b; }
+.inbox-toolbar { display: flex; align-items: center; gap: 12px; margin: 25px 0 19px; padding-bottom: 15px; border-bottom: 1px solid #3c453d; }
+.inbox-toolbar strong { color: #eac44d; }
+.pending-count { display: inline-flex; align-items: center; gap: 8px; }
+.pending-count svg { flex-shrink: 0; }
+.inbox-toolbar button { margin-left: auto; border: 1px solid #5d665d; border-radius: 999px; background: transparent; color: #e7ebe6; padding: 6px 12px; }
+.inbox-toolbar span { font-size: 12px; }
+.ride-card { margin: 12px 0; padding: 18px; border-radius: 13px; background: #29312c; }
+.ride-card__top { display: flex; justify-content: space-between; gap: 12px; font-size: 12px; }
+.ride-card__top strong { color: #eac44d; }
+.ride-card h2 { margin: 20px 0 13px; font-size: 17px; }
+.ride-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.ride-stats > div { display: flex; flex-direction: column; gap: 4px; }
+.ride-stats strong { font-size: 17px; }
+.ride-stats small { font-size: 11px; color: #d3dbd1; }
+.ride-actions { display: flex; gap: 9px; align-items: center; margin-top: 19px; }
+.discard-button, .preview-button { border: 1px solid #6c766b; background: transparent; color: #e8ece6; border-radius: 999px; padding: 9px 17px; }
+.preview-button { margin-left: auto; }
+.route-map { width: 100%; height: 330px; margin-top: 18px; border-radius: 10px; z-index: 0; }
+.incorporated-section { margin-top: 30px; padding-top: 10px; border-top: 1px solid #3c453d; }
+.incorporated-section h2 { font-size: 16px; }
+.incorporated-row { display: flex; gap: 12px; align-items: center; padding: 12px 0; border-top: 1px solid #344035; }
+.incorporated-row span:last-of-type { margin-left: auto; }
+.incorporated-row__location { color: #c2cbc4; font-size: 13px; }
+.incorporated-row a { color: #eac44d; }
+@media (max-width: 620px) {
+  .inbox-page { padding: 15px 10px 45px; }
+  .inbox-shell { padding: 15px; }
+  .providers { grid-template-columns: 1fr; }
+  .pair-row { flex-direction: column; }
+  .inbox-toolbar span { display: none; }
+  .ride-card { padding: 14px; }
+  .ride-stats { gap: 6px; }
+  .ride-stats strong { font-size: 14px; }
+  .ride-actions { flex-wrap: wrap; }
+  .preview-button { margin-left: 0; }
+  .incorporated-row { flex-wrap: wrap; }
+}
+
+/* Inbox cards and device connections from the supplied compositions. */
+:host { background: var(--ui-page); color: var(--ui-text); }
+.inbox-page { max-width: 1160px; padding: 26px clamp(16px, 3vw, 32px) 66px; }
+.inbox-shell { margin-top: 16px; padding: 26px; border-color: var(--ui-border); border-radius: 15px; background: var(--ui-surface); box-shadow: 0 5px 17px #0001; }
+.inbox-header h1 { font-size: clamp(27px, 3vw, 34px); letter-spacing: -.8px; }
+.inbox-header p { color: var(--ui-muted); }
+.connection-panel { border-color: var(--ui-border); border-radius: 13px; background: var(--ui-raised); }
+.providers { gap: 12px; }
+.provider { min-height: 73px; border-color: var(--ui-border); border-radius: 10px; background: var(--ui-surface); }
+.provider--active { border-color: var(--ui-accent); box-shadow: inset 3px 0 var(--ui-accent); }
+.inbox-toolbar { border-color: var(--ui-border); }
+.inbox-toolbar strong, .ride-card__top strong { color: var(--ui-accent); }
+.ride-card { padding: 22px; border: 1px solid var(--ui-border); border-radius: 12px; background: var(--ui-raised); }
+.ride-card h2 { margin: 15px 0; font-size: 19px; }
+.incorporate-button { background: var(--ui-accent); color: var(--ui-accent-ink); border-radius: 9px; font-weight: 800; }
+.discard-button, .preview-button, .inbox-toolbar button { border-color: var(--ui-border); border-radius: 9px; }
+@media (max-width: 700px) {
+  .inbox-page { padding: 17px 14px 32px; }
+  .inbox-shell { padding: 16px; }
+  .connection-panel { padding: 16px; }
+  .providers { grid-template-columns: 1fr; }
+  .ride-card { padding: 16px; }
+  .ride-stats { gap: 8px; }
+  .ride-actions > button { min-height: 42px; }
+}

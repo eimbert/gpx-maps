@@ -13,6 +13,7 @@ export interface PlanFolder {
 }
 
 export interface PlanTrack {
+  elevationQuality?: 'A' | 'B' | 'C' | null;
   id: number;
   folderId: number;
   createdByUserId: number;
@@ -27,6 +28,8 @@ export interface PlanTrack {
   difficultyScore?: number | null;
   difficultyLevel?: number | null;
   difficultyVersion?: number | null;
+  irpScore?: number | null;
+  irpVersion?: string | null;
   howToGetUrl: string | null;
   sourceType: string | null;
   sortOrder: number | null;

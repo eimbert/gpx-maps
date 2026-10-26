@@ -3,7 +3,7 @@
   flex-direction: column;
   gap: 24px;
   padding: 32px 40px 48px;
-  color: #0f172a;
+  color: var(--ui-text);
   width: 90%;
   margin: 0 auto;
   box-sizing: border-box;
@@ -12,8 +12,7 @@
 :host {
   display: block;
   min-height: 100vh;
-  background-color: #e2e8f0;
-  background-image: url('/assets/fondo_pantalla2.png');
+  background: var(--ui-page);
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
@@ -47,8 +46,8 @@
   gap: 12px;
   padding: 10px 16px;
   border-radius: 999px;
-  border: 1px solid #e2e8f0;
-  background: #fff;
+  border: 1px solid var(--ui-border);
+  background: var(--ui-surface);
   min-width: 280px;
   flex: 1;
   box-sizing: border-box;
@@ -63,8 +62,8 @@
 }
 
 .plan__primary {
-  background: #2563eb;
-  color: #fff;
+  background: var(--ui-accent);
+  color: var(--ui-accent-ink);
   border: none;
   border-radius: 12px;
   padding: 10px 18px;
@@ -89,11 +88,11 @@
   gap: 6px;
   border-radius: 999px;
   padding: 10px 16px;
-  border: 1px solid #d1d5db;
-  background: #fff;
+  border: 1px solid var(--ui-border);
+  background: var(--ui-surface);
   font-weight: 600;
   cursor: pointer;
-  color: #0f172a;
+  color: var(--ui-text);
 }
 
 .plan__home-button mat-icon {
@@ -103,8 +102,8 @@
 }
 
 .plan__secondary {
-  background: #fff;
-  border: 1px solid #d1d5db;
+  background: var(--ui-surface);
+  border: 1px solid var(--ui-border);
   border-radius: 12px;
   padding: 10px 16px;
   cursor: pointer;
@@ -119,7 +118,7 @@
 
 .plan__ghost {
   background: transparent;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--ui-border);
   border-radius: 10px;
   padding: 6px 12px;
   font-weight: 600;
@@ -127,7 +126,7 @@
 }
 
 .plan__new {
-  background: #f8fafc;
+  background: var(--ui-raised);
   border-radius: 16px;
   padding: 20px 24px;
   display: flex;
@@ -147,7 +146,7 @@
   flex-direction: column;
   gap: 8px;
   font-weight: 600;
-  color: #334155;
+  color: var(--ui-muted);
 }
 
 .plan__new input,
@@ -156,7 +155,7 @@
 .plan__details textarea,
 .plan__invite-row input {
   border-radius: 12px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--ui-border);
   padding: 10px 12px;
   font-size: 14px;
   font-weight: 400;
@@ -179,7 +178,7 @@
 }
 
 .plan__details {
-  background: #fff;
+  background: var(--ui-surface);
   border-radius: 20px;
   padding: 24px 28px;
   display: flex;
@@ -281,7 +280,7 @@
   position: relative;
   width: min(520px, 92vw);
   margin: 0;
-  background: #fff7ed;
+  background: var(--ui-surface);
   border: 1px solid #fdba74;
   border-radius: 16px;
   padding: 16px;
@@ -301,7 +300,7 @@
   border-collapse: collapse;
   table-layout: fixed;
   font-size: 14px;
-  background: #fff;
+  background: var(--ui-surface);
   border-radius: 12px;
   overflow: hidden;
 }
@@ -343,7 +342,7 @@
 
 .plan__notification-body {
   font-size: 13px;
-  color: #7c2d12;
+  color: #fdba74;
   margin-top: 4px;
   word-break: break-word;
 }
@@ -368,7 +367,7 @@
 }
 
 .plan__invite {
-  background: #f1f5f9;
+  background: var(--ui-raised);
   padding: 16px;
   border-radius: 16px;
   display: flex;
@@ -393,7 +392,7 @@
   width: 100%;
   border-collapse: collapse;
   font-size: 14px;
-  background: #fff;
+  background: var(--ui-surface);
   border-radius: 12px;
   overflow: hidden;
 }
@@ -431,7 +430,7 @@
 
 .plan__invite-email {
   font-size: 12px;
-  color: #64748b;
+  color: var(--ui-muted);
 }
 
 .plan__invite-status {
@@ -443,7 +442,7 @@
 
 .plan__invite-status-date {
   font-size: 12px;
-  color: #64748b;
+  color: var(--ui-muted);
 }
 
 .plan__tracks {
@@ -462,7 +461,7 @@
 
 .plan__difficulty-legend-title {
   font-size: 12px;
-  color: #475569;
+  color: var(--ui-muted);
   font-weight: 600;
   white-space: nowrap;
 }
@@ -473,7 +472,7 @@
   height: 10px;
   border-radius: 999px;
   background: linear-gradient(90deg, #22c55e 0%, #eab308 40%, #f97316 70%, #ef4444 100%);
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--ui-border);
 }
 
 .plan__difficulty-pill {
@@ -518,9 +517,9 @@
 }
 
 .plan__difficulty-pill--unknown {
-  background: #f8fafc;
+  background: var(--ui-raised);
   border-color: #cbd5e1;
-  color: #475569;
+  color: var(--ui-muted);
 }
 
 .plan__table-wrapper {
@@ -563,7 +562,7 @@
   margin-left: 6px;
   border-radius: 999px;
   border: 1px solid #94a3b8;
-  color: #64748b;
+  color: var(--ui-muted);
   font-size: 10px;
   font-weight: 700;
   line-height: 1;
@@ -580,7 +579,7 @@
 }
 
 .plan__maps-link {
-  color: #2563eb;
+  color: var(--ui-accent);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -602,7 +601,7 @@
 
 .plan__maps-link:hover,
 .plan__maps-link:focus-visible {
-  color: #1d4ed8;
+  color: var(--ui-text);
 }
 
 .plan__animate-link:hover,
@@ -631,7 +630,7 @@
 }
 
 .plan__weather-temp {
-  color: #64748b;
+  color: var(--ui-muted);
   font-size: 12px;
 }
 
@@ -641,7 +640,7 @@
 
 .plan__track-meta {
   font-size: 12px;
-  color: #64748b;
+  color: var(--ui-muted);
   text-align: left !important;
 }
 
@@ -658,7 +657,7 @@
 }
 
 .plan__folders {
-  background: #fff;
+  background: var(--ui-surface);
   border-radius: 20px;
   padding: 20px;
   display: flex;
@@ -675,6 +674,8 @@
 }
 
 .plan__folder-card {
+  color: var(--ui-text);
+  font: inherit;
   position: relative;
   display: flex;
   justify-content: space-between;
@@ -682,16 +683,16 @@
   gap: 12px;
   border-radius: 14px;
   padding: 12px 14px 12px 20px;
-  border: 1px solid #e2e8f0;
-  background: #f8fafc;
+  border: 1px solid var(--ui-border);
+  background: var(--ui-raised);
   cursor: pointer;
   text-align: left;
   overflow: hidden;
 }
 
 .plan__folder-card--active {
-  border-color: #2563eb;
-  background: #eef2ff;
+  border-color: var(--ui-accent);
+  background: #393426;
 }
 
 .plan__folder-card::before {
@@ -722,13 +723,15 @@
 
 .plan__folder-card p {
   margin: 0;
-  font-weight: 600;
+  color: var(--ui-text);
+  font-size: 15px;
+  font-weight: 700;
   overflow-wrap: anywhere;
 }
 
 .plan__folder-card span {
   font-size: 12px;
-  color: #64748b;
+  color: var(--ui-muted);
   overflow-wrap: anywhere;
 }
 
@@ -737,10 +740,10 @@
 }
 
 .plan__track-card {
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--ui-border);
   border-radius: 14px;
   padding: 12px;
-  background: #fff;
+  background: var(--ui-surface);
   margin-bottom: 10px;
 }
 
@@ -763,7 +766,7 @@
 
 .plan__track-card-votes {
   font-size: 12px;
-  color: #475569;
+  color: var(--ui-muted);
   white-space: nowrap;
 }
 
@@ -780,7 +783,7 @@
 }
 
 .plan__track-card-label {
-  color: #64748b;
+  color: var(--ui-muted);
   font-size: 11px;
 }
 
@@ -815,7 +818,7 @@
   align-items: center;
   gap: 6px;
   font-size: 12px;
-  color: #64748b;
+  color: var(--ui-muted);
 }
 
 .plan__folder-dot {
@@ -828,7 +831,7 @@
   border: none;
   padding: 4px;
   cursor: pointer;
-  color: #0f172a;
+  color: var(--ui-text);
 }
 
 .plan__icon-button--danger {
@@ -836,18 +839,18 @@
 }
 
 .plan__icon-button--download {
-  color: #2563eb;
+  color: var(--ui-accent);
 }
 
 .plan__hint {
   font-size: 12px;
-  color: #64748b;
+  color: var(--ui-muted);
 }
 
 .plan__empty {
   padding: 48px 24px;
   text-align: center;
-  background: #fff;
+  background: var(--ui-surface);
   border-radius: 24px;
   box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
 }
@@ -1075,9 +1078,9 @@
 .plan__roundtrip {
   margin: 12px 0;
   padding: 12px;
-  border: 1px solid #dbeafe;
+  border: 1px solid var(--ui-border);
   border-radius: 12px;
-  background: #f8fafc;
+  background: var(--ui-raised);
 }
 
 .plan__roundtrip-fields {
@@ -1090,12 +1093,14 @@
   height: 280px;
   border-radius: 10px;
   overflow: hidden;
-  border: 1px solid #cbd5e1;
+  border: 1px solid var(--ui-border);
   margin-top: 8px;
 }
 
 .plan__roundtrip-map--fullscreen {
-  height: min(72vh, 760px);
+  height: min(46vh, 500px);
+  min-height: 220px;
+  flex-shrink: 0;
 }
 
 .plan__roundtrip-overlay {
@@ -1106,12 +1111,16 @@
   align-items: center;
   justify-content: center;
   padding: 24px;
-  z-index: 1200;
+  z-index: 1300;
 }
 
 .plan__roundtrip-dialog {
+  box-sizing: border-box;
+  max-height: 96vh;
+  overflow-y: auto;
+  color: var(--ui-text);
   width: min(1100px, 96vw);
-  background: #fff;
+  background: var(--ui-surface);
   border-radius: 16px;
   padding: 16px;
   box-shadow: 0 24px 40px rgba(15, 23, 42, 0.3);
@@ -1129,7 +1138,7 @@
   gap: 14px;
   margin-top: 8px;
   font-size: 12px;
-  color: #334155;
+  color: var(--ui-muted);
 }
 
 
@@ -1140,7 +1149,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1250;
+  z-index: 1350;
 }
 
 .plan__roundtrip-loading-card {
@@ -1149,9 +1158,9 @@
   gap: 10px;
   padding: 14px 18px;
   border-radius: 12px;
-  background: #ffffff;
+  background: var(--ui-surface);
   box-shadow: 0 16px 28px rgba(15, 23, 42, 0.28);
-  color: #0f172a;
+  color: var(--ui-text);
   font-weight: 600;
 }
 
@@ -1163,7 +1172,7 @@
   width: 18px;
   height: 18px;
   border: 2px solid #bfdbfe;
-  border-top-color: #2563eb;
+  border-top-color: var(--ui-accent);
   border-radius: 50%;
   animation: plan-roundtrip-spin 0.8s linear infinite;
 }
@@ -1178,7 +1187,14 @@
   display: flex;
   justify-content: flex-end;
   gap: 8px;
+  flex-wrap: wrap;
 }
+
+.plan__roundtrip-preview { margin-top: 12px; padding: 12px; border: 1px solid var(--ui-border); border-radius: 12px; font-size: 14px; line-height: 1.5; }
+.plan__roundtrip-preview p, .plan__roundtrip-preview ul { margin: 8px 0 0; color: var(--ui-muted); }
+.plan__roundtrip-preview ul { padding-left: 20px; }
+.plan__roundtrip-dialog-header h4 { margin: 0; font-size: 20px; }
+.plan__roundtrip-actions button:focus-visible { outline: 2px solid var(--ui-accent); outline-offset: 3px; }
 
 
 @media (max-width: 768px) {
@@ -1194,16 +1210,97 @@
     padding: 12px;
     display: flex;
     flex-direction: column;
-    min-height: 100vh;
+    max-height: 100dvh;
     box-sizing: border-box;
   }
 
   .plan__roundtrip-map--fullscreen {
-    height: calc(100vh - 180px);
-    min-height: 300px;
+    height: 40vh;
+    min-height: 220px;
   }
 
   .plan__roundtrip-coords {
     flex-wrap: wrap;
   }
+}
+
+/* Same workspace palette as Archivo and Animar. */
+.plan input, .plan textarea, .plan select { background: var(--ui-raised); color: var(--ui-text); color-scheme: dark; }
+.plan input::placeholder, .plan textarea::placeholder { color: var(--ui-muted); opacity: 1; }
+.plan__secondary, .plan__ghost { color: var(--ui-text); }
+.plan__primary { background: var(--ui-accent); }
+.plan :is(button, input, textarea, select, a):focus-visible { outline: 3px solid var(--ui-accent); outline-offset: 3px; }
+.plan__track-title, .plan__roundtrip-coords { color: var(--ui-muted); }
+
+/* Route selection: readable names, explicit difficulty and a persistent IRP. */
+.plan__tracks .plan__difficulty-legend { display:flex; flex-wrap:wrap; gap:12px 18px; align-items:center; padding:12px 0; }
+.plan__difficulty-key { display:inline-flex; align-items:center; gap:6px; font-size:12px; color:var(--ui-muted); }
+.plan__difficulty-dot { width:9px; height:9px; border-radius:50%; display:inline-block; }
+.plan__selection-count { margin-left:auto; font-size:12px; color:var(--ui-muted); }
+.plan__tracks .plan__difficulty-pill { width:96px; box-sizing:border-box; height:auto; min-height:38px; padding:4px 8px; gap:5px; border-radius:8px; font-size:11px; font-weight:700; white-space:nowrap; }
+.plan__difficulty-pill--easy { background:#70d6a2; color:#123c29; border-color:#70d6a2; }
+.plan__difficulty-pill--medium { background:#f0ce57; color:#493701; border-color:#f0ce57; }
+.plan__difficulty-pill--hard { background:#f69b52; color:#542400; border-color:#f69b52; }
+.plan__difficulty-pill--very-hard { background:#ec6c73; color:#4b0c17; border-color:#ec6c73; }
+.plan__tracks .plan__difficulty-icon { color:inherit!important; }
+.plan__irp { display:block; margin-top:7px; font-size:11px; font-weight:650; color:var(--ui-text); white-space:nowrap; }
+.plan__irp small { font-weight:400; color:var(--ui-muted); }
+.plan__tracks .plan__track-title { color:var(--ui-text); min-width:140px; max-width:235px; line-height:1.5; overflow-wrap:anywhere; cursor:default!important; }
+.plan__tracks .plan__track-meta { color:var(--ui-muted); margin-top:4px; font-size:11px; }
+.plan__tracks .plan__table thead th { font-size:11px; font-weight:650; color:var(--ui-muted); padding:13px 9px; background:var(--ui-raised); border-bottom:1px solid var(--ui-border); }
+.plan__tracks .plan__table td { padding:17px 9px; font-size:12px; border-bottom:1px solid var(--ui-border); font-variant-numeric:tabular-nums; }
+.plan__tracks .plan__table--desktop :is(th,td) { vertical-align:middle; }
+.plan__tracks .plan__table--desktop :is(th,td):not(:nth-child(2)) { text-align:center; }
+.plan__difficulty-stack { display:inline-flex; position:relative; align-items:center; justify-content:center; }
+.plan__difficulty-stack .plan__irp { position:absolute; top:calc(100% + 5px); left:50%; transform:translateX(-50%); margin-top:0; }
+.plan__tracks .plan__table tbody tr:hover { background:rgba(127,127,127,.05); }
+.plan__tracks .plan__track-row--selected { background:rgba(219,165,34,.075); box-shadow:inset 3px 0 #dba522; }
+.plan__tracks .plan__table tbody tr.plan__track-row--selected:hover { background:rgba(219,165,34,.12); }
+.plan__track-checkbox { accent-color:#dba522; }
+.plan__route-metrics strong,.plan__route-metrics span,.plan__route-metrics small { display:block; white-space:nowrap; line-height:1.6; }
+.plan__route-metrics small { color:var(--ui-muted); font-size:11px; }
+.plan__location-link { display:block; margin-top:6px; font-size:11px; color:var(--ui-accent); }
+.plan__comparison-history { margin:0 0 24px; padding:20px; border:1px solid var(--ui-border); border-radius:16px; background:var(--ui-raised); }
+.plan__comparison-history-heading h3 { margin:0; font-size:17px; color:var(--ui-text); }
+.plan__comparison-history-heading h3 span { margin-left:8px; padding:2px 8px; border-radius:20px; background:var(--ui-accent); color:#242719; font-size:12px; }
+.plan__comparison-history-heading p { margin:7px 0 16px; color:var(--ui-muted); font-size:12px; }
+.plan__comparison-history ul { list-style:none; margin:0; padding:0; }
+.plan__comparison-history li + li { border-top:1px solid var(--ui-border); }
+.plan__comparison-history li button { display:flex; align-items:center; gap:14px; width:100%; padding:16px 4px; border:0; background:transparent; color:var(--ui-text); text-align:left; cursor:pointer; }
+.plan__comparison-history li button:hover { background:rgba(127,127,127,.08); }
+.plan__comparison-history mat-icon { flex-shrink:0; color:var(--ui-accent); }
+.plan__comparison-history-info { flex:1; min-width:0; }
+.plan__comparison-history-info strong { display:block; font-size:13px; line-height:1.5; overflow-wrap:anywhere; }
+.plan__comparison-history-info small { display:block; margin-top:5px; font-size:11px; color:var(--ui-muted); }
+.plan__comparison-history-open { flex-shrink:0; color:var(--ui-accent); font-size:12px; font-weight:700; }
+@media(max-width:700px){ .plan__comparison-history{padding:16px;} .plan__comparison-history li button{flex-wrap:wrap;gap:10px;} .plan__comparison-history-open{width:100%;padding-left:34px;} }
+@media(max-width:700px){ .plan__selection-count{margin-left:0;width:100%;} .plan__tracks .plan__track-title{max-width:none;min-width:0;} }
+
+.plan__folder-card:hover { border-color: var(--ui-accent); }
+.plan__folder-divider { background: var(--ui-border); }
+
+/* Planning follows the outing, tracks, details, guests and reports composition. */
+.plan { width: min(1250px, 100%); gap: 18px; padding: 28px 26px 60px; }
+.plan [hidden] { display: none !important; }
+.plan__toolbar { padding-bottom: 16px; border-bottom: 1px solid var(--ui-border); }
+.plan__search { border-radius: 9px; }
+.plan__primary { border-radius: 9px; min-height: 41px; font-family: inherit; font-weight: 800; }
+.plan__layout { gap: 17px; }
+.plan__folders, .plan__details, .plan__new { border: 1px solid var(--ui-border); border-radius: 15px; background: var(--ui-surface); box-shadow: 0 5px 17px #0001; }
+.plan__folder-card { border-radius: 11px; }
+.plan__tabs { display: flex; align-items: stretch; gap: 5px; margin: 19px 0 20px; border-bottom: 1px solid var(--ui-border); overflow-x: auto; scrollbar-width: thin; }
+.plan__tabs button { display: inline-flex; align-items: center; gap: 6px; flex: none; min-height: 42px; padding: 8px 14px; border: 0; border-bottom: 3px solid transparent; background: none; color: var(--ui-muted); font: 800 12px Manrope, Arial, sans-serif; cursor: pointer; }
+.plan__tabs button.is-active { color: var(--ui-accent); border-bottom-color: var(--ui-accent); }
+.plan__tabs button:hover { color: var(--ui-text); }
+.plan__tabs span { display: inline-grid; place-items: center; min-width: 18px; height: 18px; padding: 0 4px; border-radius: 6px; background: var(--ui-raised); font-size: 10px; }
+.plan__reports { min-height: 180px; }
+.plan__reports .plan__comparison-history { margin-top: 14px; }
+@media (max-width: 700px) {
+  .plan { padding: 17px 14px 34px; }
+  .plan__toolbar { align-items: stretch; }
+  .plan__toolbar-actions, .plan__toolbar-actions .plan__primary { width: 100%; }
+  .plan__search { min-width: 0; }
+  .plan__folders, .plan__details, .plan__new { border-radius: 12px; }
+  .plan__tabs { margin-left: -8px; margin-right: -8px; }
+  .plan__tabs button { padding: 8px 11px; min-height: 44px; }
 }

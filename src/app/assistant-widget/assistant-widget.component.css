@@ -1,0 +1,115 @@
+:host { position: relative; z-index: 1200; }
+.assistant { position: fixed; right: 22px; bottom: 20px; z-index: 1200; font-family: inherit; }
+.assistant__launcher { position: relative; display: block; width: 112px; height: 142px; padding: 0; border: 0; background: transparent; cursor: pointer; filter: drop-shadow(0 10px 9px rgba(2,6,23,.3)); transform-origin: 50% 100%; animation: assistant-idle 4.8s ease-in-out infinite; }
+.assistant__launcher img { display: block; width: 100%; height: 100%; object-fit: contain; image-rendering: pixelated; transition: filter .2s ease; }
+.assistant__launcher:hover img { filter: brightness(1.08); }
+.assistant__launcher:focus-visible { outline: 3px solid #facc15; outline-offset: 4px; border-radius: 20px; }
+.assistant__launcher--hello { animation: assistant-wave .8s ease-in-out 2; }
+.assistant__hint { position: absolute; right: 78px; top: 4px; width: max-content; max-width: 185px; padding: 10px 13px; border: 2px solid #10213b; border-radius: 15px 15px 4px 15px; color: #10213b; background: #fff; box-shadow: 0 8px 22px rgba(2,6,23,.18); font-size: 13px; font-weight: 800; line-height: 1.25; animation: assistant-bubble-in .28s ease-out both; }
+.assistant__hint::after { content: ''; position: absolute; right: -9px; bottom: 9px; width: 15px; height: 15px; border-top: 2px solid #10213b; border-right: 2px solid #10213b; background: #fff; transform: rotate(45deg); }
+.assistant__panel { display: grid; grid-template-rows: auto minmax(180px, 1fr) auto auto auto; width: min(390px, calc(100vw - 28px)); height: min(610px, calc(100dvh - 40px)); overflow: hidden; border: 1px solid #cbd5e1; border-radius: 22px; color: #0f172a; background: #f8fafc; box-shadow: 0 24px 70px rgba(2,6,23,.42); }
+.assistant__panel header { display: flex; align-items: center; gap: 10px; min-height: 70px; padding: 8px 12px; color: #fff; background: linear-gradient(135deg, #10213b, #174c68); }
+.assistant__panel header img { align-self: end; width: 62px; height: 62px; object-fit: contain; }
+.assistant__panel header div { display: grid; gap: 2px; flex: 1; }
+.assistant__panel header strong { font-size: 18px; }
+.assistant__panel header span { color: #bae6fd; font-size: 12px; }
+.assistant__panel header button { display: grid; place-items: center; border: 0; color: #fff; background: transparent; cursor: pointer; }
+.assistant__messages { display: flex; flex-direction: column; gap: 9px; min-height: 0; padding: 14px; overflow-y: auto; }
+.assistant__message { align-self: flex-start; max-width: 86%; padding: 10px 12px; border-radius: 5px 15px 15px 15px; background: #e2e8f0; white-space: pre-wrap; line-height: 1.4; }
+.assistant__message--user { align-self: flex-end; border-radius: 15px 5px 15px 15px; color: #fff; background: #1d4ed8; }
+.assistant__message--error { color: #991b1b; background: #fee2e2; }
+.assistant__suggestions { display: flex; gap: 6px; padding: 0 12px 10px; overflow-x: auto; }
+.assistant__suggestions button { flex: 0 0 auto; padding: 7px 10px; border: 1px solid #bfdbfe; border-radius: 999px; color: #1e40af; background: #eff6ff; cursor: pointer; }
+.assistant form { display: grid; grid-template-columns: 1fr auto; gap: 7px; padding: 10px 12px; border-top: 1px solid #e2e8f0; background: #fff; }
+.assistant textarea { min-width: 0; resize: none; padding: 9px 10px; border: 1px solid #cbd5e1; border-radius: 12px; font: inherit; }
+.assistant form button { align-self: stretch; width: 44px; border: 0; border-radius: 12px; color: #fff; background: #1d4ed8; cursor: pointer; }
+.assistant form button:disabled { cursor: not-allowed; opacity: .45; }
+.assistant__disclaimer { padding: 0 12px 9px; color: #64748b; text-align: center; background: #fff; }
+.assistant__typing { display: flex; gap: 4px; padding: 10px 13px; }
+.assistant__typing i { width: 7px; height: 7px; border-radius: 50%; background: #64748b; animation: assistant-pulse 1s infinite alternate; }
+.assistant__typing i:nth-child(2) { animation-delay: .2s; }.assistant__typing i:nth-child(3) { animation-delay: .4s; }
+.assistant__guest { display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 12px; min-height: 280px; padding: 28px; text-align: center; }
+.assistant__guest strong { color: #10213b; font-size: 22px; }
+.assistant__guest p { margin: 0; color: #475569; line-height: 1.5; }
+.assistant__guest button { padding: 11px 18px; border: 0; border-radius: 999px; color: #172033; background: #facc15; cursor: pointer; font-weight: 900; }
+.assistant__guest small { color: #64748b; }
+@keyframes assistant-pulse { to { opacity: .25; transform: translateY(-3px); } }
+@keyframes assistant-idle { 0%, 82%, 100% { transform: translateY(0) rotate(0); } 88% { transform: translateY(-5px) rotate(-2deg); } 94% { transform: translateY(0) rotate(2deg); } }
+@keyframes assistant-wave { 0%, 100% { transform: rotate(0); } 25% { transform: rotate(-7deg) translateY(-5px); } 75% { transform: rotate(6deg); } }
+@keyframes assistant-bubble-in { from { opacity: 0; transform: translate(8px, 5px) scale(.9); } to { opacity: 1; transform: none; } }
+@media (max-width: 640px) {
+  .assistant { right: 10px; bottom: max(10px, env(safe-area-inset-bottom)); }
+  .assistant__launcher { width: 88px; height: 114px; }
+  .assistant__hint { right: 64px; top: 0; max-width: 155px; font-size: 12px; }
+  .assistant__panel { grid-template-rows: auto minmax(0, 1fr) auto auto auto; width: calc(100vw - 20px); height: min(72dvh, 620px); max-height: calc(var(--assistant-viewport-height, 100dvh) - 20px); border-radius: 20px; }
+  .assistant:focus-within { top: calc(var(--assistant-viewport-top, 0px) + 10px); bottom: auto; }
+  .assistant:focus-within .assistant__panel { height: min(620px, calc(var(--assistant-viewport-height, 100dvh) - 20px)); max-height: calc(var(--assistant-viewport-height, 100dvh) - 20px); }
+  .assistant:focus-within .assistant__messages { min-height: 0; }
+  .assistant:focus-within .assistant__suggestions { padding-bottom: 6px; }
+  .assistant textarea { font-size: 16px; touch-action: manipulation; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .assistant__launcher, .assistant__launcher--hello, .assistant__hint { animation: none; }
+}
+
+@media (min-width: 761px) {
+  :host.assistant-host--route-page {
+    position: absolute;
+    inset: 0 0 auto;
+    height: 0;
+    pointer-events: none;
+  }
+
+  .assistant--route-page:not(.assistant--open) {
+    position: absolute;
+    top: 590px;
+    right: 18px;
+    bottom: auto;
+    pointer-events: auto;
+  }
+
+  .assistant--route-page.assistant--open {
+    pointer-events: auto;
+  }
+}
+
+@media (min-width: 761px) and (max-height: 900px) {
+  .assistant--route-page:not(.assistant--open) {
+    top: 505px;
+  }
+}
+
+/* Keep help within reach without covering the route choices. */
+.assistant--route-page:not(.assistant--open) { position: fixed; top: auto; right: 16px; bottom: 14px; }
+.assistant--route-page .assistant__hint { display: none; }
+.assistant--route-page .assistant__launcher { width: 64px; height: 82px; }
+@media (max-width: 640px) {
+  .assistant__launcher { width: 52px; height: 66px; }
+  .assistant__hint { display: none; }
+  .assistant--route-page .assistant__launcher { width: 52px; height: 66px; }
+  .assistant--route-page:not(.assistant--open) { right: 10px; bottom: max(10px, env(safe-area-inset-bottom)); }
+}
+:host .assistant__guide { padding: 10px 16px; color: #e2e8f0; background: #172033; max-height: 220px; overflow-y: auto; flex-shrink: 0; font-size: 13px; }
+:host .assistant__guide summary { padding: 8px 0; cursor: pointer; font-weight: 700; }
+:host .assistant__guide p { margin: 6px 0 12px; line-height: 1.6; }
+:host .assistant__guide summary:focus-visible { outline: 2px solid #facc15; }
+:host .assistant__panel { display: flex; flex-direction: column; }
+:host .assistant__panel > header, :host .assistant__panel > form, :host .assistant__suggestions, :host .assistant__disclaimer { flex-shrink: 0; }
+:host .assistant__messages { flex: 1; }
+:host .assistant__guest { flex: 1; min-height: 0; overflow-y: auto; }
+/* Match the shell's mobile navigation breakpoint and safe-area height. */
+@media (max-width: 700px) {
+  .assistant,
+  .assistant--route-page:not(.assistant--open) {
+    right:12px;
+    bottom:calc(68px + env(safe-area-inset-bottom) + 12px);
+  }
+  .assistant__launcher,
+  .assistant--route-page .assistant__launcher { width:52px; height:66px; }
+  .assistant__hint { display:none; }
+  :host .assistant__panel {
+    width:min(390px, calc(100vw - 24px));
+    height:min(610px, calc(100dvh - 104px - env(safe-area-inset-bottom) - env(safe-area-inset-top)));
+    box-sizing:border-box;
+  }
+}

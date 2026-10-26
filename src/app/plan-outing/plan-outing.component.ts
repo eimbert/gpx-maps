@@ -1,8 +1,9 @@
-import { Component, ElementRef, OnDestroy, OnInit, ViewChild } from '@angular/core';
+import { Component, ElementRef, HostListener, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { MatDialog } from '@angular/material/dialog';
 import { ActivatedRoute, Router } from '@angular/router';
-import { Observable, Subject, debounceTime, firstValueFrom, forkJoin, map, of, switchMap, takeUntil } from 'rxjs';
+import { Observable, Subject, Subscription, catchError, debounceTime, firstValueFrom, forkJoin, map, of, switchMap, takeUntil } from 'rxjs';
+import { RouteAnalysisService } from '../services/route-analysis.service';
 import { InfoDialogComponent, InfoDialogData, InfoDialogResult } from '../info-dialog/info-dialog.component';
 import {
   PlanService,
@@ -10,8 +11,7 @@ import {
   RoundTripComplexity,
   RoundTripProfile,
   RoundTripRoutingMode,
-  RoundTripRoutingPreferences,
-  RoundTripWeightings
+  RoundTripRoutingPreferences
 } from '../services/plan.service';
 import { GpxImportService } from '../services/gpx-import.service';
 import { InfoMessageService } from '../services/info-message.service';
@@ -22,6 +22,11 @@ import { LoginSuccessResponse } from '../interfaces/auth';
 import { RoundTripOptionsDialogComponent, RoundTripOptionsDialogResult } from '../roundtrip-options-dialog/roundtrip-options-dialog.component';
 import { environment } from 'src/environments/environment';
 import * as L from 'leaflet';
+import { calculateGpxElevation, ElevationResult } from '../utils/gpx-elevation';
+import { RouteComparison, SavedRouteComparison } from '../interfaces/route-comparison';
+import { RouteComparisonService } from '../services/route-comparison.service';
+import { RouteComparisonComponent } from '../route-comparison/route-comparison.component';
+import { selectedUiText } from '../services/screen-texts';
 
 type EditableFolder = {
   name: string;
@@ -86,15 +91,30 @@ type RoundTripRoutingModeOption = {
   label: string;
 };
 
+// Leaflet's automatic CSS URL detection does not resolve reliably after Angular bundles its CSS.
+// Explicit assets also work when the map opens from a nested route such as /plan.
+const roundTripMarkerIcon = L.icon({
+  iconUrl: 'assets/leaflet/marker-icon.png',
+  iconRetinaUrl: 'assets/leaflet/marker-icon-2x.png',
+  shadowUrl: 'assets/leaflet/marker-shadow.png',
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+  shadowSize: [41, 41]
+});
+
 @Component({
   selector: 'app-plan-outing',
   templateUrl: './plan-outing.component.html',
-  styleUrls: ['./plan-outing.component.css']
+  styleUrls: ['./plan-outing.component.css', './planning-design.css']
 })
 export class PlanOutingComponent implements OnInit, OnDestroy {
+  activePlanTab: 'tracks' | 'details' | 'guests' | 'reports' = 'tracks';
+  private readonly trackElevationStatuses = new Map<number, ElevationResult['status']>();
   @ViewChild('trackInput') trackInput?: ElementRef<HTMLInputElement>;
   @ViewChild('roundTripMap') roundTripMapRef?: ElementRef<HTMLDivElement>;
   @ViewChild('detailsPanel') detailsPanelRef?: ElementRef<HTMLElement>;
+  selectedSavedComparisonId: number | null = null;
 
   folders: PlanFolder[] = [];
   filteredFolders: PlanFolder[] = [];
@@ -103,18 +123,25 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
   private originalEditFolder: EditableFolder | null = null;
   tracks: PlanTrack[] = [];
   selectedTrackIds = new Set<number>();
+  savedComparisons: SavedRouteComparison[] = [];
   votesByTrackId = new Map<number, number>();
   userVoteTrackId: number | null = null;
   weatherByTrackId = new Map<number, TrackWeatherSummary>();
   folderTrackCounts = new Map<number, number>();
   forecastNotice = '';
+  forecastLoading = false;
+  forecastUpdatedAt: Date | null = null;
+  private forecastRequests = new Subscription();
+  private trackLoadRequest?: Subscription;
+  private analysisLoadRequest?: Subscription;
+  readonly trackAnalysisIds = new Set<number>();
 
   readonly difficultyLegend: TrackDifficulty[] = [
-    { key: 'easy', label: 'Suave', description: 'Ruta con exigencia baja.' },
-    { key: 'medium', label: 'Media', description: 'Ruta con exigencia moderada.' },
-    { key: 'hard', label: 'Dura', description: 'Ruta exigente en forma física.' },
-    { key: 'very-hard', label: 'Muy dura', description: 'Ruta muy exigente; requiere muy buena forma física.' },
-    { key: 'unknown', label: 'Sin datos', description: 'No hay métricas suficientes para estimar dureza.' }
+    { key: 'easy', label: selectedUiText('soft'), description: selectedUiText('difficultyEasyHelp') },
+    { key: 'medium', label: selectedUiText('mediumDifficulty'), description: selectedUiText('difficultyMediumHelp') },
+    { key: 'hard', label: selectedUiText('hardDifficulty'), description: selectedUiText('difficultyHardHelp') },
+    { key: 'very-hard', label: selectedUiText('veryHard'), description: selectedUiText('difficultyVeryHardHelp') },
+    { key: 'unknown', label: selectedUiText('noData'), description: selectedUiText('difficultyUnknownHelp') }
   ];
 
   folderSearch = '';
@@ -140,25 +167,25 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
   pendingMessages: PendingMessage[] = [];
 
   readonly roundTripProfileOptions: RoundTripProfileOption[] = [
-    { value: 'cycling-regular', label: 'Gravel' },
+    { value: 'cycling-regular', label: selectedUiText('gravelTrekking') },
     { value: 'cycling-road', label: 'Bici de carretera' },
     { value: 'cycling-mountain', label: 'Bici de montaña (MTB)' },
   ];
 
   readonly roundTripComplexityOptions: RoundTripComplexityOption[] = [
-    { value: 'simple', label: 'Simple' },
-    { value: 'medium', label: 'Media' },
-    { value: 'technical', label: 'Variada / técnica' }
+    { value: 'simple', label: selectedUiText('soft') },
+    { value: 'medium', label: selectedUiText('moderate') },
+    { value: 'technical', label: selectedUiText('demanding') }
   ];
 
   readonly roundTripRoutingModeOptions: RoundTripRoutingModeOption[] = [
-    { value: 'balanced', label: 'Equilibrado' },
-    { value: 'trails', label: 'Más senderos y pistas' },
-    { value: 'avoid-asphalt', label: 'Evitar asfalto al máximo (experimental)' }
+    { value: 'balanced', label: selectedUiText('balanced') },
+    { value: 'trails', label: selectedUiText('cyclingPaths') },
+    { value: 'avoid-asphalt', label: selectedUiText('lessPavement') }
   ];
 
   roundTripProfile: RoundTripProfile = 'cycling-mountain';
-  roundTripComplexity: RoundTripComplexity = 'medium';
+  roundTripComplexity: RoundTripComplexity = 'simple';
   roundTripRoutingMode: RoundTripRoutingMode = 'trails';
   roundTripLengthKm = 35;
   roundTripStartLat: number | null = null;
@@ -166,7 +193,10 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
 
   private roundTripMap: L.Map | null = null;
   private roundTripMarker: L.Marker | null = null;
-  private hasGeneratedRoundTripInCurrentSession = false;
+  private roundTripLine: L.Polyline | null = null;
+  private roundTripLocationRequest = 0;
+  isSavingRoundTrip = false;
+  roundTripPreview: { payload: PlanTrackImportPayload; warnings: string[]; summary: string } | null = null;
 
   private readonly destroy$ = new Subject<void>();
   private readonly inviteSearch$ = new Subject<string>();
@@ -182,6 +212,8 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
     private router: Router,
     private infoMessageService: InfoMessageService,
     private mapPayloadTransfer: MapPayloadTransferService,
+    private routeComparisonService: RouteComparisonService,
+    private routeAnalysisService: RouteAnalysisService,
     identityService: UserIdentityService
   ) {
     this.userId = identityService.getUserId();
@@ -211,6 +243,10 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    this.forecastRequests.unsubscribe();
+    this.trackLoadRequest?.unsubscribe();
+    this.analysisLoadRequest?.unsubscribe();
+    this.closeRoundTripMapOverlay();
     this.destroy$.next();
     this.destroy$.complete();
   }
@@ -348,10 +384,10 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
   }
 
   async onFolderCardClick(folder: PlanFolder): Promise<void> {
-    if (this.activeFolder?.id === folder.id) return;
+    if (this.activeFolder?.id === folder.id) { this.showTracksTab(); return; }
     const canContinue = await this.confirmDiscardUnsavedChanges();
     if (!canContinue) return;
-    this.selectFolder(folder, true);
+    this.selectFolder(folder);
   }
 
   get hasFolderChanges(): boolean {
@@ -368,7 +404,7 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
     const decision = await this.openInfoDialog({
       title: 'Cambios sin guardar',
       message: 'No se han guardado los cambios y, si continúas, se perderán. ¿Deseas continuar?',
-      confirmLabel: 'Continuar',
+      confirmLabel: selectedUiText('continue'),
       cancelLabel: 'Seguir editando'
     });
 
@@ -377,6 +413,8 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
 
   selectFolder(folder: PlanFolder, shouldScrollToDetails = false): void {
     this.activeFolder = folder;
+    this.activePlanTab = 'tracks';
+    this.selectedSavedComparisonId = null;
     this.editFolder = {
       name: folder.name,
       plannedDate: this.toDateValue(folder.plannedDate),
@@ -390,6 +428,16 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
     if (shouldScrollToDetails) {
       this.scrollToDetailsOnMobile();
     }
+  }
+
+  showTracksTab(): void {
+    this.activePlanTab = 'tracks';
+    if (!this.isLoadingTracks) this.refreshForecasts();
+  }
+
+  @HostListener('document:visibilitychange')
+  refreshForecastsOnReturn(): void {
+    if (!document.hidden && this.activeFolder && !this.isLoadingTracks) this.refreshForecasts();
   }
 
   private scrollToDetailsOnMobile(): void {
@@ -451,14 +499,14 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
 
   async confirmDeleteFolder(folder: PlanFolder): Promise<void> {
     const decision = await this.openInfoDialog({
-      title: 'Eliminar carpeta',
-      message: `¿Seguro que quieres eliminar “${folder.name}”? Se eliminará toda la información de la carpeta, incluidos sus tracks.`,
-      confirmLabel: 'Eliminar',
-      cancelLabel: 'Cancelar'
+      title: selectedUiText('deleteFolder'),
+      message: selectedUiText('deleteOutingPrompt').replace('{name}', () => folder.name),
+      confirmLabel: selectedUiText('delete'),
+      cancelLabel: selectedUiText('cancel')
     });
 
     if (decision !== 'confirm') return;
-    this.planService.deleteFolder(folder.id).subscribe(() => {
+    this.planService.deleteFolder(folder.id).subscribe({ next: () => {
       this.folders = this.folders.filter(current => current.id !== folder.id);
       this.folderTrackCounts.delete(folder.id);
       this.applyFolderFilter();
@@ -474,7 +522,7 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
       if (this.folders.length) {
         this.selectFolder(this.folders[0]);
       }
-    });
+    }, error: () => this.showMessage(selectedUiText('deleteOutingError'), selectedUiText('noticeTitle')) });
   }
 
   async confirmDeleteTrack(track: PlanTrack): Promise<void> {
@@ -484,15 +532,16 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
       return;
     }
     const decision = await this.openInfoDialog({
-      title: 'Eliminar track',
-      message: `¿Seguro que quieres eliminar “${track.name}” de esta carpeta?`,
-      confirmLabel: 'Eliminar',
-      cancelLabel: 'Cancelar'
+      title: selectedUiText('deleteTrack'),
+      message: selectedUiText('deleteTrackPrompt').replace('{name}', () => track.name),
+      confirmLabel: selectedUiText('delete'),
+      cancelLabel: selectedUiText('cancel')
     });
 
     if (decision !== 'confirm') return;
-    this.planService.deleteTrack(track.id).subscribe(() => {
+    this.planService.deleteTrack(track.id).subscribe({ next: () => {
       this.tracks = this.tracks.filter(current => current.id !== track.id);
+      this.savedComparisons = this.savedComparisons.filter(report => report.trackAId !== track.id && report.trackBId !== track.id);
       this.selectedTrackIds.delete(track.id);
       this.votesByTrackId.delete(track.id);
       if (this.userVoteTrackId === track.id) {
@@ -500,14 +549,20 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
       }
       this.updateActiveFolderTrackCount(-1);
       this.refreshForecasts();
-    });
+    }, error: () => this.showMessage(selectedUiText('deleteTrackError'), selectedUiText('noticeTitle')) });
   }
 
   loadTracks(folderId: number): void {
+    this.trackLoadRequest?.unsubscribe();
+    this.analysisLoadRequest?.unsubscribe();
+    this.trackAnalysisIds.clear();
+    this.resetForecasts();
     this.isLoadingTracks = true;
-    this.planService.getTracks(folderId).pipe(
+    this.loadSavedComparisons(folderId);
+    this.trackLoadRequest = this.planService.getTracks(folderId).pipe(
       switchMap(tracks => {
         this.tracks = tracks.map(track => this.ensureTrackDifficulty(track));
+        this.loadTrackAnalyses(folderId, tracks);
         this.clearTrackSelection();
         this.updateFolderTrackCountCache(folderId, tracks.length);
         this.refreshForecasts();
@@ -517,7 +572,7 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
           return of([]);
         }
         return forkJoin(tracks.map(track => this.planService.getTrackVotesSummary(track.id)));
-      })
+      }), takeUntil(this.destroy$)
     ).subscribe(summaries => {
       if (summaries.length) {
         this.applyTrackVotesSummary(summaries);
@@ -529,6 +584,19 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
   loadVotes(folderId: number): void {
     this.planService.getVotes(folderId).subscribe(response => {
       this.applyVotes(response);
+    });
+  }
+
+  private loadTrackAnalyses(folderId: number, tracks: PlanTrack[]): void {
+    this.analysisLoadRequest = forkJoin(tracks.map(track =>
+      this.routeAnalysisService.getTrackAnalysis(track.id, 'plan').pipe(
+        catchError(() => of(null)),
+        map(analysis => analysis?.id ? track.id : null)
+      )
+    )).pipe(takeUntil(this.destroy$)).subscribe(ids => {
+      if (this.activeFolder?.id !== folderId) return;
+      this.trackAnalysisIds.clear();
+      ids.forEach(id => { if (id !== null) this.trackAnalysisIds.add(id); });
     });
   }
 
@@ -558,6 +626,7 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
       width: '520px',
       maxWidth: '96vw',
       autoFocus: false,
+      panelClass: 'tracketeo-playback-dialog',
       data: {
         profile: this.roundTripProfile,
         complexity: this.roundTripComplexity,
@@ -580,12 +649,16 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
   }
 
   closeRoundTripMapOverlay(): void {
+    this.roundTripLocationRequest++;
     this.showRoundTripMapOverlay = false;
+    this.roundTripPreview = null;
     this.destroyRoundTripMap();
   }
 
   private openRoundTripMapOverlay(): void {
-    this.hasGeneratedRoundTripInCurrentSession = false;
+    this.roundTripPreview = null;
+    this.roundTripStartLat = null;
+    this.roundTripStartLon = null;
     this.showRoundTripMapOverlay = true;
     this.requestRoundTripUserLocation();
     setTimeout(() => this.initializeRoundTripMap(), 0);
@@ -597,27 +670,28 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
     }
     this.roundTripMap = null;
     this.roundTripMarker = null;
+    this.roundTripLine = null;
   }
 
   private requestRoundTripUserLocation(): void {
     if (typeof navigator === 'undefined' || !navigator.geolocation) {
       return;
     }
+    const requestId = ++this.roundTripLocationRequest;
     navigator.geolocation.getCurrentPosition(
       position => {
+        if (!this.showRoundTripMapOverlay || requestId !== this.roundTripLocationRequest) return;
         this.roundTripStartLat = Number(position.coords.latitude.toFixed(6));
         this.roundTripStartLon = Number(position.coords.longitude.toFixed(6));
         this.placeRoundTripMarker();
       },
-      () => {
-        this.roundTripStartLat = null;
-        this.roundTripStartLon = null;
-      },
+      () => { /* The map remains available to select a start manually. */ },
       { enableHighAccuracy: true, timeout: 6000, maximumAge: 120000 }
     );
   }
 
-  private async generateRoundTripRoute(): Promise<void> {
+  async generateRoundTripRoute(): Promise<void> {
+    if (this.isGeneratingRoundTrip || this.isSavingRoundTrip) return;
     if (!this.activeFolder) {
       this.showMessage('Selecciona una salida antes de generar una ruta.');
       return;
@@ -632,11 +706,14 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
     }
 
     this.isGeneratingRoundTrip = true;
+    this.roundTripLocationRequest++;
+    const folderId = this.activeFolder.id;
+    this.roundTripPreview = null;
+    this.roundTripLine?.remove();
     try {
       const response = await firstValueFrom(this.planService.generateRoundTripRoute({
-        profile: this.resolveRoundTripProfileForRoutingMode(),
+        profile: this.roundTripProfile,
         complexity: this.roundTripComplexity,
-        points: this.resolveRoundTripPoints(),
         preferences: this.buildRoundTripRoutingPreferences(),
         lengthKm: this.roundTripLengthKm,
         start: {
@@ -644,6 +721,7 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
           lon: Number(this.roundTripStartLon)
         }
       }));
+      if (!this.showRoundTripMapOverlay) return;
 
       const coordinates = response?.geometry?.coordinates ?? [];
       if (!Array.isArray(coordinates) || coordinates.length < 2) {
@@ -652,52 +730,81 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
       }
 
       const trkpts = coordinates
-        .map(([lon, lat, ele]) => ({ lat: Number(lat), lon: Number(lon), ele: Number(ele) }))
-        .filter(point => Number.isFinite(point.lat) && Number.isFinite(point.lon));
+        .map(([lon, lat, ele]) => ({ lat, lon, ele: typeof ele === 'number' && Number.isFinite(ele) ? ele : undefined }));
 
-      if (trkpts.length < 2) {
-        this.showMessage('La ruta generada no contiene suficientes puntos.');
+      if (trkpts.some(p => !Number.isFinite(p.lat) || !Number.isFinite(p.lon) || Math.abs(p.lat) > 90 || Math.abs(p.lon) > 180)) {
+        this.showMessage('La ruta generada contiene coordenadas no válidas. Prueba otra propuesta.');
         return;
       }
 
-      const routeName = `Circular ${this.resolveRoundTripProfileLabel(this.roundTripProfile)} · ${Math.round(this.roundTripLengthKm)} km`;
+      const routeName = `Circular ${this.resolveRoundTripProfileLabel(this.roundTripProfile)}`;
       const gpxData = this.buildGpxFromTrackPoints(trkpts, routeName);
+      const elevation = calculateGpxElevation(gpxData);
       const difficulty = this.calculateTrackDifficultyMetrics(
-        (response.distanceMeters ?? 0) / 1000,
-        response.ascentMeters,
+        elevation.distanceKm,
+        elevation.gain,
         response.durationSeconds
       );
 
       const payload: PlanTrackImportPayload = {
-        folder_id: this.activeFolder.id,
+        folder_id: folderId,
         created_by_user_id: this.userId,
-        name: `${routeName}.gpx`,
-        start_lat: Number(this.roundTripStartLat),
-        start_lon: Number(this.roundTripStartLon),
+        name: `${routeName} · ${elevation.distanceKm.toFixed(1)} km.gpx`,
+        start_lat: trkpts[0].lat,
+        start_lon: trkpts[0].lon,
         start_population: 'Ruta circular generada',
-        distance_km: Number.isFinite(response.distanceMeters) ? Number(response.distanceMeters) / 1000 : null,
+        distance_km: elevation.distanceKm,
         moving_time_sec: Number.isFinite(response.durationSeconds) ? Number(response.durationSeconds) : null,
         total_time_sec: Number.isFinite(response.durationSeconds) ? Number(response.durationSeconds) : null,
-        desnivel: Number.isFinite(response.ascentMeters) ? Number(response.ascentMeters) : null,
+        desnivel: elevation.gain,
         difficulty_score: difficulty.score,
         difficulty_level: difficulty.level,
         difficulty_version: 1,
         route_xml: gpxData
       };
 
-      const createdTrack = await firstValueFrom(this.planService.importTrack(payload));
-      const mergedTrack = this.mergeTrackWithPayload(createdTrack, payload);
-      this.tracks = [...this.tracks, mergedTrack];
-      this.updateActiveFolderTrackCount(1);
-      this.refreshForecasts();
-      this.hasGeneratedRoundTripInCurrentSession = true;
-
-      this.showMessage('Ruta circular generada y guardada correctamente.');
-    } catch {
-      this.showMessage('No se pudo generar la ruta circular. Inténtalo de nuevo.');
+      const warnings = [...(response.warnings ?? [])];
+      if (response.fallbackLevel && !warnings.length) warnings.push('El motor ha relajado preferencias para encontrar una ruta.');
+      const quality = response.appliedOptions?.traceability;
+      const terrain = quality && Number.isFinite(quality.roadPercent) && Number.isFinite(quality.trackCyclewayPercent)
+        ? ` · ${quality.trackCyclewayPercent}% pistas/vías ciclistas · ${quality.roadPercent}% carreteras` : '';
+      this.roundTripPreview = { payload, warnings,
+        summary: `${elevation.distanceKm.toFixed(1)} km · ${this.formatDesnivel(elevation.gain)} de ascenso${terrain}` };
+      if (this.roundTripMap) {
+        this.roundTripLine = L.polyline(trkpts.map(p => [p.lat, p.lon] as L.LatLngTuple), { color: '#d97706', weight: 5 }).addTo(this.roundTripMap);
+        this.roundTripMap.fitBounds(this.roundTripLine.getBounds(), { padding: [24, 24] });
+      }
+    } catch (error) {
+      const code = (error as { error?: { code?: string; errorCode?: string } })?.error;
+      const messages: Record<string, string> = {
+        NO_SUITABLE_ROUND_TRIP: 'No se ha encontrado una circular adecuada. Prueba otra distancia o mueve el punto de inicio.',
+        BROUTER_DATA_PREPARING: 'El servidor está descargando el mapa de rutas. Espera unos minutos y vuelve a pulsar Generar propuesta.',
+        BROUTER_DATA_MISSING: 'El servidor todavía no tiene los mapas de rutas de esta zona. Hay que añadir esa cobertura para generar la circular.',
+        BROUTER_UPSTREAM_ERROR: 'El motor de rutas no está disponible. No es un problema del punto de inicio ni de las opciones elegidas.'
+      };
+      this.showMessage(messages[code?.code ?? code?.errorCode ?? '']
+        ?? 'No se pudo generar la ruta circular. Inténtalo de nuevo en unos momentos.');
     } finally {
       this.isGeneratingRoundTrip = false;
     }
+  }
+
+  async saveRoundTripRoute(): Promise<void> {
+    if (!this.roundTripPreview || this.isSavingRoundTrip || this.isGeneratingRoundTrip) return;
+    const payload = this.roundTripPreview.payload;
+    this.isSavingRoundTrip = true;
+    try {
+      const createdTrack = await firstValueFrom(this.planService.importTrack(payload));
+      if (this.activeFolder?.id === payload.folder_id) {
+        this.tracks = [...this.tracks, this.mergeTrackWithPayload(createdTrack, payload)];
+        this.updateActiveFolderTrackCount(1);
+        this.refreshForecasts();
+      }
+      this.closeRoundTripMapOverlay();
+      this.showMessage('Ruta circular guardada en la salida.');
+    } catch {
+      this.showMessage('No se pudo guardar la ruta. La propuesta sigue disponible para reintentarlo.');
+    } finally { this.isSavingRoundTrip = false; }
   }
 
   private initializeRoundTripMap(): void {
@@ -717,18 +824,15 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
       }).addTo(this.roundTripMap);
 
       this.roundTripMap.on('click', (event: L.LeafletMouseEvent) => {
-        if (this.isGeneratingRoundTrip) {
+        if (this.isGeneratingRoundTrip || this.isSavingRoundTrip) {
           return;
         }
-        if (this.hasGeneratedRoundTripInCurrentSession) {
-          this.showMessage('Ya has generado una ruta en este mapa. Cierra y vuelve a abrir para generar otra.');
-          return;
-        }
+        this.roundTripLocationRequest++;
+        this.roundTripPreview = null;
+        this.roundTripLine?.remove();
         this.roundTripStartLat = Number(event.latlng.lat.toFixed(6));
         this.roundTripStartLon = Number(event.latlng.lng.toFixed(6));
         this.placeRoundTripMarker();
-        this.closeRoundTripMapOverlay();
-        this.generateRoundTripRoute();
       });
     }
 
@@ -742,7 +846,7 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
     }
     const latLng: L.LatLngExpression = [Number(this.roundTripStartLat), Number(this.roundTripStartLon)];
     if (!this.roundTripMarker) {
-      this.roundTripMarker = L.marker(latLng).addTo(this.roundTripMap);
+      this.roundTripMarker = L.marker(latLng, { icon: roundTripMarkerIcon }).addTo(this.roundTripMap);
     } else {
       this.roundTripMarker.setLatLng(latLng);
     }
@@ -754,54 +858,11 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
   }
 
   private buildRoundTripRoutingPreferences(): RoundTripRoutingPreferences {
-    const weightings: RoundTripWeightings = {
-      steepness_difficulty: this.resolveSteepnessDifficulty()
-    };
-
-    const preferences: RoundTripRoutingPreferences = {
-      mode: this.roundTripRoutingMode,
+    return {
+      mode: this.roundTripProfile === 'cycling-road' ? 'balanced' : this.roundTripRoutingMode,
       avoidFeatures: ['steps'],
-      weightings
+      extraInfo: ['surface', 'waytype']
     };
-
-    if (this.roundTripRoutingMode === 'avoid-asphalt') {
-      preferences.extraInfo = ['surface', 'waytype'];
-      preferences.seedAttempts = 8;
-    }
-
-    return preferences;
-  }
-
-  private resolveRoundTripProfileForRoutingMode(): RoundTripProfile {
-    if (this.roundTripRoutingMode === 'balanced') {
-      return 'cycling-regular';
-    }
-
-    if (this.roundTripRoutingMode === 'trails' || this.roundTripRoutingMode === 'avoid-asphalt') {
-      return 'cycling-mountain';
-    }
-
-    return this.roundTripProfile;
-  }
-
-  private resolveRoundTripPoints(): number {
-    if (this.roundTripComplexity === 'simple') {
-      return 4;
-    }
-    if (this.roundTripComplexity === 'medium') {
-      return 5;
-    }
-    return 6;
-  }
-
-  private resolveSteepnessDifficulty(): number {
-    if (this.roundTripComplexity === 'simple') {
-      return 1;
-    }
-    if (this.roundTripComplexity === 'medium') {
-      return 2;
-    }
-    return 3;
   }
 
   async onTrackFileSelected(event: Event): Promise<void> {
@@ -891,7 +952,7 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
       title: 'Confirmar acción',
       message: 'Se quitará el acceso de este usuario a la carpeta. ¿Quieres continuar?',
       confirmLabel: 'Quitar acceso',
-      cancelLabel: 'Cancelar'
+      cancelLabel: selectedUiText('cancel')
     });
     if (confirmResult !== 'confirm') return;
 
@@ -915,18 +976,18 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
   resolveInviteStatus(user: PlanUserSearchResult): string {
     const invitation = this.resolveInvitation(user);
 
-    if (!invitation) return this.sentInviteUserIds.has(user.id) ? 'Enviada' : 'Sin enviar';
+    if (!invitation) return this.sentInviteUserIds.has(user.id) ? selectedUiText('invitationSent') : selectedUiText('invitationUnsent');
     const statusMap: Record<string, string> = {
-      accepted: 'Aceptó',
-      pending: 'Pendiente',
-      sending: 'Enviando',
-      declined: 'Rechazó',
-      rejected: 'Rechazó',
-      rejeted: 'Rechazó',
-      revoked: 'Revocada',
-      expired: 'Caducada'
+      accepted: selectedUiText('invitationAccepted'),
+      pending: selectedUiText('invitationPending'),
+      sending: selectedUiText('invitationSending'),
+      declined: selectedUiText('invitationRejected'),
+      rejected: selectedUiText('invitationRejected'),
+      rejeted: selectedUiText('invitationRejected'),
+      revoked: selectedUiText('invitationRevoked'),
+      expired: selectedUiText('invitationExpired')
     };
-    return statusMap[invitation.status] ?? 'Pendiente';
+    return statusMap[invitation.status] ?? selectedUiText('invitationPending');
   }
 
   canSendInvite(user: PlanUserSearchResult): boolean {
@@ -939,9 +1000,9 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
   resolveInviteActionLabel(user: PlanUserSearchResult): string {
     const invitation = this.resolveInvitation(user);
     if (invitation && this.isRejectedStatus(invitation.status)) {
-      return 'Rechazada';
+      return selectedUiText('invitationRejected');
     }
-    return this.canSendInvite(user) ? 'Enviar invitación' : 'Enviada';
+    return this.canSendInvite(user) ? selectedUiText('sendInvitation') : selectedUiText('invitationSent');
   }
 
   toggleVote(track: PlanTrack): void {
@@ -964,7 +1025,7 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
   }
 
   resolveVoteLabel(track: PlanTrack): string {
-    return this.userVoteTrackId === track.id ? 'Quitar voto' : 'Votar';
+    return this.userVoteTrackId === track.id ? selectedUiText('removeVote') : selectedUiText('vote');
   }
 
   resolveWeatherLabel(trackId: number): string {
@@ -975,7 +1036,7 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
 
   resolveWeatherHint(trackId: number): string {
     const summary = this.weatherByTrackId.get(trackId);
-    if (!summary) return 'Fecha demasiado lejana para la predicción';
+    if (!summary) return this.forecastLoading ? selectedUiText('updatingForecast') : this.forecastNotice || selectedUiText('noForecastAvailable');
     return `Predicción ${summary.date}`;
   }
 
@@ -987,13 +1048,13 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
 
   resolveWeatherCategory(trackId: number): string {
     const summary = this.weatherByTrackId.get(trackId);
-    if (!summary) return 'Sin datos';
+    if (!summary) return selectedUiText('noData');
     return this.mapWeatherCategory(summary.weatherCode);
   }
 
   resolveWeatherTemperature(trackId: number): string {
     const summary = this.weatherByTrackId.get(trackId);
-    if (!summary) return 'Fecha demasiado lejana';
+    if (!summary) return this.forecastLoading ? selectedUiText('updating') : selectedUiText('noForecast');
     return `${summary.minTemp}°/${summary.maxTemp}°`;
   }
 
@@ -1026,10 +1087,10 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
 
   resolveFolderVisibility(folder: PlanFolder): string {
     if (folder.shared !== undefined) {
-      return folder.shared ? 'Compartida' : 'Privada';
+      return folder.shared ? selectedUiText('sharedOuting') : selectedUiText('privateOuting');
     }
 
-    return folder.ownerId !== this.userId ? 'Compartida' : 'Privada';
+    return folder.ownerId !== this.userId ? selectedUiText('sharedOuting') : selectedUiText('privateOuting');
   }
 
   isFolderOwner(folder: PlanFolder): boolean {
@@ -1063,7 +1124,7 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
 
   formatDesnivel(desnivel: number | null): string {
     if (desnivel === null || desnivel === undefined || !Number.isFinite(desnivel)) {
-      return '-';
+      return selectedUiText('noElevation');
     }
     return `${Math.round(desnivel)} m`;
   }
@@ -1148,6 +1209,34 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
     return this.selectedTrackIds.size > 0;
   }
 
+  get comparisonTracks(): PlanTrack[] {
+    return this.tracks.filter(track => this.selectedTrackIds.has(track.id));
+  }
+
+  onComparisonCalculated(report: RouteComparison): void {
+    for (const route of report.routes) {
+      const track = this.tracks.find(item => item.id === route.id);
+      if (track) {
+        track.irpScore = route.metrics.irp;
+        track.irpVersion = route.metrics.irp === null ? null : route.metrics.version;
+      }
+    }
+    if (this.activeFolder?.id) this.loadSavedComparisons(this.activeFolder.id);
+  }
+
+  openSavedComparison(id: number): void {
+    this.activePlanTab = 'reports';
+    this.selectedSavedComparisonId = id;
+  }
+
+  private loadSavedComparisons(folderId: number): void {
+    this.savedComparisons = [];
+    this.routeComparisonService.list(folderId).subscribe({
+      next: reports => { if (this.activeFolder?.id === folderId) this.savedComparisons = reports; },
+      error: () => { if (this.activeFolder?.id === folderId) this.savedComparisons = []; }
+    });
+  }
+
   get hasSelectableTracks(): boolean {
     return this.getSelectableTracks().length > 0;
   }
@@ -1195,7 +1284,7 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
     URL.revokeObjectURL(url);
   }
 
-  async viewTrack(track: PlanTrack): Promise<void> {
+  async viewTrack(track: PlanTrack, animate3d = false): Promise<void> {
     if (!track.routeXml) {
       this.showMessage('No hay un GPX disponible para este track.');
       return;
@@ -1216,7 +1305,7 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
     }
 
     const payload = {
-      names: [track.name || 'Track'],
+      names: [track.name || selectedUiText('track')],
       colors: [],
       tracks: [{ trkpts }],
       logo: null,
@@ -1228,16 +1317,26 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
       relacionAspectoGrabacion: '16:9',
       modoVisualizacion: 'general',
       mostrarPerfil: true,
-      viewOnly: true,
+      viewOnly: !animate3d,
+      tipoAnimacion: animate3d ? 'descubrir' : undefined,
+      trackDescubrir: 0,
+      camaraDescubrir: 'actual',
+      velocidadDescubrir: 1,
       trackId: track.id,
       routeXml: track.routeXml
     };
 
     this.persistMapPayload(payload);
-    this.router.navigate(['/map'], {
-      queryParams: { from: 'plan', folderId: this.activeFolder?.id },
+    this.router.navigate([animate3d ? '/discover' : '/map'], {
+      queryParams: { from: 'plan', folderId: this.activeFolder?.id,
+        returnTo: this.router.createUrlTree(['/plan'], { queryParams: { folderId: this.activeFolder?.id } }).toString() },
       state: { gpxViewerPayload: payload }
     });
+  }
+
+  formatTrackElevation(track: PlanTrack): string {
+    const label = this.formatDesnivel(track.desnivel);
+    return this.trackElevationStatuses.get(track.id) === 'partial' ? `${label} · parcial` : label;
   }
 
   analyzeTrack(track: PlanTrack): void {
@@ -1251,6 +1350,7 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
       state: {
         trackId: track.id,
         source: 'plan',
+        routeTitle: track.name,
         fileName: this.buildTrackFileName(track),
         routeXml: track.routeXml
       }
@@ -1278,7 +1378,7 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
         skippedCount += 1;
         return;
       }
-      names.push(track.name || 'Track');
+      names.push(track.name || selectedUiText('track'));
       trks.push({ trkpts });
     });
 
@@ -1343,35 +1443,52 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
     return `${fallback}.gpx`;
   }
 
-  private refreshForecasts(): void {
+  private resetForecasts(): void {
+    this.forecastRequests.unsubscribe();
+    this.forecastRequests = new Subscription();
     this.weatherByTrackId.clear();
     this.forecastNotice = '';
+    this.forecastLoading = false;
+    this.forecastUpdatedAt = null;
+  }
+
+  private refreshForecasts(): void {
+    this.resetForecasts();
     const plannedDate = this.editFolder?.plannedDate;
     if (!plannedDate) return;
 
-    const tracksWithCoords = this.tracks.filter(track => track.startLat !== null && track.startLon !== null);
+    const tracksWithCoords = this.tracks.filter(track => track.startLat != null && track.startLon != null);
     if (!tracksWithCoords.length) return;
     let pending = tracksWithCoords.length;
     let hasAnyForecast = false;
     let hasMissingForecast = false;
+    let hasError = false;
+    this.forecastLoading = true;
+    const finish = () => {
+      pending -= 1;
+      if (pending !== 0) return;
+      this.forecastLoading = false;
+      if (hasAnyForecast) this.forecastUpdatedAt = new Date();
+      if (hasError) this.forecastNotice = hasAnyForecast
+        ? selectedUiText('forecastPartialError')
+        : selectedUiText('forecastError');
+      else if (hasMissingForecast) this.forecastNotice = selectedUiText('forecastDateUnavailable');
+    };
 
     tracksWithCoords.forEach(track => {
       if (track.startLat === null || track.startLon === null) return;
 
-      this.fetchForecast(track.startLat, track.startLon, plannedDate)
+      this.forecastRequests.add(this.fetchForecast(track.startLat, track.startLon, plannedDate)
         .pipe(takeUntil(this.destroy$))
-        .subscribe(summary => {
+        .subscribe({ next: summary => {
           if (summary) {
             hasAnyForecast = true;
             this.weatherByTrackId.set(track.id, summary);
           } else {
             hasMissingForecast = true;
           }
-          pending -= 1;
-          if (pending === 0 && !hasAnyForecast && hasMissingForecast) {
-            this.forecastNotice = 'La predicción no está disponible para la fecha seleccionada (demasiado futura).';
-          }
-        });
+          finish();
+        }, error: () => { hasError = true; finish(); } }));
     });
   }
 
@@ -1382,19 +1499,17 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
   }
 
   private fetchForecast(lat: number, lon: number, date: string) {
-    const url = 'https://api.open-meteo.com/v1/forecast';
-    return this.http
-      .get<ForecastResponse>(url, {
-        params: {
-          latitude: lat,
-          longitude: lon,
-          daily: 'weathercode,temperature_2m_max,temperature_2m_min',
-          timezone: 'Europe/Madrid'
-        }
-      })
-      .pipe(
-        map(response => this.pickForecastForDate(response, date))
-      );
+    const params = new URLSearchParams({ latitude: String(lat), longitude: String(lon),
+      daily: 'weathercode,temperature_2m_max,temperature_2m_min', timezone: 'auto', forecast_days: '16' });
+    return new Observable<TrackWeatherSummary | null>(subscriber => {
+      const controller = new AbortController();
+      // Fetch's cache mode bypasses the browser cache without custom CORS headers.
+      fetch(`https://api.open-meteo.com/v1/forecast?${params}`, { cache: 'no-store', signal: controller.signal })
+        .then(response => { if (!response.ok) throw new Error('Forecast unavailable'); return response.json(); })
+        .then(response => { subscriber.next(this.pickForecastForDate(response, date)); subscriber.complete(); })
+        .catch(error => { if (!controller.signal.aborted) subscriber.error(error); });
+      return () => controller.abort();
+    });
   }
 
   private pickForecastForDate(response: ForecastResponse, date: string): TrackWeatherSummary | null {
@@ -1432,7 +1547,7 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
       96: 'Tormenta con granizo',
       99: 'Tormenta intensa'
     };
-    return map[code] ?? 'Meteo';
+    return map[code] ?? selectedUiText('weather');
   }
 
   private mapWeatherIcon(code: number): string {
@@ -1536,16 +1651,16 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
 
   resolveInvitationStatusLabel(invitation: PlanInvitation): string {
     const statusMap: Record<string, string> = {
-      accepted: 'Aceptó',
-      pending: 'Pendiente',
-      sending: 'Enviando',
-      declined: 'Rechazó',
-      rejected: 'Rechazó',
-      rejeted: 'Rechazó',
-      revoked: 'Revocada',
-      expired: 'Caducada'
+      accepted: selectedUiText('invitationAccepted'),
+      pending: selectedUiText('invitationPending'),
+      sending: selectedUiText('invitationSending'),
+      declined: selectedUiText('invitationRejected'),
+      rejected: selectedUiText('invitationRejected'),
+      rejeted: selectedUiText('invitationRejected'),
+      revoked: selectedUiText('invitationRevoked'),
+      expired: selectedUiText('invitationExpired')
     };
-    return statusMap[invitation.status] ?? 'Pendiente';
+    return statusMap[invitation.status] ?? selectedUiText('invitationPending');
   }
 
   private isRejectedStatus(status: string | null | undefined): boolean {
@@ -1591,7 +1706,7 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
   }
 
   resolveResendInvitationLabel(invitation: PlanInvitation): string {
-    return invitation.status === 'revoked' ? 'Enviar invitación' : 'Enviada';
+    return invitation.status === 'revoked' ? selectedUiText('sendInvitation') : selectedUiText('invitationSent');
   }
 
   private toDateValue(value: string | null): string | null {
@@ -1685,7 +1800,7 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
   }
 
   private mergeTrackWithPayload(track: PlanTrack, payload: PlanTrackImportPayload): PlanTrack {
-    return {
+    return this.ensureTrackDifficulty({
       ...track,
       name: track.name || payload.name,
       startLat: track.startLat ?? payload.start_lat,
@@ -1694,12 +1809,12 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
       distanceKm: track.distanceKm ?? payload.distance_km,
       movingTimeSec: track.movingTimeSec ?? payload.moving_time_sec,
       totalTimeSec: track.totalTimeSec ?? payload.total_time_sec,
-      desnivel: track.desnivel ?? payload.desnivel,
+      desnivel: payload.desnivel,
       difficultyScore: track.difficultyScore ?? payload.difficulty_score,
       difficultyLevel: track.difficultyLevel ?? payload.difficulty_level,
       difficultyVersion: track.difficultyVersion ?? payload.difficulty_version ?? 1,
       routeXml: track.routeXml ?? payload.route_xml
-    };
+    });
   }
 
   private updateActiveFolderTrackCount(delta: number): void {
@@ -1736,16 +1851,11 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
     const location = await this.gpxImportService.resolveTrackLocationFromGpx(gpxData);
     const startLat = location.startLatitude ?? trkpts[0].lat;
     const startLon = location.startLongitude ?? trkpts[0].lon;
-    const distanceKm = this.gpxImportService.calculateTotalDistanceKm(trkpts);
+    const elevation = calculateGpxElevation(gpxData);
+    const distanceKm = elevation.distanceKm;
     const movingTimeSec = this.gpxImportService.calculateActiveDurationSeconds(trkpts);
     const totalTimeSec = this.gpxImportService.calculateTotalDurationSeconds(trkpts);
-    const reportedAscent = this.gpxImportService.extractReportedAscentMeters(gpxData);
-    const computedAscent = this.calculateTotalAscent(trkpts, {
-      stepMeters: 20,
-      smoothWindowMeters: 40,
-      minStepUpMeters: 0.25
-    });
-    const desnivel = reportedAscent ?? computedAscent;
+    const desnivel = elevation.gain;
     const difficulty = this.calculateTrackDifficultyMetrics(distanceKm, desnivel, movingTimeSec);
 
     return {
@@ -1758,7 +1868,7 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
       distance_km: Number.isFinite(distanceKm) ? distanceKm : null,
       moving_time_sec: Number.isFinite(movingTimeSec) ? movingTimeSec : null,
       total_time_sec: Number.isFinite(totalTimeSec) ? totalTimeSec : null,
-      desnivel: Number.isFinite(desnivel) ? Math.trunc(desnivel) : null,
+      desnivel,
       difficulty_score: difficulty.score,
       difficulty_level: difficulty.level,
       difficulty_version: 1,
@@ -1768,6 +1878,17 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
 
 
   private ensureTrackDifficulty(track: PlanTrack): PlanTrack {
+    if (track.routeXml?.trim().startsWith('<')) {
+      try {
+        const elevation = calculateGpxElevation(track.routeXml);
+        this.trackElevationStatuses.set(track.id, elevation.status);
+        const difficulty = this.calculateTrackDifficultyMetrics(elevation.distanceKm, elevation.gain, track.movingTimeSec ?? null);
+        return { ...track, distanceKm: elevation.distanceKm, desnivel: elevation.gain, elevationQuality: elevation.quality,
+          difficultyScore: difficulty.score, difficultyLevel: difficulty.level, difficultyVersion: 1 };
+      } catch {
+        this.trackElevationStatuses.delete(track.id);
+      }
+    }
     if (Number.isFinite(Number(track.difficultyLevel)) && Number(track.difficultyLevel) > 0) {
       return track;
     }
@@ -1794,7 +1915,7 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
     const distanceKm = Number(distanceKmRaw);
     const desnivel = Number(desnivelRaw);
 
-    if (!Number.isFinite(distanceKm) || distanceKm <= 0 || !Number.isFinite(desnivel) || desnivel < 0) {
+    if (desnivelRaw === null || !Number.isFinite(distanceKm) || distanceKm <= 0 || !Number.isFinite(desnivel) || desnivel < 0) {
       return { score: null, level: 0 };
     }
 
@@ -1819,178 +1940,9 @@ export class PlanOutingComponent implements OnInit, OnDestroy {
     return { score: normalizedScore, level: 1 };
   }
 
-  //calcular desnivel
-private toFiniteOrNull(v: unknown): number | null {
-  return Number.isFinite(v) ? (v as number) : null;
-}
-
-private haversineMeters(a: { lat: number; lon: number }, b: { lat: number; lon: number }): number {
-  const R = 6371000;
-  const toRad = (deg: number) => (deg * Math.PI) / 180;
-
-  const dLat = toRad(b.lat - a.lat);
-  const dLon = toRad(b.lon - a.lon);
-  const lat1 = toRad(a.lat);
-  const lat2 = toRad(b.lat);
-
-  const sinDLat = Math.sin(dLat / 2);
-  const sinDLon = Math.sin(dLon / 2);
-
-  const h = sinDLat * sinDLat + Math.cos(lat1) * Math.cos(lat2) * sinDLon * sinDLon;
-  return 2 * R * Math.asin(Math.min(1, Math.sqrt(h)));
-}
-
-/** Remuestrea a paso fijo (m). Interpola elevación linealmente. */
-private resampleByDistance(trkpts: Trkpt[], stepMeters: number): { dist: number[]; ele: number[] } {
-  const n = trkpts.length;
-  if (n === 0) return { dist: [], ele: [] };
-  if (n === 1) return { dist: [0], ele: [this.toFiniteOrNull(trkpts[0].ele) ?? 0] };
-
-  // Elevaciones sin nulls (rellena con último válido)
-  const eleRaw: number[] = new Array(n);
-  let last = this.toFiniteOrNull(trkpts[0].ele) ?? 0;
-  for (let i = 0; i < n; i++) {
-    const e = this.toFiniteOrNull(trkpts[i].ele);
-    if (e !== null) last = e;
-    eleRaw[i] = last;
+  private parseTrackPointsFromGpx(gpxData: string): { lat: number; lon: number; ele?: number; time: string }[] {
+    return this.gpxImportService.parseTrackPointsFromString(gpxData);
   }
-
-  // Distancia acumulada
-  const cum: number[] = new Array(n);
-  cum[0] = 0;
-  for (let i = 0; i < n - 1; i++) {
-    cum[i + 1] = cum[i] + this.haversineMeters(trkpts[i], trkpts[i + 1]);
-  }
-
-  const total = cum[n - 1];
-  if (total <= 0) return { dist: [0], ele: [eleRaw[0]] };
-
-  const outDist: number[] = [];
-  const outEle: number[] = [];
-
-  let seg = 0;
-  for (let target = 0; target <= total; target += stepMeters) {
-    while (seg < n - 2 && cum[seg + 1] < target) seg++;
-
-    const d0 = cum[seg];
-    const d1 = cum[seg + 1];
-    const len = Math.max(1e-9, d1 - d0);
-    const t = (target - d0) / len;
-
-    const e0 = eleRaw[seg];
-    const e1 = eleRaw[seg + 1];
-    outDist.push(target);
-    outEle.push(e0 + (e1 - e0) * t);
-  }
-
-  // Asegura el último punto exacto
-  if (outDist[outDist.length - 1] < total) {
-    outDist.push(total);
-    outEle.push(eleRaw[n - 1]);
-  }
-
-  return { dist: outDist, ele: outEle };
-}
-
-/** Media móvil centrada (windowPoints impar) usando prefijos. */
-private movingAverageCentered(values: number[], windowPoints: number): number[] {
-  const n = values.length;
-  if (n === 0) return [];
-  if (windowPoints < 3) return values.slice();
-  if (windowPoints % 2 === 0) windowPoints += 1;
-
-  const half = Math.floor(windowPoints / 2);
-
-  // Padding por bordes (replica)
-  const padded: number[] = new Array(n + 2 * half);
-  for (let i = 0; i < half; i++) padded[i] = values[0];
-  for (let i = 0; i < n; i++) padded[half + i] = values[i];
-  for (let i = 0; i < half; i++) padded[half + n + i] = values[n - 1];
-
-  // Prefijos
-  const pref: number[] = new Array(padded.length + 1);
-  pref[0] = 0;
-  for (let i = 0; i < padded.length; i++) pref[i + 1] = pref[i] + padded[i];
-
-  const out: number[] = new Array(n);
-  for (let i = 0; i < n; i++) {
-    const start = i;
-    const end = i + windowPoints;
-    out[i] = (pref[end] - pref[start]) / windowPoints;
-  }
-  return out;
-}
-
-/**
- * Versión robusta del desnivel acumulado.
- * Por defecto, con muchos GPX ruidosos deja valores muy cercanos a lo esperado.
- */
-private calculateTotalAscent(
-  trkpts: Trkpt[],
-  opts?: {
-    stepMeters?: number;         // remuestreo (m)
-    smoothWindowMeters?: number; // suavizado (m)
-    minStepUpMeters?: number;    // umbral por paso (m)
-    maxJumpMeters?: number;      // cap anti-picos (m)
-  }
-): number {
-  if (!trkpts?.length) return 0;
-
-  const stepMeters = opts?.stepMeters ?? 20;
-  const smoothWindowMeters = opts?.smoothWindowMeters ?? 200;
-  const minStepUpMeters = opts?.minStepUpMeters ?? 0.5;
-  const maxJumpMeters = opts?.maxJumpMeters ?? 50; // por seguridad ante picos absurdos
-
-  const { dist, ele } = this.resampleByDistance(trkpts, stepMeters);
-
-  const windowPoints = Math.max(3, Math.round(smoothWindowMeters / stepMeters));
-  const smooth = this.movingAverageCentered(ele, windowPoints);
-
-  let total = 0;
-  let prev = smooth[0];
-
-  for (let i = 1; i < smooth.length; i++) {
-    let diff = smooth[i] - prev;
-
-    // Anti-picos (por si hay valores raros puntuales)
-    if (diff > maxJumpMeters) diff = 0;
-    if (diff < -maxJumpMeters) diff = 0;
-
-    if (diff > minStepUpMeters) total += diff;
-    prev = smooth[i];
-  }
-
-  return total;
-}
-
-  //**********************************************************************
-
-  private parseTrackPointsFromGpx(
-    gpxData: string
-    ): { lat: number; lon: number; ele?: number; time: string }[] {
-    try {
-      const parser = new DOMParser();
-      const gpx = parser.parseFromString(gpxData, "application/xml");
-      const trkpts = Array.from(gpx.getElementsByTagName("trkpt"));
-      if (gpx.getElementsByTagName("parsererror").length || !trkpts.length) return [];
-
-      return trkpts.map(trkpt => {
-        const eleText = trkpt.getElementsByTagName("ele")[0]?.textContent ?? "";
-        const eleNum = parseFloat(eleText);
-
-        return {
-          lat: parseFloat(trkpt.getAttribute("lat") ?? "0"),
-          lon: parseFloat(trkpt.getAttribute("lon") ?? "0"),
-          ...(Number.isFinite(eleNum) ? { ele: eleNum } : {}),
-          time: trkpt.getElementsByTagName("time")[0]?.textContent ?? ""
-        };
-      });
-    } catch {
-      return [];
-    }
-  }
-
-
   private normalizeEditableField(value: string | null | undefined): string {
     return (value ?? '').trim();
   }
@@ -1998,13 +1950,14 @@ private calculateTotalAscent(
   private openInfoDialog(data: InfoDialogData): Promise<InfoDialogResult | undefined> {
     const dialogRef = this.dialog.open<InfoDialogComponent, InfoDialogData, InfoDialogResult>(InfoDialogComponent, {
       width: '420px',
+      panelClass: 'tracketeo-message-dialog',
       data
     });
 
     return firstValueFrom(dialogRef.afterClosed());
   }
 
-  private showMessage(message: string, title = 'Aviso'): void {
+  private showMessage(message: string, title = selectedUiText('noticeTitle')): void {
     this.infoMessageService.showMessage({
       title,
       message
@@ -2015,7 +1968,7 @@ private calculateTotalAscent(
     if (!rawDate) return null;
     const date = new Date(rawDate);
     if (Number.isNaN(date.getTime())) return null;
-    return date.toLocaleDateString('es-ES', {
+    return date.toLocaleDateString(document.documentElement.lang, {
       day: '2-digit',
       month: 'short',
       year: 'numeric'

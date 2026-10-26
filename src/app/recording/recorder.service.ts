@@ -19,6 +19,15 @@ export class RecorderService {
   private downloadingUrl?: string;
 
   get isRecording(): boolean { return !!this.recorder && this.recorder.state === 'recording'; }
+  get hasCapture(): boolean { return !!this.recorder && this.recorder.state !== 'inactive'; }
+
+  pauseCapture(): void {
+    if (this.recorder?.state === 'recording') this.recorder.pause();
+  }
+
+  resumeCapture(): void {
+    if (this.recorder?.state === 'paused') this.recorder.resume();
+  }
 
   async startCapture(options: RecorderOptions = {}): Promise<void> {
     if (!navigator.mediaDevices?.getDisplayMedia) {

@@ -3,7 +3,7 @@
   "name": "tracketeo.bike",
   "short_name": "tracketeo",
   "description": "Visualiza y comparte rutas GPX como aplicación instalable.",
-  "theme_color": "#1B5E20",
+  "theme_color": "#172033",
   "background_color": "#0E1116",
   "display": "standalone",
   "orientation": "portrait",

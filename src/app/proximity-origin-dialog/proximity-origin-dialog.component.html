@@ -1,0 +1,36 @@
+<h2 mat-dialog-title>{{ 'sortByProximity' | uiText }}</h2>
+<form (ngSubmit)="submit()">
+  <div mat-dialog-content>
+    <p class="dialog-description">{{ 'proximityIntro' | uiText }}</p>
+    <fieldset [disabled]="loading">
+      <legend>{{ 'referencePoint' | uiText }}</legend>
+      <label><input type="radio" name="origin" value="current" [(ngModel)]="mode"> {{ 'currentLocation' | uiText }}</label>
+      <label><input type="radio" name="origin" value="place" [(ngModel)]="mode"> {{ 'aTown' | uiText }}</label>
+      <label><input type="radio" name="origin" value="coordinates" [(ngModel)]="mode"> {{ 'placeCoordinates' | uiText }}</label>
+    </fieldset>
+    <p *ngIf="mode === 'current'">{{ 'browserLocationPermission' | uiText }}</p>
+    <label *ngIf="mode === 'place'" class="auth-field"><span>{{ 'population' | uiText }}</span>
+      <input name="place" [(ngModel)]="query" (ngModelChange)="results = []; error = ''" [disabled]="loading" placeholder="Ej.: Vielha, Lleida" maxlength="180">
+    </label>
+    <ng-container *ngIf="mode === 'coordinates'">
+      <label class="auth-field"><span>{{ 'latitudeLongitude' | uiText }}</span><input name="coordinates" [(ngModel)]="coordinates" placeholder="41.40338, 2.17403" aria-describedby="coordinate-help"></label>
+      <div id="coordinate-help" class="coordinate-help">
+        <p>{{ 'coordinateFormat' | uiText }}</p>
+        <p>{{ 'googleMapsDesktopHelp' | uiText }}</p>
+        <p>{{ 'googleMapsMobileHelp' | uiText }}</p>
+        <a href="https://support.google.com/maps/answer/18539" target="_blank" rel="noopener noreferrer">{{ 'googleMapsHelp' | uiText }}</a>
+      </div>
+    </ng-container>
+    <p *ngIf="error" class="auth-field__error" role="alert">{{ error }}</p>
+    <p *ngIf="loading" role="status">{{ 'findingPopulation' | uiText }}</p>
+    <div *ngIf="mode === 'place' && results.length" class="place-results" [attr.aria-label]="'placesFound' | uiText">
+      <p>{{ 'selectPopulation' | uiText }}</p>
+      <button type="button" *ngFor="let place of results" (click)="dialogRef.close(place)">{{ place.label }}</button>
+    </div>
+    <small *ngIf="mode === 'place'">{{ 'searchAttribution' | uiText }} © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap</a></small>
+  </div>
+  <div mat-dialog-actions>
+    <button mat-flat-button color="primary" type="submit" [disabled]="loading">{{ (mode === 'place' ? 'searchPopulation' : 'sortRoutes') | uiText }}</button>
+    <button mat-button type="button" (click)="dialogRef.close()">{{ 'cancel' | uiText }}</button>
+  </div>
+</form>

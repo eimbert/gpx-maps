@@ -4,5 +4,5 @@
 </div>
 <div mat-dialog-actions align="end">
   <button *ngIf="data.cancelLabel" mat-button (click)="onCancel()">{{ data.cancelLabel }}</button>
-  <button mat-flat-button color="primary" (click)="onConfirm()">{{ data.confirmLabel || 'Aceptar' }}</button>
+  <button mat-flat-button color="primary" (click)="onConfirm()">{{ data.confirmLabel || ('accept' | uiText) }}</button>
 </div>

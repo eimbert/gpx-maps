@@ -5,6 +5,8 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { AuthService } from '../services/auth.service';
 import { RegisterErrorResponse, RegisterSuccessResponse } from '../interfaces/auth';
 import { environment } from 'src/environments/environment';
+import { LanguageService } from '../services/language.service';
+import { homeTranslations, HomeTranslationKey } from '../home/home-translations';
 
 @Component({
   selector: 'app-register-dialog',
@@ -27,8 +29,11 @@ export class RegisterDialogComponent implements OnDestroy {
 
   constructor(
     private dialogRef: MatDialogRef<RegisterDialogComponent, RegisterSuccessResponse | void>,
-    private authService: AuthService
+    private authService: AuthService,
+    public languageService: LanguageService
   ) {}
+
+  t(key: HomeTranslationKey): string { return homeTranslations[this.languageService.current][key]; }
 
   ngOnDestroy(): void {
     this.clearResendInterval();
@@ -56,7 +61,7 @@ export class RegisterDialogComponent implements OnDestroy {
         this.loading = false;
 
         if ((response as RegisterErrorResponse).exitCode && (response as RegisterErrorResponse).exitCode !== 0) {
-          this.errorMessage = (response as RegisterErrorResponse).message || 'No se ha podido completar el registro';
+          this.errorMessage = (response as RegisterErrorResponse).message || this.t('registrationDefaultError');
           return;
         }
 
@@ -66,11 +71,11 @@ export class RegisterDialogComponent implements OnDestroy {
         this.loading = false;
         if (error.status === 400 && error.error) {
           const registerError = error.error as RegisterErrorResponse;
-          this.errorMessage = registerError.message || 'No se ha podido completar el registro';
+          this.errorMessage = registerError.message || this.t('registrationDefaultError');
           return;
         }
 
-        this.errorMessage = 'No se ha podido conectar con el servicio de autenticación.';
+        this.errorMessage = this.t('authDefaultError');
       }
     });
   }
@@ -89,15 +94,15 @@ export class RegisterDialogComponent implements OnDestroy {
         this.loading = false;
 
         if ((response as RegisterErrorResponse).exitCode && (response as RegisterErrorResponse).exitCode !== 0) {
-          this.errorMessage = (response as RegisterErrorResponse).message || 'No se pudo reenviar el correo.';
+          this.errorMessage = (response as RegisterErrorResponse).message || this.t('resendDefaultError');
           return;
         }
 
-        this.handleVerificationEmailSent((response as RegisterSuccessResponse).message || 'Te reenviamos el correo de verificación.');
+        this.handleVerificationEmailSent((response as RegisterSuccessResponse).message);
       },
       error: () => {
         this.loading = false;
-        this.errorMessage = 'No se ha podido reenviar el correo de verificación.';
+        this.errorMessage = this.t('resendDefaultError');
       }
     });
   }
@@ -108,7 +113,7 @@ export class RegisterDialogComponent implements OnDestroy {
 
   private handleVerificationEmailSent(message?: string): void {
     this.verificationEmailSent = true;
-    this.successMessage = message || 'Te enviamos un correo, revisa tu bandeja para completar el registro.';
+    this.successMessage = message || this.t('verificationSent');
     this.errorMessage = '';
     this.startResendCountdown();
   }

@@ -1,242 +1,150 @@
-<div class="map-wrap" [class.aspect-vertical]="isVerticalViewport">
+<div class="map-wrap" [class.aspect-vertical]="isVerticalViewport && !viewOnly" [class.editor-workspace]="viewOnly || isComparisonView" [class.comparison-workspace]="isComparisonView" [class.editor-active]="editMode" [class.playback-workspace]="!viewOnly && !isComparisonView">
   <div id="map"></div>
 
-  <!-- UI superpuesta -->
-  <div class="map-ui" aria-label="Cabecera de comparación">
-    <div class="map-logo" *ngIf="logoDataUrl && !isMobileViewport">
-      <img [src]="logoDataUrl" alt="logo carrera">
-    </div>
-
-    <div class="map-title" *ngIf="shouldShowTitleBar">
-      <div class="track-list-item" *ngFor="let track of trackMetas; let i = index">
-        <input
-          type="checkbox"
-          [checked]="track.visible"
-          (change)="onTrackVisibilityToggle(i, $any($event.target).checked)"
-          [attr.aria-label]="'Mostrar u ocultar ' + track.name"
-        >
-        <span class="track-color-dot" [style.backgroundColor]="track.color"></span>
-        <span class="title-chip" [style.color]="track.color" [title]="track.name">{{ track.name }}</span>
+  <ng-container *ngIf="viewOnly">
+    <header class="editor-header" [attr.aria-label]="'routeMap' | uiText">
+      <button type="button" class="editor-icon" (click)="goBack()" [disabled]="isSavingEdits || isRoutingEdit" [attr.aria-label]="'back' | uiText" [title]="'back' | uiText"><span class="material-icons" aria-hidden="true">arrow_back</span></button>
+      <div class="editor-identity">
+        <span class="editor-eyebrow">{{ (trackMetas.length > 1 ? 'primaryRoute' : 'routeMap') | uiText }} <span class="editor-state" [class.editor-state--dirty]="hasEditChanges">{{ hasEditChanges ? ('unsaved' | uiText) : '2D' }}</span></span>
+        <h1 [title]="editorTrackName">{{ editorTrackName }}</h1>
       </div>
-    </div>
+      <div class="editor-header-actions">
+        <button type="button" class="editor-button" *ngIf="canEditTrack" (click)="toggleEditMode()" [disabled]="isSavingEdits || isRoutingEdit" [class.is-active]="editMode"><span class="material-icons" aria-hidden="true">edit</span>{{ (editMode ? 'finishEditing' : 'editRoute') | uiText }}</button>
+        <div class="editor-history" *ngIf="canEditTrack">
+          <button type="button" class="editor-icon" (click)="undoLastEdit()" [disabled]="!canUndoEdit" [attr.aria-label]="'undo' | uiText" [title]="'undo' | uiText"><span class="material-icons" aria-hidden="true">undo</span></button>
+          <button type="button" class="editor-icon" (click)="redoLastEdit()" [disabled]="!canRedoEdit" [attr.aria-label]="'redo' | uiText" [title]="'redo' | uiText"><span class="material-icons" aria-hidden="true">redo</span></button>
+        </div>
+        <button type="button" class="editor-icon editor-download" *ngIf="canEditTrack" (click)="downloadEditedGpx()" [disabled]="isRoutingEdit" [attr.aria-label]="'downloadGpx' | uiText" [title]="'downloadGpx' | uiText"><span class="material-icons" aria-hidden="true">file_download</span></button>
+        <button type="button" class="editor-button editor-save" *ngIf="canEditTrack" (click)="saveEdits()" [disabled]="!hasEditChanges || isSavingEdits || isRoutingEdit"><span class="material-icons" aria-hidden="true">{{ isSavingEdits ? 'sync' : 'save' }}</span>{{ (isSavingEdits ? 'saving' : 'save') | uiText }}</button>
+      </div>
+    </header>
 
-    <div class="map-controls" role="group" aria-label="Seleccionar mapa base">
-      <label class="control-label" for="base-layer-select" title="Mapa base" aria-label="Mapa base">
-        <span class="material-icons map-control-icon" aria-hidden="true">layers</span>
-        <span class="map-toggle-text">Mapa</span>
-      </label>
-      <select
-        id="base-layer-select"
-        class="base-layer-select"
-        [ngModel]="selectedBaseLayerId"
-        (ngModelChange)="onBaseLayerChange($event)"
-        aria-label="Cambiar mapa base"
-      >
-        <option *ngFor="let option of baseLayerOptions" [value]="option.id">
-          {{ option.name }}
-        </option>
-      </select>
-
-      <label
-        class="desktop-toggle"
-        [class.desktop-toggle--active]="desktopProfileVisible"
-        *ngIf="!isMobileViewport"
-        aria-label="Mostrar u ocultar el perfil de elevación"
-        title="Perfil"
-      >
-        <input
-          type="checkbox"
-          [checked]="desktopProfileVisible"
-          (change)="onDesktopProfileToggle($any($event.target).checked)"
-        >
-        <span class="material-icons map-toggle-icon" aria-hidden="true">show_chart</span>
-        <span class="map-toggle-text">Perfil</span>
-      </label>
-
-      <label
-        class="desktop-toggle"
-        [class.desktop-toggle--active]="desktopTitleBarVisible"
-        *ngIf="!isMobileViewport"
-        aria-label="Mostrar u ocultar barra de títulos y acciones"
-        title="Barra títulos"
-      >
-        <input
-          type="checkbox"
-          [checked]="desktopTitleBarVisible"
-          (change)="onDesktopTitleBarToggle($any($event.target).checked)"
-        >
-        <span class="material-icons map-toggle-icon" aria-hidden="true">title</span>
-        <span class="map-toggle-text">Barra títulos</span>
-      </label>
-
-      <label
-        class="desktop-toggle"
-        [class.desktop-toggle--active]="desktopTimesVisible"
-        *ngIf="!isMobileViewport && !isRouteAnimating"
-        aria-label="Mostrar u ocultar tiempos"
-        title="Tiempos"
-      >
-        <input
-          type="checkbox"
-          [checked]="desktopTimesVisible"
-          (change)="onDesktopTimesToggle($any($event.target).checked)"
-        >
-        <span class="material-icons map-toggle-icon" aria-hidden="true">schedule</span>
-        <span class="map-toggle-text">Tiempos</span>
-      </label>
-
-      <button
-        type="button"
-        class="desktop-toggle map-location-btn"
-        *ngIf="!isMobileViewport"
-        (click)="locateUser()"
-        [disabled]="isLocatingUser"
-        aria-label="Centrar en mi ubicación actual"
-        title="Mi ubicación"
-      >
-        <span class="material-icons map-toggle-icon" aria-hidden="true">{{ isLocatingUser ? 'sync' : 'my_location' }}</span>
-        <span class="map-toggle-text">Mi ubicación</span>
+    <nav class="editor-toolbox" *ngIf="canEditTrack && editMode" [attr.aria-label]="'editTools' | uiText">
+      <button *ngFor="let tool of editorTools" type="button" [class.is-active]="editTool === tool.id" [attr.aria-pressed]="editTool === tool.id" [disabled]="isRoutingEdit || isSavingEdits" (click)="setEditorTool(tool.id)" [title]="tool.hint">
+        <span class="material-icons" aria-hidden="true">{{ tool.icon }}</span><span>{{ tool.label }}</span>
       </button>
+    </nav>
+
+    <aside class="editor-inspector" *ngIf="editorPanelOpen" [class.editor-inspector--editing]="editMode" [attr.aria-label]="'mapOptions' | uiText">
+      <div class="editor-panel-heading"><span>{{ (editMode ? 'editRoute' : 'yourRoute') | uiText }}</span><button type="button" class="editor-icon" (click)="editorPanelOpen = false" [attr.aria-label]="'closeOptions' | uiText"><span class="material-icons" aria-hidden="true">close</span></button></div>
+      <div class="editor-stats"><div><strong>{{ editorDistanceLabel }}</strong><span>{{ 'distance' | uiText }}</span></div><div><strong>{{ editorAscentLabel }}<app-elevation-quality [quality]="editorElevationQuality"></app-elevation-quality></strong><span>{{ 'elevationGain' | uiText }}</span></div></div>
+      <ng-container *ngIf="editMode">
+        <p class="editor-instruction"><span class="material-icons" aria-hidden="true">touch_app</span>{{ editorHint }}</p>
+        <div class="editor-field" *ngIf="editTool === 'move' || editTool === 'insert' || editTool === 'extend'">
+          <label for="editor-routing">{{ 'routeWhenMoving' | uiText }}</label>
+          <select id="editor-routing" [(ngModel)]="editRouting" [disabled]="isRoutingEdit || isSavingEdits"><option value="direct">{{ 'straightLine' | uiText }}</option><option value="paths">{{ 'followPaths' | uiText }}</option></select>
+          <select *ngIf="editRouting === 'paths'" [attr.aria-label]="'editTrack' | uiText" [(ngModel)]="editBikeProfile" [disabled]="isRoutingEdit || isSavingEdits"><option value="cycling-mountain">{{ 'mountainBike' | uiText }}</option><option value="cycling-regular">{{ 'gravelTrekking' | uiText }}</option><option value="cycling-road">{{ 'roadBike' | uiText }}</option></select>
+          <small>{{ (editRouting === 'direct' ? 'manualEditEstimated' : 'recalculateAffected') | uiText }}</small>
+        </div>
+        <div class="editor-selection" *ngIf="editTool === 'range'">
+          <strong>{{ selectedRangeCount ? selectedRangeCount + ' ' + ('pointsSelected' | uiText) : ((editRangeStartIndex !== null ? 'markEnd' : 'selectTwoEnds') | uiText) }}</strong>
+          <button type="button" class="editor-button" (click)="applyRangeEdit(true)" [disabled]="!selectedRangeCount || isSavingEdits || isRoutingEdit"><span class="material-icons" aria-hidden="true">crop</span>{{ 'keepSegment' | uiText }}</button>
+          <button type="button" class="editor-button" (click)="applyRangeEdit(false)" [disabled]="selectedRangeCount < 3 || isSavingEdits || isRoutingEdit"><span class="material-icons" aria-hidden="true">delete_outline</span>{{ 'deleteInterior' | uiText }}</button>
+          <small>{{ 'deleteJoinsEndpoints' | uiText }}</small>
+        </div>
+        <div class="editor-selection" *ngIf="selectedPoint as point">
+          <strong>Punto {{ (editSelectedIndex ?? 0) + 1 }}</strong><span class="editor-coordinates">{{ point.lat | number:'1.5-5' }}, {{ point.lon | number:'1.5-5' }}</span>
+          <button type="button" class="editor-button" (click)="deleteEditablePoint()" [disabled]="isSavingEdits || isRoutingEdit"><span class="material-icons" aria-hidden="true">delete_outline</span>{{ 'deletePoint' | uiText }}</button>
+        </div>
+        <details class="editor-processing"><summary>{{ 'moreTools' | uiText }}</summary>
+          <label for="editor-tolerance">{{ 'simplifyTolerance' | uiText }}</label><div class="editor-inline"><select id="editor-tolerance" [(ngModel)]="simplifyTolerance"><option [ngValue]="2">2 {{ 'meters' | uiText }}</option><option [ngValue]="5">5 {{ 'meters' | uiText }}</option><option [ngValue]="10">10 {{ 'meters' | uiText }}</option><option [ngValue]="20">20 {{ 'meters' | uiText }}</option></select><button type="button" class="editor-button" (click)="simplifyEditableTrack()" [disabled]="isSavingEdits || isRoutingEdit">{{ 'apply' | uiText }}</button></div>
+          <button type="button" class="editor-button" (click)="reverseEditableTrack()" [disabled]="isSavingEdits || isRoutingEdit"><span class="material-icons" aria-hidden="true">swap_horiz</span>{{ 'reverseDirection' | uiText }}</button>
+          <button type="button" class="editor-button editor-discard" (click)="cancelEdits()" [disabled]="!hasEditChanges || isSavingEdits || isRoutingEdit"><span class="material-icons" aria-hidden="true">restart_alt</span>{{ 'discardChanges' | uiText }}</button>
+        </details>
+      </ng-container>
+      <div class="editor-field editor-map-settings"><label for="editor-map-layer">{{ 'mapBackground' | uiText }}</label><select id="editor-map-layer" [ngModel]="selectedBaseLayerId" (ngModelChange)="onBaseLayerChange($event)"><option *ngFor="let option of baseLayerOptions" [value]="option.id">{{ option.name }}</option></select><small *ngIf="selectedBaseLayerId === 'terrain'">{{ 'terrainHint' | uiText }}</small></div>
+      <div class="editor-track-list" *ngIf="trackMetas.length > 1">
+        <div class="editor-track-columns" aria-hidden="true"><span>{{ 'visibleTrack' | uiText }}</span><span>{{ 'primaryRoute' | uiText }}</span></div>
+        <div class="editor-track-row" *ngFor="let track of trackMetas; let i = index" [class.editor-track-row--primary]="primaryTrackIndex === i">
+          <label class="editor-track-visibility"><input type="checkbox" [checked]="track.visible" [disabled]="track.visible && visibleTrackCount === 1" (change)="onTrackVisibilityToggle(i, $any($event.target).checked)" [attr.aria-label]="('visibleTrack' | uiText) + ': ' + track.name"><span class="track-color-dot" [style.background]="track.color"></span><span>{{ track.name }}</span></label>
+          <input type="radio" name="primary-route" [checked]="primaryTrackIndex === i" [disabled]="!track.visible" (change)="selectPrimaryTrack(i)" [attr.aria-label]="('primaryRoute' | uiText) + ': ' + track.name" [title]="'primaryRoute' | uiText">
+        </div>
+        <small class="editor-primary-hint">{{ 'primaryRouteHint' | uiText }}</small>
+      </div>
+      <section class="slope-legend" [attr.aria-label]="'slopeLegend' | uiText">
+        <strong>{{ 'slopeLegend' | uiText }}</strong>
+        <span class="slope-legend-scope">{{ 'slopeAscentsOnly' | uiText }}</span>
+        <div class="slope-legend-scale"><span *ngFor="let band of slopeScale"><i [style.background]="band.color" aria-hidden="true"></i>{{ band.label || ('slopeUnknown' | uiText) }}</span></div>
+        <small>{{ 'slopeEstimate' | uiText }}</small>
+      </section>
+      <p class="editor-keyboard" *ngIf="editMode && !isMobileViewport"><kbd>Ctrl Z</kbd> {{ 'undo' | uiText }} <span>·</span> <kbd>Esc</kbd> {{ 'clearSelection' | uiText }}</p>
+    </aside>
+
+    <div class="editor-map-tools" role="group" aria-label="Controles del mapa">
+      <button type="button" class="editor-icon" (click)="editorPanelOpen = !editorPanelOpen" [class.is-active]="editorPanelOpen" [attr.aria-expanded]="editorPanelOpen" aria-label="Opciones del mapa" title="Opciones del mapa"><span class="material-icons" aria-hidden="true">tune</span></button>
+      <span class="editor-divider"></span>
+      <button type="button" class="editor-icon" (click)="zoomEditor(1)" aria-label="Acercar" title="Acercar"><span class="material-icons" aria-hidden="true">add</span></button>
+      <button type="button" class="editor-icon" (click)="zoomEditor(-1)" aria-label="Alejar" title="Alejar"><span class="material-icons" aria-hidden="true">remove</span></button>
+      <button type="button" class="editor-icon" (click)="fitEditorTrack()" aria-label="Encuadrar recorrido" title="Encuadrar recorrido"><span class="material-icons" aria-hidden="true">fit_screen</span></button>
+      <button type="button" class="editor-icon" (click)="locateUser()" [disabled]="isLocatingUser" [attr.aria-label]="'myLocation' | uiText" [title]="'myLocation' | uiText"><span class="material-icons" aria-hidden="true">my_location</span></button>
+      <span class="editor-divider"></span>
+      <button type="button" class="editor-icon" (click)="toggleEditorProfile()" [attr.aria-pressed]="editorProfileVisible" [class.is-active]="editorProfileVisible" [attr.aria-label]="'toggleProfile' | uiText" [title]="'elevationProfile' | uiText"><span class="material-icons" aria-hidden="true">show_chart</span></button>
     </div>
+    <div class="editor-toast" *ngIf="editStatusMessage || isRoutingEdit" role="status" aria-live="polite"><span class="material-icons" aria-hidden="true">{{ isRoutingEdit ? 'sync' : 'info_outline' }}</span><span>{{ isRoutingEdit ? 'Calculando el tramo por caminos…' : editStatusMessage }}</span></div>
+  </ng-container>
 
-    <label
-      class="map-profile-toggle map-profile-toggle--profile"
-      [class.map-profile-toggle--active]="mobileProfileVisible"
-      *ngIf="canToggleMobileProfile"
-      aria-label="Mostrar u ocultar el perfil de elevación"
-      title="Perfil"
-    >
-      <input
-        type="checkbox"
-        [checked]="mobileProfileVisible"
-        (change)="onMobileProfileToggle($any($event.target).checked)"
-      >
-      <span class="material-icons map-toggle-icon" aria-hidden="true">show_chart</span>
-      <span class="map-toggle-text">Perfil</span>
-    </label>
-
-
-    <label
-      class="map-profile-toggle map-profile-toggle--title"
-      [class.map-profile-toggle--active]="mobileTitleBarVisible"
-      *ngIf="isMobileViewport"
-      aria-label="Mostrar u ocultar barra de títulos"
-      title="Barra títulos"
-    >
-      <input
-        type="checkbox"
-        [checked]="mobileTitleBarVisible"
-        (change)="onMobileTitleBarToggle($any($event.target).checked)"
-      >
-      <span class="material-icons map-toggle-icon" aria-hidden="true">title</span>
-      <span class="map-toggle-text">Barra títulos</span>
-    </label>
-
-    <label
-      class="map-profile-toggle map-profile-toggle--times"
-      [class.map-profile-toggle--active]="mobileTimesVisible"
-      *ngIf="isMobileViewport && !isRouteAnimating"
-      aria-label="Mostrar u ocultar tiempos"
-      title="Tiempos"
-    >
-      <input
-        type="checkbox"
-        [checked]="mobileTimesVisible"
-        (change)="onMobileTimesToggle($any($event.target).checked)"
-      >
-      <span class="material-icons map-toggle-icon" aria-hidden="true">schedule</span>
-      <span class="map-toggle-text">Tiempos</span>
-    </label>
-
-    <button
-      type="button"
-      class="map-profile-toggle map-location-btn"
-      *ngIf="isMobileViewport"
-      (click)="locateUser()"
-      [disabled]="isLocatingUser"
-      aria-label="Centrar en mi ubicación actual"
-      title="Mi ubicación"
-    >
-      <span class="material-icons map-toggle-icon" aria-hidden="true">{{ isLocatingUser ? 'sync' : 'my_location' }}</span>
-      <span class="map-toggle-text">Mi ubicación</span>
-    </button>
-
-    <button type="button" class="start-btn mobile-back-btn" *ngIf="isMobileViewport" (click)="goBack()" aria-label="Volver" title="Volver">
-      <span class="material-icons" aria-hidden="true">arrow_back</span>
-      <span class="map-toggle-text">Volver</span>
-    </button>
-
-    <div class="map-edit-controls" *ngIf="shouldShowEditControls" role="group" aria-label="Edición del track">
-      <button type="button" class="map-edit-btn" (click)="toggleEditMode()">
-        {{ editMode ? 'Salir de edición' : 'Editar puntos' }}
-      </button>
-      <div class="map-edit-mode" *ngIf="editMode" role="group" aria-label="Modo de borrado">
-        <button
-          type="button"
-          class="map-edit-btn map-edit-btn--compact"
-          [class.map-edit-btn--active]="editDeleteMode === 'radius'"
-          (click)="setEditDeleteMode('radius')"
-        >
-          Radio
-        </button>
-        <button
-          type="button"
-          class="map-edit-btn map-edit-btn--compact"
-          [class.map-edit-btn--active]="editDeleteMode === 'range'"
-          (click)="setEditDeleteMode('range')"
-        >
-          Tramo
+  <ng-container *ngIf="isComparisonView">
+    <header class="editor-header comparison-header" [attr.aria-label]="'raceComparison' | uiText">
+      <button type="button" class="editor-icon" (click)="goBack()" [attr.aria-label]="'back' | uiText" [title]="'back' | uiText"><span class="material-icons" aria-hidden="true">arrow_back</span></button>
+      <div class="editor-identity comparison-identity">
+        <span class="editor-eyebrow"><span class="comparison-overline">{{ 'animateRace' | uiText }}</span><span class="editor-state" [class.comparison-state--paused]="racePaused">{{ (racePaused ? 'racePaused' : ranking.length ? 'raceFinal' : showStartOverlay ? 'racePreparing' : 'raceLive') | uiText }}</span></span>
+        <h1>{{ 'raceComparison' | uiText }}</h1>
+      </div>
+      <div class="comparison-legend" role="group" aria-label="Tracks comparados">
+        <button *ngFor="let track of trackMetas; let i = index" type="button" class="comparison-track" [class.comparison-track--hidden]="!track.visible" [attr.aria-pressed]="track.visible" [attr.aria-label]="(track.visible ? 'Ocultar ' : 'Mostrar ') + track.name" [title]="track.name" (click)="onTrackVisibilityToggle(i, !track.visible)">
+          <span class="comparison-track-color" [style.background]="track.color"></span><span>{{ track.name }}</span>
         </button>
       </div>
-      <label class="map-edit-radius" *ngIf="editMode && editDeleteMode === 'radius'">
-        <span>Radio</span>
-        <select [ngModel]="editDeleteRadiusMeters" (ngModelChange)="setEditDeleteRadius($event)">
-          <option *ngFor="let radius of editDeleteRadiusOptions" [ngValue]="radius">{{ radius }} m</option>
-        </select>
-      </label>
-      <button
-        type="button"
-        class="map-edit-btn map-edit-btn--ghost"
-        *ngIf="editMode"
-        (click)="undoLastEdit()"
-        [disabled]="!canUndoEdit"
-      >
-        Deshacer
-      </button>
-      <button
-        type="button"
-        class="map-edit-btn map-edit-btn--ghost"
-        *ngIf="editMode"
-        (click)="simplifyEditableTrack()"
-        [disabled]="isSavingEdits"
-      >
-        Reducir puntos
-      </button>
-      <span class="map-edit-reduction" *ngIf="editPointReductionLabel">{{ editPointReductionLabel }}</span>
-      <button
-        type="button"
-        class="map-edit-btn map-edit-btn--primary"
-        (click)="saveEdits()"
-        [disabled]="!hasEditChanges || isSavingEdits"
-      >
-        {{ isSavingEdits ? 'Guardando...' : 'Guardar' }}
-      </button>
-      <button type="button" class="map-edit-btn map-edit-btn--ghost" (click)="cancelEdits()" [disabled]="!hasEditChanges">
-        Cancelar
-      </button>
-    </div>
+      <div class="comparison-actions">
+        <span class="comparison-time" [attr.aria-label]="'raceTime' | uiText">{{ formatRaceTime(raceElapsedMs) }}</span>
+        <button type="button" class="editor-button comparison-pause" (click)="toggleRacePause()" [disabled]="!canPauseRace" [attr.aria-label]="(racePaused ? 'resume' : 'pause') | uiText" [attr.aria-pressed]="racePaused"><span class="material-icons" aria-hidden="true">{{ racePaused ? 'play_arrow' : 'pause' }}</span><span>{{ (racePaused ? 'resume' : 'pause') | uiText }}</span></button>
+      </div>
+    </header>
 
-    <div class="map-edit-hint" *ngIf="editMode && shouldShowEditControls">
-      {{ editDeleteMode === 'range' ? 'Modo tramo: primer clic inicio, segundo clic final.' : 'Modo radio: cada clic borra varios puntos cercanos.' }}
-    </div>
-    <div class="map-edit-status" *ngIf="editStatusMessage && shouldShowEditControls">{{ editStatusMessage }}</div>
+    <aside *ngIf="comparisonOptionsOpen" class="comparison-options" [attr.aria-label]="'mapAndView' | uiText">
+      <div class="comparison-options-heading"><strong>{{ 'mapAndView' | uiText }}</strong><button type="button" class="editor-icon" (click)="comparisonOptionsOpen = false" aria-label="Cerrar opciones"><span class="material-icons" aria-hidden="true">close</span></button></div>
+      <label for="comparison-base-layer">{{ 'mapBackground' | uiText }}</label>
+      <select id="comparison-base-layer" [ngModel]="selectedBaseLayerId" (ngModelChange)="onBaseLayerChange($event)"><option *ngFor="let option of baseLayerOptions" [value]="option.id">{{ option.name }}</option></select>
+      <label class="comparison-check"><input type="checkbox" [checked]="shouldShowTimes" (change)="isMobileViewport ? onMobileTimesToggle($any($event.target).checked) : onDesktopTimesToggle($any($event.target).checked)"> {{ 'showTimestamps' | uiText }}</label>
+      <p>{{ 'selectColorToToggleTrack' | uiText }}</p>
+    </aside>
 
-    <button type="button" class="start-btn desktop-back-btn" *ngIf="!isMobileViewport && desktopTitleBarVisible" (click)="goBack()" aria-label="Anterior" title="Anterior">
-      <span class="material-icons" aria-hidden="true">arrow_back</span>
-      <span class="map-toggle-text">Anterior</span>
-    </button>
-    <!-- <a class="stop-rec" (click)="stopRecordingAndDownload()" *ngIf="rec.isRecording">⏹ Stop & Download</a> -->
-  </div>
+    <div class="editor-map-tools comparison-map-tools" role="group" aria-label="Controles del mapa">
+      <button type="button" class="editor-icon" (click)="comparisonOptionsOpen = !comparisonOptionsOpen" [class.is-active]="comparisonOptionsOpen" [attr.aria-expanded]="comparisonOptionsOpen" aria-label="Opciones del mapa" title="Opciones del mapa"><span class="material-icons" aria-hidden="true">tune</span></button>
+      <span class="editor-divider"></span>
+      <button type="button" class="editor-icon" (click)="zoomEditor(1)" aria-label="Acercar" title="Acercar"><span class="material-icons" aria-hidden="true">add</span></button>
+      <button type="button" class="editor-icon" (click)="zoomEditor(-1)" aria-label="Alejar" title="Alejar"><span class="material-icons" aria-hidden="true">remove</span></button>
+      <button type="button" class="editor-icon" (click)="fitEditorTrack()" aria-label="Encuadrar recorridos" title="Encuadrar recorridos"><span class="material-icons" aria-hidden="true">fit_screen</span></button>
+      <button type="button" class="editor-icon" (click)="locateUser()" [disabled]="isLocatingUser" [attr.aria-label]="'myLocation' | uiText" [title]="'myLocation' | uiText"><span class="material-icons" aria-hidden="true">my_location</span></button>
+      <span class="editor-divider"></span>
+      <button type="button" class="editor-icon" (click)="comparisonProfileVisible = !comparisonProfileVisible" [disabled]="!profileVisual" [attr.aria-pressed]="comparisonProfileVisible" [class.is-active]="comparisonProfileVisible" aria-label="Mostrar u ocultar perfil del primer track" title="Perfil del primer track"><span class="material-icons" aria-hidden="true">show_chart</span></button>
+    </div>
+  </ng-container>
+
+  <section class="playback-ui" *ngIf="!viewOnly && !isComparisonView" [attr.aria-label]="'animationControls' | uiText">
+    <header class="playback-header">
+      <button type="button" class="playback-icon" (click)="goBack()" [attr.aria-label]="'back' | uiText" [title]="'back' | uiText"><mat-icon>arrow_back</mat-icon></button>
+      <div class="playback-heading"><p>{{ 'animateTitle' | uiText }} <span>2D</span></p><h1 *ngIf="shouldShowTitleBar" [title]="editorTrackName">{{ editorTrackName }}</h1></div>
+      <img class="playback-logo" *ngIf="logoDataUrl" [src]="logoDataUrl" alt="">
+      <details class="playback-settings">
+        <summary class="playback-icon" [attr.aria-label]="'mapOptions' | uiText" [title]="'mapOptions' | uiText"><mat-icon>tune</mat-icon></summary>
+        <div class="playback-settings-panel">
+          <label for="playback-layer">{{ 'mapBackground' | uiText }}</label>
+          <select id="playback-layer" [ngModel]="selectedBaseLayerId" (ngModelChange)="onBaseLayerChange($event)"><option *ngFor="let option of baseLayerOptions" [value]="option.id">{{ option.name }}</option></select>
+          <label class="playback-check"><input type="checkbox" [checked]="shouldShowTitleBar" (change)="isMobileViewport ? onMobileTitleBarToggle($any($event.target).checked) : onDesktopTitleBarToggle($any($event.target).checked)">{{ 'titleBar' | uiText }}</label>
+          <label class="playback-check"><input type="checkbox" [checked]="shouldShowTimes" (change)="isMobileViewport ? onMobileTimesToggle($any($event.target).checked) : onDesktopTimesToggle($any($event.target).checked)">{{ 'times' | uiText }}</label>
+          <label class="playback-check" *ngFor="let track of trackMetas; let i = index"><input type="checkbox" [checked]="track.visible" (change)="onTrackVisibilityToggle(i, $any($event.target).checked)"><span class="track-color-dot" [style.backgroundColor]="track.color"></span><span>{{ track.name }}</span></label>
+        </div>
+      </details>
+    </header>
+    <nav class="playback-tools" [attr.aria-label]="'animationControls' | uiText">
+      <button type="button" class="playback-icon" (click)="zoomEditor(1)" [attr.aria-label]="'zoomIn' | uiText" [title]="'zoomIn' | uiText"><mat-icon>add</mat-icon></button>
+      <button type="button" class="playback-icon" (click)="zoomEditor(-1)" [attr.aria-label]="'zoomOut' | uiText" [title]="'zoomOut' | uiText"><mat-icon>remove</mat-icon></button>
+      <button type="button" class="playback-icon" (click)="fitEditorTrack()" [attr.aria-label]="'fitRoute' | uiText" [title]="'fitRoute' | uiText"><mat-icon>fit_screen</mat-icon></button>
+      <button type="button" class="playback-icon" (click)="locateUser()" [disabled]="isLocatingUser" [attr.aria-label]="'myLocation' | uiText" [title]="'myLocation' | uiText"><mat-icon>{{ isLocatingUser ? 'sync' : 'my_location' }}</mat-icon></button>
+      <button type="button" class="playback-icon" *ngIf="profileEnabled" (click)="toggleEditorProfile()" [class.is-active]="editorProfileVisible" [attr.aria-pressed]="editorProfileVisible" [attr.aria-label]="'toggleProfile' | uiText" [title]="'elevationProfile' | uiText"><mat-icon>show_chart</mat-icon></button>
+    </nav>
+  </section>
 
   <!-- ⬇️ Overlay de inicio -->
   <div class="start-overlay" *ngIf="!viewOnly && showStartOverlay">
@@ -244,20 +152,22 @@
       <div class="countdown-number" [class.go]="countdownValue === 'GO'">
         {{ countdownValue || '...' }}
       </div>
-      <div class="countdown-subtitle">La carrera empieza en</div>
+      <div class="countdown-subtitle">{{ 'selectionReady' | uiText }}</div>
     </div>
   </div>
 
   <div class="info-overlay" *ngIf="showUniformSpeedDialog">
-    <div class="info-dialog" role="dialog" aria-modal="true" aria-label="Aviso de reproducción uniforme">
-      <p>El track cargado no contiene información del tiempo, por lo que la representación se realizará uniformemente sin tener en cuenta tramos más rápidos o lentos y se mostrará a velocidad constante.</p>
-      <button type="button" class="info-btn" (click)="dismissUniformSpeedDialog()">Entendido</button>
+    <div class="info-dialog" role="dialog" aria-modal="true" [attr.aria-label]="'uniformPlayback' | uiText">
+      <p>{{ 'uniformPlaybackDescription' | uiText }}</p>
+      <button type="button" class="info-btn" (click)="dismissUniformSpeedDialog()">{{ 'understood' | uiText }}</button>
     </div>
   </div>
 
+  <app-animation-gate [gate]="gate" (back)="goBack()"></app-animation-gate>
+
   <div class="ranking-overlay" *ngIf="!viewOnly && showRanking && ranking.length">
-    <div class="ranking-panel" aria-label="Clasificación final">
-      <div class="ranking-title">🏁 Ranking final</div>
+    <div class="ranking-panel" [attr.aria-label]="'finalRanking' | uiText">
+      <div class="ranking-title">🏁 {{ 'finalRanking' | uiText }}</div>
       <ol class="ranking-list">
         <li *ngFor="let item of ranking; index as i" [class.top-entry]="i < 3">
           <div class="ranking-medal" [ngClass]="item.medal">
@@ -270,11 +180,18 @@
           </div>
         </li>
       </ol>
+      <div class="ranking-actions">
+        <button type="button" class="ranking-action ranking-action--map" (click)="showRanking = false">{{ 'seeMap' | uiText }}</button>
+        <button type="button" class="ranking-action ranking-action--exit" (click)="goBack()">{{ 'exit' | uiText }}</button>
+      </div>
     </div>
   </div>
 
-  <div class="profile-overlay" *ngIf="shouldRenderProfileOverlay" aria-label="Perfil de elevación">
+  <div class="profile-overlay" *ngIf="shouldRenderProfileOverlay" [attr.aria-label]="'elevationProfile' | uiText">
     <div class="profile-panel" *ngIf="profileVisual; else profileUnavailable">
+      <div class="playback-profile-heading" *ngIf="!viewOnly && !isComparisonView"><span><mat-icon>landscape</mat-icon>{{ 'elevationProfile' | uiText }}</span><strong>{{ editorDistanceLabel }}</strong><button type="button" class="playback-icon" (click)="toggleEditorProfile()" [attr.aria-label]="'toggleProfile' | uiText"><mat-icon>expand_more</mat-icon></button></div>
+      <div class="comparison-profile-heading" *ngIf="isComparisonView"><span>Perfil · {{ trackMetas[0].name }}</span><button type="button" class="editor-icon" (click)="comparisonProfileVisible = false" aria-label="Ocultar perfil"><span class="material-icons" aria-hidden="true">close</span></button></div>
+      <div class="editor-profile-heading" *ngIf="viewOnly"><span><span class="material-icons" aria-hidden="true">landscape</span>{{ 'elevationProfile' | uiText }}</span><span>{{ editorDistanceLabel }}<button type="button" class="editor-icon" (click)="toggleEditorProfile()" [attr.aria-label]="'profile' | uiText"><span class="material-icons" aria-hidden="true">expand_more</span></button></span></div>
       <svg
         class="profile-chart"
         [attr.viewBox]="'0 0 ' + profileWidth + ' ' + profileHeight"
@@ -310,7 +227,7 @@
     </div>
   </div>
   <ng-template #profileUnavailable>
-    <div class="profile-message">Perfil no disponible</div>
+    <div class="profile-message">{{ 'profileUnavailable' | uiText }}</div>
   </ng-template>
 </div>
 <!-- Overlay Start ya lo tienes -->

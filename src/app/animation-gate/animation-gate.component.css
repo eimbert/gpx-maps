@@ -1,0 +1,11 @@
+.animation-gate { position: fixed; inset: 0; z-index: 1200; display: grid; place-items: center; padding: 20px; box-sizing: border-box; background: rgba(6, 10, 25, .58); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px); }
+.animation-gate__card { width: min(100%, 440px); box-sizing: border-box; padding: clamp(24px, 6vw, 38px); border: 1px solid rgba(148,163,184,.35); border-radius: 24px; background: #172033; box-shadow: 0 28px 90px rgba(0,0,0,.4); color: #fff; text-align: center; }
+.animation-gate__icon { display: inline-grid; place-items: center; width: 48px; height: 48px; border-radius: 15px; background: #facc15; color: #172033; font-size: 28px; }
+.animation-gate h2 { margin: 18px 0 10px; font-size: clamp(23px, 5vw, 30px); line-height: 1.15; }
+.animation-gate p { margin: 0 0 22px; color: #e2e8f0; line-height: 1.5; }
+.animation-gate__actions { display: grid; gap: 10px; }
+.animation-gate button { min-height: 46px; border: 0; border-radius: 100px; font: inherit; font-weight: 700; cursor: pointer; }
+.animation-gate button:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
+.animation-gate__primary { color: #172033; background: #facc15; }
+.animation-gate__secondary { color: #fff; background: #ffffff26; }
+.animation-gate__back { display: block; margin: 14px auto 0; padding: 0 16px; color: #cbd5e1; background: transparent; }

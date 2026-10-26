@@ -1,0 +1,12 @@
+:host { display: block; }
+.polar-settings, .wahoo-settings { margin-top: 18px; padding-top: 16px; border-top: 1px solid #455044; }
+h3 { margin: 0 0 8px; font-size: 16px; }
+p { color: #c9d2c9; line-height: 1.5; margin: 8px 0; }
+.privacy { font-size: 12px; color: #b7c7b6; }
+.actions { display: flex; flex-wrap: wrap; gap: 10px; margin: 14px 0; }
+button { font: inherit; cursor: pointer; border: 1px solid #6c766b; border-radius: 999px; padding: 9px 17px; color: #e8ece6; background: transparent; }
+button.primary { background: #f1f2ee; color: #20221f; font-weight: 750; border: 0; }
+button:disabled { opacity: .55; cursor: wait; }
+.notice { padding: 10px 12px; border-radius: 8px; }
+.success { color: #aeedaa; background: #23452e; }
+.error { color: #ffd0ca; background: #5e2b2b; }

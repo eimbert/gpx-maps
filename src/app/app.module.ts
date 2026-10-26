@@ -1,9 +1,12 @@
+import { ElevationQualityComponent } from './elevation-quality/elevation-quality.component';
+import { ProximityOriginDialogComponent } from './proximity-origin-dialog/proximity-origin-dialog.component';
 import { NgModule } from '@angular/core';
 import { BrowserModule } from '@angular/platform-browser';
 
 import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
 import { MapComponent } from './map/map.component';
+import { DiscoverRouteComponent } from './discover-route/discover-route.component';
 import { HTTP_INTERCEPTORS, HttpClientModule } from '@angular/common/http';
 import { LoadGpxComponent } from './load-gpx/load-gpx.component';
 import { FormsModule } from '@angular/forms';
@@ -25,6 +28,7 @@ import { RouteMismatchDialogComponent } from './route-mismatch-dialog/route-mism
 import { EventSearchDialogComponent } from './event-search-dialog/event-search-dialog.component';
 import { EventCreateDialogComponent } from './event-create-dialog/event-create-dialog.component';
 import { HomeComponent } from './home/home.component';
+import { InstallPromptComponent } from './install-prompt/install-prompt.component';
 import { LoginDialogComponent } from './login-dialog/login-dialog.component';
 import { RegisterDialogComponent } from './register-dialog/register-dialog.component';
 import { InfoDialogComponent } from './info-dialog/info-dialog.component';
@@ -35,22 +39,43 @@ import { MyTracksDialogComponent } from './my-tracks-dialog/my-tracks-dialog.com
 import { EventTrackUploadDialogComponent } from './event-track-upload-dialog/event-track-upload-dialog.component';
 import { StandaloneTrackUploadDialogComponent } from './standalone-track-upload-dialog/standalone-track-upload-dialog.component';
 import { PlanOutingComponent } from './plan-outing/plan-outing.component';
+import { RouteComparisonComponent } from './route-comparison/route-comparison.component';
 import { PlanTrackDialogComponent } from './plan-track-dialog/plan-track-dialog.component';
 import { ForgotPasswordDialogComponent } from './forgot-password-dialog/forgot-password-dialog.component';
 import { ResetPasswordComponent } from './reset-password/reset-password.component';
 import { RoundTripOptionsDialogComponent } from './roundtrip-options-dialog/roundtrip-options-dialog.component';
 import { PrivacyPolicyComponent } from './privacy-policy/privacy-policy.component';
 import { RouteAnalyzerComponent } from './route-analyzer/route-analyzer.component';
+import { GarminSyncComponent } from './garmin-sync/garmin-sync.component';
+import { IncorporateRideDialogComponent } from './garmin-sync/incorporate-ride-dialog.component';
+import { WahooInboxComponent } from './garmin-sync/wahoo-inbox.component';
+import { PolarInboxComponent } from './garmin-sync/polar-inbox.component';
+import { AssistantWidgetComponent } from './assistant-widget/assistant-widget.component';
+import { AnimationGateComponent } from './animation-gate/animation-gate.component';
 import localeEs from '@angular/common/locales/es';
+import localeEn from '@angular/common/locales/en';
+import localeCa from '@angular/common/locales/ca';
+import localeGl from '@angular/common/locales/gl';
+import localeEu from '@angular/common/locales/eu';
 import { LOCALE_ID } from '@angular/core';
 import { registerLocaleData } from '@angular/common';
+import { UiTextPipe } from './services/screen-texts';
+import { LanguageService } from './services/language.service';
+import { LanguageSelectorComponent } from './language-selector/language-selector.component';
 
 registerLocaleData(localeEs);
+registerLocaleData(localeEn);
+registerLocaleData(localeCa);
+registerLocaleData(localeGl);
+registerLocaleData(localeEu);
 
 @NgModule({
   declarations: [
+    LanguageSelectorComponent,
+    UiTextPipe,
     AppComponent,
     MapComponent,
+    DiscoverRouteComponent,
     LoadGpxComponent,
     DialogoConfiguracionComponent,
     TrackMetadataDialogComponent,
@@ -58,6 +83,7 @@ registerLocaleData(localeEs);
     EventSearchDialogComponent,
     EventCreateDialogComponent,
     HomeComponent,
+    InstallPromptComponent,
     LoginDialogComponent,
     RegisterDialogComponent,
     InfoDialogComponent,
@@ -65,15 +91,24 @@ registerLocaleData(localeEs);
     MyTracksDialogComponent,
     EventTrackUploadDialogComponent,
     StandaloneTrackUploadDialogComponent,
+    ProximityOriginDialogComponent,
     PlanOutingComponent,
+    RouteComparisonComponent,
     PlanTrackDialogComponent,
     ForgotPasswordDialogComponent,
     ResetPasswordComponent,
     RoundTripOptionsDialogComponent,
     PrivacyPolicyComponent,
-    RouteAnalyzerComponent
+    RouteAnalyzerComponent,
+    GarminSyncComponent,
+    PolarInboxComponent,
+    WahooInboxComponent,
+    IncorporateRideDialogComponent,
+    AssistantWidgetComponent,
+    AnimationGateComponent
   ],
   imports: [
+    ElevationQualityComponent,
     MatCheckboxModule,
     MatMenuModule,
     MatIconModule,
@@ -96,7 +131,7 @@ registerLocaleData(localeEs);
       provide: HTTP_INTERCEPTORS,
       useClass: AuthInterceptor,
       multi: true
-    }, { provide: LOCALE_ID, useValue: 'es-ES' }
+    }, { provide: LOCALE_ID, useFactory: (language: LanguageService) => language.current, deps: [LanguageService] }
   ],
   bootstrap: [AppComponent]
 })

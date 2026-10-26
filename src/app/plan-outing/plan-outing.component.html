@@ -1,19 +1,8 @@
 <div class="plan">
   <header class="plan__toolbar">
-    <div class="plan__toolbar-left">
-      <button class="plan__home-button" type="button" (click)="goHome()" aria-label="Volver al inicio">
-        <mat-icon aria-hidden="true">home</mat-icon>
-        Inicio
-      </button>
-      <div class="plan__search">
-        <mat-icon aria-hidden="true">search</mat-icon>
-        <input type="text" [(ngModel)]="folderSearch" (input)="applyFolderFilter()" placeholder="Buscar salida"
-          aria-label="Buscar salida">
-      </div>
-    </div>
-    <div class="plan__toolbar-actions">
+<div class="plan-intro"><p>{{ 'nextAdventureKicker' | uiText }}</p><h1>{{ 'planOutingsTitle' | uiText }}</h1><span>{{ 'planOutingsLead' | uiText }}</span></div>    <div class="plan__toolbar-actions">
       <button class="plan__primary" type="button" (click)="toggleNewFolderForm()">
-        Nueva salida
+        <span class="plan-new-wide">{{ 'newOuting' | uiText }}</span><span class="plan-new-short">{{ 'newOutingShort' | uiText }}</span>
       </button>
     </div>
   </header>
@@ -21,11 +10,11 @@
   <section class="plan__new" *ngIf="showNewFolderForm">
     <div class="plan__new-fields">
       <label>
-        Nombre de salida
-        <input type="text" [(ngModel)]="newFolderName" placeholder="Ej: Salida al Montseny">
+        {{ 'outingName' | uiText }}
+        <input type="text" [(ngModel)]="newFolderName" [placeholder]="'outingExample' | uiText">
       </label>
       <label>
-        Fecha prevista
+        {{ 'plannedDate' | uiText }}
 
         <input type="date" [(ngModel)]="newFolderDate"> <!--  (ngModelChange)="onPlannedDateChange($event)"> -->
 
@@ -37,71 +26,40 @@
       </label>
     </div>
     <label>
-      Observaciones
-      <textarea rows="2" [(ngModel)]="newFolderNotes" placeholder="Notas rápidas"></textarea>
+      {{ 'notes' | uiText }}
+      <textarea rows="2" [(ngModel)]="newFolderNotes" [placeholder]="'quickNotes' | uiText"></textarea>
     </label>
     <div class="plan__new-actions">
-      <button class="plan__secondary" type="button" (click)="toggleNewFolderForm()">Cancelar</button>
-      <button class="plan__primary" type="button" (click)="createFolder()">Crear salida</button>
+      <button class="plan__secondary" type="button" (click)="toggleNewFolderForm()">{{ 'cancel' | uiText }}</button>
+      <button class="plan__primary" type="button" (click)="createFolder()">{{ 'createOuting' | uiText }}</button>
     </div>
   </section>
 
-  <div class="plan__layout">
-    <aside class="plan__folders">
-      <div class="plan__section-header">
-        <h3>Salidas planificadas</h3>
-        <div class="plan__section-actions">
-          <button
-            class="plan__notification-button"
-            type="button"
-            aria-label="Avisos de salidas"
-            [disabled]="!pendingMessages.length"
-            [class.plan__notification-button--active]="pendingMessages.length"
-            (click)="togglePendingMessages()"
-            [attr.aria-expanded]="showPendingMessages">
-            <mat-icon aria-hidden="true">notifications</mat-icon>
-            <span class="plan__notification-count" *ngIf="pendingMessages.length">
-              {{ pendingMessages.length }}
-            </span>
-          </button>
-          <span class="plan__hint" *ngIf="isLoadingFolders">Cargando...</span>
-        </div>
-      </div>
-      <div class="plan__folders-list" *ngIf="filteredFolders.length; else emptyFolders">
-        <button
-          class="plan__folder-card"
-          type="button"
-          *ngFor="let folder of filteredFolders"
-          (click)="onFolderCardClick(folder)"
-          [class.plan__folder-card--active]="activeFolder?.id === folder.id"
-          [class.plan__folder-card--owner]="isFolderOwner(folder)"
-          [class.plan__folder-card--guest]="!isFolderOwner(folder)">
-          <div class="plan__folder-content">
-            <p>{{ folder.name }}</p>
-            <span>{{ folder.plannedDate ? (folder.plannedDate | date: 'longDate') : 'Sin fecha' }}</span>
-            <span class="plan__folder-divider" aria-hidden="true"></span>
-            <div class="plan__folder-meta">
-              <span>{{ resolveFolderTrackLabel(folder) }}</span>
-              <span class="plan__folder-dot">·</span>
-              <span>{{ resolveFolderVisibility(folder) }}</span>
-            </div>
-          </div>
-          <button *ngIf="isFolderOwner(folder)" class="plan__icon-button plan__icon-button--danger" type="button" aria-label="Eliminar carpeta"
-            (click)="confirmDeleteFolder(folder); $event.stopPropagation();">
-            <mat-icon aria-hidden="true">delete</mat-icon>
-          </button>
+  <section class="outing-selector" [attr.aria-label]="'selectOuting' | uiText">
+    <div class="outing-selector__heading">
+      <strong>{{ 'plannedOutings' | uiText }} <span>{{ folders.length }}</span></strong>
+      <input *ngIf="folders.length > 6 || folderSearch" type="search" [(ngModel)]="folderSearch" (input)="applyFolderFilter()" [placeholder]="'searchOuting' | uiText" [attr.aria-label]="'searchOuting' | uiText">
+      <button *ngIf="pendingMessages.length" class="plan__notification-button" type="button" (click)="togglePendingMessages()" [attr.aria-label]="'notices' | uiText" [attr.aria-expanded]="showPendingMessages"><mat-icon>notifications</mat-icon><span>{{ pendingMessages.length }}</span></button>
+    </div>
+    <p class="plan__hint" *ngIf="isLoadingFolders">{{ 'loading' | uiText }}</p>
+    <div class="outing-selector__cards" *ngIf="filteredFolders.length; else emptyFolders">
+      <div class="outing-choice" *ngFor="let folder of filteredFolders" [class.outing-choice--active]="activeFolder?.id === folder.id">
+        <button type="button" class="outing-choice__select" (click)="onFolderCardClick(folder)" [attr.aria-pressed]="activeFolder?.id === folder.id">
+          <strong [title]="folder.name">{{ folder.name }}</strong>
+          <span>{{ folder.plannedDate ? (folder.plannedDate | date:'mediumDate') : ('noDate' | uiText) }}</span>
+          <small>{{ resolveFolderTrackLabel(folder) }} · {{ resolveFolderVisibility(folder) }}</small>
         </button>
+        <button *ngIf="isFolderOwner(folder)" type="button" class="outing-choice__delete" (click)="confirmDeleteFolder(folder)" [attr.aria-label]="('deleteFolder' | uiText) + ': ' + folder.name"><mat-icon>delete_outline</mat-icon></button>
       </div>
-      <ng-template #emptyFolders>
-        <p class="plan__hint">No hay salidas creadas todavía.</p>
-      </ng-template>
-    </aside>
-
+    </div>
+    <ng-template #emptyFolders><p class="plan__hint">{{ 'noOutings' | uiText }}</p></ng-template>
+  </section>
+  <div class="plan__layout">
     <section class="plan__details" #detailsPanel *ngIf="activeFolder && editFolder; else emptyState">
       <div class="plan__details-header">
         <div>
-          <p class="eyebrow">Salida abierta</p>
-          <h2>Planifica tu salida</h2>
+          <p class="eyebrow"><mat-icon>lock_outline</mat-icon>{{ 'outingSingular' | uiText }} {{ resolveFolderVisibility(activeFolder).toLowerCase() }}</p>
+          <h2>{{ activeFolder.name }}</h2>
         </div>
         <button
           *ngIf="hasFolderChanges"
@@ -109,42 +67,51 @@
           type="button"
           (click)="saveFolder()"
           [disabled]="isSavingFolder">
-          Guardar Cambios
+          {{ 'saveChanges' | uiText }}
         </button>
       </div>
 
+      <p class="plan-meta">▢ {{ activeFolder.plannedDate ? (activeFolder.plannedDate | date:'longDate') : ('noDate' | uiText) }} &nbsp; ♧ {{ tracks.length }} tracks &nbsp; ♙ {{ folderInvitations.length ? ('guestCount' | uiText:{count: folderInvitations.length}) : ('noGuestsShort' | uiText) }}</p><nav class="plan__tabs" [attr.aria-label]="'outingSections' | uiText">
+        <button type="button" [class.is-active]="activePlanTab === 'tracks'" [attr.aria-current]="activePlanTab === 'tracks' ? 'page' : null" (click)="showTracksTab()">{{ 'tracksSection' | uiText }} <span>{{ tracks.length }}</span></button>
+        <button type="button" [class.is-active]="activePlanTab === 'details'" [attr.aria-current]="activePlanTab === 'details' ? 'page' : null" (click)="activePlanTab = 'details'">{{ 'outingDetailsTab' | uiText }}</button>
+        <button type="button" [class.is-active]="activePlanTab === 'guests'" [attr.aria-current]="activePlanTab === 'guests' ? 'page' : null" (click)="activePlanTab = 'guests'">{{ 'outingGuestsTab' | uiText }} <span>{{ folderInvitations.length }}</span></button>
+        <button type="button" [class.is-active]="activePlanTab === 'reports'" [attr.aria-current]="activePlanTab === 'reports' ? 'page' : null" (click)="activePlanTab = 'reports'">{{ 'outingReportsTab' | uiText }} <span>{{ savedComparisons.length }}</span></button>
+      </nav>
+
+      <div class="plan__detail-fields" [hidden]="activePlanTab !== 'details'">
       <div class="plan__fields">
         <label>
-          Título
+          {{ 'title' | uiText }}
           <input type="text" [(ngModel)]="editFolder.name">
         </label>
         <label>
-          Fecha
+          {{ 'date' | uiText }}
           <input type="date" [(ngModel)]="editFolder.plannedDate" (ngModelChange)="onPlannedDateChange($event)">
         </label>
       </div>
 
       <label>
-        Observaciones
-        <textarea rows="3" [(ngModel)]="editFolder.observations" placeholder="Añade información útil"></textarea>
+        {{ 'notes' | uiText }}
+        <textarea rows="3" [(ngModel)]="editFolder.observations" [placeholder]="'addHelpfulInfo' | uiText"></textarea>
       </label>
+      </div>
 
-      <section class="plan__invite">
+      <section class="plan__invite" [hidden]="activePlanTab !== 'guests'">
         <div class="plan__section-header">
-          <h3>Invitar</h3>
+          <h3>{{ 'invite' | uiText }}</h3>
         </div>
         <div class="plan__invite-row">
-          <input type="text" [(ngModel)]="inviteQuery" placeholder="Busca por nick o email"
-            aria-label="Buscar usuarios">
-          <button class="plan__secondary" type="button" (click)="searchInvite()">Buscar</button>
+          <input type="text" [(ngModel)]="inviteQuery" [placeholder]="'searchByNickname' | uiText"
+            [attr.aria-label]="'searchByNickname' | uiText">
+          <button class="plan__secondary" type="button" (click)="searchInvite()">{{ 'search' | uiText }}</button>
         </div>
         <p class="plan__hint" *ngIf="inviteStatusMessage">{{ inviteStatusMessage }}</p>
         <div class="plan__invite-table-wrapper" *ngIf="inviteSearchResults.length">
-          <table class="plan__invite-table" aria-label="Resultados de búsqueda de usuarios">
+          <table class="plan__invite-table" [attr.aria-label]="'searchResults' | uiText">
             <thead>
               <tr>
-                <th scope="col">Usuario</th>
-                <th scope="col">Estado</th>
+                <th scope="col">{{ 'user' | uiText }}</th>
+                <th scope="col">{{ 'status' | uiText }}</th>
                 <th scope="col" *ngIf="canManageInvitations()"></th>
               </tr>
             </thead>
@@ -174,15 +141,15 @@
           </table>
         </div>
         <p class="plan__hint" *ngIf="!folderInvitations.length">
-          No hay invitados. Esta salida no está compartida.
+          {{ 'noGuests' | uiText }}
         </p>
         <div class="plan__invite-table-wrapper" *ngIf="folderInvitations.length">
-          <table class="plan__invite-table" aria-label="Invitaciones enviadas">
+          <table class="plan__invite-table" [attr.aria-label]="'sentInvitations' | uiText">
             <thead>
               <tr>
-                <th scope="col">Invitado</th>
-                <th scope="col">Estado</th>
-                <th scope="col">Actualizado</th>
+                <th scope="col">{{ 'guest' | uiText }}</th>
+                <th scope="col">{{ 'status' | uiText }}</th>
+                <th scope="col">{{ 'updated' | uiText }}</th>
                 <th scope="col" *ngIf="canManageInvitations()"></th>
                 <th scope="col" *ngIf="canManageInvitations()"></th>
               </tr>
@@ -218,7 +185,7 @@
                     class="plan__primary plan__primary--small"
                     type="button"
                     (click)="removeInvitation(invitation)">
-                    Quitar
+                    {{ 'remove' | uiText }}
                   </button>
                 </td>
                 <td class="plan__center" *ngIf="canManageInvitations()">
@@ -236,264 +203,61 @@
         </div>
       </section>
 
-      <section class="plan__tracks">
+      <section class="plan__tracks" [hidden]="activePlanTab !== 'tracks'">
         <div class="plan__section-header">
-          <h3>Tracks</h3>
+          <h3>{{ 'tracksSection' | uiText }}</h3>
           <div class="plan__section-actions">
             <button class="plan__secondary" type="button" (click)="viewSelectedTracks()"
               [disabled]="!hasSelectedTracks">
-              Ver tracks seleccionadas
+              {{ 'viewSelectedTracks' | uiText }} {{ selectedTrackIds.size }}
             </button>
-            <button class="plan__secondary" type="button" (click)="onTrackImportClick()" [disabled]="isImportingTrack">
-              Importar track
-            </button>
-            <button class="plan__secondary" type="button" (click)="openRoundTripOptionsDialog()" [disabled]="isGeneratingRoundTrip">
-              Generar ruta circular
-            </button>
-            <input #trackInput type="file" accept=".gpx" hidden (change)="onTrackFileSelected($event)">
+<details #actionMenu class="plan-add-menu"><summary>{{ 'addTrackMenu' | uiText }} <mat-icon>expand_more</mat-icon></summary><div><button type="button" (click)="actionMenu.open = false; onTrackImportClick()" [disabled]="isImportingTrack">{{ 'importTrack' | uiText }}</button><button type="button" (click)="actionMenu.open = false; openRoundTripOptionsDialog()" [disabled]="isGeneratingRoundTrip">{{ 'generateLoop' | uiText }}</button></div></details>            <input #trackInput type="file" accept=".gpx" hidden (change)="onTrackFileSelected($event)">
           </div>
         </div>
 
         
 
-        <p class="plan__hint" *ngIf="!editFolder.plannedDate">Añade una fecha para ver la predicción del tiempo por
-          track.</p>
+        <p class="plan__hint" *ngIf="!editFolder.plannedDate">{{ 'addDateForForecast' | uiText }}</p>
         <p class="plan__hint" *ngIf="forecastNotice">{{ forecastNotice }}</p>
+        <p class="plan__hint" *ngIf="forecastLoading">{{ 'updatingForecast' | uiText }}</p>
+        <p class="plan__hint" *ngIf="!forecastLoading && forecastUpdatedAt">{{ 'forecastCheckedAt' | uiText }} {{ forecastUpdatedAt | date:'HH:mm' }}</p>
 
-        <div class="plan__difficulty-legend" *ngIf="tracks.length" aria-label="Escala de dureza">
-          <span class="plan__difficulty-legend-title">Suave</span>
-          <div class="plan__difficulty-scale" aria-hidden="true"></div>
-          <span class="plan__difficulty-legend-title">Muy dura</span>
-        </div>
+        <app-route-comparison *ngIf="tracks.length" [tracks]="comparisonTracks" (calculated)="onComparisonCalculated($event)"></app-route-comparison>
 
         <div class="plan__table-wrapper" *ngIf="tracks.length; else emptyTracks">
-          <table class="plan__table plan__table--desktop" aria-label="Tracks planificados">
-            <thead>
-              <tr>
-                <th scope="col" class="plan__center plan__select-col">
-                  <input
-                    type="checkbox"
-                    class="plan__track-checkbox"
-                    [checked]="allSelectableTracksSelected"
-                    [indeterminate]="hasSelectedTracks && !allSelectableTracksSelected"
-                    [disabled]="!hasSelectableTracks"
-                    (change)="toggleAllTracksSelection($any($event.target).checked)"
-                    aria-label="Seleccionar todos los tracks con GPX disponible">
-                </th>
-                <th scope="col" style="text-align: left;">Track</th>
-                <th scope="col">Cómo llegar</th>
-                <th scope="col">Votos</th>
-                <th scope="col">Distancia</th>
-                <th scope="col">Tiempo</th>
-                <th scope="col">Desnivel
-                  <span
-                    class="plan__info-icon"
-                    title="El desnivel puede ser un dato poco fiable dependiendo del GPS con el que se haya registrado el track."
-                    aria-label="El desnivel puede ser un dato poco fiable dependiendo del GPS con el que se haya registrado el track."
-                    role="img">
-                    i
-                  </span>
-                </th>
-                <th scope="col">Dureza</th>
-                <th scope="col">Descargar</th>
-                <th scope="col">Ver track</th>
-                <th scope="col">Analizar</th>
-                <th scope="col">Meteo</th>
-                <th scope="col"></th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr *ngFor="let track of tracks">
-                <td class="plan__center plan__select-col">
-                  <input
-                    type="checkbox"
-                    class="plan__track-checkbox"
-                    [checked]="selectedTrackIds.has(track.id)"
-                    [disabled]="!canViewTrack(track)"
-                    (change)="toggleTrackSelection(track, $any($event.target).checked)"
-                    [attr.aria-label]="canViewTrack(track) ? 'Seleccionar ' + track.name : 'GPX no disponible'">
-                </td>
-                <td>
-                  <!-- <div class="plan__track-title" style="text-align: left;">{{ track.name }}</div> -->
-                  <ng-container *ngIf="track?.name as name">
-                    <div
-                      class="plan__track-title"
-                      style="text-align:left; cursor:pointer"
-                      [attr.title]="name.length > 20 ? name : null"
-                    >
-                      {{ name.length > 20 ? (name | slice:0:20) + '…' : name }}
-                    </div>
-                  </ng-container>
-
-
-                  <span class="plan__track-meta" >{{ track.startPopulation || 'Ubicación por definir' }}</span>
-                </td>
-                <td class="plan__center">
-                  <ng-container *ngIf="resolveMapsLink(track) as mapsLink; else noMapsLink">
-                    <a class="plan__maps-link" [href]="mapsLink" target="_blank" rel="noopener noreferrer"
-                      aria-label="Ver ubicación en Google Maps">
-                      <mat-icon aria-hidden="true">location_on</mat-icon>
-                    </a>
-                  </ng-container>
-                  <ng-template #noMapsLink>—</ng-template>
-                </td>
-                <td class="plan__center">{{ votesByTrackId.get(track.id) || 0 }}</td>
-                <td class="plan__center">{{ formatDistance(track.distanceKm) }}</td>
-                <td class="plan__center">{{ formatDuration(track.movingTimeSec) }}</td>
-                <td class="plan__center">{{ formatDesnivel(track.desnivel) }}</td>
-                <td class="plan__center">
-                  <ng-container *ngIf="getTrackDifficulty(track) as difficulty">
-                    <span
-                      class="plan__difficulty-pill"
-                      [ngClass]="'plan__difficulty-pill--' + difficulty.key"
-                      [attr.title]="difficulty.label + ': ' + difficulty.description"
-                      [attr.aria-label]="'Dureza ' + difficulty.label">
-                      <mat-icon class="plan__difficulty-icon" aria-hidden="true">landscape</mat-icon>
-                    </span>
-                  </ng-container>
-                </td>
-                <td class="plan__center">
-                  <button class="plan__icon-button plan__icon-button--download" type="button"
-                    [disabled]="!track.routeXml" (click)="downloadTrack(track)"
-                    [attr.aria-label]="track.routeXml ? 'Descargar track' : 'GPX no disponible'">
-                    <mat-icon aria-hidden="true">download</mat-icon>
-                  </button>
-                </td>
-                <td class="plan__center">
-                  <button class="plan__maps-link plan__animate-link" type="button" [disabled]="!canViewTrack(track)"
-                    (click)="viewTrack(track)"
-                    [attr.aria-label]="canViewTrack(track) ? 'Ver track en el mapa' : 'GPX no disponible'">
-                    <mat-icon aria-hidden="true">map</mat-icon>
-                  </button>
-                </td>
-                <td class="plan__center">
-                  <button class="plan__maps-link plan__animate-link" type="button" [disabled]="!canViewTrack(track)"
-                    (click)="analyzeTrack(track)"
-                    [attr.aria-label]="canViewTrack(track) ? 'Analizar ruta' : 'GPX no disponible'">
-                    <mat-icon aria-hidden="true">analytics</mat-icon>
-                  </button>
-                </td>
-                <td class="plan__center">
-                  <div class="plan__weather" [attr.title]="resolveWeatherHint(track.id)">
-                    <span class="plan__weather-icon" aria-hidden="true">
-                      {{ resolveWeatherIcon(track.id) }}
-                    </span>
-                    <span class="plan__weather-temp">{{ resolveWeatherTemperature(track.id) }}</span>
-                  </div>
-                </td>
-                <td class="plan__actions">
-                  <div class="plan__actions-group">
-                    <ng-container *ngIf="canVoteOnTracks(); else noVote">
-                      <button class="plan__ghost" type="button" (click)="toggleVote(track)">
-                        {{ resolveVoteLabel(track) }}
-                      </button>
-                    </ng-container>
-                    <ng-template #noVote>
-                      <span class="plan__muted">—</span>
-                    </ng-template>
-                    <button *ngIf="canDeleteTracks(); else cannotDeleteTrack"
-                      class="plan__icon-button plan__icon-button--danger" type="button"
-                      (click)="confirmDeleteTrack(track)" aria-label="Eliminar track">
-                      <mat-icon aria-hidden="true">delete</mat-icon>
-                    </button>
-                    <ng-template #cannotDeleteTrack>
-                      <span class="plan__muted">—</span>
-                    </ng-template>
-                  </div>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-
-          <div class="plan__track-cards" aria-label="Tracks planificados en móvil">
-            <article class="plan__track-card" *ngFor="let track of tracks">
-              <header class="plan__track-card-header">
-                <div class="plan__track-card-title-wrap">
-                  <input
-                    type="checkbox"
-                    class="plan__track-checkbox"
-                    [checked]="selectedTrackIds.has(track.id)"
-                    [disabled]="!canViewTrack(track)"
-                    (change)="toggleTrackSelection(track, $any($event.target).checked)"
-                    [attr.aria-label]="canViewTrack(track) ? 'Seleccionar ' + track.name : 'GPX no disponible'">
-                  <div>
-                    <div class="plan__track-title">{{ track.name }}</div>
-                    <span class="plan__track-meta">{{ track.startPopulation || 'Ubicación por definir' }}</span>
-                  </div>
-                </div>
-                <div class="plan__track-card-votes">{{ votesByTrackId.get(track.id) || 0 }} votos</div>
-              </header>
-
-              <div class="plan__track-card-grid">
-                <div><span class="plan__track-card-label">Distancia</span>{{ formatDistance(track.distanceKm) }}</div>
-                <div><span class="plan__track-card-label">Tiempo</span>{{ formatDuration(track.movingTimeSec) }}</div>
-                <div><span class="plan__track-card-label">Desnivel</span>{{ formatDesnivel(track.desnivel) }}</div>
-                <div>
-                  <span class="plan__track-card-label">Dureza</span>
-                  <ng-container *ngIf="getTrackDifficulty(track) as difficulty">
-                    <span
-                      class="plan__track-card-difficulty"
-                      [attr.title]="difficulty.label + ': ' + difficulty.description"
-                      [attr.aria-label]="'Dureza ' + difficulty.label">
-                      <span class="plan__difficulty-pill" [ngClass]="'plan__difficulty-pill--' + difficulty.key">
-                        <mat-icon class="plan__difficulty-icon" aria-hidden="true">landscape</mat-icon>
-                      </span>
-                      <span>{{ difficulty.label }}</span>
-                    </span>
-                  </ng-container>
-                </div>
-                <div class="plan__track-card-weather">
-                  <span class="plan__track-card-label">Meteo</span>
-                  <span>{{ resolveWeatherIcon(track.id) }} {{ resolveWeatherTemperature(track.id) }}</span>
-                </div>
-              </div>
-
-              <div class="plan__track-card-actions">
-                <ng-container *ngIf="resolveMapsLink(track) as mapsLink; else noMobileMapsLink">
-                  <a class="plan__maps-link" [href]="mapsLink" target="_blank" rel="noopener noreferrer"
-                    aria-label="Ver ubicación en Google Maps">
-                    <mat-icon aria-hidden="true">location_on</mat-icon>
-                  </a>
-                </ng-container>
-                <ng-template #noMobileMapsLink>
-                  <span class="plan__muted">—</span>
-                </ng-template>
-                <button class="plan__icon-button plan__icon-button--download" type="button"
-                  [disabled]="!track.routeXml" (click)="downloadTrack(track)"
-                  [attr.aria-label]="track.routeXml ? 'Descargar track' : 'GPX no disponible'">
-                  <mat-icon aria-hidden="true">download</mat-icon>
-                </button>
-                <button class="plan__maps-link plan__animate-link" type="button" [disabled]="!canViewTrack(track)"
-                  (click)="viewTrack(track)"
-                  [attr.aria-label]="canViewTrack(track) ? 'Ver track en el mapa' : 'GPX no disponible'">
-                  <mat-icon aria-hidden="true">map</mat-icon>
-                </button>
-                <button class="plan__maps-link plan__animate-link" type="button" [disabled]="!canViewTrack(track)"
-                  (click)="analyzeTrack(track)"
-                  [attr.aria-label]="canViewTrack(track) ? 'Analizar ruta' : 'GPX no disponible'">
-                  <mat-icon aria-hidden="true">analytics</mat-icon>
-                </button>
-                <button class="plan__ghost" *ngIf="canVoteOnTracks(); else noVoteMobile" type="button" (click)="toggleVote(track)">
-                  {{ resolveVoteLabel(track) }}
-                </button>
-                <ng-template #noVoteMobile>
-                  <span class="plan__muted">—</span>
-                </ng-template>
-                <button *ngIf="canDeleteTracks(); else cannotDeleteTrackMobile"
-                  class="plan__icon-button plan__icon-button--danger" type="button"
-                  (click)="confirmDeleteTrack(track)" aria-label="Eliminar track">
-                  <mat-icon aria-hidden="true">delete</mat-icon>
-                </button>
-                <ng-template #cannotDeleteTrackMobile>
-                  <span class="plan__muted">—</span>
-                </ng-template>
-              </div>
-            </article>
-          </div>
+<div class="outing-select"><label><input type="checkbox" [checked]="allSelectableTracksSelected" [indeterminate]="hasSelectedTracks && !allSelectableTracksSelected" [disabled]="!hasSelectableTracks" (change)="toggleAllTracksSelection($any($event.target).checked)"> {{ 'selectAll' | uiText }}</label><span>{{ 'selectedCount' | uiText:{count: selectedTrackIds.size} }}</span></div>
+ <div class="outing-columns"><span>{{ 'track' | uiText }}</span><span>{{ 'routeCourse' | uiText }}</span><span>{{ 'difficultyWeather' | uiText }}</span><span>{{ 'votes' | uiText }}</span></div>
+ <article class="outing-track" *ngFor="let track of tracks" [class.is-selected]="selectedTrackIds.has(track.id)">
+  <div class="outing-name"><input type="checkbox" [checked]="selectedTrackIds.has(track.id)" [disabled]="!canViewTrack(track)" (change)="toggleTrackSelection(track, $any($event.target).checked)" [attr.aria-label]="'selectTrackName' | uiText:{name: track.name}"><div><strong>{{ track.name }}</strong><small>{{ track.startPopulation || ('locationUndefined' | uiText) }}</small><div class="outing-links"><button type="button" [disabled]="!canViewTrack(track)" (click)="viewTrack(track)"><mat-icon>map</mat-icon>{{ 'view' | uiText }}</button><button type="button" [disabled]="!canViewTrack(track)" (click)="viewTrack(track,true)"><mat-icon>play_arrow</mat-icon>{{ 'animate' | uiText }}</button><button type="button" [disabled]="!canViewTrack(track)" (click)="analyzeTrack(track)" [class.outing-analysis-available]="trackAnalysisIds.has(track.id)"><mat-icon>{{ trackAnalysisIds.has(track.id) ? 'task_alt' : 'insights' }}</mat-icon>{{ (trackAnalysisIds.has(track.id) ? 'analysisAvailable' : 'analyze') | uiText }}</button><a *ngIf="resolveMapsLink(track) as mapsLink" [href]="mapsLink" target="_blank" rel="noopener noreferrer"><mat-icon>near_me</mat-icon>{{ 'directions' | uiText }}</a></div></div></div>
+  <div class="outing-metrics"><div><strong>{{ formatDistance(track.distanceKm) }}</strong><small>{{ 'distance' | uiText }}</small></div><div><strong>{{ formatTrackElevation(track) }}<app-elevation-quality [quality]="track.elevationQuality"></app-elevation-quality></strong><small>{{ 'elevationGain' | uiText }}</small></div><div><strong>{{ formatDuration(track.movingTimeSec) }}</strong><small>{{ 'duration' | uiText }}</small></div></div>
+  <div class="outing-weather"><span *ngIf="getTrackDifficulty(track) as difficulty" class="plan__difficulty-pill" [ngClass]="'plan__difficulty-pill--' + difficulty.key" [title]="difficulty.description">♧ {{ difficulty.label }}</span><small [title]="resolveWeatherHint(track.id)">{{ resolveWeatherIcon(track.id) }} {{ resolveWeatherTemperature(track.id) }}</small><small *ngIf="track.irpScore !== null && track.irpScore !== undefined">IRP {{ track.irpScore | number:'1.1-1' }}</small></div>
+  <div class="outing-votes"><button type="button" [disabled]="!canVoteOnTracks()" (click)="toggleVote(track)" [title]="resolveVoteLabel(track)"><mat-icon>thumb_up_off_alt</mat-icon>{{ votesByTrackId.get(track.id) || 0 }}</button></div>
+  <details #actionMenu class="outing-more"><summary [attr.aria-label]="'moreActions' | uiText">···</summary><div><button type="button" [disabled]="!track.routeXml" (click)="actionMenu.open = false; downloadTrack(track)">{{ 'downloadGpx' | uiText }}</button><button type="button" *ngIf="canDeleteTracks()" (click)="actionMenu.open = false; confirmDeleteTrack(track)">{{ 'deleteTrack' | uiText }}</button></div></details>
+ </article></div>
+        <div class="plan__difficulty-legend" *ngIf="tracks.length" [attr.aria-label]="'difficultyScale' | uiText">
+          <span class="plan__difficulty-legend-title">{{ 'estimatedDifficulty' | uiText }}</span>
+          <span *ngFor="let difficulty of difficultyLegend.slice(0, 4)" class="plan__difficulty-key">
+            <span class="plan__difficulty-dot" [ngClass]="'plan__difficulty-pill--' + difficulty.key"></span>{{ difficulty.label }}
+          </span>
+          <span class="plan__selection-count">{{ 'selectedCount' | uiText:{count: selectedTrackIds.size} }}</span>
         </div>
+
         <ng-template #emptyTracks>
-          <p class="plan__hint">Todavía no hay tracks en esta carpeta.</p>
+          <p class="plan__hint">{{ 'noOutingTracks' | uiText }}</p>
         </ng-template>
+      </section>
+      <section class="plan__reports" [hidden]="activePlanTab !== 'reports'">
+        <ng-container *ngIf="selectedSavedComparisonId !== null">
+          <button type="button" class="plan__secondary" (click)="selectedSavedComparisonId = null">{{ 'backToReports' | uiText }}</button>
+          <app-route-comparison [savedOnly]="true" [savedReportId]="selectedSavedComparisonId"></app-route-comparison>
+        </ng-container>
+        <div [hidden]="selectedSavedComparisonId !== null">
+        <div class="plan__section-header"><h3>{{ 'outingReportsTab' | uiText }}</h3></div>
+        <p class="plan__hint" *ngIf="!savedComparisons.length">{{ 'noSavedReports' | uiText }}</p>
+        <div class="plan__comparison-history" *ngIf="savedComparisons.length">
+          <ul><li *ngFor="let report of savedComparisons"><button type="button" (click)="openSavedComparison(report.id)"><mat-icon aria-hidden="true">description</mat-icon><span class="plan__comparison-history-info"><strong>{{ report.title }}</strong><small>{{ report.createdAt | date:'dd/MM/yyyy HH:mm' }} · {{ report.aiStatus === 'generated' ? ('aiReport' | uiText) : ('dataAnalysis' | uiText) }}</small></span><span class="plan__comparison-history-open">{{ 'viewReportArrow' | uiText }}</span></button></li></ul>
+        </div>
+        </div>
       </section>
     </section>
 
@@ -503,20 +267,20 @@
     <button
       class="plan__notification-backdrop"
       type="button"
-      aria-label="Cerrar avisos"
+      [attr.aria-label]="'closeOptions' | uiText"
       (click)="togglePendingMessages()">
     </button>
-    <section class="plan__notification-panel" role="dialog" aria-modal="true" aria-label="Avisos pendientes">
-      <p class="plan__hint" *ngIf="isLoadingPendingMessages">Cargando avisos...</p>
+    <section class="plan__notification-panel" role="dialog" aria-modal="true" [attr.aria-label]="'notices' | uiText">
+      <p class="plan__hint" *ngIf="isLoadingPendingMessages">{{ 'loadingMessages' | uiText }}</p>
       <p class="plan__hint" *ngIf="!isLoadingPendingMessages && !pendingMessages.length">
-        No hay avisos pendientes.
+        {{ 'noPendingNotices' | uiText }}
       </p>
       <div class="plan__notification-table-wrapper" *ngIf="!isLoadingPendingMessages && pendingMessages.length">
-        <table class="plan__notification-table" aria-label="Avisos pendientes">
+          <table class="plan__notification-table" [attr.aria-label]="'notices' | uiText">
           <thead>
             <tr >
-              <th scope="col">Mensaje</th>
-              <th scope="col">Acción</th>
+              <th scope="col">{{ 'message' | uiText }}</th>
+              <th scope="col">{{ 'action' | uiText }}</th>
             </tr>
           </thead>
           <tbody>
@@ -530,22 +294,18 @@
                   *ngIf="pending.tipoMsg === 0"
                   class="plan__secondary plan__secondary--small"
                   type="button"
-                  (click)="markMessageAsSeen(pending)">
-                  Visto
-                </button>
+                  (click)="markMessageAsSeen(pending)">{{ 'seen' | uiText }}</button>
                 <ng-container *ngIf="pending.tipoMsg === 1">
                   <button
                     class="plan__primary plan__primary--small"
                     type="button"
                     (click)="updateMessageStatus(pending, 1)">
-                    Aceptar
+                    {{ 'accept' | uiText }}
                   </button>
                   <button
                     class="plan__secondary plan__secondary--small"
                     type="button"
-                    (click)="updateMessageStatus(pending, 0)">
-                    Rechazar
-                  </button>
+                    (click)="updateMessageStatus(pending, 0)">{{ 'reject' | uiText }}</button>
                 </ng-container>
               </td>
             </tr>
@@ -558,23 +318,33 @@
 
 <ng-template #emptyState>
   <div class="plan__empty">
-    <h2>Crea una carpeta para empezar</h2>
-    <p>Organiza tracks, invita a tu grupo y empieza a votar por tu track preferido.</p>
+    <h2>{{ 'createFolderStart' | uiText }}</h2>
+    <p>{{ 'organizeTracksInvite' | uiText }}</p>
   </div>
 </ng-template>
 
 <div class="plan__roundtrip-overlay" *ngIf="showRoundTripMapOverlay">
   <div class="plan__roundtrip-dialog">
     <div class="plan__roundtrip-dialog-header">
-      <h4>Selecciona el punto de inicio</h4>
-      <button class="plan__secondary plan__secondary--small" type="button" (click)="closeRoundTripMapOverlay()" [disabled]="isGeneratingRoundTrip">Cancelar</button>
+      <h4>{{ (roundTripPreview ? 'reviewLoop' : 'chooseStart') | uiText }}</h4>
+      <button class="plan__secondary plan__secondary--small" type="button" (click)="closeRoundTripMapOverlay()" [disabled]="isGeneratingRoundTrip || isSavingRoundTrip">{{ 'cancel' | uiText }}</button>
     </div>
-    <p class="plan__hint">Pulsa en el mapa para indicar dónde quieres iniciar la ruta.</p>
-    <div #roundTripMap class="plan__roundtrip-map plan__roundtrip-map--fullscreen" aria-label="Mapa para seleccionar salida"></div>
+    <p class="plan__hint">{{ (roundTripPreview ? 'loopPreviewHint' : 'loopStartHint') | uiText }}</p>
+    <div #roundTripMap class="plan__roundtrip-map plan__roundtrip-map--fullscreen" [attr.aria-label]="'mapBase' | uiText"></div>
     <div class="plan__roundtrip-coords">
       <span>Lat: {{ roundTripStartLat ?? '—' }}</span>
       <span>Lon: {{ roundTripStartLon ?? '—' }}</span>
-      <span *ngIf="isGeneratingRoundTrip">Generando ruta…</span>
+      <span *ngIf="isGeneratingRoundTrip">{{ 'generatingRoute' | uiText }}</span>
+    </div>
+    <div *ngIf="roundTripPreview" class="plan__roundtrip-preview" aria-live="polite">
+      <strong>{{ roundTripPreview.summary }}</strong>
+      <ul *ngIf="roundTripPreview.warnings.length"><li *ngFor="let warning of roundTripPreview.warnings">{{ warning }}</li></ul>
+      <p>{{ 'routeDataWarning' | uiText }}</p>
+    </div>
+    <div class="plan__roundtrip-actions">
+      <button class="plan__secondary" type="button" (click)="generateRoundTripRoute()"
+        [disabled]="roundTripStartLat === null || roundTripStartLon === null || isGeneratingRoundTrip || isSavingRoundTrip">{{ (roundTripPreview ? 'findAnother' : 'generateSuggestion') | uiText }}</button>
+      <button *ngIf="roundTripPreview" class="plan__primary" type="button" (click)="saveRoundTripRoute()" [disabled]="isSavingRoundTrip || isGeneratingRoundTrip">{{ (isSavingRoundTrip ? 'saving' : 'saveToOuting') | uiText }}</button>
     </div>
   </div>
 </div>
@@ -582,6 +352,6 @@
 <div class="plan__roundtrip-loading" *ngIf="isGeneratingRoundTrip" role="status" aria-live="polite">
   <div class="plan__roundtrip-loading-card">
     <span class="plan__roundtrip-spinner" aria-hidden="true"></span>
-    <p>Generando ruta circular…</p>
+    <p>{{ 'comparingRoutes' | uiText }}</p>
   </div>
 </div>

@@ -1,40 +1,45 @@
-<h2 mat-dialog-title class="roundtrip-dialog__header">Generar ruta circular</h2>
+<h2 mat-dialog-title>{{ 'generateCircularRoute' | uiText }}</h2>
 
 <mat-dialog-content class="roundtrip-dialog__content">
   <p class="roundtrip-dialog__subtitle">
-    Define el tipo de ruta, complejidad, prioridad de terreno y distancia aproximada para generar el recorrido.
+    {{ 'circularRouteIntro' | uiText }}
   </p>
 
   <div class="roundtrip-dialog__section">
     <label>
-      Tipo de ruta
+      {{ 'bicycle' | uiText }}
       <select [(ngModel)]="profile">
-        <option *ngFor="let option of data.profileOptions" [ngValue]="option.value">{{ option.label }}</option>
+        <option *ngFor="let option of data.profileOptions" [ngValue]="option.value">{{ optionLabel(option.value) }}</option>
       </select>
     </label>
 
     <label>
-      Complejidad
+      {{ 'routeDemand' | uiText }}
       <select [(ngModel)]="complexity">
-        <option *ngFor="let option of data.complexityOptions" [ngValue]="option.value">{{ option.label }}</option>
+        <option *ngFor="let option of data.complexityOptions" [ngValue]="option.value">{{ optionLabel(option.value) }}</option>
       </select>
     </label>
 
-    <label>
-      Prioridad de terreno
+    <label *ngIf="profile !== 'cycling-road'">
+      {{ 'terrainPriority' | uiText }}
       <select [(ngModel)]="routingMode">
-        <option *ngFor="let option of data.routingModeOptions" [ngValue]="option.value">{{ option.label }}</option>
+        <option *ngFor="let option of data.routingModeOptions" [ngValue]="option.value">{{ optionLabel(option.value) }}</option>
       </select>
     </label>
+    <p class="roundtrip-dialog__hint" *ngIf="profile === 'cycling-mountain'">{{ 'mtbDifficultyHint' | uiText }}</p>
 
     <label>
-      Longitud aproximada (km)
-      <input type="number" min="5" max="200" step="1" [(ngModel)]="lengthKm">
+      {{ 'approximateLength' | uiText }}
+      <input type="number" min="5" max="200" step="1" required [(ngModel)]="lengthKm" [attr.aria-invalid]="!validLength" aria-describedby="roundtrip-length-help">
     </label>
+    <p id="roundtrip-length-help" class="roundtrip-dialog__hint">{{ 'lengthRangeHint' | uiText }}</p>
+    <p *ngIf="!validLength" class="roundtrip-dialog__error" role="alert">{{ 'lengthRangeError' | uiText }}</p>
   </div>
+  <p class="roundtrip-dialog__hint" *ngIf="profile === 'cycling-road'">{{ 'roadProfileHint' | uiText }}</p>
+  <p class="roundtrip-dialog__hint">{{ 'routingHint' | uiText }}</p>
 </mat-dialog-content>
 
 <mat-dialog-actions align="end" class="roundtrip-dialog__actions">
-  <button mat-button type="button" (click)="cancel()">Cancelar</button>
-  <button mat-flat-button color="primary" type="button" (click)="generate()">Generar</button>
+  <button mat-button type="button" (click)="cancel()">{{ 'cancel' | uiText }}</button>
+  <button mat-flat-button color="primary" type="button" [disabled]="!validLength" (click)="generate()">{{ 'chooseStartPoint' | uiText }}</button>
 </mat-dialog-actions>

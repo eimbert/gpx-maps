@@ -4,6 +4,8 @@ import { NgForm } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { PasswordRecoveryErrorResponse } from '../interfaces/auth';
 import { AuthService } from '../services/auth.service';
+import { selectedUiText } from '../services/screen-texts';
+import { resolveLanguage } from '../services/language.service';
 
 @Component({
   selector: 'app-reset-password',
@@ -27,7 +29,7 @@ export class ResetPasswordComponent implements OnInit {
   ngOnInit(): void {
     this.token = this.route.snapshot.queryParamMap.get('token') ?? '';
     if (!this.token) {
-      this.errorMessage = 'El enlace de recuperación no es válido.';
+      this.errorMessage = selectedUiText('resetInvalidLink');
     }
   }
 
@@ -35,7 +37,7 @@ export class ResetPasswordComponent implements OnInit {
     if (!form.valid || this.loading || !this.token) return;
 
     if (this.password !== this.confirmPassword) {
-      this.errorMessage = 'Las contraseñas no coinciden.';
+      this.errorMessage = selectedUiText('passwordsDiffer');
       return;
     }
 
@@ -48,11 +50,12 @@ export class ResetPasswordComponent implements OnInit {
         this.loading = false;
         if ((response as PasswordRecoveryErrorResponse).exitCode !== 0) {
           const error = response as PasswordRecoveryErrorResponse;
-          this.errorMessage = error.message || 'No ha sido posible actualizar la contraseña.';
+          this.errorMessage = resolveLanguage(document.documentElement.lang) === 'es' && error.message
+            ? error.message : selectedUiText('passwordUpdateFailed');
           return;
         }
 
-        this.successMessage = 'Contraseña actualizada. Ya puedes iniciar sesión con tu nueva clave.';
+        this.successMessage = selectedUiText('passwordUpdated');
         setTimeout(() => {
           this.router.navigate(['/']);
         }, 2000);
@@ -61,11 +64,12 @@ export class ResetPasswordComponent implements OnInit {
         this.loading = false;
         if (error.error) {
           const responseError = error.error as PasswordRecoveryErrorResponse;
-          this.errorMessage = responseError.message || 'No ha sido posible actualizar la contraseña.';
+          this.errorMessage = resolveLanguage(document.documentElement.lang) === 'es' && responseError.message
+            ? responseError.message : selectedUiText('passwordUpdateFailed');
           return;
         }
 
-        this.errorMessage = 'No se ha podido conectar con el servicio de autenticación.';
+        this.errorMessage = selectedUiText('authUnavailable');
       }
     });
   }

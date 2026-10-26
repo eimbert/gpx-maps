@@ -1,24 +1,36 @@
 .plan-track-dialog {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 14px;
 }
 
 .plan-track-dialog__hint {
   margin: 0;
-  color: #60666f;
+  color: var(--ui-muted);
   font-size: 13px;
 }
 
 .plan-track-dialog__option {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
+  min-height: 44px;
+  color: var(--ui-text);
+  cursor: pointer;
   font-weight: 600;
 }
 
+.plan-track-dialog__option input {
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  flex-shrink: 0;
+  accent-color: var(--ui-accent);
+  color-scheme: dark;
+}
+
 .plan-track-dialog__block {
-  margin-left: 24px;
+  margin-left: 28px;
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -26,12 +38,30 @@
 
 .plan-track-dialog__label {
   font-size: 13px;
-  color: #333;
+  color: var(--ui-muted);
+  font-weight: 700;
 }
 
 .plan-track-dialog__block select {
-  max-width: 320px;
-  padding: 8px;
-  border: 1px solid #cfd5dd;
-  border-radius: 4px;
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  min-height: 48px;
+  padding: 10px 12px;
+  border: 1px solid var(--ui-border);
+  border-radius: 12px;
+  background: var(--ui-raised);
+  color: var(--ui-text);
+  color-scheme: dark;
+  font: inherit;
 }
+
+.plan-track-dialog :is(input[type=radio], select):focus-visible {
+  outline: 3px solid var(--ui-accent);
+  outline-offset: 3px;
+}
+
+.plan-track-dialog__block select:disabled,
+.plan-track-dialog__save:disabled { opacity: .5; cursor: not-allowed; }
+
+.plan-track-dialog__block .auth-field { margin-bottom: 0; }

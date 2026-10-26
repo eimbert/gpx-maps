@@ -1,4 +1,4 @@
-<h2 mat-dialog-title>Crear cuenta</h2>
+<h2 mat-dialog-title>{{ t('createAccount') }}</h2>
 <form
   *ngIf="!verificationEmailSent; else verificationState"
   #registerForm="ngForm"
@@ -7,74 +7,80 @@
 >
   <mat-dialog-content>
     <p class="dialog-description">
-      Completa los datos para registrarte.
+      {{ t('registerDescription') }}
     </p>
 
-    <mat-form-field appearance="outline" class="full-width">
-      <mat-label>Correo electrónico</mat-label>
+    <label class="auth-field" for="register-email">
+      <span>{{ t('email') }} <span aria-hidden="true">*</span></span>
       <input
-        matInput
+        id="register-email"
         name="email"
         [(ngModel)]="email"
+        #emailField="ngModel"
         type="email"
         required
+        email
         autocomplete="email"
         placeholder="tu@correo.com"
       />
-      <mat-error>El correo es obligatorio</mat-error>
-    </mat-form-field>
+      <small class="auth-field__error" *ngIf="(emailField.touched || registerForm.submitted) && emailField.invalid">{{ t('validEmail') }}</small>
+    </label>
 
-    <mat-form-field appearance="outline" class="full-width">
-      <mat-label>Nombre</mat-label>
+    <label class="auth-field" for="register-name">
+      <span>{{ t('name') }} <span aria-hidden="true">*</span></span>
       <input
-        matInput
+        id="register-name"
         name="name"
         [(ngModel)]="name"
+        #nameField="ngModel"
         required
         autocomplete="name"
-        placeholder="Tu nombre"
+        [placeholder]="t('yourName')"
       />
-      <mat-error>El nombre es obligatorio</mat-error>
-    </mat-form-field>
+      <small class="auth-field__error" *ngIf="(nameField.touched || registerForm.submitted) && nameField.invalid">{{ t('enterName') }}</small>
+    </label>
 
-    <mat-form-field appearance="outline" class="full-width">
-      <mat-label>Nick</mat-label>
+    <label class="auth-field" for="register-nickname">
+      <span>{{ t('nickname') }} <span aria-hidden="true">*</span></span>
       <input
-        matInput
+        id="register-nickname"
         name="nickname"
         [(ngModel)]="nickname"
+        #nicknameField="ngModel"
         required
         autocomplete="nickname"
-        placeholder="Tu alias en la app"
+        [placeholder]="t('appAlias')"
       />
-      <mat-error>El nick es obligatorio</mat-error>
-    </mat-form-field>
+      <small class="auth-field__error" *ngIf="(nicknameField.touched || registerForm.submitted) && nicknameField.invalid">{{ t('chooseNickname') }}</small>
+    </label>
 
-    <mat-form-field appearance="outline" class="full-width">
-      <mat-label>Contraseña</mat-label>
+    <label class="auth-field" for="register-password">
+      <span>{{ t('password') }} <span aria-hidden="true">*</span></span>
       <input
-        matInput
+        id="register-password"
         name="password"
         [(ngModel)]="password"
+        #passwordField="ngModel"
         type="password"
         required
         [pattern]="passwordPattern"
         minlength="6"
         autocomplete="new-password"
-        placeholder="Mínimo 6 caracteres"
+        [placeholder]="t('passwordMin')"
+        aria-describedby="register-password-hint"
       />
-      <mat-hint>Mín. 6 caracteres, mayúscula, minúscula y símbolo</mat-hint>
-      <mat-error>La contraseña debe cumplir los requisitos</mat-error>
-    </mat-form-field>
+      <small id="register-password-hint" class="auth-field__hint">{{ t('passwordRules') }}</small>
+      <small class="auth-field__error" *ngIf="(passwordField.touched || registerForm.submitted) && passwordField.invalid">{{ t('passwordRequirements') }}</small>
+    </label>
 
     <p *ngIf="errorMessage" class="error">{{ errorMessage }}</p>
     <p *ngIf="successMessage" class="success">{{ successMessage }}</p>
   </mat-dialog-content>
 
   <mat-dialog-actions align="end">
-    <button type="button" mat-button (click)="close()">Cancelar</button>
+    <button type="button" mat-button (click)="close()">{{ t('cancel') }}</button>
     <button type="submit" mat-flat-button color="primary" [disabled]="loading">
-      {{ loading ? 'Registrando...' : 'Registrarse' }}
+      {{ loading ? t('registering') : t('register') }}
     </button>
   </mat-dialog-actions>
 </form>
@@ -82,14 +88,14 @@
 <ng-template #verificationState>
   <mat-dialog-content>
     <p class="dialog-description">
-      Te enviamos un correo, revisa tu bandeja y haz clic en el enlace para confirmar tu cuenta.
+      {{ t('verificationSent') }}
     </p>
 
     <div class="verification-card">
-      <p class="verification-title">Finaliza tu alta desde el correo</p>
+      <p class="verification-title">{{ t('finishRegistration') }}</p>
       <ul>
-        <li>Si no lo ves, revisa la carpeta de spam o correo no deseado.</li>
-        <li>Si el enlace está vencido o ya se usó, puedes pedir que te lo reenviemos.</li>
+        <li>{{ t('checkSpam') }}</li>
+        <li>{{ t('expiredLink') }}</li>
       </ul>
 
       <div class="resend-row">
@@ -100,9 +106,9 @@
           (click)="resendVerification()"
           [disabled]="loading || resendCountdown > 0"
         >
-          {{ resendCountdown > 0 ? 'Reenviar en ' + resendCountdown + 's' : 'Reenviar correo' }}
+          {{ resendCountdown > 0 ? t('resendIn') + ' ' + resendCountdown + 's' : t('resendEmail') }}
         </button>
-        <span class="resend-hint" *ngIf="resendCountdown > 0">Podrás reenviar cuando termine el temporizador.</span>
+        <span class="resend-hint" *ngIf="resendCountdown > 0">{{ t('resendWhenTimer') }}</span>
       </div>
     </div>
 
@@ -111,6 +117,6 @@
   </mat-dialog-content>
 
   <mat-dialog-actions align="end">
-    <button type="button" mat-button (click)="close()">Cerrar</button>
+    <button type="button" mat-button (click)="close()">{{ t('close') }}</button>
   </mat-dialog-actions>
 </ng-template>

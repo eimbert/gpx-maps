@@ -1,0 +1,16 @@
+<section *ngIf="expanded" class="wahoo-settings" aria-labelledby="wahoo-title">
+  <h3 id="wahoo-title">Wahoo</h3>
+  <p *ngIf="status?.sandbox">{{ t('sandboxNotice') }}</p>
+  <p *ngIf="!status?.connected">{{ t('description') }}</p>
+  <p *ngIf="status?.connected">{{ t('automatic') }}</p>
+  <p *ngIf="message" class="notice success" role="status">{{ t(message) }}</p>
+  <p *ngIf="error" class="notice error" role="alert">{{ t(error) }}</p>
+  <div class="actions">
+    <button *ngIf="status?.available && !status?.connected" type="button" class="primary" (click)="connect()" [disabled]="busy">{{ t('connect') }}</button>
+    <ng-container *ngIf="status?.connected">
+      <button type="button" (click)="sync()" [disabled]="busy || !status?.available">{{ busy ? t('syncing') : providerText.checkNow }}</button>
+      <button type="button" (click)="disconnect()" [disabled]="busy">{{ t('disconnect') }}</button>
+    </ng-container>
+  </div>
+  <p class="privacy">{{ t('privacy') }}</p>
+</section>

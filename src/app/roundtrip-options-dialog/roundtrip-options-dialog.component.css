@@ -1,76 +1,10 @@
-:host {
-  display: block;
-}
-
-.roundtrip-dialog__header {
-  margin: -24px -24px 16px;
-  padding: 16px 24px;
-  background: #3f5ed7;
-  color: #fff;
-}
-
-.roundtrip-dialog__content {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-  width: 100%;
-  min-width: 0;
-  overflow-x: hidden;
-}
-
-.roundtrip-dialog__subtitle {
-  margin: 0;
-  color: #475569;
-  font-size: 14px;
-  line-height: 1.4;
-}
-
-.roundtrip-dialog__section {
-  border: 1px solid #dbe3f2;
-  border-radius: 12px;
-  background: #f8fafc;
-  padding: 14px;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.roundtrip-dialog__content label {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  font-weight: 700;
-  color: #1e293b;
-}
-
-.roundtrip-dialog__content select,
-.roundtrip-dialog__content input {
-  width: 100%;
-  box-sizing: border-box;
-  border-radius: 10px;
-  border: 1px solid #cbd5e1;
-  padding: 10px 12px;
-  font-size: 16px;
-  background: #fff;
-}
-
-.roundtrip-dialog__actions {
-  margin-top: 12px;
-}
-
-@media (max-width: 768px) {
-  .roundtrip-dialog__header {
-    margin: -24px -24px 12px;
-    padding: 14px 16px;
-    font-size: 26px;
-  }
-
-  .roundtrip-dialog__section {
-    padding: 12px;
-  }
-
-  .roundtrip-dialog__content select,
-  .roundtrip-dialog__content input {
-    font-size: 15px;
-  }
-}
+:host { display: block; }
+.roundtrip-dialog__content { display: flex; flex-direction: column; gap: 16px; }
+.roundtrip-dialog__subtitle, .roundtrip-dialog__hint { margin: 0; color: var(--ui-muted); line-height: 1.5; }
+.roundtrip-dialog__hint { font-size: 13px; font-weight: 400; }
+.roundtrip-dialog__section { display: grid; gap: 14px; padding: 16px; border: 1px solid var(--ui-border); border-radius: 14px; background: var(--ui-raised); }
+label { display: grid; gap: 7px; font-weight: 600; color: var(--ui-text); }
+select, input { box-sizing: border-box; width: 100%; min-width: 0; padding: 12px; border: 1px solid var(--ui-border); border-radius: 10px; background: var(--ui-surface); color: var(--ui-text); font: inherit; font-size: 16px; color-scheme: dark; }
+select:focus-visible, input:focus-visible { outline: 2px solid var(--ui-accent); outline-offset: 2px; }
+.roundtrip-dialog__error { margin: 0; color: #ffaaa6; }
+button[disabled] { opacity: .5; }

@@ -7,6 +7,8 @@ import { LoginErrorResponse, LoginSuccessResponse } from '../interfaces/auth';
 import { VerificationDialogComponent } from '../verification-dialog/verification-dialog.component';
 import { ForgotPasswordDialogComponent } from '../forgot-password-dialog/forgot-password-dialog.component';
 import { environment } from 'src/environments/environment';
+import { LanguageService } from '../services/language.service';
+import { homeTranslations, HomeTranslationKey } from '../home/home-translations';
 
 @Component({
   selector: 'app-login-dialog',
@@ -23,8 +25,11 @@ export class LoginDialogComponent {
   constructor(
     private dialogRef: MatDialogRef<LoginDialogComponent, LoginSuccessResponse>,
     private authService: AuthService,
-    private dialog: MatDialog
+    private dialog: MatDialog,
+    public languageService: LanguageService
   ) {}
+
+  t(key: HomeTranslationKey): string { return homeTranslations[this.languageService.current][key]; }
 
   onSubmit(form: NgForm): void {
     if (this.loading || !form.valid) {
@@ -46,7 +51,7 @@ export class LoginDialogComponent {
             this.openVerificationDialog();
             return;
           }
-          this.errorMessage = loginError.message || 'Usuario o contraseña erróneos';
+          this.errorMessage = loginError.message || this.t('loginDefaultError');
           this.errorExitCode = loginError.exitCode;
           return;
         }
@@ -68,12 +73,12 @@ export class LoginDialogComponent {
             this.openVerificationDialog();
             return;
           }
-          this.errorMessage = loginError.message || 'Usuario o contraseña erróneos';
+          this.errorMessage = loginError.message || this.t('loginDefaultError');
           this.errorExitCode = loginError.exitCode ?? null;
           return;
         }
 
-        this.errorMessage = 'No se ha podido conectar con el servicio de autenticación.';
+        this.errorMessage = this.t('authDefaultError');
       }
     });
   }
@@ -92,14 +97,14 @@ export class LoginDialogComponent {
     this.errorExitCode = null;
 
     this.dialog.open(VerificationDialogComponent, {
-      data: { email: this.email }
+      data: { email: this.email }, panelClass: 'tracketeo-auth-dialog'
     });
   }
 
   openForgotPasswordDialog(): void {
     this.dialog.open(ForgotPasswordDialogComponent, {
       width: '460px',
-      maxWidth: '95vw'
+      maxWidth: '95vw', panelClass: 'tracketeo-auth-dialog'
     });
   }
 }

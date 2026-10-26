@@ -1,0 +1,59 @@
+:host { display: block; min-height: 100vh; background: #101b1a; color: #fff; }
+.discovery { position: relative; width: 100%; height: 100vh; height: 100dvh; overflow: hidden; background: #1b2927; }
+.discovery--vertical { width: min(100vw, calc(100dvh * 9 / 16)); margin: 0 auto; }
+.discovery-map, .shade { position: absolute; inset: 0; }
+.shade { pointer-events: none; background: linear-gradient(180deg, rgba(6,19,17,.78), transparent 25%, transparent 62%, rgba(6,19,17,.9)); }
+.discovery-header { position: absolute; inset: 28px 32px auto; display: flex; align-items: flex-start; gap: 18px; pointer-events: none; }
+button { cursor: pointer; font: inherit; border: 0; }
+button:focus-visible { outline: 3px solid white; outline-offset: 4px; }
+button:disabled { opacity: .6; cursor: wait; }
+.back-button { display: grid; place-items: center; flex: 0 0 44px; height: 44px; border-radius: 50%; background: #ffffff1c; color: white; pointer-events: auto; backdrop-filter: blur(8px); }
+.route-heading { min-width: 0; flex: 1; }
+.eyebrow { color: #e4ecb3; font-size: 10px; font-weight: 700; letter-spacing: .2em; }
+h1 { font-size: clamp(22px, 3vw, 38px); line-height: 1.15; margin: 8px 0 12px; font-weight: 600; text-wrap: balance; overflow-wrap: anywhere; }
+.route-stats { display: flex; gap: 18px; font-size: 13px; color: #edf1e6; }
+.terrain-badge { padding: 8px 10px; border: 1px solid #ffffff40; border-radius: 6px; font-size: 10px; letter-spacing: .12em; }
+.playback { position: absolute; inset: auto 6% 48px; max-width: 1000px; margin: auto; }
+.journey-caption { pointer-events: none; }
+.place-slot { position: absolute; bottom: calc(100% + 14px); width: 100%; pointer-events: none; }
+.place-label { display: inline-flex; align-items: center; gap: 10px; max-width: 100%; box-sizing: border-box; padding: 10px 16px; border: 1px solid #eff28a70; border-radius: 12px; background: #102621ed; opacity: 0; transition: opacity .4s; }
+.place-label--visible { opacity: 1; }
+.place-label .material-icons { color: #eff28a; }
+.place-label div { min-width: 0; }
+.place-label strong { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 22px; line-height: 1.3; font-weight: 600; }
+h2 { margin: 8px 0 20px; font-size: clamp(20px, 2.8vw, 32px); font-weight: 500; }
+.profile { max-width: 440px; height: 55px; margin: 16px 0; color: #eced88; opacity: .85; }
+.profile svg { display: block; width: 100%; height: 100%; }
+.playback-row { display: flex; align-items: center; gap: 24px; }
+.primary { display: inline-flex; justify-content: center; align-items: center; gap: 8px; padding: 13px 22px; border-radius: 30px; background: #eff28a; color: #233023; font-size: 14px; font-weight: 700; white-space: nowrap; }
+.primary:hover { background: #f7f9b4; }
+.progress-info { flex: 1; min-width: 60px; }
+.progress-label { display: flex; justify-content: space-between; gap: 8px; font-size: 12px; color: #e5ecdf; margin-bottom: 10px; font-variant-numeric: tabular-nums; }
+.progress-track { height: 3px; background: #ffffff38; border-radius: 2px; overflow: hidden; }
+.progress-track span { display: block; height: 100%; background: #eff28a; }
+.recording-badge { font-size: 11px; display: inline-flex; align-items: center; gap: 6px; }
+.recording-badge i { width: 7px; height: 7px; background: #f87171; border-radius: 50%; }
+.message-card { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: min(400px, 80%); padding: 24px; text-align: center; background: #102621ed; border: 1px solid #ffffff25; border-radius: 18px; }
+.message-card p { line-height: 1.6; color: #d5ded5; }
+.notice { font-size: 12px; line-height: 1.4; padding: 10px 14px; border-radius: 8px; background: #16291eee; }
+.loading-dot { display: inline-block; width: 12px; height: 12px; border-radius: 50%; background: #eff28a; }
+.discovery--vertical .discovery-header { inset: 24px 20px auto; gap: 12px; }
+.discovery--vertical .terrain-badge { display: none; }
+.discovery--vertical .playback-row { flex-wrap: wrap; gap: 16px; }
+.discovery--vertical .progress-info { flex-basis: 100%; order: -1; }
+.discovery--vertical .playback { bottom: 76px; }
+@media (max-width: 600px) {
+  .discovery-header { inset: max(20px, env(safe-area-inset-top)) 18px auto; gap: 12px; }
+  .terrain-badge { display: none; }
+  .eyebrow { font-size: 9px; letter-spacing: .14em; }
+  .playback { inset: auto 22px max(76px, env(safe-area-inset-bottom)); }
+  .playback-row { flex-wrap: wrap; gap: 16px; }
+  .progress-info { flex-basis: 100%; order: -1; }
+  .profile { height: 42px; }
+  h1 { font-size: 24px; }
+}
+@media (max-height: 500px) {
+  .discovery-header { top: 14px; }
+  .playback { bottom: 32px; }
+  .profile, .journey-caption { display: none; }
+}

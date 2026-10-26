@@ -16,11 +16,15 @@
             "outputPath": "dist/gpx-map-viewer",
             "index": "src/index.html",
             "main": "src/main.ts",
-            "polyfills": "src/polyfills.ts",
             "tsConfig": "tsconfig.app.json",
             "assets": [
               "src/favicon.ico",
               "src/assets",
+              {
+                "glob": "maplibre-gl-csp-worker.js",
+                "input": "node_modules/maplibre-gl/dist",
+                "output": "assets/maplibre"
+              },
               "src/manifest.webmanifest",
               "src/sw.js"
             ],
@@ -37,13 +41,13 @@
               "budgets": [
                 {
                   "type": "initial",
-                  "maximumWarning": "1.2mb",
-                  "maximumError": "2.5mb"
+                  "maximumWarning": "3mb",
+                  "maximumError": "3.5mb"
                 },
                 {
                   "type": "anyComponentStyle",
-                  "maximumWarning": "16kb",
-                  "maximumError": "24kb"
+                  "maximumWarning": "58kb",
+                  "maximumError": "64kb"
                 }
               ],
               "optimization": {
@@ -97,7 +101,12 @@
             "karmaConfig": "karma.conf.js",
             "assets": [
               "src/favicon.ico",
-              "src/assets"
+              "src/assets",
+              {
+                "glob": "maplibre-gl-csp-worker.js",
+                "input": "node_modules/maplibre-gl/dist",
+                "output": "assets/maplibre"
+              }
             ],
             "styles": [
               "./node_modules/@angular/material/prebuilt-themes/purple-green.css",

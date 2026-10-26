@@ -1,0 +1,17 @@
+<div class="animation-gate" *ngIf="gate" role="dialog" aria-modal="true" aria-labelledby="animation-gate-title">
+  <div class="animation-gate__card">
+    <span class="animation-gate__icon" aria-hidden="true">✦</span>
+    <h2 id="animation-gate-title">{{ (gate.kind === 'guest' ? 'gateGuestTitle' : gate.kind === 'cooldown' ? 'gateCooldownTitle' : 'gateErrorTitle') | uiText }}</h2>
+    <p *ngIf="gate.kind === 'guest'">{{ 'gateGuestBody' | uiText }}</p>
+    <p *ngIf="gate.kind === 'cooldown'">{{ 'gateCooldownPrefix' | uiText }} {{ gate.daysRemaining }} {{ (gate.daysRemaining === 1 ? 'gateDay' : 'gateDays') | uiText }}.</p>
+    <p *ngIf="gate.kind === 'error'">{{ 'gateErrorBody' | uiText }}</p>
+    <div class="animation-gate__actions" *ngIf="gate.kind === 'guest'">
+      <button type="button" class="animation-gate__primary" (click)="register()">{{ 'createFreeAccount' | uiText }}</button>
+      <button type="button" class="animation-gate__secondary" (click)="login()">{{ 'haveAccount' | uiText }}</button>
+    </div>
+    <div class="animation-gate__actions" *ngIf="gate.kind === 'cooldown'">
+      <button type="button" class="animation-gate__primary" (click)="premium()">{{ 'gatePremium' | uiText }}</button>
+    </div>
+    <button type="button" class="animation-gate__back" (click)="back.emit()">{{ 'gateBack' | uiText }}</button>
+  </div>
+</div>

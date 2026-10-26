@@ -1,6 +1,6 @@
 import { Component, Inject } from '@angular/core';
 import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
-import { DialogoConfiguracionData } from '../interfaces/estructuras';
+import { CamaraDescubrir, DialogoConfiguracionData, VelocidadDescubrir } from '../interfaces/estructuras';
 
 @Component({
   selector: 'app-dialogo-configuracion',
@@ -21,6 +21,10 @@ export class DialogoConfiguracionComponent {
   tiempoAdversarioVirtual = '00:45';
   modoVisualizacion: 'general' | 'zoomCabeza' = 'general';
   mostrarPerfil = true;
+  tipoAnimacion: 'carrera' | 'descubrir' = 'carrera';
+  camaraDescubrir: CamaraDescubrir = 'actual';
+  velocidadDescubrir: VelocidadDescubrir = 1;
+  nombresTracks: string[] = [];
 
    constructor(
     private dialogRef: MatDialogRef<DialogoConfiguracionComponent, DialogoConfiguracionData>,
@@ -28,6 +32,10 @@ export class DialogoConfiguracionComponent {
   ) {
     // valores iniciales opcionales
     if (data) {
+      this.tipoAnimacion = data.tipoAnimacion ?? 'carrera';
+      this.camaraDescubrir = data.camaraDescubrir === 'cercana' ? 'cercana' : 'actual';
+      this.velocidadDescubrir = data.velocidadDescubrir === 2 ? 2 : 1;
+      this.nombresTracks = data.nombresTracks ?? [];
       this.eliminarPausasLargas = true;
       this.marcarPausasLargas = data.marcarPausasLargas ?? this.marcarPausasLargas;
       const umbralPausaSegundos = data.umbralPausaSegundos ?? this.umbralPausaMinutos * 60;
@@ -65,7 +73,10 @@ export class DialogoConfiguracionComponent {
       incluirAdversarioVirtual: this.incluirAdversarioVirtual,
       tiempoAdversarioVirtual: this.tiempoAdversarioVirtual,
       modoVisualizacion: this.modoVisualizacion,
-      mostrarPerfil: this.mostrarPerfil
+      mostrarPerfil: this.mostrarPerfil,
+      tipoAnimacion: this.tipoAnimacion,
+      camaraDescubrir: this.camaraDescubrir,
+      velocidadDescubrir: this.velocidadDescubrir
     });
   }
 

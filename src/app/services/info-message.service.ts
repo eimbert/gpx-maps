@@ -19,7 +19,7 @@ export class InfoMessageService {
       // de que el botón "Aceptar" no cierra el aviso.
       hasBackdrop: true,
       autoFocus: false,
-      panelClass: 'info-toast-dialog'
+      panelClass: ['info-toast-dialog', 'tracketeo-message-dialog']
     });
 
     this.messageRef = dialogRef;

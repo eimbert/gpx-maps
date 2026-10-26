@@ -123,6 +123,7 @@ export class MyTracksDialogComponent {
     
     const dialogRef = this.dialog.open<InfoDialogComponent, InfoDialogData, InfoDialogResult>(InfoDialogComponent, {
       width: '440px',
+      panelClass: 'tracketeo-message-dialog',
       data: {
         title: 'Eliminar track',
         message: '¿Seguro que quieres eliminar este track? Esta acción no se puede deshacer.',

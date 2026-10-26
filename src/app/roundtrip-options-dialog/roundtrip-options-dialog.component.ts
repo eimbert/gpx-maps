@@ -1,6 +1,7 @@
 import { Component, Inject } from '@angular/core';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { RoundTripComplexity, RoundTripProfile, RoundTripRoutingMode } from '../services/plan.service';
+import { ScreenTextKey, selectedUiText } from '../services/screen-texts';
 
 export type RoundTripOptionsDialogData = {
   profile: RoundTripProfile;
@@ -45,11 +46,26 @@ export class RoundTripOptionsDialogComponent {
   }
 
   generate(): void {
+    if (!this.validLength) return;
     this.dialogRef.close({
       profile: this.profile,
       complexity: this.complexity,
-      routingMode: this.routingMode,
+      routingMode: this.profile === 'cycling-road' ? 'balanced' : this.routingMode,
       lengthKm: this.lengthKm
     });
+  }
+
+  get validLength(): boolean {
+    return typeof this.lengthKm === 'number' && Number.isFinite(this.lengthKm)
+      && this.lengthKm >= 5 && this.lengthKm <= 200;
+  }
+
+  optionLabel(value: string): string {
+    const keys: Record<string, ScreenTextKey> = {
+      'cycling-regular': 'gravelTrekking', 'cycling-road': 'roadBike', 'cycling-mountain': 'mountainBike',
+      simple: 'soft', medium: 'moderate', technical: 'demanding',
+      balanced: 'balanced', trails: 'cyclingPaths', 'avoid-asphalt': 'lessPavement'
+    };
+    return keys[value] ? selectedUiText(keys[value]) : value;
   }
 }

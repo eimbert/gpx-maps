@@ -1,57 +1,57 @@
 <div class="create-dialog">
   <header class="create-dialog__header">
     <div>
-      <p class="eyebrow">Nuevo evento</p>
-      <h2>Crea un evento</h2>
-      <p class="muted">Estos datos podrán editarse más adelante desde tu almacenamiento local.</p>
+      <p class="eyebrow">{{ 'newEvent' | uiText }}</p>
+      <h2>{{ 'createEvent' | uiText }}</h2>
+      <p class="muted">{{ 'eventEditableLater' | uiText }}</p>
     </div>
   </header>
 
   <div class="form-grid">
     <label>
-      <span>Track GPX maestro</span>
+      <span>{{ 'masterGpx' | uiText }}</span>
       <input type="file" accept=".gpx" (change)="handleGpxUpload($event)" />
     </label>
     <label>
-      <span>Nombre</span>
-      <input type="text" [(ngModel)]="newEvent.name" placeholder="Nombre del evento" />
+      <span>{{ 'name' | uiText }}</span>
+      <input type="text" [(ngModel)]="newEvent.name" [placeholder]="'eventName' | uiText" />
     </label>
     <label>
-      <span>URL del evento (opcional)</span>
+      <span>{{ 'eventUrlOptional' | uiText }}</span>
       <input type="url" [(ngModel)]="newEvent.eventUrl" maxlength="500" placeholder="https://..." />
     </label>
     <label>
-      <span>Población</span>
-      <input type="text" [(ngModel)]="newEvent.population" placeholder="Ciudad / pueblo" />
+      <span>{{ 'population' | uiText }}</span>
+      <input type="text" [(ngModel)]="newEvent.population" [placeholder]="'townPlaceholder' | uiText" />
     </label>
     <label>
-      <span>Comarca</span>
+      <span>{{ 'county' | uiText }}</span>
       <input type="text" [(ngModel)]="newEvent.comarca" placeholder="Ej: Osona" />
     </label>
     <label>
-      <span>Provincia</span>
+      <span>{{ 'province' | uiText }}</span>
       <input type="text" [(ngModel)]="newEvent.province" placeholder="Ej: Barcelona" />
     </label>
     <label>
-      <span>Comunidad autónoma</span>
+      <span>{{ 'autonomousCommunity' | uiText }}</span>
       <input type="text" [(ngModel)]="newEvent.autonomousCommunity" placeholder="Ej: Catalunya" />
     </label>
     <label>
-      <span>Año</span>
+      <span>{{ 'year' | uiText }}</span>
       <input type="number" [(ngModel)]="newEvent.year" />
     </label>
     <label>
-      <span>Distancia (km)</span>
-      <input type="number" [(ngModel)]="newEvent.distanceKm" placeholder="Se calcula desde el GPX" />
+      <span>{{ 'distanceKm' | uiText }}</span>
+      <input type="number" [(ngModel)]="newEvent.distanceKm" [placeholder]="'calculatedFromGpx' | uiText" />
     </label>
     <label>
-      <span>Logo (opcional)</span>
+      <span>{{ 'optionalLogo' | uiText }}</span>
       <input type="file" accept="image/*" (change)="handleLogoUpload($event)" />
     </label>
   </div>
 
   <div class="actions">
-    <button mat-button type="button" (click)="onCancel()">Cancelar</button>
-    <button class="btn-start" type="button" (click)="onSave()">Guardar evento</button>
+    <button mat-button type="button" (click)="onCancel()">{{ 'cancel' | uiText }}</button>
+    <button class="btn-start" type="button" (click)="onSave()">{{ 'saveEvent' | uiText }}</button>
   </div>
 </div>

@@ -17,6 +17,125 @@
   overflow-y: auto;
 }
 
+/* Presentación B: panel deportivo sin posicionamiento geográfico */
+
+.container--routes .user-tracks {
+  border-radius: 0 !important;
+  border-inline: 0 !important;
+  background:
+    radial-gradient(circle at 88% 20%, rgba(31, 92, 210, .12), transparent 27%),
+    #030c1a !important;
+}
+
+.container--routes .destination-grid {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)) !important;
+  overflow: visible !important;
+}
+
+.container--routes .destination-card {
+  min-width: 0 !important;
+  border-color: rgba(74, 136, 248, .35) !important;
+  border-radius: 4px 22px 4px 22px !important;
+  background:
+    linear-gradient(180deg, rgba(15, 44, 83, .88), rgba(3, 15, 31, .98)) !important;
+  clip-path: polygon(5% 0, 100% 0, 95% 100%, 0 100%);
+}
+
+.container--routes .destination-card:nth-child(even) {
+  background:
+    linear-gradient(180deg, rgba(10, 54, 119, .9), rgba(3, 15, 31, .98)) !important;
+}
+
+.container--routes .destination-card__go {
+  color: #fff !important;
+  background: linear-gradient(90deg, #1655d4, #347df4) !important;
+}
+
+@media (max-width: 640px) {
+
+  .container--routes .destination-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* Paleta final: azul noche, lima deportiva atenuada y fotografía */
+:host {
+  --route-accent: #bccb4f;
+  --route-accent-strong: #d0dc63;
+  --route-accent-soft: rgba(188, 203, 79, .18);
+  --route-warm: #d2a74f;
+}
+
+.container--routes .destination-card {
+  overflow: hidden;
+  background: #061225 !important;
+}
+
+.container--routes .destination-card__identity {
+  position: relative;
+  display: flex;
+  min-height: 132px;
+  padding: 28px 20px 17px !important;
+  flex-direction: column;
+  justify-content: flex-end;
+  background-position: center !important;
+  background-size: cover !important;
+  isolation: isolate;
+}
+
+.container--routes .destination-card__identity::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(3, 10, 19, .06), rgba(3, 12, 24, .9));
+}
+
+.container--routes .destination-card:nth-child(4n + 1) .destination-card__identity {
+  background-image: url('/assets/route-landscape-coast.jpg') !important;
+}
+
+.container--routes .destination-card:nth-child(4n + 2) .destination-card__identity {
+  background-image: url('/assets/route-landscape-pyrenees.jpg') !important;
+}
+
+.container--routes .destination-card:nth-child(4n + 3) .destination-card__identity {
+  background-image: url('/assets/destination-cycling-fallback.png') !important;
+}
+
+.container--routes .destination-card:nth-child(4n) .destination-card__identity {
+  background-image: url('/assets/destination-cycling-fallback.png') !important;
+}
+
+.container--routes .destination-card__identity small {
+  color: #e6edc0 !important;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, .8);
+}
+
+.container--routes .destination-card__identity h3 {
+  color: #fff !important;
+  font-size: clamp(1.55rem, 2.1vw, 2.25rem) !important;
+  font-style: italic;
+  text-shadow: 0 3px 12px rgba(0, 0, 0, .88);
+  text-transform: uppercase;
+}
+
+.container--routes .destination-card:nth-child(even) .destination-card__go {
+  color: #111704 !important;
+  background: linear-gradient(90deg, #aab943, #cedb62) !important;
+}
+
+.container--routes .destination-card:nth-child(odd) .destination-card__go {
+  background: linear-gradient(90deg, #1c4f9f, #3473d5) !important;
+}
+
+.container--routes {
+  height: auto;
+  min-height: 100dvh;
+  overflow: visible;
+}
+
 .page-actions {
   display: flex;
   justify-content: center;
@@ -1764,4 +1883,749 @@ input[type="file"] {
     grid-row: 1;
     justify-self: center;
   }
+}
+
+/* Centro cartográfico de rutas */
+.container {
+  background:
+    radial-gradient(circle at 77% 18%, rgba(20, 107, 255, 0.2), transparent 28%),
+    radial-gradient(circle at 16% 88%, rgba(255, 145, 32, 0.1), transparent 26%),
+    #030a13;
+  padding: 24px 20px 72px;
+}
+
+.load-wrapper {
+  max-width: 1500px;
+  gap: 18px;
+}
+
+@keyframes route-flow {
+  to { stroke-dashoffset: -190; }
+}
+
+.load-wrapper .user-tracks {
+  margin: 0;
+  padding: 24px;
+  border-color: rgba(103, 156, 211, 0.2);
+  border-radius: 26px;
+  background:
+    radial-gradient(circle at 86% 10%, rgba(10, 101, 213, 0.12), transparent 28%),
+    rgba(6, 17, 30, 0.97);
+  color: #d9e9f8;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.35);
+}
+
+.load-wrapper .eyebrow {
+  color: #55a4ff;
+  font-size: 0.74rem;
+  font-weight: 900;
+  letter-spacing: 0.17em;
+}
+
+.load-wrapper .user-tracks__filter,
+.load-wrapper .user-tracks__tab,
+.load-wrapper .user-tracks__pagination-rows select {
+  border-color: rgba(119, 164, 210, 0.22);
+  background: rgba(255, 255, 255, 0.055);
+  color: #dceafa;
+}
+
+.load-wrapper .user-tracks__filter input {
+  color: #e9f4ff;
+}
+
+.load-wrapper .user-tracks__filter input::placeholder {
+  color: #71879d;
+}
+
+.load-wrapper .user-tracks__filter mat-icon {
+  color: #559cf5;
+}
+
+.load-wrapper .user-tracks__tab--active {
+  border-color: #1679ff;
+  background: #1265dc;
+  color: #fff;
+  box-shadow: 0 8px 22px rgba(4, 94, 224, 0.26);
+}
+
+.load-wrapper .cloud-upload {
+  border-color: rgba(79, 154, 255, 0.42);
+  background: rgba(16, 104, 232, 0.17);
+  color: #d8eaff;
+}
+
+.load-wrapper .user-tracks__count,
+.load-wrapper .destination-browser__intro > span {
+  background: rgba(20, 112, 235, 0.16);
+  color: #73b5ff;
+}
+
+.load-wrapper .user-tracks__range,
+.load-wrapper .user-tracks__counts,
+.load-wrapper .muted {
+  color: #8ca2b8;
+}
+
+.load-wrapper .destination-browser__intro h2 {
+  color: #f2f7fc;
+}
+
+.load-wrapper .destination-grid {
+  grid-template-columns: repeat(auto-fit, minmax(245px, 1fr));
+  gap: 12px;
+}
+
+.load-wrapper .destination-card {
+  min-height: 292px;
+  border-color: rgba(106, 157, 208, 0.22);
+  border-radius: 17px;
+  background:
+    radial-gradient(circle at 88% 18%, rgba(25, 117, 240, 0.2), transparent 30%),
+    repeating-radial-gradient(ellipse at 80% 46%, transparent 0 12px, rgba(137, 179, 216, 0.06) 13px 14px),
+    #0a1a2b;
+  color: #e6f1fc;
+  box-shadow: 0 14px 32px rgba(0, 0, 0, 0.23);
+}
+
+.load-wrapper .destination-card::after {
+  right: -55px;
+  top: -44px;
+  border-color: rgba(60, 144, 255, 0.16);
+  box-shadow: 0 0 0 18px rgba(16, 103, 222, 0.045), 0 0 0 38px rgba(16, 103, 222, 0.025);
+}
+
+.load-wrapper .destination-card:hover,
+.load-wrapper .destination-card:focus-visible {
+  border-color: #2a83f4;
+  box-shadow: 0 22px 44px rgba(0, 66, 160, 0.22);
+}
+
+.load-wrapper .destination-card__header {
+  color: #8ba6c0;
+  background: rgba(3, 12, 22, 0.58);
+}
+
+.load-wrapper .destination-card__header strong {
+  color: #50a3ff;
+}
+
+.load-wrapper .destination-card__identity small {
+  color: #4e9df5;
+}
+
+.load-wrapper .destination-card__identity h3 {
+  color: #f5f9fd;
+}
+
+.load-wrapper .destination-card__facts {
+  border-color: rgba(120, 161, 203, 0.15);
+  background: rgba(1, 8, 16, 0.25);
+}
+
+.load-wrapper .destination-card__facts div {
+  border-color: rgba(120, 161, 203, 0.14);
+}
+
+.load-wrapper .destination-card__facts small,
+.load-wrapper .destination-card__places small {
+  color: #7189a1;
+}
+
+.load-wrapper .destination-card__facts strong {
+  color: #edf6ff;
+}
+
+.load-wrapper .destination-card__places p {
+  color: #a9bacb;
+}
+
+.load-wrapper .destination-card__go {
+  border-color: rgba(120, 161, 203, 0.15);
+  background: rgba(3, 12, 22, 0.38);
+  color: #62abff;
+}
+
+@media (max-width: 760px) {
+  .container {
+    padding: 10px 8px 38px;
+  }
+
+  .load-wrapper .user-tracks {
+    padding: 18px 12px;
+    border-radius: 22px;
+  }
+
+  .load-wrapper .destination-browser__intro {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .load-wrapper .destination-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Cierre de cascada de la presentación B */
+
+.container--routes .user-tracks {
+  border-radius: 0 !important;
+  border-inline: 0 !important;
+  background: radial-gradient(circle at 88% 20%, rgba(31, 92, 210, .12), transparent 27%), #030c1a !important;
+}
+
+.container--routes .destination-grid {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)) !important;
+  overflow: visible !important;
+}
+
+.container--routes .destination-card {
+  min-width: 0 !important;
+  border-color: rgba(74, 136, 248, .35) !important;
+  border-radius: 4px 22px 4px 22px !important;
+  background: linear-gradient(180deg, rgba(15, 44, 83, .88), rgba(3, 15, 31, .98)) !important;
+  clip-path: polygon(5% 0, 100% 0, 95% 100%, 0 100%);
+}
+
+.container--routes .destination-card__go {
+  color: #fff !important;
+  background: linear-gradient(90deg, #1655d4, #347df4) !important;
+}
+
+@media (max-width: 640px) {
+
+  .container--routes .destination-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* Portátiles y pantallas con poca altura útil */
+
+/* Composición final: correspondencia 1:1 con el concepto A */
+@media (min-width: 761px) {
+  .container {
+    padding: 0 0 28px;
+  }
+
+  .load-wrapper {
+    width: 100%;
+    max-width: none;
+  }
+
+  .load-wrapper .user-tracks {
+    border-radius: 0;
+  }
+}
+
+/* Posiciones geográficamente aproximadas:
+   Barcelona, Girona, Huesca, Lleida, Pyrénées-Orientales, Tarragona y Teruel. */
+
+.load-wrapper .user-tracks__header,
+.load-wrapper .user-tracks__controls,
+.load-wrapper .user-tracks__table-toolbar {
+  display: none;
+}
+
+.load-wrapper .destination-browser {
+  margin-top: 0;
+}
+
+.load-wrapper .destination-browser__intro::before {
+  content: "Archivo de rutas";
+  color: #56a5ff;
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.load-wrapper .destination-browser__intro > div {
+  display: none;
+}
+
+.load-wrapper .destination-card {
+  flex-basis: 235px;
+  overflow: hidden;
+  background-image:
+    linear-gradient(180deg, rgba(5, 17, 29, 0.18) 0%, rgba(5, 18, 31, 0.82) 48%, #081727 100%),
+    url('/assets/destination-cycling-fallback.png');
+  background-size: cover;
+  background-position: center;
+}
+
+.load-wrapper .destination-card:nth-child(2n) {
+  background-position: 38% center;
+}
+
+.load-wrapper .destination-card:nth-child(3n) {
+  background-position: 72% center;
+}
+
+.load-wrapper .destination-card::after {
+  display: none;
+}
+
+.load-wrapper .destination-card__header {
+  background: rgba(3, 12, 22, 0.4);
+  backdrop-filter: blur(5px);
+}
+
+.load-wrapper .destination-card__identity {
+  min-height: 50px;
+  background: linear-gradient(180deg, transparent, rgba(3, 12, 22, 0.28));
+}
+
+.load-wrapper .destination-card__facts {
+  background: rgba(3, 12, 22, 0.74);
+  backdrop-filter: blur(7px);
+}
+
+.load-wrapper .destination-card__go {
+  background: rgba(3, 12, 22, 0.88);
+}
+
+/* Ajuste fiel a la propuesta cartográfica aprobada */
+
+.load-wrapper .user-tracks {
+  padding: 18px 26px 22px;
+}
+
+.load-wrapper .destination-browser__intro {
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.load-wrapper .destination-browser__intro .eyebrow {
+  display: none;
+}
+
+.load-wrapper .destination-browser__intro h2 {
+  margin: 0;
+  color: #70adf2;
+  font-size: 0.76rem;
+  font-weight: 850;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+}
+
+.load-wrapper .destination-grid {
+  display: flex;
+  grid-template-columns: none;
+  gap: 10px;
+  overflow-x: auto;
+  padding: 4px 2px 12px;
+  scroll-snap-type: x proximity;
+  scrollbar-color: #1c5c9f #071422;
+  scrollbar-width: thin;
+}
+
+.load-wrapper .destination-card {
+  flex: 0 0 225px;
+  min-height: 178px;
+  scroll-snap-align: start;
+}
+
+.load-wrapper .destination-card__header {
+  padding: 9px 12px;
+  font-size: 0.58rem;
+}
+
+.load-wrapper .destination-card__identity {
+  padding: 13px 12px 9px;
+}
+
+.load-wrapper .destination-card__identity small {
+  display: none;
+}
+
+.load-wrapper .destination-card__identity h3 {
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+.load-wrapper .destination-card__facts {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+.load-wrapper .destination-card__facts div {
+  padding: 8px 11px;
+}
+
+.load-wrapper .destination-card__facts div:nth-child(n+3) {
+  display: none;
+}
+
+.load-wrapper .destination-card__facts div:nth-child(-n+2) {
+  border-bottom: 0;
+}
+
+.load-wrapper .destination-card__facts strong {
+  font-size: 0.75rem;
+}
+
+.load-wrapper .destination-card__places {
+  display: none;
+}
+
+.load-wrapper .destination-card__go {
+  padding: 9px 12px;
+}
+
+@media (max-width: 760px) {
+
+  .load-wrapper .destination-browser__intro {
+    align-items: flex-start;
+  }
+
+  .load-wrapper .destination-grid {
+    display: flex;
+  }
+}
+
+/* Coordenadas definitivas del mapa. Deben permanecer al final de la hoja
+   para anular las primeras aproximaciones del prototipo. */
+
+/* Orden de datos: Barcelona, Girona, Huesca, Lleida,
+   Pyrénées-Orientales, Tarragona y Teruel. */
+
+/* La presentación B cierra la cascada; el mapa anterior ya no forma parte de la vista. */
+
+.container--routes .user-tracks {
+  border-radius: 0 !important;
+  border-inline: 0 !important;
+  background: radial-gradient(circle at 88% 20%, rgba(31, 92, 210, .12), transparent 27%), #030c1a !important;
+}
+
+.container--routes .destination-grid {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)) !important;
+  overflow: visible !important;
+}
+
+.container--routes .destination-card {
+  min-width: 0 !important;
+  border-color: rgba(74, 136, 248, .35) !important;
+  border-radius: 4px 22px 4px 22px !important;
+  background: linear-gradient(180deg, rgba(15, 44, 83, .88), rgba(3, 15, 31, .98)) !important;
+  clip-path: polygon(5% 0, 100% 0, 95% 100%, 0 100%);
+}
+
+.container--routes .destination-card__go {
+  color: #fff !important;
+  background: linear-gradient(90deg, #1655d4, #347df4) !important;
+}
+
+@media (max-width: 640px) {
+
+  .container--routes .destination-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+/* Paleta final: azul noche, lima deportiva atenuada y fotografía. */
+:host {
+  --route-accent: #bccb4f;
+  --route-accent-strong: #d0dc63;
+}
+
+.container--routes .destination-card {
+  overflow: hidden;
+  background: #061225 !important;
+}
+
+.container--routes .destination-card__identity {
+  position: relative;
+  display: flex;
+  min-height: 132px;
+  padding: 28px 20px 17px !important;
+  flex-direction: column;
+  justify-content: flex-end;
+  background-position: center !important;
+  background-size: cover !important;
+  isolation: isolate;
+}
+
+.container--routes .destination-card__identity::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(3, 10, 19, .06), rgba(3, 12, 24, .9));
+}
+
+.container--routes .destination-card:nth-child(4n + 1) .destination-card__identity {
+  background-image: url('/assets/route-landscape-coast.jpg') !important;
+}
+
+.container--routes .destination-card:nth-child(4n + 2) .destination-card__identity {
+  background-image: url('/assets/route-landscape-pyrenees.jpg') !important;
+}
+
+.container--routes .destination-card:nth-child(4n + 3) .destination-card__identity {
+  background-image: url('/assets/destination-cycling-fallback.png') !important;
+}
+
+.container--routes .destination-card:nth-child(4n) .destination-card__identity {
+  background-image: url('/assets/destination-cycling-fallback.png') !important;
+}
+
+.container--routes .destination-card__identity small {
+  color: #e6edc0 !important;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, .8);
+}
+
+.container--routes .destination-card__identity h3 {
+  color: #fff !important;
+  font-size: clamp(1.55rem, 2.1vw, 2.25rem) !important;
+  font-style: italic;
+  text-shadow: 0 3px 12px rgba(0, 0, 0, .88);
+  text-transform: uppercase;
+}
+
+.container--routes .destination-card:nth-child(even) .destination-card__go {
+  color: #111704 !important;
+  background: linear-gradient(90deg, #aab943, #cedb62) !important;
+}
+
+.container--routes .destination-card:nth-child(odd) .destination-card__go {
+  color: #fff !important;
+  background: linear-gradient(90deg, #1c4f9f, #3473d5) !important;
+}
+
+/* Evita que la inclinación deportiva recorte los nombres de comunidad. */
+.container--routes .destination-card {
+  clip-path: polygon(0 0, 100% 0, 95% 100%, 0 100%) !important;
+}
+
+.container--routes .destination-card__header {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  padding: 10px 20px 10px 16px !important;
+  overflow: hidden;
+}
+
+.container--routes .destination-card__header span,
+.container--routes .destination-card__header strong {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Dedicated archive and animation views. */
+.container.route-workspace.container--routes { padding: 24px 24px 100px; background: var(--ui-page); color: var(--ui-text); }
+.route-workspace .load-wrapper { width: 100%; max-width: 1100px; margin: 0 auto; gap: 0; }
+.workspace-nav { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 36px; }
+.workspace-nav a, .workspace-nav button, .workspace-link { color: var(--ui-muted); font: inherit; font-size: 14px; text-decoration: none; border: 0; background: transparent; cursor: pointer; }
+.workspace-home { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; }
+.workspace-nav > div { display: flex; padding: 4px; border: 1px solid var(--ui-border); border-radius: 13px; background: var(--ui-page); }
+.workspace-nav button { min-height: 40px; padding: 8px 20px; border-radius: 9px; }
+.workspace-nav button.active { background: var(--ui-accent); color: var(--ui-accent-ink);}
+.workspace-heading { margin-bottom: 28px; }
+.workspace-eyebrow { color: var(--ui-accent); text-transform: uppercase; font-size: 11px; letter-spacing: 1.6px; font-weight: 700; }
+.workspace-heading h1 { color: var(--ui-text); font-size: clamp(28px, 4vw, 42px); line-height: 1.15; margin: 8px 0 12px; }
+.workspace-heading > p:last-child, .animation-setup > p { color: var(--ui-muted); font-size: 16px; line-height: 1.6; }
+.animation-types { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 22px; }
+.animation-type { display: flex; flex-direction: column; padding: 0; min-width: 0; overflow: hidden; text-align: left; font: inherit; border-radius: 22px; border: 1px solid var(--ui-border); color: var(--ui-text); background: var(--ui-surface); cursor: pointer; transition: border-color .2s, transform .2s; }
+.animation-type:hover { transform: translateY(-3px); border-color: var(--ui-accent); }
+.animation-type__visual { display: flex; align-items: end; justify-content: space-between; padding: 24px; height: 150px; box-sizing: border-box; background: linear-gradient(0deg, #0f2438, #10253c30), url('/assets/route-landscape-pyrenees.jpg') center 45% / cover; }
+.animation-type--race .animation-type__visual { background: linear-gradient(0deg, #12253d, #10253c40), url('/assets/destination-cycling-fallback.png') center 45% / cover; }
+.animation-type__visual > mat-icon { width: 38px; height: 38px; font-size: 38px; color: white; }
+.animation-type__visual > span { color: white; font-size: 10px; letter-spacing: 1.5px; font-weight: 700; padding: 6px 9px; border-radius: 6px; background: #07182ecc; }
+.animation-type__body { display: flex; flex: 1; flex-direction: column; gap: 12px; padding: 26px; }
+.animation-type__body > strong { font-size: 26px; color: #fff; }
+.animation-type__body > span { font-size: 15px; line-height: 1.6; color: var(--ui-muted); }
+.animation-type__body .animation-type__subtitle { color: var(--ui-accent); font-weight: 600; }
+.animation-type__body > small { color: var(--ui-muted); font-size: 12px; margin-top: auto; }
+.animation-type__body .animation-type__cta { display: flex; align-items: center; justify-content: space-between; color: white; font-weight: 700; border-top: 1px solid var(--ui-border); padding-top: 18px; margin-top: 4px; }
+.animation-setup { max-width: 760px; margin: 0 auto; padding: 28px; background: var(--ui-surface); border: 1px solid var(--ui-border); border-radius: 20px; }
+.animation-setup__heading { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.animation-setup h2 { color: var(--ui-text); font-size: 26px; margin: 8px 0; }
+.workspace-link { text-decoration: underline; text-underline-offset: 4px; padding: 12px 0; }
+.track-sources { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; margin: 24px 0 12px; }
+.source-button { display: flex; flex-direction: column; align-items: flex-start; gap: 10px; padding: 22px; font: inherit; text-align: left; color: var(--ui-text); background: var(--ui-raised); border: 1px solid var(--ui-border); border-radius: 14px; cursor: pointer; }
+.source-button mat-icon { color: var(--ui-accent); }
+.source-button small { color: var(--ui-muted); line-height: 1.5; }
+.source-button:hover, .track-sources--dragging .source-button { background: var(--ui-raised); border-color: var(--ui-accent); }
+.animation-setup .workspace-hint { font-size: 12px; color: var(--ui-muted); }
+.selected-tracks { margin-top: 24px; }
+.selected-tracks h3 { font-size: 14px; color: var(--ui-muted); }
+.selected-tracks ul { list-style: none; padding: 0; }
+.selected-tracks li { display: flex; align-items: center; gap: 12px; padding: 14px 0; border-bottom: 1px solid var(--ui-border); }
+.selected-tracks li > span { display: grid; gap: 5px; min-width: 0; flex: 1; }
+.selected-tracks strong { overflow-wrap: anywhere; font-size: 14px; }
+.selected-tracks small { color: var(--ui-muted); }
+.selected-tracks button { border: 0; background: none; color: var(--ui-muted); cursor: pointer; min-width: 44px; min-height: 44px; }
+.animation-next { display: flex; justify-content: flex-end; padding-top: 20px; }
+.workspace-primary { display: inline-flex; gap: 12px; align-items: center; justify-content: center; min-height: 48px; padding: 12px 22px; border: 0; border-radius: 12px; background: var(--ui-accent); color: var(--ui-accent-ink); font: inherit; font-weight: 700; cursor: pointer; }
+.workspace-primary:disabled { background: var(--ui-raised); color: var(--ui-muted); cursor: default; }
+.route-workspace :is(button, a, input, select):focus-visible { outline: 3px solid var(--ui-accent); outline-offset: 3px; }
+.archive-picker { display: flex; align-items: center; justify-content: space-between; gap: 20px; background: var(--ui-raised); border: 1px solid var(--ui-border); padding: 20px; border-radius: 14px; margin-bottom: 20px; }
+.archive-picker p { color: var(--ui-muted); margin-bottom: 0; }
+.archive-signin { text-align: center; padding: 40px 20px; border: 1px dashed var(--ui-border); border-radius: 18px; background: var(--ui-surface); }
+.archive-signin > mat-icon { color: var(--ui-accent); font-size: 40px; height: 40px; width: 40px; }
+.archive-signin p { color: var(--ui-muted); line-height: 1.6; }
+.archive-guest-prompt { display: grid; grid-template-columns: 48px minmax(0, 1fr) auto; align-items: center; gap: 18px; margin: 8px 0 4px; padding: 24px; border: 1px solid rgba(125, 179, 244, .35); border-radius: 18px; background: var(--ui-surface); }
+.archive-guest-prompt__icon { display: grid; place-items: center; width: 48px; height: 48px; border-radius: 14px; background: #facc15; color: #172033; }
+.archive-guest-prompt h2 { margin: 0 0 6px; color: #fff; font-size: clamp(18px, 3vw, 22px); line-height: 1.2; }
+.archive-guest-prompt p { margin: 0; color: var(--ui-muted); line-height: 1.5; }
+.archive-guest-prompt .archive-guest-prompt__community { margin-top: 8px; color: var(--ui-accent); font-size: 13px; }
+.archive-guest-prompt__actions { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.archive-guest-prompt__actions .workspace-primary { min-width: 182px; border-radius: 999px; background: #facc15; color: #172033; }
+.archive-guest-prompt__actions .workspace-link { color: var(--ui-muted); }
+.route-workspace .user-tracks__filter input:disabled { cursor: default; }
+.route-workspace .user-tracks__filter input:disabled::placeholder { color: var(--ui-muted); opacity: 1; }
+.selection-note { color: var(--ui-accent); padding: 16px 0; }
+.route-workspace .load-wrapper .user-tracks { margin-top: 0; padding: 22px; border: 1px solid var(--ui-border) !important; border-radius: 18px !important; background: var(--ui-surface) !important; }
+.route-workspace .user-tracks__header { display: none; }
+.route-workspace .load-wrapper .user-tracks__controls { display: flex; flex-wrap: wrap; gap: 14px; margin-bottom: 20px; }
+.route-workspace .user-tracks__filter { flex: 1 1 300px; }
+.route-workspace .user-tracks__tabs { display: flex; flex-wrap: wrap; gap: 8px; order: 3; width: 100%; }
+.route-workspace .load-wrapper .user-tracks__table-toolbar { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 18px; }
+.route-workspace .destination-browser__intro::before { content: none; }
+.route-workspace .destination-browser__intro > div { display: block; }
+.route-workspace .destination-browser__intro h2 { font-size: 18px; }
+.route-workspace .destination-browser__intro .eyebrow { display: none; }
+@media (max-width: 640px) {
+  .archive-guest-prompt { grid-template-columns: 1fr; padding: 20px; text-align: center; justify-items: center; }
+  .archive-guest-prompt__actions { width: 100%; }
+  .archive-guest-prompt__actions .workspace-primary { width: 100%; }
+  .container.route-workspace.container--routes { padding: 16px 16px 100px; }
+  .workspace-nav { gap: 8px; margin-bottom: 24px; }
+  .workspace-nav button { padding: 8px 14px; }
+  .workspace-heading { margin-bottom: 22px; }
+  .workspace-heading > p:last-child { font-size: 14px; }
+  .animation-types { grid-template-columns: minmax(0, 1fr); gap: 16px; }
+  .animation-type { border-radius: 16px; }
+  .animation-type__visual { height: 88px; padding: 14px 18px; }
+  .animation-type__visual > mat-icon { font-size: 30px; height: 30px; width: 30px; }
+  .animation-type__body { padding: 18px; gap: 8px; }
+  .animation-type__body > strong { font-size: 22px; }
+  .animation-type__body > span { font-size: 14px; line-height: 1.5; }
+  .animation-type__body .animation-type__cta { padding-top: 12px; margin-top: 6px; }
+  .animation-setup { padding: 18px; }
+  .animation-setup h2 { font-size: 23px; }
+  .track-sources { grid-template-columns: minmax(0, 1fr); gap: 10px; margin-top: 18px; }
+  .source-button { display: grid; grid-template-columns: 28px 1fr; gap: 5px 12px; padding: 16px; }
+  .source-button mat-icon { grid-row: span 2; align-self: center; }
+  .source-button small { grid-column: 2; }
+  .workspace-primary { width: 100%; font-size: 14px; }
+  .archive-picker { align-items: flex-start; flex-direction: column; gap: 4px; padding: 16px; }
+  .route-workspace .load-wrapper .user-tracks { padding: 14px; }
+  .route-workspace .user-tracks__tabs { gap: 6px; }
+  .route-workspace .user-tracks__tab { flex: 1; justify-content: center; padding: 10px 8px; font-size: 12px; }
+  .route-workspace .cloud-upload { width: 100%; justify-content: center; }
+  .route-workspace .user-tracks__filter { flex-basis: 100%; min-width: 0; }
+  .route-workspace .destination-browser__intro { flex-direction: column; align-items: flex-start; gap: 6px; }
+}
+@media (prefers-reduced-motion: reduce) { .animation-type { transition: none; } .animation-type:hover { transform: none; } }
+
+.archive-filters > summary, .route-card-more > summary { cursor: pointer; color: var(--ui-accent); padding: 12px 0; font-size: 13px; }
+.archive-filters[open] > summary { margin-bottom: 8px; }
+.route-card-more > .route-explorer-card__actions { margin-top: 6px; }
+
+.route-workspace .route-explorer-card { background: var(--ui-paper); color: var(--ui-ink); border-color: var(--ui-paper-border);}
+.route-workspace .route-explorer-card h3 { color: var(--ui-ink); font-weight: 750; }
+.route-workspace .route-explorer-card > p,
+.route-workspace .route-explorer-card__stats span { color: var(--ui-paper-muted); }
+.route-workspace .route-explorer-card__stats { border-color: var(--ui-paper-border); }
+.route-workspace .route-explorer-card__stats--with-quality { margin-bottom: 0; }
+.route-workspace .route-explorer-card__quality { margin: 10px 0 14px; }
+.route-workspace .route-explorer-card__stats mat-icon,
+.route-workspace .route-explorer-card__menu { color: var(--ui-paper-muted); }
+.route-workspace .route-explorer-card__actions button { background: #fff; border-color: var(--ui-paper-border); color: var(--ui-ink); min-height: 44px; }
+.route-workspace .route-explorer-card__actions button:hover { background: #e2e5dd; color: var(--ui-ink); }
+.route-workspace .route-explorer-card__actions button:disabled { opacity: .55; cursor: default; }
+.route-workspace .route-card-more > summary { color: var(--ui-ink); font-weight: 700; text-decoration: underline; text-underline-offset: 3px; }
+.route-workspace .user-tracks__pagination-rows select { background: var(--ui-raised); color: var(--ui-text); border-color: var(--ui-border); color-scheme: dark; }
+.route-workspace .destination-browser__intro h2 { color: var(--ui-text); }
+.route-workspace .proximity-origin { color: var(--ui-muted); overflow-wrap: anywhere; }
+.route-workspace summary:focus-visible { outline: 3px solid var(--ui-accent); outline-offset: 3px; }
+.route-workspace .destination-browser__intro h2 { text-transform: none; letter-spacing: 0; line-height: 1.4; }
+.route-workspace .destination-browser__intro > span { display: none; }
+.route-workspace .user-tracks__tab { white-space: nowrap; }
+/* Neutral surfaces separate navigation, destination groups and individual routes. */
+.route-workspace .load-wrapper .user-tracks { color: var(--ui-text); }
+.route-workspace .load-wrapper .user-tracks__filter,
+.route-workspace .load-wrapper .user-tracks__tab,
+.route-workspace .load-wrapper .cloud-upload { background: var(--ui-raised); border-color: var(--ui-border); color: var(--ui-text); }
+.route-workspace .load-wrapper .user-tracks__filter input { color: var(--ui-text); }
+.route-workspace .load-wrapper .user-tracks__filter input::placeholder { color: var(--ui-muted); opacity: 1; }
+.route-workspace .load-wrapper .user-tracks__filter mat-icon,
+.route-workspace .load-wrapper .eyebrow { color: var(--ui-accent); }
+.route-workspace .load-wrapper .user-tracks__tab--active { background: var(--ui-accent); border-color: var(--ui-accent); color: var(--ui-accent-ink); box-shadow: none; }
+.route-workspace .user-tracks__tab-count { background: #424b43; color: var(--ui-text); }
+.route-workspace .user-tracks__tab--active .user-tracks__tab-count { background: var(--ui-accent-ink); color: var(--ui-accent); }
+.route-workspace .load-wrapper .user-tracks__count { background: var(--ui-raised); color: var(--ui-text); }
+.route-workspace .load-wrapper .muted,
+.route-workspace .load-wrapper .user-tracks__counts { color: var(--ui-muted); }
+.route-workspace .destination-detail__hero { background: linear-gradient(120deg, #272e28, #45432e); border-color: var(--ui-border); }
+.route-workspace .destination-detail__title span { color: var(--ui-accent); }
+.route-workspace .destination-detail__title p { color: var(--ui-text); }
+.route-workspace .place-description { display: flex; align-items: flex-start; gap: 8px; }
+.route-workspace .place-description p { flex: 1; min-width: 0; margin-top: 0; }
+.route-workspace .place-description__refresh { flex: none; display: inline-grid; place-items: center; width: 32px; height: 32px; padding: 0; border: 1px solid var(--ui-border); border-radius: 50%; background: var(--ui-surface); color: var(--ui-accent); cursor: pointer; }
+.route-workspace .place-description__refresh:disabled { opacity: .5; cursor: wait; }
+.route-workspace .place-description__refresh:focus-visible { outline: 2px solid var(--ui-accent); outline-offset: 2px; }
+.route-workspace .place-description__refresh mat-icon { font-size: 18px; width: 18px; height: 18px; }
+.route-workspace .place-description--card { align-items: flex-start; }
+.route-workspace .route-explorer-card__difficulty { color: #3e4d2c; background: #dce4cb; }
+.route-workspace .route-explorer-card__actions .route-explorer-card__primary { color: var(--ui-accent-ink); background: var(--ui-accent); border-color: #98721e; }
+.route-workspace .route-explorer-card__actions .route-explorer-card__primary:hover { background: #e8b63c; }
+.route-workspace .route-explorer-card :is(button, summary):focus-visible { outline-color: #765612; }
+.route-workspace.container--routes .destination-card:nth-child(n) { background: var(--ui-paper) !important; border-color: var(--ui-paper-border) !important; color: var(--ui-ink); }
+.route-workspace .load-wrapper .destination-card::after { display: none; }
+.route-workspace .load-wrapper .destination-card__header { background: var(--ui-raised); color: var(--ui-text); }
+.route-workspace .load-wrapper .destination-card__header strong { color: var(--ui-accent); }
+.route-workspace .load-wrapper .destination-card__facts { background: var(--ui-paper); border-color: var(--ui-paper-border); }
+.route-workspace .load-wrapper .destination-card__facts div { border-color: var(--ui-paper-border); }
+.route-workspace .load-wrapper .destination-card__facts small,
+.route-workspace .load-wrapper .destination-card__places small,
+.route-workspace .load-wrapper .destination-card__places p { color: var(--ui-paper-muted); }
+.route-workspace .load-wrapper .destination-card__facts strong { color: var(--ui-ink); }
+.route-workspace.container--routes .destination-card:nth-child(n) .destination-card__go { background: var(--ui-accent) !important; color: var(--ui-accent-ink) !important; border-color: #98721e; }
+
+/* Archive, province routes and animation entry use the shared design system. */
+.container.route-workspace.container--routes { padding: 26px clamp(16px, 3vw, 32px) 76px; }
+.route-workspace .load-wrapper { max-width: 1180px; }
+.workspace-nav { margin-bottom: 25px; padding: 0 0 15px; border-bottom: 1px solid var(--ui-border); }
+.workspace-nav > div { border-radius: 10px; background: var(--ui-surface); }
+.workspace-nav button { font-size: 12px; font-weight: 800; }
+.workspace-heading { margin-bottom: 23px; }
+.workspace-heading h1 { font-size: clamp(26px, 3.2vw, 34px); letter-spacing: -.8px; }
+.workspace-heading > p:last-child { max-width: 740px; font-size: 13px; }
+.route-workspace .load-wrapper .user-tracks { border-radius: 15px !important; box-shadow: 0 5px 17px #0001; }
+.route-workspace .user-tracks__tabs { border-bottom: 1px solid var(--ui-border); }
+.route-workspace .user-tracks__tab { border-radius: 8px 8px 0 0; min-height: 42px; }
+.route-workspace .destination-card, .route-workspace .route-explorer-card { border-radius: 13px; box-shadow: 0 5px 17px #0001; }
+.route-workspace .route-explorer-card__actions button { border-radius: 8px; }
+.animation-types { gap: 18px; }
+.animation-type { border-radius: 15px; box-shadow: 0 5px 17px #0001; }
+.animation-type__visual { height: 180px; background-image: linear-gradient(0deg, #0f21158c, #0f211500), url('/assets/route-landscape-pyrenees.jpg'); }
+.animation-type--race .animation-type__visual { background-image: linear-gradient(0deg, #0f21158c, #0f211500), url('/assets/route-landscape-coast.jpg'); }
+.animation-type__body { gap: 9px; padding: 22px; }
+.animation-type__body > strong { font-size: 23px; }
+.animation-type__body > span { font-size: 13px; }
+.animation-type__body .animation-type__subtitle { color: #a9d8a6; font-weight: 800; }
+.animation-type__body .animation-type__cta { color: var(--ui-accent); font-size: 12px; }
+.animation-setup { border-radius: 15px; }
+@media (max-width: 700px) {
+  .container.route-workspace.container--routes { padding: 16px 15px 30px; }
+  .workspace-nav { gap: 7px; margin-bottom: 19px; }
+  .workspace-nav > div { min-width: 0; }
+  .workspace-nav button { padding: 7px 10px; font-size: 11px; }
+  .workspace-heading { margin-bottom: 18px; }
+  .workspace-heading h1 { font-size: 27px; }
+  .route-workspace .load-wrapper .user-tracks { padding: 14px !important; }
+  .animation-types { grid-template-columns: 1fr; gap: 13px; }
+  .animation-type__visual { height: 120px; }
+  .animation-type__body { padding: 18px; }
+}
+@media (max-width: 640px) {
+  .route-workspace .user-tracks__tab { gap: 5px; padding: 10px 8px; flex: 1 1 auto; }
+  .route-workspace .user-tracks__tab-count { min-width: 16px; padding: 2px 4px; }
+  .workspace-nav { margin-bottom: 18px; }
+  .workspace-heading { margin-bottom: 18px; }
 }

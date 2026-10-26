@@ -2,20 +2,46 @@
   display: block;
   min-height: 100vh;
   color: #0b1224;
-  background: radial-gradient(circle at 20% 20%, rgba(99, 102, 241, 0.16), transparent 25%),
-    radial-gradient(circle at 80% 0%, rgba(236, 72, 153, 0.14), transparent 25%),
-    #0b1224;
+  background: var(--ui-page);
 }
 
 .home {
   position: relative;
   min-height: 100vh;
+  min-height: 100dvh;
+  box-sizing: border-box;
   display: flex;
   align-items: center;
   justify-content: center;
-  /* padding: 48px 20px 64px; */
   overflow: hidden;
-  padding: 48px 20px 64px;
+  padding: 24px 20px 48px;
+}
+
+.home__language {
+  position: absolute;
+  top: 27px;
+  right: 30px;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--ui-muted);
+  font-size: 12px;
+}
+
+.home__language select {
+  max-width: 125px;
+  padding: 6px 9px;
+  border: 1px solid var(--ui-border);
+  border-radius: 8px;
+  background: var(--ui-surface);
+  color: var(--ui-text);
+  font: inherit;
+}
+
+.home__language select:focus-visible {
+  outline: 3px solid var(--ui-accent);
+  outline-offset: 2px;
 }
 
 .home__background {
@@ -36,7 +62,7 @@
   display: flex;
   flex-direction: column;
   gap: 20px;
-  padding: 32px;
+  padding: 12px 32px 32px;
   width: min(1100px, 100%);
   min-width: 0;
   box-sizing: border-box;
@@ -67,25 +93,28 @@
 .premium-table__row:first-child { border-top: 0; }
 .premium-table__row--header { background: rgba(255,255,255,.08); color: #fff; }
 .premium-table__row strong { color: #fde68a; }
-.premium__note { margin: 14px 0 0; color: #cbd5e1; font-size: 13px; }
+.premium__note { margin: 14px 0 0; color: var(--ui-muted); font-size: 13px; }
 .premium-pricing { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-top: 20px; }
 .premium-price { position: relative; display: grid; gap: 5px; padding: 16px; border: 1px solid rgba(255,255,255,.16); border-radius: 16px; background: rgba(255,255,255,.06); }
 .premium-price--featured { border-color: rgba(250, 204, 21, .7); background: rgba(250, 204, 21, .09); }
 .premium-price > span:not(.premium-price__badge) { color: #bae6fd; font-size: 12px; font-weight: 900; letter-spacing: 1px; text-transform: uppercase; }
 .premium-price p { display: flex; align-items: baseline; gap: 5px; margin: 2px 0; }
 .premium-price p strong { color: #fff; font-size: 28px; }
-.premium-price small { color: #cbd5e1; }
-.premium-price button { margin-top: 8px; padding: 9px 12px; border: 0; border-radius: 999px; color: #64748b; background: #e2e8f0; font-weight: 800; }
+.premium-price small { color: var(--ui-muted); }
+.premium-price button { margin-top: 8px; padding: 9px 12px; border: 0; border-radius: 999px; color: #172033; background: #f8fafc; font-weight: 800; cursor: pointer; }
+.premium-price button:hover:not(:disabled) { background: #facc15; }
+.premium-price button:disabled, .premium__button:disabled { cursor: wait; opacity: .65; }
+.premium__message { margin: 14px 0 0; padding: 10px 12px; border: 1px solid rgba(125,211,252,.4); border-radius: 12px; color: #e0f2fe; background: rgba(14,116,144,.22); font-weight: 700; }
 .premium-price__badge { position: absolute; top: -10px; right: 12px; padding: 4px 9px; border-radius: 999px; color: #172033; background: #facc15; font-size: 10px; font-weight: 900; }
 .plan-badge { color: #facc15; font-weight: 900; }
 
 .usage-summary { padding: 18px 20px; border-radius: 20px; color: #e2e8f0; background: rgba(15, 23, 42, .82); border: 1px solid rgba(125, 211, 252, .28); text-align: left; }
 .usage-summary__title { display: flex; justify-content: space-between; align-items: end; margin-bottom: 14px; }
 .usage-summary__title div { display: flex; gap: 9px; align-items: baseline; }
-.usage-summary__title span, .usage-summary article > span { color: #7dd3fc; font-size: 12px; font-weight: 800; letter-spacing: .8px; text-transform: uppercase; }
+.usage-summary__title span, .usage-summary article > span { color: var(--ui-accent); font-size: 12px; font-weight: 800; letter-spacing: .8px; text-transform: uppercase; }
 .usage-summary__title strong { color: #fff; font-size: 20px; }
 .usage-summary__chevron, .usage-summary__mobile { display: none; }
-.usage-summary small { color: #94a3b8; }
+.usage-summary small { color: var(--ui-muted); }
 .usage-summary__items { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
 .usage-summary article { display: flex; flex-direction: column; gap: 4px; padding: 13px; border-radius: 14px; background: rgba(255,255,255,.06); }
 .usage-summary article strong { color: #fff; font-size: 18px; }
@@ -99,7 +128,7 @@
 }
 
 .auth-link {
-  color: #cbd5e1;
+  color: var(--ui-muted);
   text-decoration: underline;
   text-decoration-color: rgba(255, 255, 255, 0.35);
   text-underline-offset: 4px;
@@ -135,7 +164,7 @@
   margin: 0;
   letter-spacing: 2px;
   text-transform: uppercase;
-  color: #7aa2ff;
+  color: var(--ui-accent);
   /* font-weight: 700; */
   font-size: clamp(33px, 1vw, 35px);
   /* font-size: 24px; */
@@ -150,7 +179,7 @@
 
 .lead {
   margin: 0;
-  color: #cbd5e1;
+  color: var(--ui-muted);
   font-size: 16px;
   max-width: 720px;
   align-self: center;
@@ -200,12 +229,11 @@
   background: rgba(255, 255, 255, 0.06);
   border: 1px solid rgba(255, 255, 255, 0.12);
   color: inherit;
-  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+  transition: box-shadow 0.2s ease, border-color 0.2s ease;
 }
 
 @media (hover: hover) and (pointer: fine) {
   .action-card:hover {
-    transform: translateY(-3px) scale(1.01);
     box-shadow: 0 16px 40px rgba(0, 0, 0, 0.35);
     border-color: rgba(122, 162, 255, 0.6);
   }
@@ -230,14 +258,14 @@
 
 .action-card__title {
   margin: 0;
-  font-weight: 800;
+  font-weight: 700;
   color: #f8fafc;
   font-size: 18px;
 }
 
 .action-card__subtitle {
   margin: 0;
-  color: #cbd5e1;
+  color: var(--ui-muted);
   font-size: 14px;
   line-height: 1.4;
 }
@@ -262,18 +290,32 @@
   border-color: rgba(236, 72, 153, 0.4);
 }
 
+.action-card--garmin {
+  background: linear-gradient(135deg, rgba(34, 197, 94, 0.2), rgba(16, 185, 129, 0.14));
+  border-color: rgba(34, 197, 94, 0.4);
+}
+
 .action-card--planner {
   background: linear-gradient(135deg, rgba(34, 197, 94, 0.22), rgba(14, 116, 144, 0.18));
   border-color: rgba(34, 197, 94, 0.4);
 }
 
-.home__logo {
-  width: min(516px, 93vw);
-  height: auto;
+.home__brand {
+  position: relative;
+  width: min(516px, 100%);
+  aspect-ratio: 2.5;
   align-self: center;
-  margin-top: -120px;
-  margin-bottom: -120px;
-  transform: translateY(-12px) rotate(-10deg);
+  overflow: hidden;
+}
+
+.home__logo {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: auto;
+  display: block;
+  transform: translateY(-23%) rotate(-10deg);
   transform-origin: center;
 }
 
@@ -286,7 +328,7 @@
   font-size: 11px;
   font-weight: 600;
   letter-spacing: 0.4px;
-  color: #14532d;
+  color: var(--ui-muted);
   opacity: 0.95;
 }
 
@@ -294,7 +336,18 @@
   .home {
     min-height: 100dvh;
     padding: 12px;
+    flex-direction: column;
   }
+
+  .home__language {
+    position: relative;
+    top: auto;
+    right: auto;
+    align-self: flex-end;
+    margin: 6px 6px 0 0;
+  }
+
+  .home__language label { display: none; }
 
   .home__background {
     inset: 6px;
@@ -321,7 +374,7 @@
   .usage-summary__mobile { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); width: 100%; min-width: 0; margin: 10px 0 0; cursor: pointer; }
   .usage-summary__mobile > span { display: grid; justify-items: center; gap: 2px; min-width: 0; padding: 0 4px; border-left: 1px solid rgba(255,255,255,.12); }
   .usage-summary__mobile > span:first-child { border-left: 0; }
-  .usage-summary__mobile small { overflow: hidden; max-width: 100%; color: #7dd3fc; font-size: 9px; font-weight: 800; text-overflow: ellipsis; text-transform: uppercase; white-space: nowrap; }
+  .usage-summary__mobile small { overflow: hidden; max-width: 100%; color: var(--ui-accent); font-size: 9px; font-weight: 800; text-overflow: ellipsis; text-transform: uppercase; white-space: nowrap; }
   .usage-summary__mobile strong { color: #fff; font-size: 15px; white-space: nowrap; }
   .usage-summary__items { grid-column: 1 / -1; grid-template-columns: 1fr; max-height: 0; margin-top: 0; overflow: hidden; opacity: 0; transition: max-height .3s ease, margin-top .3s ease, opacity .2s ease; }
   .usage-summary--open .usage-summary__items { max-height: 520px; margin-top: 12px; opacity: 1; }
@@ -330,15 +383,16 @@
   .premium-table__row { grid-template-columns: 1fr 1fr; gap: 7px 12px; }
   .premium-table__row > :first-child { grid-column: 1 / -1; color: #fff; font-weight: 800; }
   .premium-table__row--header { display: none; }
-  .premium-table__row span:nth-child(2)::before { content: 'Gratis · '; color: #94a3b8; font-weight: 700; }
+  .premium-table__row span:nth-child(2)::before { content: 'Gratis · '; color: var(--ui-muted); font-weight: 700; }
   .premium-table__row strong::before { content: 'Premium · '; color: #facc15; }
   .premium-pricing { grid-template-columns: 1fr; }
 
+  .home__brand {
+    width: min(250px, 70vw);
+  }
+
   .home__logo {
-    width: min(360px, 82vw);
-    margin-top: -38px;
-    margin-bottom: -46px;
-    transform: translateY(-6px) rotate(-8deg);
+    transform: translateY(-23%) rotate(-8deg);
   }
 
   .eyebrow {
@@ -424,4 +478,98 @@
     bottom: 12px;
     font-size: 10px;
   }
+}
+
+/* Color identifies each action without tinting the whole page. */
+.home__background { background: var(--ui-surface); border-color: var(--ui-border); }
+.home__actions .action-card { background: var(--ui-raised); border-color: var(--ui-border); border-left: 4px solid var(--action-accent); color: var(--ui-text); }
+.action-card--archive { --action-accent: var(--ui-accent); }
+.action-card--primary { --action-accent: #c7b7e6; }
+.action-card--secondary { --action-accent: #edb39d; }
+.action-card--planner { --action-accent: #a9cc9f; }
+.action-card--garmin { --action-accent: #eac44d; grid-column: 1 / -1; }
+.home__actions .action-card--garmin { border: 1px solid #a58e39; }
+.action-card__inbox-meta { display: inline-flex; align-items: center; justify-content: flex-end; gap: 10px; min-width: 0; color: #eac44d; font-size: 24px; }
+.action-card__badge { border-radius: 999px; padding: 4px 9px; background: #5b4326; color: #ffb45f; font-size: 12px; font-weight: 800; white-space: nowrap; }
+.action-card__inbox-arrow { flex: none; }
+.home__actions .action-card:hover { border-color: var(--action-accent); }
+.home__actions .action-card__icon { color: var(--action-accent); background: var(--ui-surface); }
+.home__actions .action-card__cta { color: var(--ui-accent-ink); background: var(--action-accent); border-color: transparent; }
+.premium, .usage-summary { background: var(--ui-surface); border-color: var(--ui-border); }
+.home :is(button, a, summary):focus-visible { outline: 3px solid var(--ui-accent); outline-offset: 4px; }
+
+/* Clear, compact entry points for the four main tasks. */
+.home__actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.home__actions .action-card { height: auto; box-sizing: border-box; min-width: 0; }
+.action-card--archive { background: linear-gradient(135deg, rgba(14, 165, 233, .2), rgba(6, 182, 212, .12)); border-color: rgba(56, 189, 248, .35); }
+.home__actions .action-card__cta { padding: 0; border: 0; background: none; color: var(--action-accent); font-size: 24px; }
+.action-card:focus-visible { outline: 3px solid var(--ui-accent); outline-offset: 4px; }
+@media (max-width: 640px) {
+  .home__actions { grid-template-columns: minmax(0, 1fr); gap: 10px; margin-top: 0; }
+  .home__actions .action-card { grid-template-columns: 40px minmax(0, 1fr) 18px; grid-template-areas: 'icon text cta'; padding: 14px 12px; gap: 10px; }
+  .home__actions .action-card--garmin { grid-template-columns: 40px minmax(0, 1fr) 18px; grid-template-areas: 'icon text arrow' 'badge badge badge'; }
+  .action-card--garmin .action-card__inbox-meta { display: contents; }
+  .action-card--garmin .action-card__badge { grid-area: badge; justify-self: start; }
+  .action-card--garmin .action-card__inbox-arrow { grid-area: arrow; align-self: center; }
+  .home__actions .action-card__icon { width: 38px; height: 40px; font-size: 21px; }
+  .home__actions .action-card__cta { align-self: center; }
+  .home__content > .eyebrow { font-size: 12px; letter-spacing: 1.5px; }
+  .home__content { gap: 12px; }
+  .headline { font-size: 27px; }
+  .lead { font-size: 14px; }
+}
+
+/* Panel de rutas: desktop rail and mobile cards follow the supplied compositions. */
+:host { background: var(--ui-page); color: var(--ui-text); }
+.home { display: block; overflow: visible; padding: 0; }
+.home__background { display: none; }
+.home__content { width: min(1180px, 100%); max-width: none; margin: 0 auto; padding: 0 30px 48px; gap: 0; text-align: left; }
+.home__brand { box-sizing: border-box; align-self: stretch; width: calc(100% + 60px); height: 69px; aspect-ratio: auto; margin: 0 -30px 30px; border-bottom: 1px solid var(--ui-border); background: var(--ui-surface); }
+.home__brand::before { content: 'Inicio  /  Tu espacio'; position: absolute; left: 30px; top: 25px; color: var(--ui-text); font-size: 12px; font-weight: 800; }
+.home__logo { display: none; }
+.home__language { top: 18px; right: 30px; z-index: 3; }
+.home__content > .eyebrow { margin: 0 0 4px; color: var(--ui-muted); font-size: 11px; font-weight: 800; letter-spacing: 1.3px; text-transform: uppercase; }
+.home__content > .headline { margin: 0; color: var(--ui-text); font-size: clamp(27px, 3.5vw, 38px); line-height: 1.2; letter-spacing: -1.2px; }
+.home__content > .lead { margin: 4px 0 27px; color: var(--ui-muted); font-size: 14px; }
+.home__section-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin: 0 0 14px; }
+.home__section-heading h2 { margin: 0; color: var(--ui-text); font-size: 18px; letter-spacing: -.35px; }
+.home__section-heading span { color: var(--ui-muted); font-size: 12px; }
+.home__actions { grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr); grid-auto-flow: row; gap: 14px; margin: 0 0 26px; }
+.home__actions .action-card { position: relative; min-height: 116px; border: 1px solid var(--ui-border); border-radius: 14px; padding: 18px; background: var(--ui-surface); color: var(--ui-text); box-shadow: 0 4px 15px #0001; }
+.home__actions .action-card--archive { grid-row: span 2; align-content: end; min-height: 246px; overflow: hidden; background: linear-gradient(180deg, #18231bc4 0%, #18231b 85%), url('/assets/route-landscape-pyrenees.jpg') center / cover; color: #f4f7ee; border-color: #2d4030; }
+.home__actions .action-card--archive::after { content: ''; position: absolute; left: 22px; right: 22px; bottom: 14px; height: 55px; opacity: .45; background: linear-gradient(145deg, transparent 12%, #e8d657 13% 16%, transparent 17% 29%, #e8d657 30% 33%, transparent 34% 47%, #e8d657 48% 51%, transparent 52% 72%, #e8d657 73% 76%, transparent 77%); pointer-events: none; }
+.home__actions .action-card--archive .action-card__texts { align-self: start; }
+.home__actions .action-card--archive .action-card__title { color: #f4f7ee; font-size: 25px; }
+.home__actions .action-card--archive .action-card__subtitle { color: #d4dfce; }
+.home__actions .action-card__title { color: var(--ui-text); font-size: 16px; }
+.home__actions .action-card__subtitle { color: var(--ui-muted); font-size: 12px; }
+.home__actions .action-card__icon { width: 42px; height: 42px; border: 0; border-radius: 11px; background: var(--ui-raised); color: var(--ui-accent); font-size: 21px; }
+.home__actions .action-card__cta { color: var(--ui-accent); font-size: 22px; }
+.home__actions .action-card--garmin { grid-column: auto; }
+.home__actions .action-card--garmin { border-color: var(--ui-border); }
+.usage-summary, .premium { margin: 0 0 16px; border-radius: 15px; box-shadow: 0 4px 15px #0001; }
+.home__auth { align-self: stretch; margin: 12px 0; justify-content: flex-start; color: var(--ui-text); }
+.home__support { align-self: flex-start; color: var(--ui-muted); }
+.home__support-link, .auth-link { color: var(--ui-accent); }
+@media (max-width: 900px) {
+  .home__actions { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .home__actions .action-card--archive { grid-column: 1 / -1; grid-row: auto; min-height: 190px; }
+}
+@media (max-width: 700px) {
+  .home__content { padding: 0 17px 32px; }
+  .home__brand { width: calc(100% + 34px); height: 59px; margin: 0 -17px 20px; }
+  .home__brand::before { content: 'TRACKETEO.BIKE'; left: 17px; top: 19px; color: var(--ui-accent); font-size: 15px; font-style: italic; }
+  .home__language { top: 12px; right: 17px; }
+  .home__content > .headline { font-size: 27px; }
+  .home__content > .lead { margin-bottom: 20px; font-size: 12px; }
+  .home__section-heading { display: block; }
+  .home__section-heading span { display: block; margin-top: 3px; }
+  .home__actions { display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; }
+  .home__actions .action-card { min-height: 78px; padding: 13px; }
+  .home__actions .action-card--archive { grid-column: auto; min-height: 205px; padding: 18px; }
+  .home__actions .action-card--archive .action-card__icon { display: none; }
+  .home__actions .action-card--archive .action-card__texts { align-self: start; }
+  .home__actions .action-card--archive .action-card__cta { align-self: start; }
+  .home__actions .action-card--garmin { grid-template-columns: 40px minmax(0, 1fr) auto; }
+  .home__actions .action-card__icon { width: 40px; height: 40px; }
 }

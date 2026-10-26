@@ -1,7 +1,179 @@
 /* You can add global styles to this file, and also import other style files */
 @import '@angular/material/prebuilt-themes/indigo-pink.css';
+@font-face { font-family: Manrope; src: url('/assets/fonts/manrope-400.ttf') format('truetype'); font-weight: 400; font-display: swap; }
+@font-face { font-family: Manrope; src: url('/assets/fonts/manrope-500.ttf') format('truetype'); font-weight: 500; font-display: swap; }
+@font-face { font-family: Manrope; src: url('/assets/fonts/manrope-600.ttf') format('truetype'); font-weight: 600; font-display: swap; }
+@font-face { font-family: Manrope; src: url('/assets/fonts/manrope-700.ttf') format('truetype'); font-weight: 700; font-display: swap; }
+@font-face { font-family: Manrope; src: url('/assets/fonts/manrope-800.ttf') format('truetype'); font-weight: 800; font-display: swap; }
+@font-face { font-family: 'Barlow Condensed'; src: url('/assets/fonts/barlow-condensed-500.ttf') format('truetype'); font-weight: 500; font-display: swap; }
+@font-face { font-family: 'Barlow Condensed'; src: url('/assets/fonts/barlow-condensed-600.ttf') format('truetype'); font-weight: 600; font-display: swap; }
+@font-face { font-family: 'Barlow Condensed'; src: url('/assets/fonts/barlow-condensed-700.ttf') format('truetype'); font-weight: 700; font-display: swap; }
+:root {
+  --ui-page: #161e18;
+  --ui-surface: #222c24;
+  --ui-raised: #2b362c;
+  --ui-border: #3b493b;
+  --ui-text: #f0f3e9;
+  --ui-muted: #b9c5b4;
+  --ui-accent: #edc831;
+  --ui-accent-ink: #202619;
+  --ui-paper: #f2f0e9;
+  --ui-ink: #202721;
+  --ui-paper-muted: #505c52;
+  --ui-paper-border: #9ca69d;
+}
 html, body { height: 100%; }
-body { margin: 0; font-family: Roboto, "Helvetica Neue", sans-serif; }
+body { margin: 0; font-family: Manrope, "Helvetica Neue", sans-serif; background: var(--ui-page); color: var(--ui-text); }
+
+/* Los diálogos deben quedar por delante del bloqueo de reproducción (z-index: 1200). */
+.cdk-overlay-container { z-index: 3000; }
+.mat-dialog-container { border-radius: 22px; box-shadow: 0 28px 90px rgba(0, 0, 0, .38); }
+
+.tracketeo-auth-dialog .mat-dialog-container,
+.tracketeo-message-dialog .mat-dialog-container,
+.tracketeo-playback-dialog .mat-dialog-container {
+  box-sizing: border-box;
+  padding: clamp(22px, 5vw, 32px);
+  border: 1px solid rgba(148, 163, 184, .35);
+  border-radius: 24px;
+  background: var(--ui-surface);
+  color: #fff;
+}
+.tracketeo-auth-dialog h2[mat-dialog-title],
+.tracketeo-message-dialog h2[mat-dialog-title],
+.tracketeo-playback-dialog h2[mat-dialog-title] {
+  margin: 0 0 10px;
+  color: #fff;
+  font-size: clamp(24px, 5vw, 29px);
+  font-weight: 750;
+  line-height: 1.16;
+  text-align: center;
+}
+.tracketeo-auth-dialog h2[mat-dialog-title]::before,
+.tracketeo-message-dialog h2[mat-dialog-title]::before,
+.tracketeo-playback-dialog h2[mat-dialog-title]::before {
+  content: '✦';
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  margin: 0 auto 17px;
+  border-radius: 15px;
+  background: var(--ui-accent);
+  color: var(--ui-surface);
+  font-size: 27px;
+}
+.tracketeo-auth-dialog .mat-dialog-content,
+.tracketeo-message-dialog .mat-dialog-content,
+.tracketeo-playback-dialog .mat-dialog-content {
+  margin: 0;
+  padding: 0;
+  color: var(--ui-muted);
+  line-height: 1.5;
+}
+.tracketeo-auth-dialog .mat-dialog-content .dialog-description,
+.tracketeo-message-dialog .mat-dialog-content p {
+  margin: 0 0 18px;
+  color: var(--ui-muted);
+  text-align: center;
+}
+.tracketeo-auth-dialog .auth-field {
+  display: grid;
+  gap: 7px;
+  margin: 0 0 16px;
+  color: var(--ui-muted);
+  font-size: 14px;
+  font-weight: 700;
+}
+.tracketeo-auth-dialog .auth-field > span > span { color: var(--ui-accent); }
+.tracketeo-auth-dialog .auth-field input {
+  box-sizing: border-box;
+  width: 100%;
+  height: 48px;
+  padding: 0 14px;
+  border: 1px solid var(--ui-border);
+  border-radius: 12px;
+  outline: none;
+  background: var(--ui-raised);
+  color: #fff;
+  caret-color: var(--ui-accent);
+  color-scheme: dark;
+  font: 400 16px Roboto, "Helvetica Neue", sans-serif;
+}
+.tracketeo-auth-dialog .auth-field input::placeholder { color: var(--ui-muted); opacity: 1; }
+.tracketeo-auth-dialog .auth-field input:focus-visible {
+  border-color: var(--ui-accent);
+  box-shadow: 0 0 0 2px rgba(250, 204, 21, .22);
+}
+.tracketeo-auth-dialog .auth-field input:-webkit-autofill,
+.tracketeo-auth-dialog .auth-field input:-webkit-autofill:hover,
+.tracketeo-auth-dialog .auth-field input:-webkit-autofill:focus {
+  -webkit-text-fill-color: #fff;
+  -webkit-box-shadow: 0 0 0 1000px var(--ui-raised) inset;
+  caret-color: var(--ui-accent);
+}
+.tracketeo-auth-dialog .auth-field__hint {
+  color: var(--ui-muted);
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 1.4;
+}
+.tracketeo-auth-dialog .auth-field__error {
+  color: #ffbbb5;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.4;
+}
+.tracketeo-auth-dialog .mat-dialog-actions,
+.tracketeo-message-dialog .mat-dialog-actions,
+.tracketeo-playback-dialog .mat-dialog-actions {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+  min-height: 0;
+  margin: 16px 0 0;
+  padding: 0;
+}
+.tracketeo-auth-dialog .mat-dialog-actions button,
+.tracketeo-message-dialog .mat-dialog-actions button,
+.tracketeo-playback-dialog .mat-dialog-actions button {
+  width: 100%;
+  min-height: 46px;
+  margin: 0 !important;
+  border-radius: 999px;
+  font-weight: 700;
+}
+.tracketeo-auth-dialog .mat-dialog-actions .mat-flat-button,
+.tracketeo-message-dialog .mat-dialog-actions .mat-flat-button,
+.tracketeo-playback-dialog .mat-dialog-actions .mat-flat-button { grid-row: 1; }
+.tracketeo-auth-dialog .mat-flat-button.mat-primary,
+.tracketeo-message-dialog .mat-flat-button.mat-primary,
+.tracketeo-playback-dialog .mat-flat-button.mat-primary { background: var(--ui-accent); color: var(--ui-surface); }
+.tracketeo-auth-dialog .mat-button,
+.tracketeo-message-dialog .mat-button,
+.tracketeo-playback-dialog .mat-button { background: rgba(255,255,255,.15); color: #fff; }
+.tracketeo-auth-dialog .mat-dialog-actions button:focus-visible,
+.tracketeo-message-dialog .mat-dialog-actions button:focus-visible,
+.tracketeo-playback-dialog .mat-dialog-actions button:focus-visible { outline: 3px solid #fff; outline-offset: 2px; }
+.tracketeo-auth-dialog .mat-dialog-content .forgot-link { background: transparent; color: var(--ui-accent); }
+.tracketeo-auth-dialog .mat-dialog-content .error { color: #ffaaa6; }
+.tracketeo-auth-dialog .mat-dialog-content .success { color: #7dd3fc; }
+.tracketeo-auth-dialog .mat-dialog-content .verification-card { border-color: rgba(255,255,255,.2); background: rgba(255,255,255,.07); }
+.tracketeo-auth-dialog .mat-dialog-content .verification-card ul,
+.tracketeo-auth-dialog .mat-dialog-content .resend-hint { color: var(--ui-muted); }
+.tracketeo-auth-dialog .mat-stroked-button.mat-primary { border-color: var(--ui-accent); color: var(--ui-accent); }
+.tracketeo-playback-dialog .mat-checkbox-label { color: var(--ui-muted); }
+.tracketeo-playback-dialog .mat-checkbox-frame { border-color: var(--ui-muted); }
+.tracketeo-playback-dialog .mat-checkbox-checked.mat-accent .mat-checkbox-background,
+.tracketeo-playback-dialog .mat-checkbox-indeterminate.mat-accent .mat-checkbox-background { background: var(--ui-accent); }
+.tracketeo-playback-dialog .mat-checkbox-checkmark-path { stroke: var(--ui-surface) !important; }
+.tracketeo-upload-dialog .mat-dialog-container { overflow-y: auto; scrollbar-width: thin; scrollbar-color: var(--ui-border) transparent; }
+.tracketeo-upload-dialog .mat-dialog-content { max-height: none; overflow: visible; }
+@media (max-width: 520px) {
+  .tracketeo-auth-dialog .mat-dialog-container,
+  .tracketeo-message-dialog .mat-dialog-container,
+  .tracketeo-playback-dialog .mat-dialog-container { padding: 22px; }
+}
 
 
 /* .user-tracks__table .p-datatable-wrapper > table > tbody > tr:hover > td {
@@ -19,7 +191,7 @@ body { margin: 0; font-family: Roboto, "Helvetica Neue", sans-serif; }
 app-load-gpx .analysis-library { display:grid; gap:28px; margin-top:22px; }
 app-load-gpx .analysis-library__recent { display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:16px; margin-top:12px; }
 app-load-gpx .analysis-library__card { display:flex; flex-direction:column; padding:20px; border:1px solid #dbe4ee; border-radius:18px; background:rgba(255,255,255,.94); box-shadow:0 10px 26px rgba(15,23,42,.08); }
-app-load-gpx .analysis-library__card h3 { margin:8px 0; font-size:1.05rem; overflow-wrap:anywhere; }
+app-load-gpx .analysis-library__card h3 { margin:8px 0; color:#0f2942; font-size:1.05rem; overflow-wrap:anywhere; }
 app-load-gpx .analysis-library__file { display:block; margin:-2px 0 8px; color:#64748b; font-size:.75rem; overflow-wrap:anywhere; }
 app-load-gpx .analysis-library__card p { color:#475569; line-height:1.5; display:-webkit-box; -webkit-line-clamp:4; -webkit-box-orient:vertical; overflow:hidden; }
 app-load-gpx .analysis-library__type { align-self:flex-start; padding:4px 9px; border-radius:999px; background:#dbeafe; color:#1d4ed8; font-size:.72rem; font-weight:800; text-transform:uppercase; }
@@ -27,6 +199,8 @@ app-load-gpx .analysis-library__metrics { display:flex; gap:14px; margin:auto 0 
 app-load-gpx .analysis-library__available { display:grid; gap:9px; }
 app-load-gpx .analysis-library__row { display:grid; grid-template-columns:minmax(220px,1fr) auto auto auto; gap:20px; align-items:center; padding:14px 18px; border:1px solid #e2e8f0; border-radius:13px; background:rgba(255,255,255,.92); }
 app-load-gpx .analysis-library__row div { display:grid; gap:4px; }
+app-load-gpx .analysis-library__row strong { color:#0f2942; }
+app-load-gpx .analysis-library__row > span { color:#334155; }
 app-load-gpx .analysis-library__row small, app-load-gpx .analysis-library__privacy { color:#64748b; }
 app-load-gpx .analysis-library__detail { scroll-margin-top:20px; padding:24px; border-radius:18px; color:#e2e8f0; background:linear-gradient(135deg,#0f172a,#1e3a5f); box-shadow:0 16px 38px rgba(15,23,42,.2); }
 app-load-gpx .analysis-library__detail h2, app-load-gpx .analysis-library__detail h3 { color:#fff; }
@@ -53,6 +227,31 @@ app-load-gpx .analysis-library__sector-cards article { padding:12px; border-radi
 app-load-gpx .analysis-library__sector-cards small { display:block; margin:4px 0; color:#bae6fd; }
 app-load-gpx .analysis-library__sector-cards p { margin:0; font-size:.9rem; }
 @media (max-width:700px) { app-load-gpx .analysis-library__row { grid-template-columns:1fr auto; } app-load-gpx .analysis-library__row > span { display:none; } }
+app-load-gpx .analysis-library__actions,
+app-load-gpx .analysis-library__row .analysis-library__row-actions { display:flex; flex-wrap:wrap; align-items:center; gap:8px; }
+app-load-gpx .analysis-library__detail-actions { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:18px; }
+app-load-gpx .analysis-library__actions { margin-top:auto; padding-top:14px; }
+app-load-gpx .analysis-library__route-link,
+app-load-gpx .analysis-library__view,
+app-load-gpx .analysis-library__detail-route { display:inline-flex; align-items:center; justify-content:center; gap:7px; min-height:36px; padding:8px 12px; border:1px solid #cbd9ec; border-radius:9px; background:#eff6ff; color:#1d4ed8; font:700 12px/1.2 inherit; cursor:pointer; text-decoration:none; transition:background .15s ease,border-color .15s ease; }
+app-load-gpx .analysis-library__route-link:hover,
+app-load-gpx .analysis-library__view:hover { background:#dbeafe; border-color:#a8c6f2; }
+app-load-gpx .analysis-library__view { background:#fff; color:#334155; border-color:#d9e2ec; }
+app-load-gpx .analysis-library__view:hover { background:#f1f5f9; border-color:#cbd5e1; }
+app-load-gpx .analysis-library__route-link mat-icon,
+app-load-gpx .analysis-library__detail-route mat-icon { width:17px; height:17px; font-size:17px; }
+app-load-gpx .analysis-library__close { display:inline-flex; flex:none; align-items:center; justify-content:center; width:38px; height:38px; padding:0; border:1px solid rgba(226,232,240,.35); border-radius:10px; background:rgba(255,255,255,.1); color:#f8fafc; cursor:pointer; transition:background .15s ease,border-color .15s ease; }
+app-load-gpx .analysis-library__close:hover { background:rgba(255,255,255,.2); border-color:rgba(226,232,240,.65); }
+app-load-gpx .analysis-library__close mat-icon { width:20px; height:20px; font-size:20px; }
+app-load-gpx .analysis-library__detail-route { margin:0; background:#fff; border-color:#fff; color:#17324f; }
+app-load-gpx .analysis-library__detail-route:hover { background:#eaf3ff; border-color:#eaf3ff; }
+app-load-gpx .analysis-library__route-link:focus-visible,
+app-load-gpx .analysis-library__view:focus-visible,
+app-load-gpx .analysis-library__detail-route:focus-visible,
+app-load-gpx .analysis-library__close:focus-visible { outline:3px solid #facc15; outline-offset:3px; }
+app-load-gpx .analysis-library__route-link:disabled,
+app-load-gpx .analysis-library__detail-route:disabled { opacity:.55; cursor:wait; }
+@media (max-width:700px) { app-load-gpx .analysis-library__row .analysis-library__row-actions { grid-column:1/-1; justify-content:flex-start; } }
 
 app-load-gpx .destination-browser { margin-top:20px; }
 app-load-gpx .destination-browser__intro { display:flex; align-items:end; justify-content:space-between; gap:20px; margin-bottom:18px; }
@@ -93,6 +292,8 @@ app-load-gpx .route-explorer-card__actions { display:grid; grid-template-columns
 app-load-gpx .route-explorer-card__actions button { display:flex; align-items:center; justify-content:center; gap:5px; min-height:38px; border:1px solid #dbe4ee; border-radius:10px; color:#0f172a; background:#fff; font-weight:700; cursor:pointer; }
 app-load-gpx .route-explorer-card__actions button:hover { color:#0369a1; border-color:#7dd3fc; background:#f0f9ff; }
 app-load-gpx .route-explorer-card__actions mat-icon { width:18px; height:18px; font-size:18px; }
+app-load-gpx .route-explorer-card__actions .route-explorer-card__download { grid-column:1/-1; color:#0369a1; border-color:#bae6fd; background:#f0f9ff; }
+app-load-gpx .route-explorer-card__actions .route-explorer-card__download:disabled { opacity:.6; cursor:wait; }
 @media (max-width:600px) { app-load-gpx .destination-grid, app-load-gpx .route-card-grid { grid-template-columns:1fr; } app-load-gpx .destination-card { min-height:320px; } }
 
 /* Archivo editorial de rutas */
@@ -138,4 +339,19 @@ app-load-gpx .destination-detail__shade { background:linear-gradient(90deg,rgba(
   app-load-gpx .user-tracks__pagination-rows { min-width:0; }
   app-load-gpx .user-tracks__counts { margin-left:auto !important; }
   app-load-gpx .route-explorer-card > p { min-height:0; font-size:.94rem; }
+}
+/* Routed views scroll inside the bounded shell, including short viewports. */
+.app-shell:not(.app-shell--immersive) .app-shell__page > router-outlet {
+  display:none;
+}
+.app-shell:not(.app-shell--immersive) .app-shell__page > :is(app-home, app-load-gpx, app-plan-outing, app-route-analyzer, app-garmin-sync) {
+  display:block;
+  flex:1 1 0;
+  min-width:0;
+  min-height:0;
+  overflow-y:auto;
+  overscroll-behavior-y:contain;
+}
+.app-shell:not(.app-shell--immersive) .app-shell__page > app-load-gpx {
+  overflow:hidden;
 }

@@ -4,6 +4,8 @@ import { NgForm } from '@angular/forms';
 import { MatDialogRef } from '@angular/material/dialog';
 import { PasswordRecoveryErrorResponse } from '../interfaces/auth';
 import { AuthService } from '../services/auth.service';
+import { LanguageService } from '../services/language.service';
+import { homeTranslations, HomeTranslationKey } from '../home/home-translations';
 
 @Component({
   selector: 'app-forgot-password-dialog',
@@ -18,8 +20,11 @@ export class ForgotPasswordDialogComponent {
 
   constructor(
     private dialogRef: MatDialogRef<ForgotPasswordDialogComponent>,
-    private authService: AuthService
+    private authService: AuthService,
+    public languageService: LanguageService
   ) {}
+
+  t(key: HomeTranslationKey): string { return homeTranslations[this.languageService.current][key]; }
 
   onSubmit(form: NgForm): void {
     if (!form.valid || this.loading) return;
@@ -33,21 +38,21 @@ export class ForgotPasswordDialogComponent {
         this.loading = false;
         if ((response as PasswordRecoveryErrorResponse).exitCode !== 0) {
           const error = response as PasswordRecoveryErrorResponse;
-          this.errorMessage = error.message || 'No ha sido posible iniciar la recuperación de contraseña.';
+          this.errorMessage = error.message || this.t('recoveryDefaultError');
           return;
         }
 
-        this.successMessage = 'Si el correo existe, recibirás instrucciones para recuperar la contraseña.';
+        this.successMessage = this.t('recoverySuccess');
       },
       error: (error: HttpErrorResponse) => {
         this.loading = false;
         if (error.error) {
           const responseError = error.error as PasswordRecoveryErrorResponse;
-          this.errorMessage = responseError.message || 'No ha sido posible iniciar la recuperación de contraseña.';
+          this.errorMessage = responseError.message || this.t('recoveryDefaultError');
           return;
         }
 
-        this.errorMessage = 'No se ha podido conectar con el servicio de autenticación.';
+        this.errorMessage = this.t('authDefaultError');
       }
     });
   }

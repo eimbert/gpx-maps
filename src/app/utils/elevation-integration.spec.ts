@@ -8,6 +8,7 @@ import { RouteAnalysisService } from '../services/route-analysis.service';
 import { DiscoverRouteComponent } from '../discover-route/discover-route.component';
 import { MapComponent } from '../map/map.component';
 import { calculateGpxElevation } from './gpx-elevation';
+import { selectedUiText } from '../services/screen-texts';
 
 describe('Shared elevation through the three GPX entry paths', () => {
   const gpx = (elevations: Array<number | null>, pointName = 'trkpt', prefix = '') => {
@@ -77,7 +78,7 @@ describe('Shared elevation through the three GPX entry paths', () => {
     expect(Number.isNaN(loaded.details.ascent)).toBeTrue();
     expect(loaded.details.elevationStatus).toBe('unavailable');
     expect(planned.desnivel).toBeNull();
-    expect(plan.formatDesnivel(planned.desnivel)).toBe('Sin altitud');
+    expect(plan.formatDesnivel(planned.desnivel)).toBe(selectedUiText('noElevation'));
     expect(analyzed.stats?.elevationGain).toBeNull();
     expect((analyzed as any).elevationResult.status).toBe('unavailable');
     expect(analyzed.elevationSourceLabel).toBeTruthy();

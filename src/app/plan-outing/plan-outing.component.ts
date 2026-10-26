@@ -25,7 +25,6 @@ import * as L from 'leaflet';
 import { calculateGpxElevation, ElevationResult } from '../utils/gpx-elevation';
 import { RouteComparison, SavedRouteComparison } from '../interfaces/route-comparison';
 import { RouteComparisonService } from '../services/route-comparison.service';
-import { RouteComparisonComponent } from '../route-comparison/route-comparison.component';
 import { selectedUiText } from '../services/screen-texts';
 
 type EditableFolder = {

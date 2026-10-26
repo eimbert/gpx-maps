@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { HttpClient, HttpErrorResponse } from '@angular/common/http';
+import { HttpClient } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 import { environment } from 'src/environments/environment';
 
@@ -242,12 +242,6 @@ private async reverseGeocodeCatalan(lat: number, lon: number): Promise<TrackLoca
       .toLowerCase()
       .trim();
     return normalized === 'cataluna' || normalized === 'catalunya';
-  }
-
-  private delay(ms: number): Promise<void> {
-    return new Promise((resolve) => {
-      setTimeout(resolve, ms);
-    });
   }
 
   private calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {

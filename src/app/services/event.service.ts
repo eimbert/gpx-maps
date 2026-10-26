@@ -226,7 +226,6 @@ export class EventService {
     // console.log("LOGOBLOB: ", logoBlob)
     // console.log("event. LOGOBLOB: ", event.logoBlob)
     const logoMime = (event as any).logoMime ?? null;
-    const logo = event.logoBlob || this.buildLogoDataUrl(logoBlob, logoMime);
     // console.log("LOGO: ", logo)
     const gpxMaster = (event as any).gpxMaster ?? (event as any).gpx_master ?? null;
     const gpxMasterFileName = (event as any).gpxMasterFileName ?? (event as any).gpx_master_file_name ?? null;
@@ -325,12 +324,6 @@ export class EventService {
     if (routeId === null || routeId === undefined) return null;
     const numericId = Number(routeId);
     return Number.isFinite(numericId) ? numericId : null;
-  }
-
-  private buildLogoDataUrl(logoBlob?: string | null, logoMime?: string | null): string | undefined {
-    if (!logoBlob) return undefined;
-    const mime = (logoMime || 'image/png').trim();
-    return `data:${mime};base64,${logoBlob}`;
   }
 
   private normalizeTextField(value: any): string | null {

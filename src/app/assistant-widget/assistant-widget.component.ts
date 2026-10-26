@@ -159,8 +159,6 @@ export class AssistantWidgetComponent implements OnDestroy {
   }
 
   private ui(key: ScreenTextKey): string { return SCREEN_TEXTS[key][this.language.current]; }
-
-  private scrollToEndSoon(): void { setTimeout(() => this.scrollToEnd()); }
   private scrollToMessageSoon(index: number): void { setTimeout(() => this.scrollToMessage(index)); }
   private scrollToMessage(index: number): void {
     const container = this.messageList?.nativeElement;

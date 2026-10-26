@@ -1,7 +1,7 @@
 import { Component, ElementRef, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { DashboardStateService } from '../services/dashboard-state.service';
-import { HttpClient, HttpErrorResponse } from '@angular/common/http';
+import { HttpClient } from '@angular/common/http';
 import { MatDialog } from '@angular/material/dialog';
 import { firstValueFrom, Subject, Subscription, from } from 'rxjs';
 import { auditTime, exhaustMap, filter, takeUntil } from 'rxjs/operators';
@@ -1574,18 +1574,6 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
     });
   }
 
-  private calculateTotalDistance(trkpts: HTMLCollectionOf<Element>): number {
-    let totalDistance = 0;
-    for (let i = 1; i < trkpts.length; i++) {
-      const prevLat = parseFloat(trkpts[i - 1].getAttribute('lat')!);
-      const prevLon = parseFloat(trkpts[i - 1].getAttribute('lon')!);
-      const lat = parseFloat(trkpts[i].getAttribute('lat')!);
-      const lon = parseFloat(trkpts[i].getAttribute('lon')!);
-      totalDistance += this.calculateDistance(prevLat, prevLon, lat, lon);
-    }
-    return totalDistance / 1000;
-  }
-
   private calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
     const R = 6371e3;
     const φ1 = (lat1 * Math.PI) / 180;
@@ -2648,12 +2636,6 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
       .toLowerCase()
       .trim();
     return normalized === 'cataluna' || normalized === 'catalunya';
-  }
-
-  private delay(ms: number): Promise<void> {
-    return new Promise((resolve) => {
-      setTimeout(resolve, ms);
-    });
   }
 
   formatDurationHms(seconds: number): string {
@@ -4050,30 +4032,6 @@ export class LoadGpxComponent implements OnInit, OnDestroy {
         this.handleEventSelection(null);
       }
     });
-  }
-
-  private async ensureLoadedTrackFromEventTrack(track: EventTrack, colorIndex: number): Promise<LoadedTrack | null> {
-    try {
-      let gpxData = track.gpxData
-        || (track.gpxAsset ? await firstValueFrom(this.http.get(track.gpxAsset, { responseType: 'text' })) : null);
-
-      if (!gpxData) {
-        const gpxFile = await firstValueFrom(this.eventService.getTrackGpx(track.id));
-        gpxData = gpxFile.routeXml ?? null;
-        if (gpxFile.fileName) track.fileName = gpxFile.fileName;
-      }
-
-      if (!gpxData) return null;
-
-      track.gpxData = gpxData;
-      const fileName = track.fileName || track.nickname;
-
-      const { track: loadedTrack } = this.parseGpxData(gpxData, fileName, colorIndex);
-      loadedTrack.name = `${track.nickname} (${track.category})`;
-      return loadedTrack;
-    } catch {
-      return null;
-    }
   }
 
 

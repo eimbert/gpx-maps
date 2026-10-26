@@ -6,6 +6,7 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { DialogoConfiguracionComponent } from './dialogo-configuracion.component';
 import { DialogoConfiguracionData } from '../interfaces/estructuras';
+import { UiTextPipe } from '../services/screen-texts';
 
 describe('Opciones de reproducción 3D', () => {
   let fixture: ComponentFixture<DialogoConfiguracionComponent>;
@@ -16,7 +17,7 @@ describe('Opciones de reproducción 3D', () => {
     data = { tipoAnimacion: 'descubrir', tipoAnimacionFijado: true };
     close = jasmine.createSpy('close');
     await TestBed.configureTestingModule({
-      declarations: [DialogoConfiguracionComponent],
+      declarations: [DialogoConfiguracionComponent, UiTextPipe],
       imports: [FormsModule, NoopAnimationsModule, MatCheckboxModule],
       providers: [
         { provide: MAT_DIALOG_DATA, useValue: data },
@@ -84,7 +85,9 @@ describe('Opciones de reproducción 3D', () => {
   });
 
   it('does not offer 3D playback when several tracks are selected', async () => {
-    data = { tipoAnimacion: 'carrera', nombresTracks: ['Primera ruta', 'Segunda ruta'] };
+    data.tipoAnimacionFijado = false;
+    data.tipoAnimacion = 'carrera';
+    data.nombresTracks = ['Primera ruta', 'Segunda ruta'];
     await render();
     expect(fixture.nativeElement.querySelector('input[name="tipo-animacion"][value="descubrir"]')).toBeNull();
     expect(fixture.nativeElement.querySelector('input[name="tipo-animacion"][value="carrera"]')).not.toBeNull();

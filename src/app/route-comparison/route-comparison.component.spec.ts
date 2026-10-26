@@ -2,6 +2,7 @@ import { Subject, of, throwError } from 'rxjs';
 import { RouteComparisonComponent } from './route-comparison.component';
 import { PlanTrack } from '../interfaces/plan';
 import { RouteComparison } from '../interfaces/route-comparison';
+import { selectedUiText } from '../services/screen-texts';
 
 describe('RouteComparisonComponent', () => {
   const tracks = [1, 2, 3].map(id => ({ id, folderId: 8, name: `Ruta ${id}` } as PlanTrack));
@@ -19,18 +20,18 @@ describe('RouteComparisonComponent', () => {
   });
   it('cancels an old request when the selection changes', () => {
     const response = new Subject<RouteComparison>(); api.compare.and.returnValue(response);
-    component.tracks = tracks.slice(0, 2); component.ngOnChanges(); component.compare();
-    component.tracks = tracks.slice(1, 3); component.ngOnChanges(); response.next(report);
+    component.tracks = tracks.slice(0, 2); component.ngOnChanges({}); component.compare();
+    component.tracks = tracks.slice(1, 3); component.ngOnChanges({}); response.next(report);
     expect(component.report).toBeNull(); expect(component.loading).toBeFalse();
   });
   it('keeps the report when a parent rerenders the same selection', () => {
-    component.tracks = tracks.slice(0, 2); component.ngOnChanges(); component.compare();
-    component.tracks = tracks.slice(0, 2); component.ngOnChanges();
+    component.tracks = tracks.slice(0, 2); component.ngOnChanges({}); component.compare();
+    component.tracks = tracks.slice(0, 2); component.ngOnChanges({});
     expect(component.report).toBe(report);
   });
   it('invalidates the report if the same selected route has a new GPX', () => {
-    component.tracks = tracks.slice(0, 2); component.ngOnChanges(); component.compare();
-    component.tracks = [{ ...tracks[0], routeXml: '<gpx>changed</gpx>' }, tracks[1]]; component.ngOnChanges();
+    component.tracks = tracks.slice(0, 2); component.ngOnChanges({}); component.compare();
+    component.tracks = [{ ...tracks[0], routeXml: '<gpx>changed</gpx>' }, tracks[1]]; component.ngOnChanges({});
     expect(component.report).toBeNull();
   });
   it('does not send a second request while generating', () => {
@@ -44,7 +45,7 @@ describe('RouteComparisonComponent', () => {
   it('explains a monthly quota error', () => {
     api.compare.and.returnValue(throwError(() => ({ status: 402 })));
     component.tracks = tracks.slice(0, 2); component.compare();
-    expect(component.error).toContain('límite'); expect(component.loading).toBeFalse();
+    expect(component.error).toBe(selectedUiText('comparisonLimit')); expect(component.loading).toBeFalse();
   });
   it('reopens a saved report without generating or charging again', () => {
     component.openSaved(42);

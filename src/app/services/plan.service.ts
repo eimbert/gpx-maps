@@ -4,7 +4,6 @@ import { Observable, catchError, map, of, tap, timeout } from 'rxjs';
 import { environment } from '../../environments/environment';
 import {
   PlanFolder,
-  PlanFolderMember,
   PlanFolderVotesResponse,
   PlanInvitation,
   PlanTrack,
@@ -29,13 +28,6 @@ type InvitePayload = {
 type MemberStatusPayload = {
   id: number;
   status: 'sending' | 'accepted' | 'rejected';
-};
-
-type FolderMemberPayload = {
-  folderId: number;
-  userId: number;
-  nickname: string;
-  email: string | null;
 };
 
 type VoteResponse = {
@@ -259,11 +251,6 @@ export class PlanService {
         }),
         catchError(error => of({ users: [], notFound: error?.status === 404 }))
       );
-  }
-
-  addFolderMember(folderId: number, payload: FolderMemberPayload): Observable<PlanFolderMember> {
-    console.log('Plan folder member payload:', payload);
-    return this.http.post<PlanFolderMember>(`${this.planApiBase}/members`, payload);
   }
 
   inviteUser(folderId: number, payload: InvitePayload): Observable<PlanInvitation> {

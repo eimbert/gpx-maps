@@ -1,7 +1,7 @@
 import { Component } from '@angular/core';
 import { MatDialogRef } from '@angular/material/dialog';
 import { CreateEventPayload } from '../interfaces/events';
-import { firstValueFrom, Subject, Subscription, from } from 'rxjs';
+import { firstValueFrom } from 'rxjs';
 import { InfoMessageService } from '../services/info-message.service';
 import { HttpClient } from '@angular/common/http';
 

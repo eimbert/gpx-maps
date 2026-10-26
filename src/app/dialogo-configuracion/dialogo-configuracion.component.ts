@@ -38,8 +38,6 @@ export class DialogoConfiguracionComponent {
       this.nombresTracks = data.nombresTracks ?? [];
       this.eliminarPausasLargas = true;
       this.marcarPausasLargas = data.marcarPausasLargas ?? this.marcarPausasLargas;
-      const umbralPausaSegundos = data.umbralPausaSegundos ?? this.umbralPausaMinutos * 60;
-      // this.umbralPausaMinutos = Math.max(1, Math.round(umbralPausaSegundos / 60));
       this.anadirLogoTitulos   = !!data.anadirLogoTitulos;
       this.permitirAdversarioVirtual = !!data.permitirAdversarioVirtual;
       this.incluirAdversarioVirtual = !!data.incluirAdversarioVirtual;

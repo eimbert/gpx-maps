@@ -75,7 +75,6 @@ interface BaseLayerOption {
   maxZoom?: number;
 }
 
-type EditDeleteMode = 'radius' | 'range';
 
 interface IndexedTrackPoint {
   point: TrackPoint;
@@ -129,8 +128,6 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
   private readonly leaderPanIntervalMs = 450;
   private readonly leaderZoomLevel = 17;
   private readonly leaderFlyDurationMs = 650;
-  private readonly generalViewZoomScale = 0.75;
-  private readonly generalViewZoomScaleVertical = 0.65;
   private readonly ghostOpacity = 0.4;
   private readonly ghostWeight = 3;
   private readonly progressOpacity = 0.95;
@@ -144,7 +141,6 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
   private readonly slopeSoftMax = 4;
   private readonly slopeModerateMax = 7;
   private readonly slopeHardMax = 14;
-  private readonly slopeColorSoft = '#2563eb';
   private readonly slopeColorModerate = '#facc15';
   private readonly slopeColorHard = '#f97316';
   private readonly slopeColorVeryHard = '#dc2626';
@@ -245,9 +241,6 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
   private editDragActive = false;
   private suppressMapClickUntil = 0;
   private editSelectionPath?: SVGPathElement;
-  editDeleteMode: EditDeleteMode = 'radius';
-  editDeleteRadiusMeters = 15;
-  readonly editDeleteRadiusOptions = [5, 10, 15, 25, 50];
   isSavingEdits = false;
   editStatusMessage: string | null = null;
   private editStatusTimeout: number | null = null;
@@ -259,7 +252,6 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
   private originalPointsSnapshot: string | null = null;
   private editPointMarkers: maplibregl.Marker[] = [];
   private editIndexedPoints: IndexedTrackPoint[] = [];
-  editSimplifiedPointCount = 0;
   private editUndoStack: TrackPoint[][] = [];
   editRangeStartIndex: number | null = null;
   private editRangeStartMarker: maplibregl.Marker | null = null;
@@ -1230,19 +1222,6 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
     this.map?.remove();
   }
 
-  get editPointReductionLabel(): string | null {
-    const rawCount = this.trackMetas[0]?.raw?.length ?? 0;
-    if (!this.editMode || rawCount <= 0 || this.editSimplifiedPointCount <= 0 || this.editSimplifiedPointCount >= rawCount) {
-      return null;
-    }
-    return `${rawCount.toLocaleString('es-ES')} -> ${this.editSimplifiedPointCount.toLocaleString('es-ES')}`;
-  }
-
-  get shouldShowEditControls(): boolean {
-    if (!this.canEditTrack) return false;
-    return this.isMobileViewport ? this.mobileTitleBarVisible : this.desktopTitleBarVisible;
-  }
-
   toggleEditMode(): void {
     if (!this.canEditTrack || this.isSavingEdits || this.isRoutingEdit) return;
     this.editMode = !this.editMode;
@@ -1257,28 +1236,9 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
   private exitEditMode(): void {
     if (!this.editMode && !this.editPointMarkers.length && this.editRangeStartIndex === null) return;
     this.editMode = false;
-    this.editSimplifiedPointCount = 0;
     this.clearEditStatusMessage();
     this.clearEditRangeSelection();
     this.clearEditPointsLayer();
-  }
-
-  setEditDeleteMode(mode: EditDeleteMode): void {
-    if (this.editDeleteMode === mode) return;
-    this.editDeleteMode = mode;
-    this.clearEditRangeSelection();
-    if (this.editMode) {
-      this.setEditStatusMessage(this.getEditHintMessage());
-    }
-  }
-
-  setEditDeleteRadius(radiusMeters: number | string): void {
-    const parsed = Number(radiusMeters);
-    if (!Number.isFinite(parsed) || parsed <= 0) return;
-    this.editDeleteRadiusMeters = parsed;
-    if (this.editMode && this.editDeleteMode === 'radius') {
-      this.setEditStatusMessage(`Radio de borrado: ${parsed} m.`);
-    }
   }
 
   undoLastEdit(): void {
@@ -1408,38 +1368,6 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
     else { this.editSelectedIndex = closest.rawIndex; this.updateEditPointsLayer(); }
   }
 
-  private handleRadiusDeleteClick(event: maplibregl.MapMouseEvent, meta: TrackMeta): void {
-    const closest = this.findClosestEditPoint(event, meta.raw);
-    const thresholdPx = this.isMobileViewport ? 52 : 38;
-    if (!closest || closest.distancePx > thresholdPx) {
-      this.setEditStatusMessage('Haz clic más cerca del tramo que quieres borrar.');
-      return;
-    }
-
-    const center = meta.raw[closest.rawIndex];
-    const removableIndexes = new Set<number>();
-    meta.raw.forEach((point, index) => {
-      if (this.distanceBetween(point, center) <= this.editDeleteRadiusMeters) {
-        removableIndexes.add(index);
-      }
-    });
-
-    if (!removableIndexes.size) {
-      removableIndexes.add(closest.rawIndex);
-    }
-
-    if (meta.raw.length - removableIndexes.size < 2) {
-      this.setEditStatusMessage('El track necesita al menos dos puntos.');
-      return;
-    }
-
-    this.pushEditUndoSnapshot(meta.raw);
-    const updated = meta.raw.filter((_, index) => !removableIndexes.has(index));
-    this.updateTrackRaw(0, updated);
-    this.applySanitization();
-    this.setEditStatusMessage(`${removableIndexes.size} punto${removableIndexes.size === 1 ? '' : 's'} eliminado${removableIndexes.size === 1 ? '' : 's'}.`);
-  }
-
   private handleRangeDeleteClick(event: maplibregl.MapMouseEvent, meta: TrackMeta): void {
     const closest = this.findClosestEditPoint(event, meta.raw);
     const thresholdPx = this.isMobileViewport ? 56 : 42;
@@ -1509,7 +1437,6 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
     const meta = this.trackMetas[0];
     if (!meta?.raw?.length) return;
     this.editIndexedPoints = this.buildEditIndexedPoints(meta.raw);
-    this.editSimplifiedPointCount = this.editIndexedPoints.length;
     this.editIndexedPoints.forEach(({ point, index }) => {
       const interactive = this.editTool === 'move' || this.editTool === 'insert';
       const element = document.createElement('button');
@@ -1667,7 +1594,6 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
     this.editPointMarkers.forEach(marker => marker.remove());
     this.editPointMarkers = [];
     this.editIndexedPoints = [];
-    this.editSimplifiedPointCount = 0;
   }
 
   private setEditRangeStartMarker(point: TrackPoint): void {
@@ -1944,7 +1870,7 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
     markers.push(dot, label);
   }
 
-  private addPauseMarker(pause: PauseInterval, color: string, markers: maplibregl.Marker[]): void {
+  private addPauseMarker(pause: PauseInterval, markers: maplibregl.Marker[]): void {
     const minutes = pause.durationMs / 60000;
     if (minutes < 1) return;
     const label = `parada de ${Math.round(minutes)} min`;
@@ -2118,8 +2044,7 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
     this.updateViewportFlags();
     void this.animationAccess.refreshAvailability();
 
-    const startFlag = this.route.snapshot.queryParamMap.get('s');
-    this.autoStartRequested = false // (startFlag === '1' || startFlag === 'true');
+    this.autoStartRequested = false;
 
     this.hydrateRemoveStopsFlag();
 
@@ -2755,7 +2680,7 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
         meta.mark.setLngLat(startLngLat).addTo(this.map);
         meta.tickMarkers = this.clearMarkers(meta.tickMarkers);
         meta.pauseMarkers = this.clearMarkers(meta.pauseMarkers);
-        meta.pauses.forEach((pause) => this.addPauseMarker(pause, meta.color, meta.pauseMarkers!));
+        meta.pauses.forEach((pause) => this.addPauseMarker(pause, meta.pauseMarkers!));
         meta.sanitized.forEach(point => { bounds = this.extendBounds(bounds, point); });
         anyTrack = true;
       } else {
@@ -2939,10 +2864,6 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
     return this.isZoomMode ? this.leaderFlyDurationMs * this.zoomPanSlowdownFactor : this.leaderFlyDurationMs;
   }
 
-  private get generalViewZoomScaleForViewport(): number {
-    return this.isVerticalViewport ? this.generalViewZoomScaleVertical : this.generalViewZoomScale;
-  }
-
   private setGeneralView(): void {
     if (!this.map) return;
     if (this.hasValidBounds(this.allTracksBounds)) {
@@ -2970,21 +2891,6 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
       left: compact ? 30 : 50,
       right: compact ? 30 : 95,
     } };
-  }
-
-  private computeBasePadding(): [number, number] {
-    if (!this.map) return [24, 24];
-    if (!this.isVerticalViewport) return [24, 24];
-
-    const container = this.map.getContainer();
-    const padX = Math.max(40, Math.round(container.clientWidth * 0.12));
-    const padY = Math.max(30, Math.round(container.clientHeight * 0.08));
-    return [padX, padY];
-  }
-
-  private measureVerticalOverlap(rect: DOMRect, mapRect: DOMRect): number {
-    const overlap = Math.max(0, Math.min(rect.bottom, mapRect.bottom) - Math.max(rect.top, mapRect.top));
-    return Math.round(Math.min(overlap, mapRect.height));
   }
 
   private applyTrackVisibility(): void {

@@ -35,7 +35,7 @@ export class TrackMetadataDialogComponent {
   guardar(): void {
     this.dialogRef.close({
       names: this.entries.map((entry, index) => entry.name?.trim() || `Track ${index + 1}`),
-      colors: this.entries.map((entry, index) => entry.color || '#3b82f6')
+      colors: this.entries.map(entry => entry.color || '#3b82f6')
     });
   }
 }

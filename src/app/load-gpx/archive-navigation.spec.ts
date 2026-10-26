@@ -27,11 +27,12 @@ describe('Archive round-trip navigation', () => {
     };
     const instance: any = new LoadGpxComponent(
       { open: () => ({ afterClosed: () => of(undefined) }) } as any,
-      router as any, {} as any,
+      router as any, { snapshot: { queryParamMap: convertToParamMap({}) } } as any,
       { getMyTracks: () => of([row(1), row(2)]), getSharedTracks: () => of([]) } as any,
       {} as any, { getSession: () => ({ id: owner }) } as any,
-      { showMessage: jasmine.createSpy('showMessage') } as any,
-      {} as any, {} as any, {} as any, store, { getUserId: () => owner } as any
+      {} as any, { showMessage: jasmine.createSpy('showMessage') } as any,
+      {} as any, {} as any, {} as any, store,
+      { current: 'es' } as any, { getUserId: () => owner } as any
     );
     instance.isAuthenticated = true;
     spyOn(instance, 'resolveDestinationDescription');
